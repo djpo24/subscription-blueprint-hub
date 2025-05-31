@@ -9,6 +9,7 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface PackageFormProps {
   customerId: string;
@@ -26,7 +27,9 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
     description: '',
     weight: '',
     freight: '',
+    freightFormatted: '',
     amountToCollect: '',
+    amountToCollectFormatted: '',
     currency: 'COP', // Default to Colombian Pesos
     details: [''] // Array to store product details
   });
@@ -46,7 +49,7 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
 
   const handleDetailBlur = (index: number) => {
     const currentDetail = formData.details[index];
-    if (currentDetail.trim() && index === formData.details.length - 1 && formData.details.length < 20) {
+    if (currentDetail.trim() && index === formData.details.length - 1 && formData.details.length < 1000) {
       // Add new empty field if current is the last one and has content
       setFormData(prev => ({
         ...prev,
@@ -59,7 +62,7 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
     if (e.key === 'Enter') {
       e.preventDefault();
       const currentDetail = formData.details[index];
-      if (currentDetail.trim() && index === formData.details.length - 1 && formData.details.length < 20) {
+      if (currentDetail.trim() && index === formData.details.length - 1 && formData.details.length < 1000) {
         setFormData(prev => ({
           ...prev,
           details: [...prev.details, '']
@@ -71,6 +74,30 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
         }, 100);
       }
     }
+  };
+
+  const handleFreightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatNumber(value);
+    const raw = parseFormattedNumber(formatted);
+    
+    setFormData(prev => ({
+      ...prev,
+      freight: raw,
+      freightFormatted: formatted
+    }));
+  };
+
+  const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatNumber(value);
+    const raw = parseFormattedNumber(formatted);
+    
+    setFormData(prev => ({
+      ...prev,
+      amountToCollect: raw,
+      amountToCollectFormatted: formatted
+    }));
   };
 
   const getFilledDetails = () => {
@@ -188,14 +215,14 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
                 placeholder={`Producto ${index + 1}${index === 0 ? ' (requerido)' : ' (opcional)'}`}
                 required={index === 0}
               />
-              <span className="text-sm text-gray-500 min-w-[40px]">
-                {index + 1}/20
+              <span className="text-sm text-gray-500 min-w-[60px]">
+                {index + 1}/1000
               </span>
             </div>
           ))}
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          Presiona Enter o haz clic fuera del campo para agregar otro producto (máximo 20)
+          Presiona Enter o haz clic fuera del campo para agregar otro producto (máximo 1000)
         </p>
       </div>
 
@@ -205,11 +232,10 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
           <Label htmlFor="freight">Flete (COP)</Label>
           <Input
             id="freight"
-            type="number"
-            step="0.01"
-            value={formData.freight}
-            onChange={(e) => setFormData(prev => ({ ...prev, freight: e.target.value }))}
-            placeholder="0.00"
+            type="text"
+            value={formData.freightFormatted}
+            onChange={handleFreightChange}
+            placeholder="0"
           />
         </div>
 
@@ -241,11 +267,10 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
           </Select>
           <Input
             id="amountToCollect"
-            type="number"
-            step="0.01"
-            value={formData.amountToCollect}
-            onChange={(e) => setFormData(prev => ({ ...prev, amountToCollect: e.target.value }))}
-            placeholder="0.00"
+            type="text"
+            value={formData.amountToCollectFormatted}
+            onChange={handleAmountToCollectChange}
+            placeholder="0"
             className="flex-1"
           />
         </div>

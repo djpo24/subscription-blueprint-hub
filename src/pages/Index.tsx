@@ -14,6 +14,8 @@ import { TripDialog } from '@/components/TripDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
+import { useCustomersCount } from '@/hooks/useCustomersCount';
+import { usePackageStats } from '@/hooks/usePackageStats';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,8 @@ const Index = () => {
   // Fetch data using existing hooks
   const { data: packages = [], isLoading: packagesLoading, refetch: refetchPackages } = usePackages();
   const { data: trips = [], isLoading: tripsLoading, refetch: refetchTrips } = useTrips();
+  const { data: customersCount = 0 } = useCustomersCount();
+  const { data: packageStats } = usePackageStats();
 
   // Filter packages based on search term
   const filteredPackages = packages.filter(pkg => 
@@ -76,7 +80,10 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
-            <StatsGrid />
+            <StatsGrid 
+              packageStats={packageStats}
+              customersCount={customersCount}
+            />
             <QuickActions 
               onNewPackage={handleNewPackage}
               onNewTrip={() => setTripDialogOpen(true)}

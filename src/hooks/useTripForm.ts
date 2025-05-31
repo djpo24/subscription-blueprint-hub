@@ -29,6 +29,39 @@ export function useTripForm(onSuccess: () => void) {
     mutationFn: async (tripData: any) => {
       console.log('Creating trip with data:', tripData);
       
+      // Primero verificar si ya existe un viaje para esta fecha y ruta
+      const { data: existingTrip, error: checkError } = await supabase
+        .from('trips')
+        .select('id, flight_number')
+        .eq('trip_date', tripData.trip_date)
+        .eq('origin', tripData.origin)
+        .eq('destination', tripData.destination)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing trip:', checkError);
+        throw checkError;
+      }
+
+      if (existingTrip) {
+        // Si ya existe un viaje, actualizar el número de vuelo si se proporcionó uno nuevo
+        if (tripData.flight_number && tripData.flight_number !== existingTrip.flight_number) {
+          const { data: updatedTrip, error: updateError } = await supabase
+            .from('trips')
+            .update({ flight_number: tripData.flight_number })
+            .eq('id', existingTrip.id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+          return updatedTrip;
+        } else {
+          // Si no hay número de vuelo nuevo, mostrar error informativo
+          throw new Error('TRIP_EXISTS');
+        }
+      }
+
+      // Si no existe, crear el nuevo viaje
       const { data, error } = await supabase
         .from('trips')
         .insert([tripData])
@@ -39,7 +72,7 @@ export function useTripForm(onSuccess: () => void) {
       return data;
     },
     onSuccess: async (data) => {
-      console.log('Trip created successfully:', data);
+      console.log('Trip created/updated successfully:', data);
       
       // Si el viaje tiene número de vuelo, crear datos de monitoreo
       if (data.flight_number) {
@@ -70,22 +103,22 @@ export function useTripForm(onSuccess: () => void) {
           if (flightError) {
             console.error('Error creating flight data:', flightError);
             toast({
-              title: "Advertencia",
-              description: "El viaje se creó pero no se pudo configurar el monitoreo del vuelo",
+              title: "Viaje actualizado",
+              description: "El viaje se actualizó pero no se pudo configurar el monitoreo del vuelo",
               variant: "destructive"
             });
           } else {
             console.log('Flight data created successfully:', flightData);
             toast({
-              title: "Viaje creado",
-              description: "El viaje ha sido creado y se ha iniciado el monitoreo del vuelo",
+              title: "Viaje actualizado",
+              description: "El viaje ha sido actualizado y se ha iniciado el monitoreo del vuelo",
             });
           }
         } catch (error) {
           console.error('Error in flight data creation:', error);
           toast({
-            title: "Advertencia",
-            description: "El viaje se creó pero no se pudo configurar el monitoreo del vuelo",
+            title: "Viaje actualizado",
+            description: "El viaje se actualizó pero no se pudo configurar el monitoreo del vuelo",
             variant: "destructive"
           });
         }
@@ -106,11 +139,31 @@ export function useTripForm(onSuccess: () => void) {
     },
     onError: (error: any) => {
       console.error('Error creating trip:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo crear el viaje",
-        variant: "destructive"
-      });
+      
+      if (error.message === 'TRIP_EXISTS') {
+        const routeParts = formData.route.split(' -> ');
+        const [origin, destination] = routeParts;
+        toast({
+          title: "Viaje ya existe",
+          description: `Ya existe un viaje programado para ${format(date!, 'dd/MM/yyyy')} en la ruta ${origin} → ${destination}. Si quiere cambiar el número de vuelo, ingrese uno diferente.`,
+          variant: "destructive"
+        });
+      } else if (error.code === '23505') {
+        // Error de restricción única
+        const routeParts = formData.route.split(' -> ');
+        const [origin, destination] = routeParts;
+        toast({
+          title: "Viaje ya existe",
+          description: `Ya existe un viaje programado para ${format(date!, 'dd/MM/yyyy')} en la ruta ${origin} → ${destination}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo crear el viaje. Por favor intente nuevamente.",
+          variant: "destructive"
+        });
+      }
     }
   });
 

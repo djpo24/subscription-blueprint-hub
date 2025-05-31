@@ -56,7 +56,7 @@ export const checkExistingFlightTrip = async (tripDate: string, flightNumber: st
 export const createTrip = async (tripData: TripData) => {
   console.log('Creating trip with data:', tripData);
   
-  // Verificar si ya existe un viaje con el mismo número de vuelo en la misma fecha
+  // Solo verificar duplicados de número de vuelo si el viaje tiene número de vuelo
   if (tripData.flight_number) {
     const existingFlightTrip = await checkExistingFlightTrip(tripData.trip_date, tripData.flight_number);
     
@@ -65,13 +65,17 @@ export const createTrip = async (tripData: TripData) => {
     }
   }
 
-  // Crear el nuevo viaje sin verificar ruta duplicada
+  // Crear el nuevo viaje - ahora permite múltiples viajes el mismo día con diferentes números de vuelo
   const { data, error } = await supabase
     .from('trips')
     .insert([tripData])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error creating trip:', error);
+    throw error;
+  }
+  
   return data;
 };

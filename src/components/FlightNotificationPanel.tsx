@@ -1,8 +1,8 @@
-
 import { useFlightNotifications } from '@/hooks/useFlightNotifications';
 import { FlightMonitoringCard } from './flight/FlightMonitoringCard';
 import { TestNotificationCard } from './flight/TestNotificationCard';
 import { FlightInformationCard } from './flight/FlightInformationCard';
+import { UpcomingFlightsCard } from './flight/UpcomingFlightsCard';
 
 export function FlightNotificationPanel() {
   const { 
@@ -23,6 +23,8 @@ export function FlightNotificationPanel() {
         onSendTestNotification={sendTestNotification}
         isSendingTest={isSendingTest}
       />
+
+      <UpcomingFlightsCard />
 
       <FlightInformationCard 
         pendingFlights={pendingFlights}

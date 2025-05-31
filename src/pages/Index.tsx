@@ -17,6 +17,7 @@ import { useTrips } from '@/hooks/useTrips';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { usePackageStats } from '@/hooks/usePackageStats';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { TripsWithFlightsView } from '@/components/TripsWithFlightsView';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,9 +112,7 @@ const Index = () => {
               isLoading={tripsLoading}
               onAddPackage={handleAddPackageToTrip}
             />
-            <TripsTable 
-              trips={trips}
-              isLoading={tripsLoading}
+            <TripsWithFlightsView 
               onAddPackage={handleAddPackageToTrip}
             />
           </TabsContent>

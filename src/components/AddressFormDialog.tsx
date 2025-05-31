@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +24,12 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation>({});
   const [step, setStep] = useState<'country' | 'department' | 'city' | 'address'>('country');
+  const [addressInput, setAddressInput] = useState('');
 
   const resetSelection = () => {
     setSelectedLocation({});
     setStep('country');
+    setAddressInput('');
   };
 
   const handleCountrySelect = (countryId: string) => {
@@ -149,8 +150,6 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
   );
 
   const renderAddressStep = () => {
-    const [addressInput, setAddressInput] = useState('');
-    
     return (
       <div className="space-y-4">
         <h4 className="font-medium text-lg">Agregar Dirección</h4>

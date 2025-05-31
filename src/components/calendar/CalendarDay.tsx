@@ -1,6 +1,8 @@
 
 import { format, isSameMonth, isSameDay } from 'date-fns';
-import { TripCard } from './TripCard';
+import { useState } from 'react';
+import { TripIndicator } from './TripIndicator';
+import { TripPopover } from './TripPopover';
 
 interface Trip {
   id: string;
@@ -20,12 +22,13 @@ interface CalendarDayProps {
 }
 
 export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarDayProps) {
+  const [showPopover, setShowPopover] = useState(false);
   const isCurrentMonth = isSameMonth(day, currentDate);
   const isToday = isSameDay(day, new Date());
 
   return (
     <div
-      className={`min-h-[140px] rounded-xl border-2 p-3 transition-all duration-200 ${
+      className={`min-h-[80px] rounded-lg border transition-all duration-200 relative ${
         isCurrentMonth 
           ? isToday 
             ? 'bg-black text-white border-black' 
@@ -33,23 +36,32 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
           : 'bg-gray-50 border-gray-100'
       }`}
     >
-      <div className={`font-bold text-sm mb-3 ${
+      <div className={`p-3 ${
         isCurrentMonth 
           ? isToday 
             ? 'text-white' 
             : 'text-black' 
           : 'text-gray-400'
       }`}>
-        {format(day, 'd')}
+        <div className="font-medium text-sm mb-2">
+          {format(day, 'd')}
+        </div>
+        
+        {trips.length > 0 && (
+          <TripIndicator
+            trips={trips}
+            onShowPopover={() => setShowPopover(true)}
+          />
+        )}
       </div>
-      
-      <div className="space-y-2">
-        {trips.map((trip) => (
-          <div key={trip.id} className="space-y-2">
-            <TripCard trip={trip} onAddPackage={onAddPackage} />
-          </div>
-        ))}
-      </div>
+
+      {showPopover && trips.length > 0 && (
+        <TripPopover
+          trips={trips}
+          onClose={() => setShowPopover(false)}
+          onAddPackage={onAddPackage}
+        />
+      )}
     </div>
   );
 }

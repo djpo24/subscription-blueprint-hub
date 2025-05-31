@@ -34,7 +34,7 @@ export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }:
         {weekDays.map((day) => (
           <div 
             key={day} 
-            className="p-4 text-center font-bold text-black text-sm bg-gray-100 rounded-lg"
+            className="p-3 text-center font-bold text-black text-sm bg-gray-100 rounded-lg"
           >
             {day}
           </div>

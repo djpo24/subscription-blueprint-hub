@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Trip {
@@ -28,7 +28,14 @@ export function CalendarView({ trips, isLoading, onAddPackage }: CalendarViewPro
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Obtener el primer día de la semana del calendario (domingo)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  // Obtener el último día de la semana del calendario
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  
+  // Generar todos los días que aparecerán en el calendario
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -149,7 +156,9 @@ export function CalendarView({ trips, isLoading, onAddPackage }: CalendarViewPro
                   isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
-                <div className="font-medium text-sm mb-2">
+                <div className={`font-medium text-sm mb-2 ${
+                  isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                }`}>
                   {format(day, 'd')}
                 </div>
                 

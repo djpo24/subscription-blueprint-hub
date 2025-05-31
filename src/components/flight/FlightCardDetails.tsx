@@ -1,6 +1,6 @@
 
 import { Clock, MapPin, Calendar, Plane } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { FlightData } from '@/types/flight';
 
 interface FlightCardDetailsProps {
@@ -11,7 +11,7 @@ export function FlightCardDetails({ flight }: FlightCardDetailsProps) {
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return 'No programado';
     try {
-      return format(new Date(dateTime), 'dd/MM/yyyy HH:mm');
+      return format(parseISO(dateTime), 'dd/MM/yyyy HH:mm');
     } catch {
       return 'Fecha inválida';
     }
@@ -20,8 +20,8 @@ export function FlightCardDetails({ flight }: FlightCardDetailsProps) {
   const getDelayStatus = (scheduled: string | null, actual: string | null) => {
     if (!scheduled || !actual) return null;
     
-    const scheduledTime = new Date(scheduled);
-    const actualTime = new Date(actual);
+    const scheduledTime = parseISO(scheduled);
+    const actualTime = parseISO(actual);
     const diffMinutes = Math.round((actualTime.getTime() - scheduledTime.getTime()) / (1000 * 60));
     
     if (diffMinutes > 30) {

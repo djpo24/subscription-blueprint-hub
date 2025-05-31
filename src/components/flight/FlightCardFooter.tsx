@@ -1,5 +1,5 @@
 
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { FlightData } from '@/types/flight';
 
 interface FlightCardFooterProps {
@@ -10,7 +10,7 @@ export function FlightCardFooter({ flight }: FlightCardFooterProps) {
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return 'No programado';
     try {
-      return format(new Date(dateTime), 'dd/MM/yyyy HH:mm');
+      return format(parseISO(dateTime), 'dd/MM/yyyy HH:mm');
     } catch {
       return 'Fecha inválida';
     }

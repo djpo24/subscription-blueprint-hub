@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Plane } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { FlightCard } from '../flight/FlightCard';
 import { FlightData } from '@/types/flight';
 
@@ -52,13 +52,20 @@ export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }:
     }
   };
 
+  // Formatear la fecha correctamente para evitar problemas de zona horaria
+  const formatTripDate = (dateString: string) => {
+    // Si la fecha es solo YYYY-MM-DD, agregar T00:00:00 para evitar problemas de UTC
+    const normalizedDate = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
+    return format(parseISO(normalizedDate), 'dd/MM/yyyy');
+  };
+
   return (
     <Card className="border-l-4 border-l-blue-500">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg">
-              {format(new Date(trip.trip_date), 'dd/MM/yyyy')} - {trip.origin} → {trip.destination}
+              {formatTripDate(trip.trip_date)} - {trip.origin} → {trip.destination}
             </CardTitle>
             <div className="flex items-center gap-2 mt-2">
               <Badge className={getStatusColor(trip.status)}>

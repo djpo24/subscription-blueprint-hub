@@ -237,9 +237,7 @@ export function PackageForm({
           <Input id="amountToCollect" type="text" value={formData.amountToCollectFormatted} onChange={handleAmountToCollectChange} placeholder="0" className="flex-1 h-14 text-xl font-semibold bg-white border-blue-300 focus:border-blue-500 placeholder:text-gray-400" />
         </div>
         
-        <p className="text-sm text-blue-700 italic">
-          Ingresa el monto que debe pagar el destinatario al recibir la encomienda
-        </p>
+        
       </div>
 
       {/* Optional description field with toggle - moved to bottom */}

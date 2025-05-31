@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,7 +198,7 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Product details fields */}
       <div>
         <Label>Detalles de productos *</Label>
@@ -252,12 +251,18 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
         </div>
       </div>
 
-      {/* Amount to collect with currency selection */}
-      <div>
-        <Label htmlFor="amountToCollect">Valor a cobrar</Label>
-        <div className="flex gap-2">
+      {/* Large Amount to collect section - made more prominent */}
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <Label htmlFor="amountToCollect" className="text-lg font-semibold text-blue-900">
+            Valor a Cobrar
+          </Label>
+        </div>
+        
+        <div className="flex gap-3">
           <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28 h-14 text-lg bg-white border-blue-300 focus:border-blue-500">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -271,9 +276,13 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
             value={formData.amountToCollectFormatted}
             onChange={handleAmountToCollectChange}
             placeholder="0"
-            className="flex-1"
+            className="flex-1 h-14 text-xl font-semibold bg-white border-blue-300 focus:border-blue-500 placeholder:text-gray-400"
           />
         </div>
+        
+        <p className="text-sm text-blue-700 italic">
+          Ingresa el monto que debe pagar el destinatario al recibir la encomienda
+        </p>
       </div>
 
       {/* Optional description field with toggle - moved to bottom */}

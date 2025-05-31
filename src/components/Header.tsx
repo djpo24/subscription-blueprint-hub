@@ -1,15 +1,13 @@
 
-import { Package, Search, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Package, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface HeaderProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  onNewPackageClick: () => void;
 }
 
-export function Header({ searchTerm, onSearchChange, onNewPackageClick }: HeaderProps) {
+export function Header({ searchTerm, onSearchChange }: HeaderProps) {
   return (
     <header className="uber-header">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -28,10 +26,6 @@ export function Header({ searchTerm, onSearchChange, onNewPackageClick }: Header
                 className="pl-10 w-64 uber-input"
               />
             </div>
-            <Button onClick={onNewPackageClick} className="uber-button-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Encomienda
-            </Button>
           </div>
         </div>
       </div>

@@ -68,7 +68,6 @@ const Index = () => {
       <Header 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onNewPackageClick={handleNewPackage}
       />
       
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">

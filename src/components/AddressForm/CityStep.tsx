@@ -12,19 +12,23 @@ interface CityStepProps {
 
 export function CityStep({ department, onCitySelect, onBackToDepartment }: CityStepProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h4 className="font-medium text-lg">Seleccionar Ciudad</h4>
-      <Button variant="outline" size="sm" onClick={onBackToDepartment} className="mb-2">
+      <Button variant="outline" size="sm" onClick={onBackToDepartment} className="mb-4">
         ← Cambiar Departamento ({department.name})
       </Button>
       <Select onValueChange={onCitySelect}>
-        <SelectTrigger>
+        <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona una ciudad" />
         </SelectTrigger>
-        <SelectContent className="max-h-60">
-          <ScrollArea className="h-full">
+        <SelectContent className="max-h-80 w-full">
+          <ScrollArea className="h-full max-h-72">
             {department.cities.map((city) => (
-              <SelectItem key={city.id} value={city.id}>
+              <SelectItem 
+                key={city.id} 
+                value={city.id}
+                className="py-3 px-4 text-base cursor-pointer hover:bg-gray-100"
+              >
                 {city.name}
               </SelectItem>
             ))}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -162,11 +161,11 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
             )}
           </div>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md backdrop-blur-sm">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] backdrop-blur-sm overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Dirección</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 min-h-[300px]">
             {renderCurrentStep()}
           </div>
         </DialogContent>

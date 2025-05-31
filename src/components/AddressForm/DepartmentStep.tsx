@@ -12,19 +12,23 @@ interface DepartmentStepProps {
 
 export function DepartmentStep({ country, onDepartmentSelect, onBackToCountry }: DepartmentStepProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h4 className="font-medium text-lg">Seleccionar Departamento</h4>
-      <Button variant="outline" size="sm" onClick={onBackToCountry} className="mb-2">
+      <Button variant="outline" size="sm" onClick={onBackToCountry} className="mb-4">
         ← Cambiar País ({country.name})
       </Button>
       <Select onValueChange={onDepartmentSelect}>
-        <SelectTrigger>
+        <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona un departamento" />
         </SelectTrigger>
-        <SelectContent className="max-h-60">
-          <ScrollArea className="h-full">
+        <SelectContent className="max-h-80 w-full">
+          <ScrollArea className="h-full max-h-72">
             {country.departments?.map((department) => (
-              <SelectItem key={department.id} value={department.id}>
+              <SelectItem 
+                key={department.id} 
+                value={department.id}
+                className="py-3 px-4 text-base cursor-pointer hover:bg-gray-100"
+              >
                 {department.name}
               </SelectItem>
             ))}

@@ -67,9 +67,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
   };
 
   return (
-    <div className="w-full border rounded-lg p-6 space-y-6 bg-gray-50">
-      <h4 className="font-medium text-lg">Crear Nuevo Cliente</h4>
-      
+    <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>

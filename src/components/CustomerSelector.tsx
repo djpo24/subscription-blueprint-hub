@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus } from 'lucide-react';
-import { InlineCustomerForm } from './InlineCustomerForm';
+import { CustomerFormDialog } from './CustomerFormDialog';
 
 interface CustomerSelectorProps {
   selectedCustomerId: string;
@@ -14,7 +14,7 @@ interface CustomerSelectorProps {
 }
 
 export function CustomerSelector({ selectedCustomerId, onCustomerChange }: CustomerSelectorProps) {
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
   // Fetch customers for the dropdown
   const { data: customers = [], refetch: refetchCustomers } = useQuery({
@@ -32,12 +32,11 @@ export function CustomerSelector({ selectedCustomerId, onCustomerChange }: Custo
 
   const handleCustomerCreated = (customerId: string) => {
     onCustomerChange(customerId);
-    setShowCustomerForm(false);
     refetchCustomers();
   };
 
   return (
-    <div className="space-y-4">
+    <>
       <div>
         <Label htmlFor="customer">Cliente</Label>
         <div className="flex gap-2">
@@ -61,19 +60,18 @@ export function CustomerSelector({ selectedCustomerId, onCustomerChange }: Custo
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setShowCustomerForm(true)}
+            onClick={() => setShowCustomerDialog(true)}
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {showCustomerForm && (
-        <InlineCustomerForm
-          onSuccess={handleCustomerCreated}
-          onCancel={() => setShowCustomerForm(false)}
-        />
-      )}
-    </div>
+      <CustomerFormDialog
+        open={showCustomerDialog}
+        onOpenChange={setShowCustomerDialog}
+        onSuccess={handleCustomerCreated}
+      />
+    </>
   );
 }

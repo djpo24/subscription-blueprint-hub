@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +25,9 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
   const [formData, setFormData] = useState({
     description: '',
     weight: '',
+    freight: '',
+    amountToCollect: '',
+    currency: 'COP', // Default to Colombian Pesos
     details: [''] // Array to store product details
   });
 
@@ -169,20 +173,85 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Weight field */}
+      {/* Product details fields */}
       <div>
-        <Label htmlFor="weight">Peso (kg)</Label>
-        <Input
-          id="weight"
-          type="number"
-          step="0.1"
-          value={formData.weight}
-          onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-          placeholder="0.0"
-        />
+        <Label>Detalles de productos *</Label>
+        <div className="space-y-2 mt-2">
+          {formData.details.map((detail, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Input
+                data-detail-index={index}
+                value={detail}
+                onChange={(e) => handleDetailChange(index, e.target.value)}
+                onBlur={() => handleDetailBlur(index)}
+                onKeyPress={(e) => handleDetailKeyPress(index, e)}
+                placeholder={`Producto ${index + 1}${index === 0 ? ' (requerido)' : ' (opcional)'}`}
+                required={index === 0}
+              />
+              <span className="text-sm text-gray-500 min-w-[40px]">
+                {index + 1}/20
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Presiona Enter o haz clic fuera del campo para agregar otro producto (máximo 20)
+        </p>
       </div>
 
-      {/* Optional description field with toggle */}
+      {/* Freight and Weight fields side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="freight">Flete (COP)</Label>
+          <Input
+            id="freight"
+            type="number"
+            step="0.01"
+            value={formData.freight}
+            onChange={(e) => setFormData(prev => ({ ...prev, freight: e.target.value }))}
+            placeholder="0.00"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="weight">Peso (kg)</Label>
+          <Input
+            id="weight"
+            type="number"
+            step="0.1"
+            value={formData.weight}
+            onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
+            placeholder="0.0"
+          />
+        </div>
+      </div>
+
+      {/* Amount to collect with currency selection */}
+      <div>
+        <Label htmlFor="amountToCollect">Valor a cobrar</Label>
+        <div className="flex gap-2">
+          <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COP">COP</SelectItem>
+              <SelectItem value="ANG">ANG</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            id="amountToCollect"
+            type="number"
+            step="0.01"
+            value={formData.amountToCollect}
+            onChange={(e) => setFormData(prev => ({ ...prev, amountToCollect: e.target.value }))}
+            placeholder="0.00"
+            className="flex-1"
+          />
+        </div>
+      </div>
+
+      {/* Optional description field with toggle - moved to bottom */}
       <div>
         <Button
           type="button"
@@ -216,32 +285,6 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
             />
           </div>
         )}
-      </div>
-
-      {/* Product details fields */}
-      <div>
-        <Label>Detalles de productos *</Label>
-        <div className="space-y-2 mt-2">
-          {formData.details.map((detail, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                data-detail-index={index}
-                value={detail}
-                onChange={(e) => handleDetailChange(index, e.target.value)}
-                onBlur={() => handleDetailBlur(index)}
-                onKeyPress={(e) => handleDetailKeyPress(index, e)}
-                placeholder={`Producto ${index + 1}${index === 0 ? ' (requerido)' : ' (opcional)'}`}
-                required={index === 0}
-              />
-              <span className="text-sm text-gray-500 min-w-[40px]">
-                {index + 1}/20
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Presiona Enter o haz clic fuera del campo para agregar otro producto (máximo 20)
-        </p>
       </div>
 
       <DialogFooter>

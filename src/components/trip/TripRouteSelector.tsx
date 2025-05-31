@@ -11,7 +11,7 @@ interface TripRouteSelectorProps {
 export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorProps) {
   return (
     <div className="space-y-2">
-      <Label htmlFor="route" className="text-sm font-medium text-gray-700">
+      <Label htmlFor="route" className="text-sm font-medium text-black">
         Viaje
       </Label>
       <Select 
@@ -19,22 +19,22 @@ export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorPro
         onValueChange={onValueChange}
         required
       >
-        <SelectTrigger className="h-12 bg-white border-gray-200 hover:bg-gray-50">
+        <SelectTrigger className="h-12 bg-gray-100 border-0 hover:bg-white focus:bg-white focus:ring-2 focus:ring-black rounded-lg">
           <SelectValue placeholder="Seleccionar viaje" />
         </SelectTrigger>
-        <SelectContent className="border-gray-200 shadow-xl">
-          <SelectItem value="Barranquilla-Curazao" className="h-12 cursor-pointer hover:bg-gray-50">
+        <SelectContent className="bg-white border-0 shadow-xl rounded-lg">
+          <SelectItem value="Barranquilla-Curazao" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
             <div className="flex items-center gap-3">
-              <span className="font-medium">Barranquilla</span>
+              <span className="font-medium text-black">Barranquilla</span>
               <ArrowRight className="h-4 w-4 text-gray-400" />
-              <span className="font-medium">Curazao</span>
+              <span className="font-medium text-black">Curazao</span>
             </div>
           </SelectItem>
-          <SelectItem value="Curazao-Barranquilla" className="h-12 cursor-pointer hover:bg-gray-50">
+          <SelectItem value="Curazao-Barranquilla" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
             <div className="flex items-center gap-3">
-              <span className="font-medium">Curazao</span>
+              <span className="font-medium text-black">Curazao</span>
               <ArrowRight className="h-4 w-4 text-gray-400" />
-              <span className="font-medium">Barranquilla</span>
+              <span className="font-medium text-black">Barranquilla</span>
             </div>
           </SelectItem>
         </SelectContent>

@@ -46,14 +46,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Header 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onNewPackageClick={handleCreatePackage}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <StatsGrid 
           packageStats={packageStats}
           customersCount={customersCount}

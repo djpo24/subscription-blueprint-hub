@@ -25,9 +25,9 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] uber-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[500px] uber-dialog">
         <DialogHeader className="space-y-3 pb-6">
-          <DialogTitle className="text-2xl font-bold text-gray-900">Nuevo Viaje</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-black">Nuevo Viaje</DialogTitle>
           <DialogDescription className="text-gray-600">
             Crea un nuevo viaje para agrupar encomiendas.
           </DialogDescription>
@@ -55,7 +55,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
           <DialogFooter className="gap-3 pt-6">
             <Button 
               type="button" 
-              variant="outline" 
+              variant="secondary" 
               onClick={() => onOpenChange(false)}
               className="flex-1"
             >
@@ -64,7 +64,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 uber-button-primary"
             >
               {isLoading ? 'Creando...' : 'Crear Viaje'}
             </Button>

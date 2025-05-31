@@ -14,8 +14,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
@@ -31,7 +31,7 @@
 
     --border: 0 0% 89%;
     --input: 0 0% 89%;
-    --ring: 0 0% 9%;
+    --ring: 0 0% 0%;
 
     --radius: 0.75rem;
 
@@ -90,12 +90,13 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-white text-black font-sans;
+    font-family: 'UberMove', 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight text-black;
   }
 
   h1 {
@@ -103,32 +104,36 @@
   }
 
   h2 {
-    @apply text-3xl font-semibold;
+    @apply text-3xl font-bold;
   }
 
   h3 {
-    @apply text-2xl font-semibold;
+    @apply text-2xl font-bold;
   }
 }
 
 @layer components {
-  .uber-button {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  .uber-header {
+    @apply bg-black text-white shadow-none border-0;
   }
-
+  
   .uber-button-primary {
-    @apply bg-black text-white hover:bg-gray-800 shadow-sm;
+    @apply bg-black text-white hover:bg-gray-900 rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   .uber-button-secondary {
-    @apply bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200;
+    @apply bg-gray-100 text-black hover:bg-gray-200 rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   .uber-input {
-    @apply flex h-12 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-base ring-offset-background placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-gray-100 border-0 rounded-lg px-4 py-4 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:ring-offset-0 shadow-none;
   }
 
   .uber-card {
-    @apply rounded-2xl border border-gray-100 bg-white shadow-sm;
+    @apply bg-white rounded-2xl border-0 shadow-sm;
+  }
+
+  .uber-dialog {
+    @apply bg-white rounded-2xl border-0 shadow-xl;
   }
 }

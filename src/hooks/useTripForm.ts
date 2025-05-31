@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useFlightMonitor } from '@/hooks/useFlightMonitor';
 import { format } from 'date-fns';
 
 interface TripFormData {
@@ -21,7 +20,6 @@ export function useTripForm(onSuccess: () => void) {
   const today = new Date();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { createFlightData } = useFlightMonitor();
 
   const updateFormData = (updates: Partial<TripFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -40,30 +38,66 @@ export function useTripForm(onSuccess: () => void) {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Trip created successfully:', data);
       
       // Si el viaje tiene número de vuelo, crear datos de monitoreo
       if (data.flight_number) {
-        const scheduledDeparture = new Date(data.trip_date);
-        scheduledDeparture.setHours(6, 0, 0, 0); // Hora por defecto 6:00 AM
-        
-        createFlightData({
-          flightNumber: data.flight_number,
-          origin: data.origin,
-          destination: data.destination,
-          scheduledDeparture: scheduledDeparture.toISOString()
+        try {
+          console.log('Creating flight data for monitoring:', data.flight_number);
+          
+          const scheduledDeparture = new Date(data.trip_date);
+          scheduledDeparture.setHours(6, 0, 0, 0); // Hora por defecto 6:00 AM
+          
+          const estimatedFlightDuration = 2 * 60 * 60 * 1000; // 2 horas por defecto
+          const scheduledArrival = new Date(scheduledDeparture.getTime() + estimatedFlightDuration);
+
+          const { data: flightData, error: flightError } = await supabase
+            .from('flight_data')
+            .insert({
+              flight_number: data.flight_number,
+              departure_airport: data.origin,
+              arrival_airport: data.destination,
+              scheduled_departure: scheduledDeparture.toISOString(),
+              scheduled_arrival: scheduledArrival.toISOString(),
+              status: 'scheduled',
+              has_landed: false,
+              notification_sent: false
+            })
+            .select()
+            .single();
+
+          if (flightError) {
+            console.error('Error creating flight data:', flightError);
+            toast({
+              title: "Advertencia",
+              description: "El viaje se creó pero no se pudo configurar el monitoreo del vuelo",
+              variant: "destructive"
+            });
+          } else {
+            console.log('Flight data created successfully:', flightData);
+            toast({
+              title: "Viaje creado",
+              description: "El viaje ha sido creado y se ha iniciado el monitoreo del vuelo",
+            });
+          }
+        } catch (error) {
+          console.error('Error in flight data creation:', error);
+          toast({
+            title: "Advertencia",
+            description: "El viaje se creó pero no se pudo configurar el monitoreo del vuelo",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Viaje creado",
+          description: "El viaje ha sido creado exitosamente",
         });
       }
       
       queryClient.invalidateQueries({ queryKey: ['trips'] });
-      
-      toast({
-        title: "Viaje creado",
-        description: data.flight_number 
-          ? "El viaje ha sido creado y se ha iniciado el monitoreo del vuelo"
-          : "El viaje ha sido creado exitosamente",
-      });
+      queryClient.invalidateQueries({ queryKey: ['pending-flight-notifications'] });
       
       // Reset form
       setFormData({ route: '', flight_number: '' });

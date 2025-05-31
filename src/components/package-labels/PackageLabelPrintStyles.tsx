@@ -42,7 +42,6 @@ export function PackageLabelPrintStyles() {
         @page {
           size: 4in 6in;
           margin: 0.25in;
-          page-break-after: always;
         }
         
         .label-item {
@@ -52,20 +51,22 @@ export function PackageLabelPrintStyles() {
           padding: 0 !important;
           display: block !important;
           position: relative !important;
-          page-break-before: always !important;
           page-break-after: always !important;
           page-break-inside: avoid !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
           background: white !important;
-        }
-        
-        .label-item:first-child {
-          page-break-before: avoid !important;
+          break-after: page !important;
         }
         
         .label-item:last-child {
-          page-break-after: avoid !important;
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        
+        /* Asegurar que cada etiqueta ocupe una página completa */
+        .multiple-labels-container .print-only {
+          page-break-before: auto !important;
         }
       }
     `}</style>

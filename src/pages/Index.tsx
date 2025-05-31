@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,7 +53,7 @@ const Index = () => {
 
   const handlePackageSuccess = () => {
     setPackageDialogOpen(false);
-    refetchPackages();
+    packagesData.refetch();
   };
 
   const handleTripSuccess = () => {
@@ -108,6 +109,7 @@ const Index = () => {
               packages={packagesData.data || []}
               filteredPackages={filteredPackages}
               isLoading={packagesData.isLoading}
+              onUpdate={handlePackagesUpdate}
             />
           </TabsContent>
           

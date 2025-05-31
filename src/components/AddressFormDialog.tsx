@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { locationData, Country, Department, City } from '@/types/LocationData';
 import { MapPin, Edit } from 'lucide-react';
 import { CountryStep } from './AddressForm/CountryStep';
-import { DepartmentStep } from './AddressForm/DepartmentStep';
-import { CityStep } from './AddressForm/CityStep';
+import { AllCitiesStep } from './AddressForm/AllCitiesStep';
 import { AddressStep } from './AddressForm/AddressStep';
+import { findCityById, findDepartmentByCity } from '@/utils/locationUtils';
 
 interface AddressFormDialogProps {
   value: string;
@@ -25,7 +25,7 @@ interface SelectedLocation {
 export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation>({});
-  const [step, setStep] = useState<'country' | 'department' | 'city' | 'address'>('country');
+  const [step, setStep] = useState<'country' | 'city' | 'address'>('country');
   const [addressInput, setAddressInput] = useState('');
 
   const resetSelection = () => {
@@ -43,22 +43,20 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
     if (country?.id === 'CW') {
       setStep('address');
     } else {
-      setStep('department');
+      setStep('city');
     }
-  };
-
-  const handleDepartmentSelect = (departmentId: string) => {
-    console.log('🔵 AddressFormDialog handleDepartmentSelect called with:', departmentId);
-    const department = selectedLocation.country?.departments?.find(d => d.id === departmentId);
-    setSelectedLocation(prev => ({ ...prev, department }));
-    setStep('city');
   };
 
   const handleCitySelect = (cityId: string) => {
     console.log('🔵 AddressFormDialog handleCitySelect called with:', cityId);
-    const city = selectedLocation.department?.cities.find(c => c.id === cityId);
-    setSelectedLocation(prev => ({ ...prev, city }));
-    setStep('address');
+    const cityWithDept = findCityById(cityId);
+    const department = findDepartmentByCity(cityId);
+    
+    if (cityWithDept && department) {
+      const city = { id: cityWithDept.id, name: cityWithDept.name };
+      setSelectedLocation(prev => ({ ...prev, city, department }));
+      setStep('address');
+    }
   };
 
   const handleAddressSubmit = (address: string) => {
@@ -106,21 +104,11 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
       case 'country':
         return <CountryStep onCountrySelect={handleCountrySelect} />;
       
-      case 'department':
-        return selectedLocation.country && (
-          <DepartmentStep
-            country={selectedLocation.country}
-            onDepartmentSelect={handleDepartmentSelect}
-            onBackToCountry={() => setStep('country')}
-          />
-        );
-      
       case 'city':
-        return selectedLocation.department && (
-          <CityStep
-            department={selectedLocation.department}
+        return selectedLocation.country && (
+          <AllCitiesStep
             onCitySelect={handleCitySelect}
-            onBackToDepartment={() => setStep('department')}
+            onBackToCountry={() => setStep('country')}
           />
         );
       

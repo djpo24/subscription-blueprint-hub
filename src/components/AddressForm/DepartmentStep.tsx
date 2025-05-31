@@ -37,17 +37,19 @@ export function DepartmentStep({ country, onDepartmentSelect, onBackToCountry }:
         <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona un departamento" />
         </SelectTrigger>
-        <SelectContent className="max-h-80 w-full">
-          <ScrollArea className="h-full max-h-72">
-            {country.departments?.map((department) => (
-              <SelectItem 
-                key={department.id} 
-                value={department.id}
-                className="py-3 px-4 text-base cursor-pointer hover:bg-gray-100"
-              >
-                {department.name}
-              </SelectItem>
-            ))}
+        <SelectContent className="max-h-96 w-full z-50 bg-white">
+          <ScrollArea className="h-full max-h-80">
+            <div className="p-1">
+              {country.departments?.map((department) => (
+                <SelectItem 
+                  key={department.id} 
+                  value={department.id}
+                  className="py-3 px-4 text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                >
+                  {department.name}
+                </SelectItem>
+              ))}
+            </div>
           </ScrollArea>
         </SelectContent>
       </Select>

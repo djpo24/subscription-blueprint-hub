@@ -54,8 +54,10 @@ export type Database = {
           created_at: string
           departure_airport: string
           flight_number: string
+          has_landed: boolean | null
           id: string
           last_updated: string
+          notification_sent: boolean | null
           scheduled_arrival: string | null
           scheduled_departure: string | null
           status: string
@@ -68,8 +70,10 @@ export type Database = {
           created_at?: string
           departure_airport: string
           flight_number: string
+          has_landed?: boolean | null
           id?: string
           last_updated?: string
+          notification_sent?: boolean | null
           scheduled_arrival?: string | null
           scheduled_departure?: string | null
           status?: string
@@ -82,13 +86,101 @@ export type Database = {
           created_at?: string
           departure_airport?: string
           flight_number?: string
+          has_landed?: boolean | null
           id?: string
           last_updated?: string
+          notification_sent?: boolean | null
           scheduled_arrival?: string | null
           scheduled_departure?: string | null
           status?: string
         }
         Relationships: []
+      }
+      notification_log: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          message: string
+          notification_type: string
+          package_id: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          notification_type?: string
+          package_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          package_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          enable_arrival_notifications: boolean | null
+          id: string
+          trip_id: string | null
+          updated_at: string
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          enable_arrival_notifications?: boolean | null
+          id?: string
+          trip_id?: string | null
+          updated_at?: string
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          enable_arrival_notifications?: boolean | null
+          id?: string
+          trip_id?: string | null
+          updated_at?: string
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -283,7 +375,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      process_arrival_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

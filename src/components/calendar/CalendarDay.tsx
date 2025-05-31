@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { isSameMonth, format, isToday } from 'date-fns';
 import { TripIndicator } from './TripIndicator';
@@ -44,10 +43,11 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
         onClick={handleDayClick}
         className={`
           relative min-h-[60px] md:min-h-[80px] p-1 md:p-2 border rounded-lg
-          ${isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'}
-          ${isTodayDate ? 'bg-black border-black' : ''}
-          ${trips.length > 0 ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}
-          ${isTodayDate && trips.length > 0 ? 'hover:bg-gray-900' : ''}
+          ${!isTodayDate && isCurrentMonth ? 'bg-white border-gray-200' : ''}
+          ${!isTodayDate && !isCurrentMonth ? 'bg-gray-50 border-gray-100' : ''}
+          ${!isTodayDate && trips.length > 0 ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}
+          ${isTodayDate ? 'bg-black border-black cursor-pointer' : ''}
+          ${trips.length > 0 && !isTodayDate ? '' : trips.length > 0 ? 'cursor-pointer' : ''}
         `}
       >
         <div className={`text-xs md:text-sm font-medium 

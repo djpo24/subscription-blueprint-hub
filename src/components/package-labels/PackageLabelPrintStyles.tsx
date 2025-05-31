@@ -15,6 +15,7 @@ export function PackageLabelPrintStyles() {
         * {
           -webkit-print-color-adjust: exact !important;
           color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         
         body * {
@@ -41,23 +42,30 @@ export function PackageLabelPrintStyles() {
         @page {
           size: 4in 6in;
           margin: 0.25in;
+          page-break-after: always;
         }
         
         .label-item {
           width: 4in !important;
           height: 6in !important;
           margin: 0 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          justify-content: space-between !important;
+          padding: 0 !important;
+          display: block !important;
+          position: relative !important;
+          page-break-before: always !important;
           page-break-after: always !important;
           page-break-inside: avoid !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
+          background: white !important;
+        }
+        
+        .label-item:first-child {
+          page-break-before: avoid !important;
         }
         
         .label-item:last-child {
-          page-break-after: auto !important;
+          page-break-after: avoid !important;
         }
       }
     `}</style>

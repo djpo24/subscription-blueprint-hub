@@ -4,46 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PhoneNumberInput } from './PhoneNumberInput';
+import { CustomerFormData, initialCustomerFormData } from '@/types/CustomerFormData';
 
 interface InlineCustomerFormProps {
   onSuccess: (customerId: string) => void;
   onCancel: () => void;
 }
 
-const countryCodes = [
-  { code: '+1', country: 'US', flag: '🇺🇸' },
-  { code: '+1', country: 'CA', flag: '🇨🇦' },
-  { code: '+52', country: 'MX', flag: '🇲🇽' },
-  { code: '+33', country: 'FR', flag: '🇫🇷' },
-  { code: '+34', country: 'ES', flag: '🇪🇸' },
-  { code: '+39', country: 'IT', flag: '🇮🇹' },
-  { code: '+49', country: 'DE', flag: '🇩🇪' },
-  { code: '+44', country: 'GB', flag: '🇬🇧' },
-  { code: '+57', country: 'CO', flag: '🇨🇴' },
-  { code: '+51', country: 'PE', flag: '🇵🇪' },
-  { code: '+54', country: 'AR', flag: '🇦🇷' },
-  { code: '+55', country: 'BR', flag: '🇧🇷' },
-  { code: '+56', country: 'CL', flag: '🇨🇱' },
-  { code: '+58', country: 'VE', flag: '🇻🇪' },
-];
-
 export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    idNumber: '',
-    countryCode: '+57',
-    phoneNumber: '',
-    whatsappNumber: '',
-    email: '',
-    address: ''
-  });
+  const [formData, setFormData] = useState<CustomerFormData>(initialCustomerFormData);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +62,10 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
     }
   };
 
+  const updateFormData = (field: keyof CustomerFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
       <h4 className="font-medium">Crear Nuevo Cliente</h4>
@@ -99,7 +77,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
             <Input
               id="firstName"
               value={formData.firstName}
-              onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+              onChange={(e) => updateFormData('firstName', e.target.value)}
               required
             />
           </div>
@@ -109,7 +87,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
             <Input
               id="lastName"
               value={formData.lastName}
-              onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+              onChange={(e) => updateFormData('lastName', e.target.value)}
               required
             />
           </div>
@@ -121,7 +99,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
             <Input
               id="idNumber"
               value={formData.idNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, idNumber: e.target.value }))}
+              onChange={(e) => updateFormData('idNumber', e.target.value)}
               placeholder="Número de identificación"
             />
           </div>
@@ -132,57 +110,34 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => updateFormData('email', e.target.value)}
               required
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="phone">Teléfono *</Label>
-            <div className="flex gap-2">
-              <Select 
-                value={formData.countryCode} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {countryCodes.map((country, index) => (
-                    <SelectItem key={`${country.code}-${index}`} value={country.code}>
-                      {country.flag} {country.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                id="phone"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                placeholder="Número de teléfono"
-                className="flex-1"
-                required
-              />
-            </div>
-          </div>
+          <PhoneNumberInput
+            label="Teléfono"
+            id="phone"
+            countryCode={formData.countryCode}
+            phoneNumber={formData.phoneNumber}
+            onCountryCodeChange={(value) => updateFormData('countryCode', value)}
+            onPhoneNumberChange={(value) => updateFormData('phoneNumber', value)}
+            placeholder="Número de teléfono"
+            required
+          />
 
-          <div>
-            <Label htmlFor="whatsapp">WhatsApp (Opcional)</Label>
-            <div className="flex gap-2">
-              <div className="w-24 flex items-center justify-center border rounded-md bg-gray-100 text-sm">
-                {formData.countryCode}
-              </div>
-              <Input
-                id="whatsapp"
-                value={formData.whatsappNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                placeholder="Número WhatsApp"
-                className="flex-1"
-              />
-            </div>
-          </div>
+          <PhoneNumberInput
+            label="WhatsApp (Opcional)"
+            id="whatsapp"
+            countryCode={formData.countryCode}
+            phoneNumber={formData.whatsappNumber}
+            onCountryCodeChange={(value) => updateFormData('countryCode', value)}
+            onPhoneNumberChange={(value) => updateFormData('whatsappNumber', value)}
+            placeholder="Número WhatsApp"
+            showCountryCodeSelector={false}
+          />
         </div>
 
         <div>
@@ -190,7 +145,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
           <Textarea
             id="address"
             value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+            onChange={(e) => updateFormData('address', e.target.value)}
             placeholder="Dirección completa..."
           />
         </div>

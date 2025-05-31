@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,9 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showMultipleLabelsDialog, setShowMultipleLabelsDialog] = useState(false);
+
+  // Ensure filteredPackages is always an array
+  const safeFilteredPackages = filteredPackages || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -114,7 +118,7 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
               onClick={() => setShowMultipleLabelsDialog(true)}
               variant="outline"
               className="flex items-center gap-2"
-              disabled={filteredPackages.length === 0}
+              disabled={safeFilteredPackages.length === 0}
             >
               <Printer className="h-4 w-4" />
               Imprimir Múltiples
@@ -140,7 +144,7 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPackages.map((pkg) => (
+                {safeFilteredPackages.map((pkg) => (
                   <TableRow 
                     key={pkg.id} 
                     className={`hover:bg-gray-50 ${
@@ -194,7 +198,7 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
       <MultipleLabelsDialog
         open={showMultipleLabelsDialog}
         onOpenChange={setShowMultipleLabelsDialog}
-        packages={filteredPackages}
+        packages={safeFilteredPackages}
       />
     </>
   );

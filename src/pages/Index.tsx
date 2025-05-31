@@ -33,8 +33,8 @@ const Index = () => {
   const { data: customersCount = 0 } = useCustomersCount();
   const { data: packageStats } = usePackageStats();
 
-  // Filter packages based on search term
-  const filteredPackages = packagesData.data?.filter(pkg => 
+  // Filter packages based on search term - ensure we always return an array
+  const filteredPackages = (packagesData.data || []).filter(pkg => 
     pkg.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pkg.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pkg.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||

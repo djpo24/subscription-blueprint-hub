@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { StatsGrid } from '@/components/StatsGrid';
 import { PackagesTable } from '@/components/PackagesTable';
-import { TripsTable } from '@/components/TripsTable';
+import { CalendarView } from '@/components/CalendarView';
 import { QuickActions } from '@/components/QuickActions';
 import { PackageDialog } from '@/components/PackageDialog';
 import { TripDialog } from '@/components/TripDialog';
@@ -60,7 +60,7 @@ const Index = () => {
         />
 
         <div className="mt-8">
-          <TripsTable 
+          <CalendarView 
             trips={trips}
             isLoading={tripsLoading}
             onAddPackage={handleAddPackageToTrip}

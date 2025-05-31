@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +11,7 @@ interface FlightData {
   notification_sent: boolean;
   departure_airport: string;
   arrival_airport: string;
+  scheduled_departure: string | null;
 }
 
 export function useFlightNotifications() {

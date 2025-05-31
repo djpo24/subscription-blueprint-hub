@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,11 +28,15 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
   
   const [formData, setFormData] = useState({
     origin: '',
-    destination: '',
     flight_number: ''
   });
 
   const today = startOfToday();
+
+  // Function to automatically determine destination based on origin
+  const getDestination = (origin: string) => {
+    return origin === 'Barranquilla' ? 'Curazao' : 'Barranquilla';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,15 +49,26 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
       return;
     }
 
+    if (!formData.origin) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona el origen",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const destination = getDestination(formData.origin);
+      
       const { error } = await supabase
         .from('trips')
         .insert([{
           trip_date: format(date, 'yyyy-MM-dd'),
           origin: formData.origin,
-          destination: formData.destination,
+          destination: destination,
           flight_number: formData.flight_number || null,
           status: 'scheduled'
         }]);
@@ -61,13 +77,12 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
 
       toast({
         title: "Viaje creado",
-        description: "El viaje ha sido creado exitosamente",
+        description: `Viaje de ${formData.origin} a ${destination} creado exitosamente`,
       });
 
       // Reset form
       setFormData({
         origin: '',
-        destination: '',
         flight_number: ''
       });
       setDate(undefined);
@@ -134,40 +149,26 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
             </Popover>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="origin">Origen</Label>
-              <Select 
-                value={formData.origin} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, origin: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar origen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Barranquilla">Barranquilla</SelectItem>
-                  <SelectItem value="Curazao">Curazao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="destination">Destino</Label>
-              <Select 
-                value={formData.destination} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, destination: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar destino" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Barranquilla">Barranquilla</SelectItem>
-                  <SelectItem value="Curazao">Curazao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="origin">Origen</Label>
+            <Select 
+              value={formData.origin} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, origin: value }))}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar origen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Barranquilla">Barranquilla</SelectItem>
+                <SelectItem value="Curazao">Curazao</SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.origin && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Destino: {getDestination(formData.origin)}
+              </p>
+            )}
           </div>
 
           <div>
@@ -193,3 +194,4 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
     </Dialog>
   );
 }
+

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -28,12 +29,14 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
   const [addressInput, setAddressInput] = useState('');
 
   const resetSelection = () => {
+    console.log('🔵 AddressFormDialog resetSelection called');
     setSelectedLocation({});
     setStep('country');
     setAddressInput('');
   };
 
   const handleCountrySelect = (countryId: string) => {
+    console.log('🔵 AddressFormDialog handleCountrySelect called with:', countryId);
     const country = locationData.find(c => c.id === countryId);
     setSelectedLocation({ country });
     
@@ -45,18 +48,21 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
   };
 
   const handleDepartmentSelect = (departmentId: string) => {
+    console.log('🔵 AddressFormDialog handleDepartmentSelect called with:', departmentId);
     const department = selectedLocation.country?.departments?.find(d => d.id === departmentId);
     setSelectedLocation(prev => ({ ...prev, department }));
     setStep('city');
   };
 
   const handleCitySelect = (cityId: string) => {
+    console.log('🔵 AddressFormDialog handleCitySelect called with:', cityId);
     const city = selectedLocation.department?.cities.find(c => c.id === cityId);
     setSelectedLocation(prev => ({ ...prev, city }));
     setStep('address');
   };
 
   const handleAddressSubmit = (address: string) => {
+    console.log('🔵 AddressFormDialog handleAddressSubmit called with:', address);
     setSelectedLocation(prev => ({ ...prev, address }));
     
     let fullAddress = '';
@@ -67,9 +73,18 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
       fullAddress = `${locationPart} - ${address}`;
     }
     
+    console.log('🔵 AddressFormDialog calling onChange with:', fullAddress);
     onChange(fullAddress);
     setIsOpen(false);
     resetSelection();
+  };
+
+  const handleDialogTriggerClick = (e: React.MouseEvent) => {
+    console.log('🔵 AddressFormDialog trigger clicked');
+    e.preventDefault();
+    e.stopPropagation();
+    resetSelection();
+    setIsOpen(true);
   };
 
   const getLocationDisplay = () => {
@@ -136,12 +151,10 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
           <div className="mt-1">
             {!displayData ? (
               <Button
+                type="button"
                 variant="outline"
                 className="w-full justify-start text-left font-normal"
-                onClick={() => {
-                  resetSelection();
-                  setIsOpen(true);
-                }}
+                onClick={handleDialogTriggerClick}
               >
                 <MapPin className="mr-2 h-4 w-4" />
                 Seleccionar dirección
@@ -149,10 +162,15 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="bg-black text-white px-3 py-2 rounded text-sm font-medium flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="bg-black text-white px-3 py-2 rounded text-sm font-medium flex items-center gap-2"
+                    onClick={handleDialogTriggerClick}
+                  >
                     {displayData.locationPart}
                     <Edit className="h-3 w-3 cursor-pointer" />
-                  </div>
+                  </Button>
                 </div>
                 <div className="text-sm text-gray-600 border rounded px-3 py-2 bg-gray-50">
                   {displayData.addressPart}

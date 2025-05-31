@@ -11,13 +11,29 @@ interface DepartmentStepProps {
 }
 
 export function DepartmentStep({ country, onDepartmentSelect, onBackToCountry }: DepartmentStepProps) {
+  const handleDepartmentChange = (departmentId: string) => {
+    console.log('🟣 DepartmentStep department selected:', departmentId);
+    onDepartmentSelect(departmentId);
+  };
+
   return (
     <div className="space-y-6">
       <h4 className="font-medium text-lg">Seleccionar Departamento</h4>
-      <Button variant="outline" size="sm" onClick={onBackToCountry} className="mb-4">
+      <Button 
+        type="button"
+        variant="outline" 
+        size="sm" 
+        onClick={(e) => {
+          console.log('🟣 DepartmentStep back to country clicked');
+          e.preventDefault();
+          e.stopPropagation();
+          onBackToCountry();
+        }} 
+        className="mb-4"
+      >
         ← Cambiar País ({country.name})
       </Button>
-      <Select onValueChange={onDepartmentSelect}>
+      <Select onValueChange={handleDepartmentChange}>
         <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona un departamento" />
         </SelectTrigger>

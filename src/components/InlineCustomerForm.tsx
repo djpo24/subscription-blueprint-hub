@@ -22,7 +22,14 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
   const [formData, setFormData] = useState<CustomerFormData>(initialCustomerFormData);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🔴 InlineCustomerForm handleSubmit called!');
+    console.log('🔴 Event type:', e.type);
+    console.log('🔴 Event target:', e.target);
+    console.log('🔴 Event currentTarget:', e.currentTarget);
+    console.log('🔴 Stack trace:', new Error().stack);
+    
     e.preventDefault();
+    e.stopPropagation();
     setIsLoading(true);
 
     try {
@@ -64,6 +71,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
   };
 
   const updateFormData = (field: keyof CustomerFormData, value: string) => {
+    console.log('🟡 updateFormData called for field:', field, 'with value:', value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -126,7 +134,10 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setShowEmailField(true)}
+              onClick={() => {
+                console.log('🟢 Email button clicked');
+                setShowEmailField(true);
+              }}
               className="flex items-center gap-2"
             >
               <Mail className="h-4 w-4" />
@@ -150,7 +161,10 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
         <div>
           <AddressSelector
             value={formData.address}
-            onChange={(value) => updateFormData('address', value)}
+            onChange={(value) => {
+              console.log('🟢 AddressSelector onChange called with value:', value);
+              updateFormData('address', value);
+            }}
           />
         </div>
 
@@ -158,7 +172,17 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
           <Button type="submit" disabled={isLoading} className="px-6">
             {isLoading ? 'Creando...' : 'Crear Cliente'}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel} className="px-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={(e) => {
+              console.log('🟢 Cancel button clicked');
+              e.preventDefault();
+              e.stopPropagation();
+              onCancel();
+            }} 
+            className="px-6"
+          >
             Cancelar
           </Button>
         </div>

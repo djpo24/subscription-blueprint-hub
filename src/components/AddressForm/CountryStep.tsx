@@ -7,10 +7,15 @@ interface CountryStepProps {
 }
 
 export function CountryStep({ onCountrySelect }: CountryStepProps) {
+  const handleCountryChange = (countryId: string) => {
+    console.log('🟣 CountryStep country selected:', countryId);
+    onCountrySelect(countryId);
+  };
+
   return (
     <div className="space-y-6">
       <h4 className="font-medium text-lg">Seleccionar País</h4>
-      <Select onValueChange={onCountrySelect}>
+      <Select onValueChange={handleCountryChange}>
         <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona un país" />
         </SelectTrigger>

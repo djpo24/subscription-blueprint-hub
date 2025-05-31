@@ -11,13 +11,29 @@ interface CityStepProps {
 }
 
 export function CityStep({ department, onCitySelect, onBackToDepartment }: CityStepProps) {
+  const handleCityChange = (cityId: string) => {
+    console.log('🟣 CityStep city selected:', cityId);
+    onCitySelect(cityId);
+  };
+
   return (
     <div className="space-y-6">
       <h4 className="font-medium text-lg">Seleccionar Ciudad</h4>
-      <Button variant="outline" size="sm" onClick={onBackToDepartment} className="mb-4">
+      <Button 
+        type="button"
+        variant="outline" 
+        size="sm" 
+        onClick={(e) => {
+          console.log('🟣 CityStep back to department clicked');
+          e.preventDefault();
+          e.stopPropagation();
+          onBackToDepartment();
+        }} 
+        className="mb-4"
+      >
         ← Cambiar Departamento ({department.name})
       </Button>
-      <Select onValueChange={onCitySelect}>
+      <Select onValueChange={handleCityChange}>
         <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona una ciudad" />
         </SelectTrigger>

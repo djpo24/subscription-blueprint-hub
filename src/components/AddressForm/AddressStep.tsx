@@ -25,45 +25,89 @@ export function AddressStep({
   onBackToCity,
   onBackToCountry
 }: AddressStepProps) {
+  const handleSubmit = (e: React.FormEvent) => {
+    console.log('🟠 AddressStep handleSubmit called');
+    e.preventDefault();
+    e.stopPropagation();
+    onAddressSubmit(addressInput);
+  };
+
   return (
     <div className="space-y-4">
       <h4 className="font-medium text-lg">Agregar Dirección</h4>
       {country.id !== 'CW' && onBackToCity && (
-        <Button variant="outline" size="sm" onClick={onBackToCity} className="mb-2">
+        <Button 
+          type="button"
+          variant="outline" 
+          size="sm" 
+          onClick={(e) => {
+            console.log('🟠 AddressStep back to city clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            onBackToCity();
+          }} 
+          className="mb-2"
+        >
           ← Cambiar Ciudad ({city?.name})
         </Button>
       )}
       {country.id === 'CW' && onBackToCountry && (
-        <Button variant="outline" size="sm" onClick={onBackToCountry} className="mb-2">
+        <Button 
+          type="button"
+          variant="outline" 
+          size="sm" 
+          onClick={(e) => {
+            console.log('🟠 AddressStep back to country clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            onBackToCountry();
+          }} 
+          className="mb-2"
+        >
           ← Cambiar País ({country.name})
         </Button>
       )}
-      <div>
-        <Label htmlFor="street-address">Dirección Específica</Label>
-        <Input
-          id="street-address"
-          value={addressInput}
-          onChange={(e) => onAddressInputChange(e.target.value)}
-          placeholder="Ingresa la dirección específica..."
-          className="mt-1"
-        />
-      </div>
-      <div className="flex gap-3 pt-4">
-        <Button 
-          onClick={() => onAddressSubmit(addressInput)} 
-          disabled={!addressInput.trim()}
-          className="flex-1"
-        >
-          Confirmar Dirección
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={onCancel}
-          className="flex-1"
-        >
-          Cancelar
-        </Button>
-      </div>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <Label htmlFor="street-address">Dirección Específica</Label>
+          <Input
+            id="street-address"
+            value={addressInput}
+            onChange={(e) => {
+              console.log('🟠 AddressStep input changed:', e.target.value);
+              onAddressInputChange(e.target.value);
+            }}
+            placeholder="Ingresa la dirección específica..."
+            className="mt-1"
+          />
+        </div>
+        <div className="flex gap-3 pt-4">
+          <Button 
+            type="submit"
+            disabled={!addressInput.trim()}
+            className="flex-1"
+            onClick={(e) => {
+              console.log('🟠 AddressStep confirm button clicked');
+              // Let the form submit handle this
+            }}
+          >
+            Confirmar Dirección
+          </Button>
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={(e) => {
+              console.log('🟠 AddressStep cancel clicked');
+              e.preventDefault();
+              e.stopPropagation();
+              onCancel();
+            }}
+            className="flex-1"
+          >
+            Cancelar
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { StatsGrid } from '@/components/StatsGrid';
 import { QuickActions } from '@/components/QuickActions';
 import { PackagesTable } from '@/components/PackagesTable';
 import { TripsTable } from '@/components/TripsTable';
+import { CalendarView } from '@/components/CalendarView';
 import { FlightNotificationPanel } from '@/components/FlightNotificationPanel';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { PackageDialog } from '@/components/PackageDialog';
@@ -105,6 +106,11 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="trips" className="space-y-8">
+            <CalendarView 
+              trips={trips}
+              isLoading={tripsLoading}
+              onAddPackage={handleAddPackageToTrip}
+            />
             <TripsTable 
               trips={trips}
               isLoading={tripsLoading}

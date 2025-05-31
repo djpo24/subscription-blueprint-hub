@@ -1,12 +1,14 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { locationData, Country, Department, City } from '@/types/LocationData';
 import { MapPin, Edit } from 'lucide-react';
+import { CountryStep } from './AddressForm/CountryStep';
+import { DepartmentStep } from './AddressForm/DepartmentStep';
+import { CityStep } from './AddressForm/CityStep';
+import { AddressStep } from './AddressForm/AddressStep';
 
 interface AddressFormDialogProps {
   value: string;
@@ -85,112 +87,46 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
 
   const displayData = getLocationDisplay();
 
-  const renderCountryStep = () => (
-    <div className="space-y-4">
-      <h4 className="font-medium text-lg">Seleccionar País</h4>
-      <Select onValueChange={handleCountrySelect}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecciona un país" />
-        </SelectTrigger>
-        <SelectContent>
-          {locationData.map((country) => (
-            <SelectItem key={country.id} value={country.id}>
-              {country.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  const renderDepartmentStep = () => (
-    <div className="space-y-4">
-      <h4 className="font-medium text-lg">Seleccionar Departamento</h4>
-      <Button variant="outline" size="sm" onClick={() => setStep('country')} className="mb-2">
-        ← Cambiar País ({selectedLocation.country?.name})
-      </Button>
-      <Select onValueChange={handleDepartmentSelect}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecciona un departamento" />
-        </SelectTrigger>
-        <SelectContent className="max-h-60">
-          <ScrollArea className="h-full">
-            {selectedLocation.country?.departments?.map((department) => (
-              <SelectItem key={department.id} value={department.id}>
-                {department.name}
-              </SelectItem>
-            ))}
-          </ScrollArea>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  const renderCityStep = () => (
-    <div className="space-y-4">
-      <h4 className="font-medium text-lg">Seleccionar Ciudad</h4>
-      <Button variant="outline" size="sm" onClick={() => setStep('department')} className="mb-2">
-        ← Cambiar Departamento ({selectedLocation.department?.name})
-      </Button>
-      <Select onValueChange={handleCitySelect}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecciona una ciudad" />
-        </SelectTrigger>
-        <SelectContent className="max-h-60">
-          <ScrollArea className="h-full">
-            {selectedLocation.department?.cities.map((city) => (
-              <SelectItem key={city.id} value={city.id}>
-                {city.name}
-              </SelectItem>
-            ))}
-          </ScrollArea>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  const renderAddressStep = () => {
-    return (
-      <div className="space-y-4">
-        <h4 className="font-medium text-lg">Agregar Dirección</h4>
-        {selectedLocation.country?.id !== 'CW' && (
-          <Button variant="outline" size="sm" onClick={() => setStep('city')} className="mb-2">
-            ← Cambiar Ciudad ({selectedLocation.city?.name})
-          </Button>
-        )}
-        {selectedLocation.country?.id === 'CW' && (
-          <Button variant="outline" size="sm" onClick={() => setStep('country')} className="mb-2">
-            ← Cambiar País ({selectedLocation.country?.name})
-          </Button>
-        )}
-        <div>
-          <Label htmlFor="street-address">Dirección Específica</Label>
-          <Input
-            id="street-address"
-            value={addressInput}
-            onChange={(e) => setAddressInput(e.target.value)}
-            placeholder="Ingresa la dirección específica..."
-            className="mt-1"
+  const renderCurrentStep = () => {
+    switch (step) {
+      case 'country':
+        return <CountryStep onCountrySelect={handleCountrySelect} />;
+      
+      case 'department':
+        return selectedLocation.country && (
+          <DepartmentStep
+            country={selectedLocation.country}
+            onDepartmentSelect={handleDepartmentSelect}
+            onBackToCountry={() => setStep('country')}
           />
-        </div>
-        <div className="flex gap-3 pt-4">
-          <Button 
-            onClick={() => handleAddressSubmit(addressInput)} 
-            disabled={!addressInput.trim()}
-            className="flex-1"
-          >
-            Confirmar Dirección
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setIsOpen(false)}
-            className="flex-1"
-          >
-            Cancelar
-          </Button>
-        </div>
-      </div>
-    );
+        );
+      
+      case 'city':
+        return selectedLocation.department && (
+          <CityStep
+            department={selectedLocation.department}
+            onCitySelect={handleCitySelect}
+            onBackToDepartment={() => setStep('department')}
+          />
+        );
+      
+      case 'address':
+        return selectedLocation.country && (
+          <AddressStep
+            country={selectedLocation.country}
+            city={selectedLocation.city}
+            addressInput={addressInput}
+            onAddressInputChange={setAddressInput}
+            onAddressSubmit={handleAddressSubmit}
+            onCancel={() => setIsOpen(false)}
+            onBackToCity={selectedLocation.country.id !== 'CW' ? () => setStep('city') : undefined}
+            onBackToCountry={selectedLocation.country.id === 'CW' ? () => setStep('country') : undefined}
+          />
+        );
+      
+      default:
+        return null;
+    }
   };
 
   return (
@@ -231,10 +167,7 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
             <DialogTitle>Configurar Dirección</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {step === 'country' && renderCountryStep()}
-            {step === 'department' && renderDepartmentStep()}
-            {step === 'city' && renderCityStep()}
-            {step === 'address' && renderAddressStep()}
+            {renderCurrentStep()}
           </div>
         </DialogContent>
       </Dialog>

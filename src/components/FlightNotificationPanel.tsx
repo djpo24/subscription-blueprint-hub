@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { useFlightNotifications } from '@/hooks/useFlightNotifications';
 import { useFlightMonitor } from '@/hooks/useFlightMonitor';
-import { Bell, Plane, Send, Play, RefreshCw } from 'lucide-react';
+import { Bell, Plane, Send, Play, RefreshCw, Clock, MapPin, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function FlightNotificationPanel() {
@@ -47,11 +47,44 @@ export function FlightNotificationPanel() {
     return "En Vuelo";
   };
 
+  const getStatusIcon = (hasLanded: boolean, notificationSent: boolean) => {
+    if (notificationSent) {
+      return "✅";
+    } else if (hasLanded) {
+      return "🛬";
+    }
+    return "✈️";
+  };
+
   const handleTestNotification = () => {
     if (!testPhone.trim()) {
       return;
     }
     sendTestNotification({ phone: testPhone, message: testMessage });
+  };
+
+  const formatDateTime = (dateTime: string | null) => {
+    if (!dateTime) return 'No programado';
+    try {
+      return format(new Date(dateTime), 'dd/MM/yyyy HH:mm');
+    } catch {
+      return 'Fecha inválida';
+    }
+  };
+
+  const getDelayStatus = (scheduled: string | null, actual: string | null) => {
+    if (!scheduled || !actual) return null;
+    
+    const scheduledTime = new Date(scheduled);
+    const actualTime = new Date(actual);
+    const diffMinutes = Math.round((actualTime.getTime() - scheduledTime.getTime()) / (1000 * 60));
+    
+    if (diffMinutes > 30) {
+      return { status: 'delayed', minutes: diffMinutes, color: 'text-red-600' };
+    } else if (diffMinutes < -15) {
+      return { status: 'early', minutes: Math.abs(diffMinutes), color: 'text-green-600' };
+    }
+    return { status: 'on-time', minutes: diffMinutes, color: 'text-blue-600' };
   };
 
   return (
@@ -136,17 +169,17 @@ export function FlightNotificationPanel() {
         </CardContent>
       </Card>
 
-      {/* Flight Notifications Card */}
+      {/* Flight Information and Notifications Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Estado de Vuelos y Notificaciones
+                Información Detallada de Vuelos
               </CardTitle>
               <CardDescription>
-                Vuelos monitoreados y notificaciones WhatsApp pendientes
+                Estado completo de vuelos monitoreados y notificaciones WhatsApp
               </CardDescription>
             </div>
             <Button 
@@ -162,7 +195,7 @@ export function FlightNotificationPanel() {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="text-gray-500">Cargando vuelos...</div>
+              <div className="text-gray-500">Cargando información de vuelos...</div>
             </div>
           ) : pendingFlights.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -171,60 +204,145 @@ export function FlightNotificationPanel() {
               <p className="text-sm mt-2">Los vuelos aparecerán aquí cuando se detecten aterrizajes</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Vuelo</TableHead>
-                  <TableHead>Ruta</TableHead>
-                  <TableHead>Salida Programada</TableHead>
-                  <TableHead>Llegada Real</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingFlights.map((flight) => (
-                  <TableRow key={flight.id}>
-                    <TableCell className="font-medium">{flight.flight_number}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <span className="text-sm">{flight.departure_airport}</span>
-                        <span className="mx-2">→</span>
-                        <span className="text-sm">{flight.arrival_airport}</span>
+            <div className="space-y-6">
+              {pendingFlights.map((flight) => {
+                const delayInfo = getDelayStatus(flight.scheduled_arrival, flight.actual_arrival);
+                
+                return (
+                  <Card key={flight.id} className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">
+                            {getStatusIcon(flight.has_landed, flight.notification_sent)}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg">
+                              {flight.airline} {flight.flight_number}
+                            </h3>
+                            <Badge className={getStatusColor(flight.has_landed, flight.notification_sent)}>
+                              {getStatusLabel(flight.has_landed, flight.notification_sent)}
+                            </Badge>
+                          </div>
+                        </div>
+                        {!flight.has_landed && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => updateFlightStatus({ flightId: flight.id, hasLanded: true })}
+                          >
+                            Marcar Aterrizado
+                          </Button>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {flight.scheduled_departure 
-                        ? format(new Date(flight.scheduled_departure), 'dd/MM/yyyy HH:mm')
-                        : 'No programada'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {flight.actual_arrival 
-                        ? format(new Date(flight.actual_arrival), 'dd/MM/yyyy HH:mm')
-                        : 'Pendiente'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(flight.has_landed, flight.notification_sent)}>
-                        {getStatusLabel(flight.has_landed, flight.notification_sent)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {!flight.has_landed && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => updateFlightStatus({ flightId: flight.id, hasLanded: true })}
-                        >
-                          Marcar Aterrizado
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Ruta */}
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <div>
+                            <div className="text-sm text-gray-500">Ruta</div>
+                            <div className="font-medium">
+                              {flight.departure_airport} → {flight.arrival_airport}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Salida Programada */}
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <div>
+                            <div className="text-sm text-gray-500">Salida Programada</div>
+                            <div className="font-medium">
+                              {formatDateTime(flight.scheduled_departure)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Llegada Programada */}
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <div>
+                            <div className="text-sm text-gray-500">Llegada Programada</div>
+                            <div className="font-medium">
+                              {formatDateTime(flight.scheduled_arrival)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Salida Real */}
+                        {flight.actual_departure && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-green-500" />
+                            <div>
+                              <div className="text-sm text-gray-500">Salida Real</div>
+                              <div className="font-medium text-green-600">
+                                {formatDateTime(flight.actual_departure)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Llegada Real */}
+                        {flight.actual_arrival && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-green-500" />
+                            <div>
+                              <div className="text-sm text-gray-500">Llegada Real</div>
+                              <div className="font-medium text-green-600">
+                                {formatDateTime(flight.actual_arrival)}
+                              </div>
+                              {delayInfo && (
+                                <div className={`text-xs ${delayInfo.color}`}>
+                                  {delayInfo.status === 'delayed' && `+${delayInfo.minutes} min retraso`}
+                                  {delayInfo.status === 'early' && `-${delayInfo.minutes} min adelanto`}
+                                  {delayInfo.status === 'on-time' && 'A tiempo'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Estado del Vuelo */}
+                        <div className="flex items-center gap-2">
+                          <Plane className="h-4 w-4 text-gray-500" />
+                          <div>
+                            <div className="text-sm text-gray-500">Estado</div>
+                            <div className="font-medium capitalize">
+                              {flight.status === 'scheduled' && 'Programado'}
+                              {flight.status === 'in_flight' && 'En Vuelo'}
+                              {flight.status === 'arrived' && 'Llegado'}
+                              {flight.status === 'delayed' && 'Retrasado'}
+                              {flight.status === 'cancelled' && 'Cancelado'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información adicional */}
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Última actualización:</span>
+                            <div className="font-medium">
+                              {formatDateTime(flight.last_updated)}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Notificación enviada:</span>
+                            <div className="font-medium">
+                              {flight.notification_sent ? 'Sí' : 'No'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>

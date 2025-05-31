@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { AlertCircle } from 'lucide-react';
+import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface ValidationError {
   field: 'phone' | 'idNumber';
@@ -30,6 +31,17 @@ export function CustomerContactFields({
   onCountryCodeChange,
   onPhoneNumberChange
 }: CustomerContactFieldsProps) {
+  const handleIdNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatNumber(value);
+    const raw = parseFormattedNumber(formatted);
+    onIdNumberChange(raw);
+  };
+
+  const getFormattedIdNumber = () => {
+    return formatNumber(idNumber);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -43,8 +55,8 @@ export function CustomerContactFields({
         <div className="relative">
           <Input
             id="idNumber"
-            value={idNumber}
-            onChange={(e) => onIdNumberChange(e.target.value)}
+            value={getFormattedIdNumber()}
+            onChange={handleIdNumberChange}
             placeholder="Número de identificación"
             className={`mt-1 ${validationError?.field === 'idNumber' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
             disabled={isChecking}

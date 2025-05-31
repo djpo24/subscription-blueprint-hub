@@ -2,6 +2,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CountryCodeSelector } from './CountryCodeSelector';
+import { formatPhoneNumber, parsePhoneNumber } from '@/utils/phoneFormatter';
 
 interface PhoneNumberInputProps {
   label: string;
@@ -28,6 +29,17 @@ export function PhoneNumberInput({
   showCountryCodeSelector = true,
   className
 }: PhoneNumberInputProps) {
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatPhoneNumber(value, countryCode);
+    const raw = parsePhoneNumber(formatted);
+    onPhoneNumberChange(raw);
+  };
+
+  const getFormattedPhone = () => {
+    return formatPhoneNumber(phoneNumber, countryCode);
+  };
+
   return (
     <div>
       <Label htmlFor={id}>{label} {required && '*'}</Label>
@@ -45,8 +57,8 @@ export function PhoneNumberInput({
         )}
         <Input
           id={id}
-          value={phoneNumber}
-          onChange={(e) => onPhoneNumberChange(e.target.value)}
+          value={getFormattedPhone()}
+          onChange={handlePhoneChange}
           placeholder={placeholder}
           className={`flex-1 ${className || ''}`}
           required={required}

@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search, User } from 'lucide-react';
 import { CustomerFormDialog } from './CustomerFormDialog';
+import { formatNumber } from '@/utils/numberFormatter';
+import { formatPhoneNumber } from '@/utils/phoneFormatter';
 
 interface Customer {
   id: string;
@@ -42,6 +44,17 @@ const isValidEmail = (email: string): boolean => {
   
   const emailDomain = email.split('@')[1]?.toLowerCase();
   return emailDomain && !tempEmailDomains.includes(emailDomain);
+};
+
+// Helper function to format phone for display
+const formatPhoneForDisplay = (phone: string): string => {
+  // Extract country code and number
+  if (phone.startsWith('+57')) {
+    return formatPhoneNumber(phone.substring(3), '+57');
+  } else if (phone.startsWith('+599')) {
+    return formatPhoneNumber(phone.substring(4), '+599');
+  }
+  return phone;
 };
 
 export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }: CustomerSearchSelectorProps) {
@@ -161,9 +174,9 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
                           {isValidEmail(customer.email) && (
                             <div>📧 {customer.email}</div>
                           )}
-                          <div>📱 {customer.phone}</div>
+                          <div>📱 {formatPhoneForDisplay(customer.phone)}</div>
                           {customer.id_number && (
-                            <div>🆔 {customer.id_number}</div>
+                            <div>🆔 {formatNumber(customer.id_number)}</div>
                           )}
                         </div>
                       </div>

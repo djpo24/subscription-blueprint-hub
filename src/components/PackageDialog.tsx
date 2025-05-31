@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CustomerSelector } from './CustomerSelector';
+import { CustomerSearchSelector } from './CustomerSearchSelector';
 import { TripSelector } from './TripSelector';
 import { PackageForm } from './PackageForm';
 
@@ -39,7 +39,7 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
         
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <CustomerSelector
+            <CustomerSearchSelector
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
             />

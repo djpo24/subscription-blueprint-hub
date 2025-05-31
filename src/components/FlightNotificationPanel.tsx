@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { useFlightNotifications } from '@/hooks/useFlightNotifications';
-import { Bell, Plane, Send } from 'lucide-react';
+import { useFlightMonitor } from '@/hooks/useFlightMonitor';
+import { Bell, Plane, Send, Play, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function FlightNotificationPanel() {
@@ -19,6 +20,11 @@ export function FlightNotificationPanel() {
     isProcessing,
     isSendingTest
   } = useFlightNotifications();
+
+  const {
+    startMonitoring,
+    isMonitoring
+  } = useFlightMonitor();
 
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Hola! Esta es una notificación de prueba del sistema de Envíos Ojitos.');
@@ -50,6 +56,43 @@ export function FlightNotificationPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Flight Monitoring Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Monitoreo Automático de Vuelos
+              </CardTitle>
+              <CardDescription>
+                Sistema automático de seguimiento del estado de vuelos en tiempo real
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => startMonitoring()}
+              disabled={isMonitoring}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <Play className="h-4 w-4" />
+              {isMonitoring ? 'Monitoreando...' : 'Iniciar Monitoreo'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">¿Cómo funciona el monitoreo?</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• El sistema verifica automáticamente el estado de todos los vuelos activos</li>
+              <li>• Cuando un vuelo aterriza, se actualiza el estado automáticamente</li>
+              <li>• Se crean notificaciones pendientes para los clientes</li>
+              <li>• Las notificaciones se envían automáticamente por WhatsApp</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Test Notification Card */}
       <Card>
         <CardHeader>
@@ -100,10 +143,10 @@ export function FlightNotificationPanel() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Sistema de Notificaciones Automáticas
+                Estado de Vuelos y Notificaciones
               </CardTitle>
               <CardDescription>
-                Monitoreo de vuelos y notificaciones WhatsApp automáticas
+                Vuelos monitoreados y notificaciones WhatsApp pendientes
               </CardDescription>
             </div>
             <Button 
@@ -125,6 +168,7 @@ export function FlightNotificationPanel() {
             <div className="text-center py-8 text-gray-500">
               <Plane className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No hay vuelos pendientes de notificación</p>
+              <p className="text-sm mt-2">Los vuelos aparecerán aquí cuando se detecten aterrizajes</p>
             </div>
           ) : (
             <Table>
@@ -132,6 +176,7 @@ export function FlightNotificationPanel() {
                 <TableRow>
                   <TableHead>Vuelo</TableHead>
                   <TableHead>Ruta</TableHead>
+                  <TableHead>Salida Programada</TableHead>
                   <TableHead>Llegada Real</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Acciones</TableHead>
@@ -147,6 +192,12 @@ export function FlightNotificationPanel() {
                         <span className="mx-2">→</span>
                         <span className="text-sm">{flight.arrival_airport}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {flight.scheduled_departure 
+                        ? format(new Date(flight.scheduled_departure), 'dd/MM/yyyy HH:mm')
+                        : 'No programada'
+                      }
                     </TableCell>
                     <TableCell>
                       {flight.actual_arrival 

@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
-import { format, startOfToday } from 'date-fns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useFlightMonitor } from '@/hooks/useFlightMonitor';
 
 interface TripFormData {
   route: string;
@@ -10,99 +11,97 @@ interface TripFormData {
 }
 
 export function useTripForm(onSuccess: () => void) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [date, setDate] = useState<Date>();
-  const { toast } = useToast();
-  
   const [formData, setFormData] = useState<TripFormData>({
     route: '',
     flight_number: ''
   });
 
-  const today = startOfToday();
-
-  // Function to parse route and get origin and destination
-  const parseRoute = (route: string) => {
-    if (route === 'Barranquilla-Curazao') {
-      return { origin: 'Barranquilla', destination: 'Curazao' };
-    } else if (route === 'Curazao-Barranquilla') {
-      return { origin: 'Curazao', destination: 'Barranquilla' };
-    }
-    return { origin: '', destination: '' };
-  };
+  const [date, setDate] = useState<Date>();
+  const today = new Date();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { createFlightData } = useFlightMonitor();
 
   const updateFormData = (updates: Partial<TripFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!date) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona una fecha",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!formData.route) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona el viaje",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { origin, destination } = parseRoute(formData.route);
+  const createTripMutation = useMutation({
+    mutationFn: async (tripData: any) => {
+      console.log('Creating trip with data:', tripData);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('trips')
-        .insert([{
-          trip_date: format(date, 'yyyy-MM-dd'),
-          origin: origin,
-          destination: destination,
-          flight_number: formData.flight_number || null,
-          status: 'scheduled'
-        }]);
+        .insert([tripData])
+        .select()
+        .single();
 
       if (error) throw error;
-
-      toast({
-        title: "Viaje creado",
-        description: `Viaje de ${origin} a ${destination} creado exitosamente`,
-      });
-
-      // Reset form
-      setFormData({
-        route: '',
-        flight_number: ''
-      });
-      setDate(undefined);
-
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating trip:', error);
-      if (error.code === '23505') {
-        toast({
-          title: "Error",
-          description: "Ya existe un viaje para esta fecha y ruta",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo crear el viaje",
-          variant: "destructive"
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log('Trip created successfully:', data);
+      
+      // Si el viaje tiene número de vuelo, crear datos de monitoreo
+      if (data.flight_number) {
+        const scheduledDeparture = new Date(data.trip_date);
+        scheduledDeparture.setHours(6, 0, 0, 0); // Hora por defecto 6:00 AM
+        
+        createFlightData({
+          flightNumber: data.flight_number,
+          origin: data.origin,
+          destination: data.destination,
+          scheduledDeparture: scheduledDeparture.toISOString()
         });
       }
-    } finally {
-      setIsLoading(false);
+      
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      
+      toast({
+        title: "Viaje creado",
+        description: data.flight_number 
+          ? "El viaje ha sido creado y se ha iniciado el monitoreo del vuelo"
+          : "El viaje ha sido creado exitosamente",
+      });
+      
+      // Reset form
+      setFormData({ route: '', flight_number: '' });
+      setDate(undefined);
+      onSuccess();
+    },
+    onError: (error: any) => {
+      console.error('Error creating trip:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el viaje",
+        variant: "destructive"
+      });
     }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!date || !formData.route) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const [origin, destination] = formData.route.split(' -> ');
+    
+    const tripData = {
+      trip_date: date.toISOString().split('T')[0],
+      origin: origin.trim(),
+      destination: destination.trim(),
+      flight_number: formData.flight_number.trim() || null,
+      status: 'scheduled'
+    };
+
+    createTripMutation.mutate(tripData);
   };
 
   return {
@@ -111,7 +110,7 @@ export function useTripForm(onSuccess: () => void) {
     date,
     setDate,
     today,
-    isLoading,
+    isLoading: createTripMutation.isPending,
     handleSubmit
   };
 }

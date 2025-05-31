@@ -37,8 +37,8 @@ export function DepartmentStep({ country, onDepartmentSelect, onBackToCountry }:
         <SelectTrigger className="h-12 text-base">
           <SelectValue placeholder="Selecciona un departamento" />
         </SelectTrigger>
-        <SelectContent className="max-h-96 w-full">
-          <ScrollArea className="h-full max-h-80">
+        <SelectContent className="max-h-80 w-full">
+          <ScrollArea className="h-full max-h-72">
             {country.departments?.map((department) => (
               <SelectItem 
                 key={department.id} 

@@ -17,6 +17,8 @@ interface TripIndicatorProps {
 }
 
 export function TripIndicator({ trips, onShowPopover }: TripIndicatorProps) {
+  console.log('TripIndicator rendering with trips:', trips);
+
   // Agrupar viajes por estado para mostrar círculos de diferentes colores
   const tripsByStatus = trips.reduce((acc, trip) => {
     if (!acc[trip.status]) acc[trip.status] = [];
@@ -42,22 +44,24 @@ export function TripIndicator({ trips, onShowPopover }: TripIndicatorProps) {
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap gap-1">
-        {Object.entries(tripsByStatus).map(([status, statusTrips]) => (
-          <button
-            key={status}
-            onClick={onShowPopover}
-            className={`w-3 h-3 rounded-full ${getIndicatorColor(status)} hover:scale-110 transition-transform cursor-pointer`}
-            title={`${statusTrips.length} viaje(s) - ${status}`}
-          />
-        ))}
+        {Object.entries(tripsByStatus).map(([status, statusTrips]) => 
+          statusTrips.map((trip, index) => (
+            <button
+              key={`${status}-${trip.id}-${index}`}
+              onClick={onShowPopover}
+              className={`w-3 h-3 rounded-full ${getIndicatorColor(status)} hover:scale-110 transition-transform cursor-pointer`}
+              title={`${trip.flight_number || 'Sin vuelo'} - ${trip.origin} → ${trip.destination} (${status})`}
+            />
+          ))
+        )}
       </div>
       
-      {trips.length > 3 && (
+      {trips.length > 6 && (
         <button
           onClick={onShowPopover}
           className="text-xs text-gray-600 hover:text-black transition-colors"
         >
-          +{trips.length - 3} más
+          +{trips.length - 6} más
         </button>
       )}
     </div>

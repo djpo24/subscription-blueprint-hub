@@ -22,12 +22,21 @@ interface CalendarGridProps {
 export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }: CalendarGridProps) {
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+  console.log('CalendarGrid total trips:', trips.length);
+
   const getTripsForDate = (date: Date) => {
-    return trips.filter(trip => {
+    const tripsForDate = trips.filter(trip => {
       // Usar parseISO para asegurar que la fecha se parsee correctamente
       const tripDate = parseISO(trip.trip_date);
-      return isSameDay(tripDate, date);
+      const isSame = isSameDay(tripDate, date);
+      return isSame;
     });
+    
+    if (tripsForDate.length > 0) {
+      console.log(`Found ${tripsForDate.length} trips for date ${date.toDateString()}:`, tripsForDate);
+    }
+    
+    return tripsForDate;
   };
 
   return (

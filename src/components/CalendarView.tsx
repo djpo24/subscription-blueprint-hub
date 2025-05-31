@@ -24,6 +24,8 @@ interface CalendarViewProps {
 export function CalendarView({ trips, isLoading, onAddPackage }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  console.log('CalendarView received trips:', trips);
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });

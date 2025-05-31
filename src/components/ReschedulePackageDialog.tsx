@@ -44,7 +44,7 @@ export function ReschedulePackageDialog({
     setSelectedTripId(pkg.trip_id || '');
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col px-[24px] my-0">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col my-0 px-0">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Reprogramar Encomienda</DialogTitle>
           <DialogDescription>

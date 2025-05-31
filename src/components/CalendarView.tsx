@@ -99,14 +99,14 @@ export function CalendarView({ trips, isLoading, onAddPackage }: CalendarViewPro
   return (
     <Card className="uber-card">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-black">Calendario de Viajes</CardTitle>
-            <CardDescription className="text-gray-600">
+        <div className="w-full">
+          <div className="w-full mb-4">
+            <CardTitle className="text-black w-full">Calendario de Viajes</CardTitle>
+            <CardDescription className="text-gray-600 w-full">
               Vista de calendario de todos los viajes programados
             </CardDescription>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <Button variant="secondary" size="icon" onClick={goToPreviousMonth} className="uber-button-secondary">
               <ChevronLeft className="h-4 w-4" />
             </Button>

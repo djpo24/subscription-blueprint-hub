@@ -1,8 +1,8 @@
-
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import { format } from 'date-fns';
+import { CPCLPrintButton } from './CPCLPrintButton';
 
 interface Package {
   id: string;
@@ -179,12 +179,16 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
           </div>
         </div>
 
-        <button
-          onClick={handlePrint}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Imprimir Etiqueta
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={handlePrint}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Imprimir HTML
+          </button>
+          
+          <CPCLPrintButton package={pkg} />
+        </div>
       </div>
 
       {/* Etiqueta real para impresión */}

@@ -33,6 +33,10 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
     }
   };
 
+  const handleShowPopover = () => {
+    setShowPopover(true);
+  };
+
   return (
     <>
       <div
@@ -48,15 +52,8 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
         </div>
         
         {trips.length > 0 && (
-          <div className="mt-1 space-y-1">
-            {trips.slice(0, 2).map((trip) => (
-              <TripIndicator key={trip.id} trip={trip} />
-            ))}
-            {trips.length > 2 && (
-              <div className="text-xs text-gray-500 font-medium">
-                +{trips.length - 2} más
-              </div>
-            )}
+          <div className="mt-1">
+            <TripIndicator trips={trips} onShowPopover={handleShowPopover} />
           </div>
         )}
       </div>

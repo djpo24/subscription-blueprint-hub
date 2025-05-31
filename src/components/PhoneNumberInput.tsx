@@ -13,6 +13,7 @@ interface PhoneNumberInputProps {
   placeholder: string;
   required?: boolean;
   showCountryCodeSelector?: boolean;
+  className?: string;
 }
 
 export function PhoneNumberInput({
@@ -24,7 +25,8 @@ export function PhoneNumberInput({
   onPhoneNumberChange,
   placeholder,
   required = false,
-  showCountryCodeSelector = true
+  showCountryCodeSelector = true,
+  className
 }: PhoneNumberInputProps) {
   return (
     <div>
@@ -46,7 +48,7 @@ export function PhoneNumberInput({
           value={phoneNumber}
           onChange={(e) => onPhoneNumberChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1"
+          className={`flex-1 ${className || ''}`}
           required={required}
         />
       </div>

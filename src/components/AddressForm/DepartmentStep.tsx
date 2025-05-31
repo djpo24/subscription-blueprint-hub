@@ -21,15 +21,14 @@ export function DepartmentStep({ country, onDepartmentSelect, onBackToCountry }:
       <h4 className="font-medium text-lg">Seleccionar Departamento</h4>
       <Button 
         type="button"
-        variant="outline" 
-        size="sm" 
+        className="bg-black text-white hover:bg-gray-800 mb-4"
+        size="sm"
         onClick={(e) => {
           console.log('🟣 DepartmentStep back to country clicked');
           e.preventDefault();
           e.stopPropagation();
           onBackToCountry();
-        }} 
-        className="mb-4"
+        }}
       >
         ← Cambiar País ({country.name})
       </Button>

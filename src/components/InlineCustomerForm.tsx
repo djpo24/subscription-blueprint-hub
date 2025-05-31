@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { CustomerFormData, initialCustomerFormData } from '@/types/CustomerFormData';
 import { AddressSelector } from './AddressSelector';
-import { Mail, CheckCircle } from 'lucide-react';
+import { Mail, AlertCircle } from 'lucide-react';
 import { useCustomerValidation } from '@/hooks/useCustomerValidation';
 
 interface InlineCustomerFormProps {
@@ -19,14 +19,14 @@ interface InlineCustomerFormProps {
 export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailField, setShowEmailField] = useState(false);
-  const [existingCustomer, setExistingCustomer] = useState<{id: string, name: string} | null>(null);
   const { toast } = useToast();
   const [formData, setFormData] = useState<CustomerFormData>(initialCustomerFormData);
   const { 
     isChecking, 
+    validationError,
     checkCustomerByPhone, 
     checkCustomerByIdNumber, 
-    showCustomerFoundToast 
+    clearValidationError 
   } = useCustomerValidation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,9 +34,13 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
     e.preventDefault();
     e.stopPropagation();
 
-    // Si ya existe un cliente, usar su ID
-    if (existingCustomer) {
-      onSuccess(existingCustomer.id);
+    // No permitir envío si hay errores de validación
+    if (validationError) {
+      toast({
+        title: "Error de validación",
+        description: "Por favor corrige los errores antes de continuar",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -91,84 +95,24 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
     
     if (value.length >= 7) { // Validar cuando tenga al menos 7 dígitos
       const fullPhone = `${formData.countryCode}${value}`;
-      const customer = await checkCustomerByPhone(fullPhone);
-      
-      if (customer) {
-        setExistingCustomer({ id: customer.id, name: customer.name });
-        showCustomerFoundToast(customer.name, 'teléfono');
-        
-        // Cargar datos del cliente existente
-        const nameParts = customer.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
-        setFormData(prev => ({
-          ...prev,
-          firstName,
-          lastName,
-          email: customer.email || '',
-          address: customer.address || '',
-          idNumber: customer.id_number || ''
-        }));
-        
-        if (customer.email) {
-          setShowEmailField(true);
-        }
-      } else {
-        setExistingCustomer(null);
-      }
+      await checkCustomerByPhone(fullPhone);
     } else {
-      setExistingCustomer(null);
+      clearValidationError();
     }
-  }, [formData.countryCode, checkCustomerByPhone, showCustomerFoundToast]);
+  }, [formData.countryCode, checkCustomerByPhone, clearValidationError]);
 
   const handleIdNumberChange = useCallback(async (value: string) => {
     updateFormData('idNumber', value);
     
     if (value.length >= 6) { // Validar cuando tenga al menos 6 dígitos
-      const customer = await checkCustomerByIdNumber(value);
-      
-      if (customer) {
-        setExistingCustomer({ id: customer.id, name: customer.name });
-        showCustomerFoundToast(customer.name, 'cédula');
-        
-        // Cargar datos del cliente existente
-        const nameParts = customer.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
-        setFormData(prev => ({
-          ...prev,
-          firstName,
-          lastName,
-          email: customer.email || '',
-          address: customer.address || '',
-          phoneNumber: customer.phone.replace(formData.countryCode, '') || ''
-        }));
-        
-        if (customer.email) {
-          setShowEmailField(true);
-        }
-      } else {
-        setExistingCustomer(null);
-      }
+      await checkCustomerByIdNumber(value);
     } else {
-      setExistingCustomer(null);
+      clearValidationError();
     }
-  }, [checkCustomerByIdNumber, showCustomerFoundToast, formData.countryCode]);
+  }, [checkCustomerByIdNumber, clearValidationError]);
 
   return (
     <div className="space-y-6">
-      {existingCustomer && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <div>
-            <p className="text-green-800 font-medium">Cliente encontrado: {existingCustomer.name}</p>
-            <p className="text-green-600 text-sm">Los datos han sido cargados automáticamente</p>
-          </div>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -179,7 +123,6 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               onChange={(e) => updateFormData('firstName', e.target.value)}
               required
               className="mt-1"
-              disabled={!!existingCustomer}
             />
           </div>
 
@@ -191,7 +134,6 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               onChange={(e) => updateFormData('lastName', e.target.value)}
               required
               className="mt-1"
-              disabled={!!existingCustomer}
             />
           </div>
         </div>
@@ -199,13 +141,19 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="idNumber">Cédula (Opcional)</Label>
+            {validationError?.field === 'idNumber' && (
+              <div className="flex items-center gap-2 mt-1 mb-2 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>{validationError.message}</span>
+              </div>
+            )}
             <div className="relative">
               <Input
                 id="idNumber"
                 value={formData.idNumber}
                 onChange={(e) => handleIdNumberChange(e.target.value)}
                 placeholder="Número de identificación"
-                className="mt-1"
+                className={`mt-1 ${validationError?.field === 'idNumber' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                 disabled={isChecking}
               />
               {isChecking && (
@@ -217,6 +165,12 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
           </div>
 
           <div>
+            {validationError?.field === 'phone' && (
+              <div className="flex items-center gap-2 mb-2 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span>{validationError.message}</span>
+              </div>
+            )}
             <PhoneNumberInput
               label="Teléfono"
               id="phone"
@@ -226,6 +180,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               onPhoneNumberChange={handlePhoneNumberChange}
               placeholder="Número de teléfono"
               required
+              className={validationError?.field === 'phone' ? 'border-red-500 focus-visible:ring-red-500' : ''}
             />
           </div>
         </div>
@@ -241,7 +196,6 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
                 setShowEmailField(true);
               }}
               className="flex items-center gap-2"
-              disabled={!!existingCustomer}
             >
               <Mail className="h-4 w-4" />
               Agregar Email (Opcional)
@@ -256,7 +210,6 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
                 onChange={(e) => updateFormData('email', e.target.value)}
                 placeholder="correo@ejemplo.com"
                 className="mt-1"
-                disabled={!!existingCustomer}
               />
             </div>
           )}
@@ -273,8 +226,12 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
         </div>
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={isLoading} className="px-6">
-            {existingCustomer ? 'Seleccionar Cliente' : (isLoading ? 'Creando...' : 'Crear Cliente')}
+          <Button 
+            type="submit" 
+            disabled={isLoading || !!validationError} 
+            className="px-6"
+          >
+            {isLoading ? 'Creando...' : 'Crear Cliente'}
           </Button>
           <Button 
             type="button" 

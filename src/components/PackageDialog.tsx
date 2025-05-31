@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CustomerSearchSelector } from './CustomerSearchSelector';
 import { TripSelector } from './TripSelector';
@@ -15,6 +15,14 @@ interface PackageDialogProps {
 export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: PackageDialogProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedTripId, setSelectedTripId] = useState(tripId || '');
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedCustomerId('');
+      setSelectedTripId(tripId || '');
+    }
+  }, [open, tripId]);
 
   const handleSuccess = () => {
     // Reset form
@@ -42,6 +50,7 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
             <CustomerSearchSelector
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
+              key={open ? 'open' : 'closed'} // Force re-render when dialog opens
             />
 
             <TripSelector

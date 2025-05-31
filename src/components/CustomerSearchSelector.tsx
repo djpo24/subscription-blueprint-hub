@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +48,14 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+
+  // Reset search term when selectedCustomerId is cleared
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setSearchTerm('');
+      setShowResults(false);
+    }
+  }, [selectedCustomerId]);
 
   // Fetch customers for search
   const { data: customers = [], refetch: refetchCustomers } = useQuery({

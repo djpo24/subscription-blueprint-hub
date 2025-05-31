@@ -1,4 +1,7 @@
 
+import { formatPhoneNumber } from './phoneFormatter';
+import { formatNumber } from './numberFormatter';
+
 // Helper function to check if email is valid (not empty and not temporary)
 export const isValidEmail = (email: string): boolean => {
   if (!email || email.trim() === '') return false;
@@ -34,6 +37,5 @@ export const formatPhoneForDisplay = (phone: string): string => {
   return phone;
 };
 
-// Re-export formatPhoneNumber for convenience
-export { formatPhoneNumber } from './phoneFormatter';
-export { formatNumber } from './numberFormatter';
+// Re-export for convenience
+export { formatPhoneNumber, formatNumber };

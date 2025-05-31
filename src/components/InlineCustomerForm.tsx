@@ -67,11 +67,11 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
   };
 
   return (
-    <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-      <h4 className="font-medium">Crear Nuevo Cliente</h4>
+    <div className="w-full border rounded-lg p-6 space-y-6 bg-gray-50">
+      <h4 className="font-medium text-lg">Crear Nuevo Cliente</h4>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="firstName">Nombres *</Label>
             <Input
@@ -79,6 +79,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               value={formData.firstName}
               onChange={(e) => updateFormData('firstName', e.target.value)}
               required
+              className="mt-1"
             />
           </div>
 
@@ -89,11 +90,12 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               value={formData.lastName}
               onChange={(e) => updateFormData('lastName', e.target.value)}
               required
+              className="mt-1"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="idNumber">Cédula (Opcional)</Label>
             <Input
@@ -101,6 +103,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               value={formData.idNumber}
               onChange={(e) => updateFormData('idNumber', e.target.value)}
               placeholder="Número de identificación"
+              className="mt-1"
             />
           </div>
 
@@ -112,11 +115,12 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
               value={formData.email}
               onChange={(e) => updateFormData('email', e.target.value)}
               required
+              className="mt-1"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PhoneNumberInput
             label="Teléfono"
             id="phone"
@@ -147,14 +151,15 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
             value={formData.address}
             onChange={(e) => updateFormData('address', e.target.value)}
             placeholder="Dirección completa..."
+            className="mt-1"
           />
         </div>
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={isLoading} size="sm">
+        <div className="flex gap-3 pt-4">
+          <Button type="submit" disabled={isLoading} className="px-6">
             {isLoading ? 'Creando...' : 'Crear Cliente'}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel} size="sm">
+          <Button type="button" variant="outline" onClick={onCancel} className="px-6">
             Cancelar
           </Button>
         </div>

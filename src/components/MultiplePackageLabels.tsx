@@ -29,7 +29,9 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
 
   useEffect(() => {
     const generateLabelsData = async () => {
+      console.log('Generating labels data for', packages.length, 'packages');
       const newLabelsData = await generateAllLabelsData(packages);
+      console.log('Generated labels data:', newLabelsData.size, 'labels');
       setLabelsData(newLabelsData);
     };
 
@@ -37,7 +39,11 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
   }, [packages]);
 
   const handlePrint = () => {
-    window.print();
+    console.log('Starting print process for', packages.length, 'labels');
+    // Dar tiempo para que el DOM se actualice antes de imprimir
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   return (
@@ -49,16 +55,21 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         onPrint={handlePrint}
       />
 
-      {/* Etiquetas para impresión */}
-      <div className="print-only">
-        {packages.map((pkg) => {
+      {/* Contenedor de impresión con estructura optimizada */}
+      <div className="print-container" style={{ display: 'none' }}>
+        {packages.map((pkg, index) => {
           const labelData = labelsData.get(pkg.id);
+          console.log(`Rendering label ${index + 1} for package ${pkg.id}`);
           return (
-            <PackageLabel 
-              key={pkg.id}
-              package={pkg} 
-              labelData={labelData} 
-            />
+            <div key={pkg.id} className="label-page">
+              <div className="label-content">
+                <PackageLabel 
+                  package={pkg} 
+                  labelData={labelData}
+                  isPrintMode={true}
+                />
+              </div>
+            </div>
           );
         })}
       </div>

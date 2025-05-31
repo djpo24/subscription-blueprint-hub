@@ -22,11 +22,11 @@ export function PackageLabelPrintStyles() {
           visibility: hidden;
         }
         
-        .print-only, .print-only * {
+        .print-container, .print-container * {
           visibility: visible;
         }
         
-        .print-only {
+        .print-container {
           position: absolute;
           left: 0;
           top: 0;
@@ -41,15 +41,16 @@ export function PackageLabelPrintStyles() {
         
         @page {
           size: 4in 6in;
-          margin: 0.25in;
+          margin: 0;
         }
         
-        .label-item {
+        .label-page {
           width: 4in !important;
           height: 6in !important;
           margin: 0 !important;
           padding: 0 !important;
-          display: block !important;
+          display: flex !important;
+          flex-direction: column !important;
           position: relative !important;
           page-break-after: always !important;
           page-break-inside: avoid !important;
@@ -57,16 +58,27 @@ export function PackageLabelPrintStyles() {
           overflow: hidden !important;
           background: white !important;
           break-after: page !important;
+          border: none !important;
         }
         
-        .label-item:last-child {
+        .label-page:last-child {
           page-break-after: auto !important;
           break-after: auto !important;
         }
         
-        /* Asegurar que cada etiqueta ocupe una página completa */
-        .multiple-labels-container .print-only {
-          page-break-before: auto !important;
+        .label-content {
+          width: 100% !important;
+          height: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+          border: 2px solid #000 !important;
+          box-sizing: border-box !important;
+        }
+        
+        /* Forzar salto de página entre etiquetas */
+        .label-page + .label-page {
+          page-break-before: always !important;
+          break-before: page !important;
         }
       }
     `}</style>

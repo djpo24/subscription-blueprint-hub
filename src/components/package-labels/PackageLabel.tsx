@@ -20,28 +20,27 @@ interface Package {
 interface PackageLabelProps {
   package: Package;
   labelData?: LabelData;
+  isPrintMode?: boolean;
 }
 
-export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
+export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
+  const baseStyles = {
+    width: isPrintMode ? '100%' : '4in',
+    height: isPrintMode ? '100%' : '6in',
+    backgroundColor: 'white',
+    color: 'black',
+    fontSize: '12px',
+    fontFamily: 'Arial, sans-serif',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    border: isPrintMode ? 'none' : '2px solid #000',
+    margin: '0',
+    padding: '0',
+    boxSizing: 'border-box' as const
+  };
+
   return (
-    <div 
-      className="label-item"
-      style={{
-        width: '4in',
-        height: '6in',
-        backgroundColor: 'white',
-        color: 'black',
-        fontSize: '12px',
-        fontFamily: 'Arial, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        border: '2px solid #000',
-        pageBreakAfter: 'always',
-        margin: '0 auto',
-        padding: '0',
-        boxSizing: 'border-box'
-      }}
-    >
+    <div style={baseStyles}>
       {/* Header superior */}
       <div style={{ 
         backgroundColor: 'white', 

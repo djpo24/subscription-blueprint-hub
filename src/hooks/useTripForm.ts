@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFlightMonitor } from '@/hooks/useFlightMonitor';
+import { format } from 'date-fns';
 
 interface TripFormData {
   route: string;
@@ -113,8 +114,11 @@ export function useTripForm(onSuccess: () => void) {
 
     const [origin, destination] = routeParts;
     
+    // Usar format de date-fns para evitar problemas de zona horaria
+    const tripDate = format(date, 'yyyy-MM-dd');
+    
     const tripData = {
-      trip_date: date.toISOString().split('T')[0],
+      trip_date: tripDate,
       origin: origin.trim(),
       destination: destination.trim(),
       flight_number: formData.flight_number.trim() || null,

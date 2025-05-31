@@ -1,5 +1,5 @@
 
-import { isSameDay } from 'date-fns';
+import { isSameDay, parseISO } from 'date-fns';
 import { CalendarDay } from './CalendarDay';
 
 interface Trip {
@@ -23,9 +23,11 @@ export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }:
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   const getTripsForDate = (date: Date) => {
-    return trips.filter(trip => 
-      isSameDay(new Date(trip.trip_date), date)
-    );
+    return trips.filter(trip => {
+      // Usar parseISO para asegurar que la fecha se parsee correctamente
+      const tripDate = parseISO(trip.trip_date);
+      return isSameDay(tripDate, date);
+    });
   };
 
   return (

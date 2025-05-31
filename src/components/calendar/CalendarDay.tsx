@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { isSameMonth, format } from 'date-fns';
+import { isSameMonth, format, isToday } from 'date-fns';
 import { TripIndicator } from './TripIndicator';
 import { TripPopover } from './TripPopover';
 
@@ -25,6 +25,7 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
   const [showPopover, setShowPopover] = useState(false);
   
   const isCurrentMonth = isSameMonth(day, currentDate);
+  const isTodayDate = isToday(day);
   const dayNumber = format(day, 'd');
   
   const handleDayClick = () => {
@@ -44,10 +45,16 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
         className={`
           relative min-h-[60px] md:min-h-[80px] p-1 md:p-2 border rounded-lg
           ${isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'}
+          ${isTodayDate ? 'bg-black border-black' : ''}
           ${trips.length > 0 ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}
+          ${isTodayDate && trips.length > 0 ? 'hover:bg-gray-900' : ''}
         `}
       >
-        <div className={`text-xs md:text-sm font-medium ${isCurrentMonth ? 'text-black' : 'text-gray-400'}`}>
+        <div className={`text-xs md:text-sm font-medium 
+          ${isCurrentMonth && !isTodayDate ? 'text-black' : ''}
+          ${!isCurrentMonth && !isTodayDate ? 'text-gray-400' : ''}
+          ${isTodayDate ? 'text-white' : ''}
+        `}>
           {dayNumber}
         </div>
         

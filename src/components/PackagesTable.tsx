@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,6 +13,8 @@ interface Package {
   created_at: string;
   description: string;
   trip_id: string | null;
+  customer_id: string;
+  weight: number | null;
   customers?: {
     name: string;
     email: string;

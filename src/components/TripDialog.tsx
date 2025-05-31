@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,15 +27,20 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    origin: '',
+    route: '',
     flight_number: ''
   });
 
   const today = startOfToday();
 
-  // Function to automatically determine destination based on origin
-  const getDestination = (origin: string) => {
-    return origin === 'Barranquilla' ? 'Curazao' : 'Barranquilla';
+  // Function to parse route and get origin and destination
+  const parseRoute = (route: string) => {
+    if (route === 'Barranquilla-Curazao') {
+      return { origin: 'Barranquilla', destination: 'Curazao' };
+    } else if (route === 'Curazao-Barranquilla') {
+      return { origin: 'Curazao', destination: 'Barranquilla' };
+    }
+    return { origin: '', destination: '' };
   };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
@@ -55,10 +61,10 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
       return;
     }
 
-    if (!formData.origin) {
+    if (!formData.route) {
       toast({
         title: "Error",
-        description: "Por favor selecciona el origen",
+        description: "Por favor selecciona el viaje",
         variant: "destructive"
       });
       return;
@@ -67,13 +73,13 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
     setIsLoading(true);
 
     try {
-      const destination = getDestination(formData.origin);
+      const { origin, destination } = parseRoute(formData.route);
       
       const { error } = await supabase
         .from('trips')
         .insert([{
           trip_date: format(date, 'yyyy-MM-dd'),
-          origin: formData.origin,
+          origin: origin,
           destination: destination,
           flight_number: formData.flight_number || null,
           status: 'scheduled'
@@ -83,12 +89,12 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
 
       toast({
         title: "Viaje creado",
-        description: `Viaje de ${formData.origin} a ${destination} creado exitosamente`,
+        description: `Viaje de ${origin} a ${destination} creado exitosamente`,
       });
 
       // Reset form
       setFormData({
-        origin: '',
+        route: '',
         flight_number: ''
       });
       setDate(undefined);
@@ -156,25 +162,20 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="origin">Origen</Label>
+            <Label htmlFor="route">Viaje</Label>
             <Select 
-              value={formData.origin} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, origin: value }))}
+              value={formData.route} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, route: value }))}
               required
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar origen" />
+                <SelectValue placeholder="Seleccionar viaje" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Barranquilla">Barranquilla</SelectItem>
-                <SelectItem value="Curazao">Curazao</SelectItem>
+                <SelectItem value="Barranquilla-Curazao">Barranquilla-Curazao</SelectItem>
+                <SelectItem value="Curazao-Barranquilla">Curazao-Barranquilla</SelectItem>
               </SelectContent>
             </Select>
-            {formData.origin && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Destino: {getDestination(formData.origin)}
-              </p>
-            )}
           </div>
 
           <div>

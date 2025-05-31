@@ -9,19 +9,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
-
 interface PackageFormProps {
   customerId: string;
   tripId?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
-
-export function PackageForm({ customerId, tripId, onSuccess, onCancel }: PackageFormProps) {
+export function PackageForm({
+  customerId,
+  tripId,
+  onSuccess,
+  onCancel
+}: PackageFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
   const [formData, setFormData] = useState({
     description: '',
     weight: '',
@@ -29,23 +33,24 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
     freightFormatted: '',
     amountToCollect: '',
     amountToCollectFormatted: '',
-    currency: 'COP', // Default to Colombian Pesos
+    currency: 'COP',
+    // Default to Colombian Pesos
     details: [''] // Array to store product details
   });
-
   const generateTrackingNumber = () => {
     const prefix = 'EO';
     const year = new Date().getFullYear();
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `${prefix}-${year}-${random}`;
   };
-
   const handleDetailChange = (index: number, value: string) => {
     const newDetails = [...formData.details];
     newDetails[index] = value;
-    setFormData(prev => ({ ...prev, details: newDetails }));
+    setFormData(prev => ({
+      ...prev,
+      details: newDetails
+    }));
   };
-
   const handleDetailBlur = (index: number) => {
     const currentDetail = formData.details[index];
     if (currentDetail.trim() && index === formData.details.length - 1 && formData.details.length < 1000) {
@@ -56,7 +61,6 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       }));
     }
   };
-
   const handleDetailKeyPress = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -74,38 +78,31 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       }
     }
   };
-
   const handleFreightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatNumber(value);
     const raw = parseFormattedNumber(formatted);
-    
     setFormData(prev => ({
       ...prev,
       freight: raw,
       freightFormatted: formatted
     }));
   };
-
   const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatNumber(value);
     const raw = parseFormattedNumber(formatted);
-    
     setFormData(prev => ({
       ...prev,
       amountToCollect: raw,
       amountToCollectFormatted: formatted
     }));
   };
-
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!customerId || !tripId) {
       toast({
         title: "Error",
@@ -114,7 +111,6 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       });
       return;
     }
-
     const filledDetails = getFilledDetails();
     if (filledDetails.length === 0) {
       toast({
@@ -124,19 +120,15 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       });
       return;
     }
-
     setIsLoading(true);
-
     try {
       const trackingNumber = generateTrackingNumber();
-      
-      // Get trip details for origin and destination
-      const { data: tripData, error: tripError } = await supabase
-        .from('trips')
-        .select('origin, destination, flight_number')
-        .eq('id', tripId)
-        .single();
 
+      // Get trip details for origin and destination
+      const {
+        data: tripData,
+        error: tripError
+      } = await supabase.from('trips').select('origin, destination, flight_number').eq('id', tripId).single();
       if (tripError) throw tripError;
 
       // Create package description from details and optional description
@@ -144,46 +136,37 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       if (formData.description.trim()) {
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
-
-      const { error } = await supabase
-        .from('packages')
-        .insert([{
-          tracking_number: trackingNumber,
-          customer_id: customerId,
-          description: finalDescription,
-          weight: formData.weight ? parseFloat(formData.weight) : null,
-          origin: tripData.origin,
-          destination: tripData.destination,
-          flight_number: tripData.flight_number,
-          trip_id: tripId,
-          status: 'pending'
-        }]);
-
+      const {
+        error
+      } = await supabase.from('packages').insert([{
+        tracking_number: trackingNumber,
+        customer_id: customerId,
+        description: finalDescription,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        origin: tripData.origin,
+        destination: tripData.destination,
+        flight_number: tripData.flight_number,
+        trip_id: tripId,
+        status: 'pending'
+      }]);
       if (error) throw error;
 
       // Create initial tracking event
-      const { data: packageData } = await supabase
-        .from('packages')
-        .select('id')
-        .eq('tracking_number', trackingNumber)
-        .single();
-
+      const {
+        data: packageData
+      } = await supabase.from('packages').select('id').eq('tracking_number', trackingNumber).single();
       if (packageData) {
-        await supabase
-          .from('tracking_events')
-          .insert([{
-            package_id: packageData.id,
-            event_type: 'created',
-            description: 'Encomienda creada',
-            location: tripData.origin
-          }]);
+        await supabase.from('tracking_events').insert([{
+          package_id: packageData.id,
+          event_type: 'created',
+          description: 'Encomienda creada',
+          location: tripData.origin
+        }]);
       }
-
       toast({
         title: "Encomienda creada",
-        description: `Número de seguimiento: ${trackingNumber}`,
+        description: `Número de seguimiento: ${trackingNumber}`
       });
-
       onSuccess();
     } catch (error) {
       console.error('Error creating package:', error);
@@ -196,29 +179,17 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       setIsLoading(false);
     }
   };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+  return <form onSubmit={handleSubmit} className="space-y-6">
       {/* Product details fields */}
       <div>
         <Label>Detalles de productos *</Label>
         <div className="space-y-2 mt-2">
-          {formData.details.map((detail, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                data-detail-index={index}
-                value={detail}
-                onChange={(e) => handleDetailChange(index, e.target.value)}
-                onBlur={() => handleDetailBlur(index)}
-                onKeyPress={(e) => handleDetailKeyPress(index, e)}
-                placeholder={`Producto ${index + 1}${index === 0 ? ' (requerido)' : ' (opcional)'}`}
-                required={index === 0}
-              />
+          {formData.details.map((detail, index) => <div key={index} className="flex items-center gap-2">
+              <Input data-detail-index={index} value={detail} onChange={e => handleDetailChange(index, e.target.value)} onBlur={() => handleDetailBlur(index)} onKeyPress={e => handleDetailKeyPress(index, e)} placeholder={`Producto ${index + 1}${index === 0 ? ' (requerido)' : ' (opcional)'}`} required={index === 0} />
               <span className="text-sm text-gray-500 min-w-[60px]">
                 {index + 1}/1000
               </span>
-            </div>
-          ))}
+            </div>)}
         </div>
         <p className="text-xs text-gray-500 mt-1">
           Presiona Enter o haz clic fuera del campo para agregar otro producto (máximo 1000)
@@ -229,30 +200,20 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="freight">Flete (COP)</Label>
-          <Input
-            id="freight"
-            type="text"
-            value={formData.freightFormatted}
-            onChange={handleFreightChange}
-            placeholder="0"
-          />
+          <Input id="freight" type="text" value={formData.freightFormatted} onChange={handleFreightChange} placeholder="0" />
         </div>
 
         <div>
           <Label htmlFor="weight">Peso (kg)</Label>
-          <Input
-            id="weight"
-            type="number"
-            step="0.1"
-            value={formData.weight}
-            onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-            placeholder="0.0"
-          />
+          <Input id="weight" type="number" step="0.1" value={formData.weight} onChange={e => setFormData(prev => ({
+          ...prev,
+          weight: e.target.value
+        }))} placeholder="0.0" />
         </div>
       </div>
 
       {/* Large Amount to collect section - made more prominent */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-4">
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-4 py-[5px] px-[5px]">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
           <Label htmlFor="amountToCollect" className="text-lg font-semibold text-blue-900">
@@ -261,7 +222,10 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
         </div>
         
         <div className="flex gap-3">
-          <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+          <Select value={formData.currency} onValueChange={value => setFormData(prev => ({
+          ...prev,
+          currency: value
+        }))}>
             <SelectTrigger className="w-28 h-14 text-lg bg-white border-blue-300 focus:border-blue-500">
               <SelectValue />
             </SelectTrigger>
@@ -270,14 +234,7 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
               <SelectItem value="ANG">ANG</SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            id="amountToCollect"
-            type="text"
-            value={formData.amountToCollectFormatted}
-            onChange={handleAmountToCollectChange}
-            placeholder="0"
-            className="flex-1 h-14 text-xl font-semibold bg-white border-blue-300 focus:border-blue-500 placeholder:text-gray-400"
-          />
+          <Input id="amountToCollect" type="text" value={formData.amountToCollectFormatted} onChange={handleAmountToCollectChange} placeholder="0" className="flex-1 h-14 text-xl font-semibold bg-white border-blue-300 focus:border-blue-500 placeholder:text-gray-400" />
         </div>
         
         <p className="text-sm text-blue-700 italic">
@@ -287,38 +244,23 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
 
       {/* Optional description field with toggle - moved to bottom */}
       <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowDescription(!showDescription)}
-          className="mb-2"
-        >
-          {showDescription ? (
-            <>
+        <Button type="button" variant="outline" size="sm" onClick={() => setShowDescription(!showDescription)} className="mb-2">
+          {showDescription ? <>
               <ChevronUp className="h-4 w-4 mr-2" />
               Ocultar descripción
-            </>
-          ) : (
-            <>
+            </> : <>
               <ChevronDown className="h-4 w-4 mr-2" />
               Agregar descripción (opcional)
-            </>
-          )}
+            </>}
         </Button>
         
-        {showDescription && (
-          <div>
+        {showDescription && <div>
             <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Descripción adicional del contenido..."
-              rows={3}
-            />
-          </div>
-        )}
+            <Textarea id="description" value={formData.description} onChange={e => setFormData(prev => ({
+          ...prev,
+          description: e.target.value
+        }))} placeholder="Descripción adicional del contenido..." rows={3} />
+          </div>}
       </div>
 
       <DialogFooter>
@@ -329,6 +271,5 @@ export function PackageForm({ customerId, tripId, onSuccess, onCancel }: Package
           {isLoading ? 'Creando...' : 'Crear Encomienda'}
         </Button>
       </DialogFooter>
-    </form>
-  );
+    </form>;
 }

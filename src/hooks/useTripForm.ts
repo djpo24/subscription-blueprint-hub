@@ -91,7 +91,27 @@ export function useTripForm(onSuccess: () => void) {
       return;
     }
 
-    const [origin, destination] = formData.route.split(' -> ');
+    // Validar formato de ruta
+    if (!formData.route.includes(' -> ')) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una ruta válida",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const routeParts = formData.route.split(' -> ');
+    if (routeParts.length !== 2 || !routeParts[0] || !routeParts[1]) {
+      toast({
+        title: "Error",
+        description: "Formato de ruta inválido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const [origin, destination] = routeParts;
     
     const tripData = {
       trip_date: date.toISOString().split('T')[0],
@@ -101,6 +121,7 @@ export function useTripForm(onSuccess: () => void) {
       status: 'scheduled'
     };
 
+    console.log('Submitting trip data:', tripData);
     createTripMutation.mutate(tripData);
   };
 

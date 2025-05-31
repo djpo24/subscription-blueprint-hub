@@ -43,16 +43,20 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             {date ? format(date, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-white border-0 shadow-xl rounded-lg" align="start">
+        <PopoverContent className="w-auto p-0 bg-white border-0 shadow-xl rounded-lg pointer-events-auto" align="start">
           <Calendar
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
-            disabled={(date) => date < today}
+            disabled={(date) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              return date < today;
+            }}
             initialFocus
             locale={es}
             weekStartsOn={0}
-            className={cn("p-3 pointer-events-auto")}
+            className="p-3 pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

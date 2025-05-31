@@ -1,8 +1,11 @@
+
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { PackageActionsDropdown } from './PackageActionsDropdown';
+import { EditPackageDialog } from './EditPackageDialog';
 
 interface Package {
   id: string;
@@ -29,6 +32,9 @@ interface PackagesTableProps {
 }
 
 export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate }: PackagesTableProps) {
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
@@ -73,67 +79,101 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
     }
   };
 
+  const handleRowClick = (pkg: Package) => {
+    if (pkg.status !== 'delivered') {
+      setSelectedPackage(pkg);
+      setShowEditDialog(true);
+    }
+  };
+
+  const handleActionsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditDialog(false);
+    setSelectedPackage(null);
+    handleUpdate();
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Encomiendas Recientes</CardTitle>
-        <CardDescription>
-          Últimas encomiendas registradas en el sistema
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="text-gray-500">Cargando...</div>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tracking</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Ruta</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPackages.map((pkg) => (
-                <TableRow key={pkg.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{pkg.tracking_number}</TableCell>
-                  <TableCell>{pkg.customers?.name || 'N/A'}</TableCell>
-                  <TableCell>
-                    {pkg.status === 'warehouse' ? (
-                      <span className="text-sm text-gray-500">En Bodega</span>
-                    ) : (
-                      <div className="flex items-center">
-                        <span className="text-sm">{pkg.origin}</span>
-                        <span className="mx-2">→</span>
-                        <span className="text-sm">{pkg.destination}</span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(pkg.status)}>
-                      {getStatusLabel(pkg.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
-                  <TableCell>
-                    <PackageActionsDropdown 
-                      package={pkg} 
-                      onUpdate={handleUpdate}
-                    />
-                  </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Encomiendas Recientes</CardTitle>
+          <CardDescription>
+            Últimas encomiendas registradas en el sistema. Haz click en una encomienda para editarla.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="text-gray-500">Cargando...</div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tracking</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Ruta</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredPackages.map((pkg) => (
+                  <TableRow 
+                    key={pkg.id} 
+                    className={`hover:bg-gray-50 ${
+                      pkg.status !== 'delivered' 
+                        ? 'cursor-pointer transition-colors' 
+                        : 'cursor-default'
+                    }`}
+                    onClick={() => handleRowClick(pkg)}
+                  >
+                    <TableCell className="font-medium">{pkg.tracking_number}</TableCell>
+                    <TableCell>{pkg.customers?.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {pkg.status === 'warehouse' ? (
+                        <span className="text-sm text-gray-500">En Bodega</span>
+                      ) : (
+                        <div className="flex items-center">
+                          <span className="text-sm">{pkg.origin}</span>
+                          <span className="mx-2">→</span>
+                          <span className="text-sm">{pkg.destination}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(pkg.status)}>
+                        {getStatusLabel(pkg.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
+                    <TableCell onClick={handleActionsClick}>
+                      <PackageActionsDropdown 
+                        package={pkg} 
+                        onUpdate={handleUpdate}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <EditPackageDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        package={selectedPackage}
+        onSuccess={handleEditSuccess}
+      />
+    </>
   );
 }

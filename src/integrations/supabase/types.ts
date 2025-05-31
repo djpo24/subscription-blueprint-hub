@@ -149,6 +149,7 @@ export type Database = {
           origin: string
           status: string
           tracking_number: string
+          trip_id: string | null
           updated_at: string
           weight: number | null
         }
@@ -165,6 +166,7 @@ export type Database = {
           origin: string
           status?: string
           tracking_number: string
+          trip_id?: string | null
           updated_at?: string
           weight?: number | null
         }
@@ -181,6 +183,7 @@ export type Database = {
           origin?: string
           status?: string
           tracking_number?: string
+          trip_id?: string | null
           updated_at?: string
           weight?: number | null
         }
@@ -190,6 +193,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
@@ -231,6 +241,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trips: {
+        Row: {
+          created_at: string
+          destination: string
+          flight_number: string | null
+          id: string
+          origin: string
+          status: string
+          trip_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          flight_number?: string | null
+          id?: string
+          origin: string
+          status?: string
+          trip_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          flight_number?: string | null
+          id?: string
+          origin?: string
+          status?: string
+          trip_date?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

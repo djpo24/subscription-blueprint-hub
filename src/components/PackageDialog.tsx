@@ -14,9 +14,10 @@ interface PackageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  tripId?: string;
 }
 
-export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogProps) {
+export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: PackageDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
@@ -25,9 +26,7 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
     description: '',
     weight: '',
     dimensions: '',
-    origin: '',
-    destination: '',
-    flight_number: ''
+    trip_id: tripId || ''
   });
 
   // Fetch customers for the dropdown
@@ -44,6 +43,22 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
     }
   });
 
+  // Fetch trips for the dropdown (when no specific trip is provided)
+  const { data: trips = [] } = useQuery({
+    queryKey: ['trips-for-packages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trips')
+        .select('id, trip_date, origin, destination, flight_number')
+        .eq('status', 'scheduled')
+        .order('trip_date', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !tripId
+  });
+
   const generateTrackingNumber = () => {
     const prefix = 'EO';
     const year = new Date().getFullYear();
@@ -58,6 +73,16 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
     try {
       const trackingNumber = generateTrackingNumber();
       
+      // Get trip details for origin and destination
+      const selectedTripId = tripId || formData.trip_id;
+      const { data: tripData, error: tripError } = await supabase
+        .from('trips')
+        .select('origin, destination, flight_number')
+        .eq('id', selectedTripId)
+        .single();
+
+      if (tripError) throw tripError;
+
       const { error } = await supabase
         .from('packages')
         .insert([{
@@ -66,27 +91,32 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
           description: formData.description,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           dimensions: formData.dimensions || null,
-          origin: formData.origin,
-          destination: formData.destination,
-          flight_number: formData.flight_number || null,
+          origin: tripData.origin,
+          destination: tripData.destination,
+          flight_number: tripData.flight_number,
+          trip_id: selectedTripId,
           status: 'pending'
         }]);
 
       if (error) throw error;
 
       // Create initial tracking event
-      await supabase
-        .from('tracking_events')
-        .insert([{
-          package_id: (await supabase
-            .from('packages')
-            .select('id')
-            .eq('tracking_number', trackingNumber)
-            .single()).data?.id,
-          event_type: 'created',
-          description: 'Encomienda creada',
-          location: formData.origin
-        }]);
+      const { data: packageData } = await supabase
+        .from('packages')
+        .select('id')
+        .eq('tracking_number', trackingNumber)
+        .single();
+
+      if (packageData) {
+        await supabase
+          .from('tracking_events')
+          .insert([{
+            package_id: packageData.id,
+            event_type: 'created',
+            description: 'Encomienda creada',
+            location: tripData.origin
+          }]);
+      }
 
       toast({
         title: "Encomienda creada",
@@ -99,9 +129,7 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
         description: '',
         weight: '',
         dimensions: '',
-        origin: '',
-        destination: '',
-        flight_number: ''
+        trip_id: tripId || ''
       });
 
       onSuccess();
@@ -149,15 +177,28 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="flight_number">Número de Vuelo (Opcional)</Label>
-              <Input
-                id="flight_number"
-                value={formData.flight_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, flight_number: e.target.value }))}
-                placeholder="AV123"
-              />
-            </div>
+            {!tripId && (
+              <div>
+                <Label htmlFor="trip">Viaje</Label>
+                <Select 
+                  value={formData.trip_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, trip_id: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar viaje" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trips.map((trip) => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {new Date(trip.trip_date).toLocaleDateString()} - {trip.origin} → {trip.destination}
+                        {trip.flight_number && ` (${trip.flight_number})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div>
@@ -169,42 +210,6 @@ export function PackageDialog({ open, onOpenChange, onSuccess }: PackageDialogPr
               placeholder="Descripción del contenido..."
               required
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="origin">Origen</Label>
-              <Select 
-                value={formData.origin} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, origin: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar origen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Barranquilla">Barranquilla</SelectItem>
-                  <SelectItem value="Curazao">Curazao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="destination">Destino</Label>
-              <Select 
-                value={formData.destination} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, destination: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar destino" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Barranquilla">Barranquilla</SelectItem>
-                  <SelectItem value="Curazao">Curazao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

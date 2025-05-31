@@ -30,18 +30,18 @@ export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }:
 
   return (
     <>
-      <div className="grid grid-cols-7 gap-2 mb-4">
+      <div className="grid grid-cols-7 gap-1 md:gap-2 mb-4">
         {weekDays.map((day) => (
           <div 
             key={day} 
-            className="p-3 text-center font-bold text-black text-sm bg-gray-100 rounded-lg"
+            className="p-2 md:p-3 text-center font-bold text-black text-xs md:text-sm bg-gray-100 rounded-lg"
           >
             {day}
           </div>
         ))}
       </div>
       
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 md:gap-2">
         {calendarDays.map((day) => {
           const dayTrips = getTripsForDate(day);
           

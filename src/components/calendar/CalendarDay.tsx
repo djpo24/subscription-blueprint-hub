@@ -3,6 +3,7 @@ import { format, isSameMonth, isSameDay } from 'date-fns';
 import { useState } from 'react';
 import { TripIndicator } from './TripIndicator';
 import { TripPopover } from './TripPopover';
+import { TripCard } from './TripCard';
 
 interface Trip {
   id: string;
@@ -28,7 +29,7 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
 
   return (
     <div
-      className={`min-h-[80px] rounded-lg border transition-all duration-200 relative ${
+      className={`min-h-[80px] md:min-h-[120px] lg:min-h-[160px] rounded-lg border transition-all duration-200 relative ${
         isCurrentMonth 
           ? isToday 
             ? 'bg-black text-white border-black' 
@@ -36,7 +37,7 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
           : 'bg-gray-50 border-gray-100'
       }`}
     >
-      <div className={`p-3 ${
+      <div className={`p-2 md:p-3 h-full ${
         isCurrentMonth 
           ? isToday 
             ? 'text-white' 
@@ -48,10 +49,36 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage }: CalendarD
         </div>
         
         {trips.length > 0 && (
-          <TripIndicator
-            trips={trips}
-            onShowPopover={() => setShowPopover(true)}
-          />
+          <>
+            {/* Vista móvil y tablet - solo indicadores */}
+            <div className="block lg:hidden">
+              <TripIndicator
+                trips={trips}
+                onShowPopover={() => setShowPopover(true)}
+              />
+            </div>
+            
+            {/* Vista desktop - información completa */}
+            <div className="hidden lg:block space-y-2 overflow-y-auto max-h-[120px]">
+              {trips.slice(0, 2).map((trip) => (
+                <div key={trip.id} className="text-xs">
+                  <TripCard
+                    trip={trip}
+                    onAddPackage={onAddPackage}
+                    compact={true}
+                  />
+                </div>
+              ))}
+              {trips.length > 2 && (
+                <button
+                  onClick={() => setShowPopover(true)}
+                  className="text-xs text-gray-600 hover:text-black transition-colors"
+                >
+                  +{trips.length - 2} más
+                </button>
+              )}
+            </div>
+          </>
         )}
       </div>
 

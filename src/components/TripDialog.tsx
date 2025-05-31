@@ -1,18 +1,10 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { format, startOfToday } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useTripForm } from '@/hooks/useTripForm';
+import { TripDatePicker } from '@/components/trip/TripDatePicker';
+import { TripRouteSelector } from '@/components/trip/TripRouteSelector';
+import { TripFlightInput } from '@/components/trip/TripFlightInput';
 
 interface TripDialogProps {
   open: boolean;
@@ -21,104 +13,15 @@ interface TripDialogProps {
 }
 
 export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [date, setDate] = useState<Date>();
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const { toast } = useToast();
-  
-  const [formData, setFormData] = useState({
-    route: '',
-    flight_number: ''
-  });
-
-  const today = startOfToday();
-
-  // Function to parse route and get origin and destination
-  const parseRoute = (route: string) => {
-    if (route === 'Barranquilla-Curazao') {
-      return { origin: 'Barranquilla', destination: 'Curazao' };
-    } else if (route === 'Curazao-Barranquilla') {
-      return { origin: 'Curazao', destination: 'Barranquilla' };
-    }
-    return { origin: '', destination: '' };
-  };
-
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    if (selectedDate) {
-      setIsCalendarOpen(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!date) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona una fecha",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!formData.route) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona el viaje",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { origin, destination } = parseRoute(formData.route);
-      
-      const { error } = await supabase
-        .from('trips')
-        .insert([{
-          trip_date: format(date, 'yyyy-MM-dd'),
-          origin: origin,
-          destination: destination,
-          flight_number: formData.flight_number || null,
-          status: 'scheduled'
-        }]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Viaje creado",
-        description: `Viaje de ${origin} a ${destination} creado exitosamente`,
-      });
-
-      // Reset form
-      setFormData({
-        route: '',
-        flight_number: ''
-      });
-      setDate(undefined);
-
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating trip:', error);
-      if (error.code === '23505') {
-        toast({
-          title: "Error",
-          description: "Ya existe un viaje para esta fecha y ruta",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo crear el viaje",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    formData,
+    updateFormData,
+    date,
+    setDate,
+    today,
+    isLoading,
+    handleSubmit
+  } = useTripForm(onSuccess);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -131,62 +34,21 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="trip_date">Fecha del Viaje</Label>
-            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => date < today}
-                  initialFocus
-                  locale={es}
-                  weekStartsOn={0}
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <TripDatePicker
+            date={date}
+            onDateChange={setDate}
+            today={today}
+          />
 
-          <div>
-            <Label htmlFor="route">Viaje</Label>
-            <Select 
-              value={formData.route} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, route: value }))}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar viaje" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Barranquilla-Curazao">Barranquilla-Curazao</SelectItem>
-                <SelectItem value="Curazao-Barranquilla">Curazao-Barranquilla</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <TripRouteSelector
+            value={formData.route}
+            onValueChange={(value) => updateFormData({ route: value })}
+          />
 
-          <div>
-            <Label htmlFor="flight_number">Número de Vuelo (Opcional)</Label>
-            <Input
-              id="flight_number"
-              value={formData.flight_number}
-              onChange={(e) => setFormData(prev => ({ ...prev, flight_number: e.target.value }))}
-              placeholder="AV123"
-            />
-          </div>
+          <TripFlightInput
+            value={formData.flight_number}
+            onValueChange={(value) => updateFormData({ flight_number: value })}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

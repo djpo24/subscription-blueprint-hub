@@ -9,177 +9,228 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      customers: {
         Row: {
-          created_at: string | null
-          email: string
-          full_name: string | null
-          id: string
-          subscription_ends_at: string | null
-          subscription_plan: string | null
-          subscription_status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          full_name?: string | null
-          id: string
-          subscription_ends_at?: string | null
-          subscription_plan?: string | null
-          subscription_status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          full_name?: string | null
-          id?: string
-          subscription_ends_at?: string | null
-          subscription_plan?: string | null
-          subscription_status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      user_connections: {
-        Row: {
-          connected_at: string | null
-          data_used_mb: number | null
-          disconnected_at: string | null
-          id: string
-          server_id: string | null
-          user_id: string
-        }
-        Insert: {
-          connected_at?: string | null
-          data_used_mb?: number | null
-          disconnected_at?: string | null
-          id?: string
-          server_id?: string | null
-          user_id: string
-        }
-        Update: {
-          connected_at?: string | null
-          data_used_mb?: number | null
-          disconnected_at?: string | null
-          id?: string
-          server_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_connections_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "vpn_servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_metrics: {
-        Row: {
+          address: string | null
           created_at: string
-          date: string
+          email: string
           id: string
-          metric_type: string
-          metric_value: number
+          name: string
+          phone: string
           updated_at: string
-          user_id: string
+          whatsapp_number: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
-          date?: string
+          email: string
           id?: string
-          metric_type: string
-          metric_value?: number
+          name: string
+          phone: string
           updated_at?: string
-          user_id: string
+          whatsapp_number?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
-          date?: string
+          email?: string
           id?: string
-          metric_type?: string
-          metric_value?: number
+          name?: string
+          phone?: string
           updated_at?: string
-          user_id?: string
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
-      user_sessions: {
+      flight_data: {
         Row: {
-          avg_speed_mbps: number | null
+          actual_arrival: string | null
+          actual_departure: string | null
+          airline: string
+          arrival_airport: string
           created_at: string
-          data_used_mb: number | null
+          departure_airport: string
+          flight_number: string
           id: string
-          server_id: string | null
-          session_end: string | null
-          session_start: string
-          user_id: string
+          last_updated: string
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          status: string
         }
         Insert: {
-          avg_speed_mbps?: number | null
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline?: string
+          arrival_airport: string
           created_at?: string
-          data_used_mb?: number | null
+          departure_airport: string
+          flight_number: string
           id?: string
-          server_id?: string | null
-          session_end?: string | null
-          session_start?: string
-          user_id: string
+          last_updated?: string
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          status?: string
         }
         Update: {
-          avg_speed_mbps?: number | null
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          airline?: string
+          arrival_airport?: string
           created_at?: string
-          data_used_mb?: number | null
+          departure_airport?: string
+          flight_number?: string
           id?: string
-          server_id?: string | null
-          session_end?: string | null
-          session_start?: string
-          user_id?: string
+          last_updated?: string
+          scheduled_arrival?: string | null
+          scheduled_departure?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          message: string
+          package_id: string
+          sent_at: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          message: string
+          package_id: string
+          sent_at?: string | null
+          status?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          message?: string
+          package_id?: string
+          sent_at?: string | null
+          status?: string
+          type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_sessions_server_id_fkey"
-            columns: ["server_id"]
+            foreignKeyName: "notifications_customer_id_fkey"
+            columns: ["customer_id"]
             isOneToOne: false
-            referencedRelation: "vpn_servers"
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
             referencedColumns: ["id"]
           },
         ]
       }
-      vpn_servers: {
+      packages: {
         Row: {
-          city: string
-          country: string
-          created_at: string | null
-          flag_emoji: string
+          actual_arrival: string | null
+          created_at: string
+          customer_id: string
+          description: string
+          destination: string
+          dimensions: string | null
+          estimated_arrival: string | null
+          flight_number: string | null
           id: string
-          is_premium: boolean | null
-          name: string
-          server_load: number | null
+          origin: string
+          status: string
+          tracking_number: string
+          updated_at: string
+          weight: number | null
         }
         Insert: {
-          city: string
-          country: string
-          created_at?: string | null
-          flag_emoji: string
+          actual_arrival?: string | null
+          created_at?: string
+          customer_id: string
+          description: string
+          destination: string
+          dimensions?: string | null
+          estimated_arrival?: string | null
+          flight_number?: string | null
           id?: string
-          is_premium?: boolean | null
-          name: string
-          server_load?: number | null
+          origin: string
+          status?: string
+          tracking_number: string
+          updated_at?: string
+          weight?: number | null
         }
         Update: {
-          city?: string
-          country?: string
-          created_at?: string | null
-          flag_emoji?: string
+          actual_arrival?: string | null
+          created_at?: string
+          customer_id?: string
+          description?: string
+          destination?: string
+          dimensions?: string | null
+          estimated_arrival?: string | null
+          flight_number?: string | null
           id?: string
-          is_premium?: boolean | null
-          name?: string
-          server_load?: number | null
+          origin?: string
+          status?: string
+          tracking_number?: string
+          updated_at?: string
+          weight?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "packages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_events: {
+        Row: {
+          created_at: string
+          description: string
+          event_type: string
+          id: string
+          location: string | null
+          package_id: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_type: string
+          id?: string
+          location?: string | null
+          package_id: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          package_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -1,7 +1,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus } from 'lucide-react';
 import { getStatusColor, getStatusLabel } from '@/utils/calendarUtils';
 
 interface Trip {
@@ -16,25 +17,25 @@ interface Trip {
 
 interface TripPopoverProps {
   trips: Trip[];
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAddPackage: (tripId: string) => void;
 }
 
-export function TripPopover({ trips, onClose, onAddPackage }: TripPopoverProps) {
+export function TripPopover({ trips, open, onOpenChange, onAddPackage }: TripPopoverProps) {
+  const handleAddPackage = (tripId: string) => {
+    onAddPackage(tripId);
+    onOpenChange(false);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-bold text-lg">Viajes del día</h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Viajes del día</DialogTitle>
+        </DialogHeader>
         
-        <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {trips.map((trip) => (
             <div
               key={trip.id}
@@ -58,10 +59,7 @@ export function TripPopover({ trips, onClose, onAddPackage }: TripPopoverProps) 
               
               <Button
                 size="sm"
-                onClick={() => {
-                  onAddPackage(trip.id);
-                  onClose();
-                }}
+                onClick={() => handleAddPackage(trip.id)}
                 className="w-full uber-button-primary text-xs h-8"
               >
                 <Plus className="h-3 w-3 mr-1" />
@@ -70,7 +68,7 @@ export function TripPopover({ trips, onClose, onAddPackage }: TripPopoverProps) 
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

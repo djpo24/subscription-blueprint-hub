@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +22,7 @@ interface TripDialogProps {
 export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [date, setDate] = useState<Date>();
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -36,6 +35,13 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
   // Function to automatically determine destination based on origin
   const getDestination = (origin: string) => {
     return origin === 'Barranquilla' ? 'Curazao' : 'Barranquilla';
+  };
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    if (selectedDate) {
+      setIsCalendarOpen(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,7 +127,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="trip_date">Fecha del Viaje</Label>
-            <Popover>
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
@@ -138,7 +144,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={handleDateSelect}
                   disabled={(date) => date < today}
                   initialFocus
                   locale={es}
@@ -194,4 +200,3 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
     </Dialog>
   );
 }
-

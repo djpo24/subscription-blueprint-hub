@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,8 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
     destination: '',
     flight_number: ''
   });
+
+  const today = startOfToday();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,9 +124,11 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
                   mode="single"
                   selected={date}
                   onSelect={setDate}
+                  disabled={(date) => date < today}
                   initialFocus
                   locale={es}
                   weekStartsOn={0}
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>

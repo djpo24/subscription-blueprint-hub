@@ -21,6 +21,30 @@ interface CustomerSearchSelectorProps {
   onCustomerChange: (customerId: string) => void;
 }
 
+// Helper function to check if email is valid (not empty and not temporary)
+const isValidEmail = (email: string): boolean => {
+  if (!email || email.trim() === '') return false;
+  
+  // List of common temporary email domains
+  const tempEmailDomains = [
+    'tempmail.org',
+    '10minutemail.com',
+    'guerrillamail.com',
+    'mailinator.com',
+    'temp-mail.org',
+    'throwaway.email',
+    'maildrop.cc',
+    'yopmail.com',
+    'exemplo.com',
+    'test.com',
+    'temp.com',
+    'temporal.com'
+  ];
+  
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+  return emailDomain && !tempEmailDomains.includes(emailDomain);
+};
+
 export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }: CustomerSearchSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -48,7 +72,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
     return customers.filter(customer => 
       customer.name.toLowerCase().includes(term) ||
       customer.phone.includes(term) ||
-      customer.email.toLowerCase().includes(term) ||
+      (isValidEmail(customer.email) && customer.email.toLowerCase().includes(term)) ||
       (customer.id_number && customer.id_number.includes(term))
     );
   }, [customers, searchTerm]);
@@ -127,7 +151,9 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
                       <div className="flex-1">
                         <div className="font-medium text-sm">{customer.name}</div>
                         <div className="text-xs text-gray-500 space-y-1">
-                          <div>📧 {customer.email}</div>
+                          {isValidEmail(customer.email) && (
+                            <div>📧 {customer.email}</div>
+                          )}
                           <div>📱 {customer.phone}</div>
                           {customer.id_number && (
                             <div>🆔 {customer.id_number}</div>

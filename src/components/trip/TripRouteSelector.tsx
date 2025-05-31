@@ -9,12 +9,12 @@ interface TripRouteSelectorProps {
 }
 
 export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorProps) {
-  // Función para convertir el formato visual al formato interno
+  // Función para convertir el formato visual (con flechas) al formato interno (con guiones)
   const convertToInternalFormat = (visualValue: string) => {
     switch (visualValue) {
-      case 'Barranquilla-Curazao':
+      case 'Barranquilla -> Curazao':
         return 'Barranquilla -> Curazao';
-      case 'Curazao-Barranquilla':
+      case 'Curazao -> Barranquilla':
         return 'Curazao -> Barranquilla';
       default:
         return visualValue;
@@ -25,9 +25,9 @@ export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorPro
   const convertToVisualFormat = (internalValue: string) => {
     switch (internalValue) {
       case 'Barranquilla -> Curazao':
-        return 'Barranquilla-Curazao';
+        return 'Barranquilla -> Curazao';
       case 'Curazao -> Barranquilla':
-        return 'Curazao-Barranquilla';
+        return 'Curazao -> Barranquilla';
       default:
         return internalValue;
     }
@@ -55,14 +55,14 @@ export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorPro
           <SelectValue placeholder="Seleccionar viaje" />
         </SelectTrigger>
         <SelectContent className="bg-white border-0 shadow-xl rounded-lg">
-          <SelectItem value="Barranquilla-Curazao" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
+          <SelectItem value="Barranquilla -> Curazao" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
             <div className="flex items-center gap-3">
               <span className="font-medium text-black">Barranquilla</span>
               <ArrowRight className="h-4 w-4 text-gray-400" />
               <span className="font-medium text-black">Curazao</span>
             </div>
           </SelectItem>
-          <SelectItem value="Curazao-Barranquilla" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
+          <SelectItem value="Curazao -> Barranquilla" className="h-12 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
             <div className="flex items-center gap-3">
               <span className="font-medium text-black">Curazao</span>
               <ArrowRight className="h-4 w-4 text-gray-400" />

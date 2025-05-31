@@ -20,18 +20,20 @@ export function CustomerFormDialog({ open, onOpenChange, onSuccess }: CustomerFo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Crear Nuevo Cliente</DialogTitle>
           <DialogDescription>
             Completa la información para crear un nuevo cliente.
           </DialogDescription>
         </DialogHeader>
         
-        <InlineCustomerForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <InlineCustomerForm
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

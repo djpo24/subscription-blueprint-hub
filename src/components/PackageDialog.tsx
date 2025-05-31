@@ -46,30 +46,28 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 pb-4">
-            <div className="grid grid-cols-2 gap-4">
-              <CustomerSearchSelector
-                selectedCustomerId={selectedCustomerId}
-                onCustomerChange={setSelectedCustomerId}
-                key={open ? 'open' : 'closed'} // Force re-render when dialog opens
-              />
+        <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
+          <div className="grid grid-cols-2 gap-4">
+            <CustomerSearchSelector
+              selectedCustomerId={selectedCustomerId}
+              onCustomerChange={setSelectedCustomerId}
+              key={open ? 'open' : 'closed'} // Force re-render when dialog opens
+            />
 
-              <TripSelector
-                selectedTripId={selectedTripId}
-                onTripChange={setSelectedTripId}
-                disabled={!!tripId}
-              />
-            </div>
-
-            <PackageForm
-              customerId={selectedCustomerId}
-              tripId={selectedTripId}
-              onSuccess={handleSuccess}
-              onCancel={handleCancel}
+            <TripSelector
+              selectedTripId={selectedTripId}
+              onTripChange={setSelectedTripId}
+              disabled={!!tripId}
             />
           </div>
-        </ScrollArea>
+
+          <PackageForm
+            customerId={selectedCustomerId}
+            tripId={selectedTripId}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

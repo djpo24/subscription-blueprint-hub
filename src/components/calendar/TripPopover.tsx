@@ -30,12 +30,12 @@ export function TripPopover({ trips, open, onOpenChange, onAddPackage }: TripPop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Viajes del día</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
           {trips.map((trip) => (
             <div
               key={trip.id}

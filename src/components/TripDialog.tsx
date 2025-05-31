@@ -25,16 +25,16 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] uber-dialog">
-        <DialogHeader className="space-y-3 pb-6">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] uber-dialog flex flex-col">
+        <DialogHeader className="space-y-3 pb-6 flex-shrink-0">
           <DialogTitle className="text-2xl font-bold text-black">Nuevo Viaje</DialogTitle>
           <DialogDescription className="text-gray-600">
             Crea un nuevo viaje para agrupar encomiendas.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4">
             <TripDatePicker
               date={date}
               onDateChange={setDate}
@@ -52,7 +52,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
             />
           </div>
 
-          <DialogFooter className="gap-3 pt-6">
+          <DialogFooter className="gap-3 pt-6 flex-shrink-0">
             <Button 
               type="button" 
               variant="secondary" 

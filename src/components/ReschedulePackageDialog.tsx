@@ -58,32 +58,34 @@ export function ReschedulePackageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Reprogramar Encomienda</DialogTitle>
           <DialogDescription>
             Cambiar el viaje para la encomienda {pkg.tracking_number}
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="current-status">Estado actual</Label>
-            <div className="text-sm text-gray-600 mt-1">
-              {pkg.status === 'pending' ? 'Pendiente' :
-               pkg.status === 'in_transit' ? 'En Tránsito' :
-               pkg.status === 'delivered' ? 'Entregado' :
-               pkg.status === 'delayed' ? 'Retrasado' :
-               pkg.status === 'arrived' ? 'Llegado' : pkg.status}
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <div>
+              <Label htmlFor="current-status">Estado actual</Label>
+              <div className="text-sm text-gray-600 mt-1">
+                {pkg.status === 'pending' ? 'Pendiente' :
+                 pkg.status === 'in_transit' ? 'En Tránsito' :
+                 pkg.status === 'delivered' ? 'Entregado' :
+                 pkg.status === 'delayed' ? 'Retrasado' :
+                 pkg.status === 'arrived' ? 'Llegado' : pkg.status}
+              </div>
             </div>
+
+            <TripSelector
+              selectedTripId={selectedTripId}
+              onTripChange={setSelectedTripId}
+            />
           </div>
 
-          <TripSelector
-            selectedTripId={selectedTripId}
-            onTripChange={setSelectedTripId}
-          />
-
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>

@@ -167,11 +167,11 @@ export function AddressFormDialog({ value, onChange }: AddressFormDialogProps) {
             )}
           </div>
         </DialogTrigger>
-        <DialogContent className="w-[95vw] max-w-2xl h-[85vh] max-h-[800px] backdrop-blur-sm overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] backdrop-blur-sm flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Configurar Dirección</DialogTitle>
           </DialogHeader>
-          <div className="py-4 flex-1 min-h-[600px]">
+          <div className="flex-1 overflow-y-auto py-4 min-h-0">
             {renderCurrentStep()}
           </div>
         </DialogContent>

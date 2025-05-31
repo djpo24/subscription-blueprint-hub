@@ -95,8 +95,8 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         key={pkg.id}
         className="label-item"
         style={{
-          width: '10cm',
-          height: '15cm',
+          width: '4in',
+          height: '6in',
           backgroundColor: 'white',
           color: 'black',
           fontSize: '12px',
@@ -105,25 +105,27 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           flexDirection: 'column',
           border: '2px solid #000',
           pageBreakAfter: 'always',
-          margin: '0',
-          padding: '0'
+          margin: '0 auto',
+          padding: '0',
+          boxSizing: 'border-box'
         }}
       >
         {/* Header superior */}
         <div style={{ 
           backgroundColor: 'white', 
-          padding: '8px', 
+          padding: '6px', 
           borderBottom: '2px solid #000',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-start'
+          alignItems: 'flex-start',
+          minHeight: '50px'
         }}>
           <div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', lineHeight: '1' }}>E</div>
-            <div style={{ fontSize: '12px', fontWeight: 'bold' }}>ENCOMIENDA</div>
-            <div style={{ fontSize: '10px' }}>ZONA: {pkg.origin.substring(0, 1)}</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: '1' }}>E</div>
+            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ENCOMIENDA</div>
+            <div style={{ fontSize: '8px' }}>ZONA: {pkg.origin.substring(0, 1)}</div>
           </div>
-          <div style={{ textAlign: 'right', fontSize: '10px' }}>
+          <div style={{ textAlign: 'right', fontSize: '8px' }}>
             <div>#{pkg.tracking_number.substring(0, 12)}</div>
             <div>{format(new Date(pkg.created_at), 'dd/MM/yy')}</div>
             <div>DE: {pkg.origin.substring(0, 6)}</div>
@@ -133,10 +135,11 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         {/* Sección de servicio */}
         <div style={{ 
           backgroundColor: 'white', 
-          padding: '8px', 
-          borderBottom: '2px solid #000'
+          padding: '6px', 
+          borderBottom: '2px solid #000',
+          textAlign: 'center'
         }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
+          <div style={{ fontSize: '12px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
         </div>
 
         {/* Información del remitente y destinatario */}
@@ -144,26 +147,29 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           backgroundColor: 'white', 
           padding: '8px', 
           borderBottom: '2px solid #000',
-          flexGrow: 1
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
         }}>
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>DESDE:</div>
-            <div style={{ fontSize: '11px' }}>{pkg.origin}</div>
+          <div style={{ marginBottom: '6px' }}>
+            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>DESDE:</div>
+            <div style={{ fontSize: '9px', wordWrap: 'break-word' }}>{pkg.origin}</div>
           </div>
           
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>PARA:</div>
-            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{pkg.customers?.name || 'CLIENTE'}</div>
-            <div style={{ fontSize: '11px' }}>{pkg.destination}</div>
+          <div style={{ marginBottom: '6px' }}>
+            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>PARA:</div>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', wordWrap: 'break-word' }}>{pkg.customers?.name || 'CLIENTE'}</div>
+            <div style={{ fontSize: '9px', wordWrap: 'break-word' }}>{pkg.destination}</div>
           </div>
 
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>DESCRIPCIÓN:</div>
-            <div style={{ fontSize: '10px' }}>{pkg.description}</div>
+          <div style={{ marginBottom: '6px' }}>
+            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>DESCRIPCIÓN:</div>
+            <div style={{ fontSize: '8px', wordWrap: 'break-word', maxHeight: '40px', overflow: 'hidden' }}>{pkg.description}</div>
           </div>
 
           {pkg.weight && (
-            <div style={{ fontSize: '10px' }}>
+            <div style={{ fontSize: '8px' }}>
               <span style={{ fontWeight: 'bold' }}>PESO:</span> {pkg.weight} kg
             </div>
           )}
@@ -172,16 +178,25 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         {/* Código de barras */}
         <div style={{ 
           backgroundColor: 'white', 
-          padding: '8px', 
+          padding: '6px', 
           borderBottom: '2px solid #000',
-          textAlign: 'center'
+          textAlign: 'center',
+          minHeight: '70px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
         }}>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>TRACKING #</div>
+          <div style={{ fontSize: '8px', fontWeight: 'bold', marginBottom: '2px' }}>TRACKING #</div>
           {labelData?.barcodeDataUrl && (
             <img 
               src={labelData.barcodeDataUrl} 
               alt="Barcode" 
-              style={{ width: '100%', height: '50px', objectFit: 'contain' }}
+              style={{ 
+                width: '90%', 
+                height: '50px', 
+                objectFit: 'contain',
+                margin: '0 auto'
+              }}
             />
           )}
         </div>
@@ -189,19 +204,20 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         {/* QR Code */}
         <div style={{ 
           backgroundColor: 'white', 
-          padding: '8px',
+          padding: '6px',
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          minHeight: '80px'
         }}>
           {labelData?.qrCodeDataUrl && (
             <div style={{ textAlign: 'center' }}>
               <img 
                 src={labelData.qrCodeDataUrl} 
                 alt="QR Code" 
-                style={{ width: '60px', height: '60px', marginBottom: '4px' }}
+                style={{ width: '50px', height: '50px', marginBottom: '2px' }}
               />
-              <div style={{ fontSize: '8px' }}>Gestión digital</div>
+              <div style={{ fontSize: '6px' }}>Gestión digital</div>
             </div>
           )}
         </div>
@@ -215,7 +231,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       <div className="screen-only mb-4 p-4 border rounded-lg bg-white">
         <h3 className="text-lg font-semibold mb-2">Vista Previa - {packages.length} Etiquetas</h3>
         <div className="text-sm text-gray-600 mb-4">
-          Se imprimirán {packages.length} etiqueta{packages.length !== 1 ? 's' : ''} en páginas separadas
+          Se imprimirán {packages.length} etiqueta{packages.length !== 1 ? 's' : ''} centradas en páginas separadas
         </div>
         
         <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
@@ -224,15 +240,15 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
             return (
               <div
                 key={pkg.id}
-                className="border border-gray-300 bg-white p-2"
+                className="border border-gray-300 bg-white p-2 flex justify-center"
                 style={{ 
                   width: '150px', 
-                  height: '225px',
-                  transform: 'scale(0.5)',
-                  transformOrigin: 'top left'
+                  height: '225px'
                 }}
               >
-                {renderLabel(pkg, labelData)}
+                <div style={{ transform: 'scale(0.5)', transformOrigin: 'top center' }}>
+                  {renderLabel(pkg, labelData)}
+                </div>
               </div>
             );
           })}
@@ -254,7 +270,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         })}
       </div>
 
-      {/* CSS para impresión */}
+      {/* CSS para impresión mejorado */}
       <style>{`
         @media screen {
           .print-only {
@@ -266,24 +282,47 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         }
         
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          
           body * {
             visibility: hidden;
           }
+          
           .print-only, .print-only * {
             visibility: visible;
           }
+          
           .print-only {
             position: absolute;
             left: 0;
             top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
           }
+          
           .screen-only {
             display: none !important;
           }
+          
           @page {
-            size: 10cm 15cm;
-            margin: 0;
+            size: 4in 6in;
+            margin: 0.25in;
           }
+          
+          .label-item {
+            margin: 0 auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+          }
+          
           .label-item:last-child {
             page-break-after: auto;
           }

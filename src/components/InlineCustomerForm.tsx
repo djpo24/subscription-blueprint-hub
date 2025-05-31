@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { CustomerFormData, initialCustomerFormData } from '@/types/CustomerFormData';
+import { AddressSelector } from './AddressSelector';
 import { Mail } from 'lucide-react';
 
 interface InlineCustomerFormProps {
@@ -148,13 +148,9 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
         </div>
 
         <div>
-          <Label htmlFor="address">Dirección (Opcional)</Label>
-          <Textarea
-            id="address"
+          <AddressSelector
             value={formData.address}
-            onChange={(e) => updateFormData('address', e.target.value)}
-            placeholder="Dirección completa..."
-            className="mt-1"
+            onChange={(value) => updateFormData('address', value)}
           />
         </div>
 

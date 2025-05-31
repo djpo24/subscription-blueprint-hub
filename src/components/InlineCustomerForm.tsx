@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { CustomerFormData, initialCustomerFormData } from '@/types/CustomerFormData';
+import { Mail } from 'lucide-react';
 
 interface InlineCustomerFormProps {
   onSuccess: (customerId: string) => void;
@@ -16,6 +17,7 @@ interface InlineCustomerFormProps {
 
 export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailField, setShowEmailField] = useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = useState<CustomerFormData>(initialCustomerFormData);
 
@@ -26,13 +28,12 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
-      const fullWhatsApp = formData.whatsappNumber ? `${formData.countryCode}${formData.whatsappNumber}` : null;
 
       const customerData = {
         name: fullName,
-        email: formData.email,
+        email: formData.email || `${Date.now()}@temp.com`, // Temporary email if not provided
         phone: fullPhone,
-        whatsapp_number: fullWhatsApp,
+        whatsapp_number: null,
         address: formData.address || null
       };
 
@@ -106,40 +107,44 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
           </div>
 
           <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateFormData('email', e.target.value)}
+            <PhoneNumberInput
+              label="Teléfono"
+              id="phone"
+              countryCode={formData.countryCode}
+              phoneNumber={formData.phoneNumber}
+              onCountryCodeChange={(value) => updateFormData('countryCode', value)}
+              onPhoneNumberChange={(value) => updateFormData('phoneNumber', value)}
+              placeholder="Número de teléfono"
               required
-              className="mt-1"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PhoneNumberInput
-            label="Teléfono"
-            id="phone"
-            countryCode={formData.countryCode}
-            phoneNumber={formData.phoneNumber}
-            onCountryCodeChange={(value) => updateFormData('countryCode', value)}
-            onPhoneNumberChange={(value) => updateFormData('phoneNumber', value)}
-            placeholder="Número de teléfono"
-            required
-          />
-
-          <PhoneNumberInput
-            label="WhatsApp (Opcional)"
-            id="whatsapp"
-            countryCode={formData.countryCode}
-            phoneNumber={formData.whatsappNumber}
-            onCountryCodeChange={(value) => updateFormData('countryCode', value)}
-            onPhoneNumberChange={(value) => updateFormData('whatsappNumber', value)}
-            placeholder="Número WhatsApp"
-            showCountryCodeSelector={false}
-          />
+        <div className="space-y-4">
+          {!showEmailField ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEmailField(true)}
+              className="flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Agregar Email (Opcional)
+            </Button>
+          ) : (
+            <div>
+              <Label htmlFor="email">Email (Opcional)</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateFormData('email', e.target.value)}
+                placeholder="correo@ejemplo.com"
+                className="mt-1"
+              />
+            </div>
+          )}
         </div>
 
         <div>

@@ -1,11 +1,13 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { PackageActionsDropdown } from './PackageActionsDropdown';
 import { EditPackageDialog } from './EditPackageDialog';
+import { MultipleLabelsDialog } from './MultipleLabelsDialog';
+import { Printer } from 'lucide-react';
 
 interface Package {
   id: string;
@@ -34,6 +36,7 @@ interface PackagesTableProps {
 export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate }: PackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showMultipleLabelsDialog, setShowMultipleLabelsDialog] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,10 +103,23 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Encomiendas Recientes</CardTitle>
-          <CardDescription>
-            Últimas encomiendas registradas en el sistema. Haz click en una encomienda para editarla.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Encomiendas Recientes</CardTitle>
+              <CardDescription>
+                Últimas encomiendas registradas en el sistema. Haz click en una encomienda para editarla.
+              </CardDescription>
+            </div>
+            <Button
+              onClick={() => setShowMultipleLabelsDialog(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={filteredPackages.length === 0}
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir Múltiples
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -173,6 +189,12 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
         onOpenChange={setShowEditDialog}
         package={selectedPackage}
         onSuccess={handleEditSuccess}
+      />
+
+      <MultipleLabelsDialog
+        open={showMultipleLabelsDialog}
+        onOpenChange={setShowMultipleLabelsDialog}
+        packages={filteredPackages}
       />
     </>
   );

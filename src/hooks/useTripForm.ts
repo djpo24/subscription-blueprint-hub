@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,39 +28,26 @@ export function useTripForm(onSuccess: () => void) {
     mutationFn: async (tripData: any) => {
       console.log('Creating trip with data:', tripData);
       
-      // Primero verificar si ya existe un viaje para esta fecha y ruta
-      const { data: existingTrip, error: checkError } = await supabase
-        .from('trips')
-        .select('id, flight_number')
-        .eq('trip_date', tripData.trip_date)
-        .eq('origin', tripData.origin)
-        .eq('destination', tripData.destination)
-        .maybeSingle();
+      // Verificar si ya existe un viaje con el mismo número de vuelo en la misma fecha
+      if (tripData.flight_number) {
+        const { data: existingFlightTrip, error: flightCheckError } = await supabase
+          .from('trips')
+          .select('id, origin, destination')
+          .eq('trip_date', tripData.trip_date)
+          .eq('flight_number', tripData.flight_number)
+          .maybeSingle();
 
-      if (checkError) {
-        console.error('Error checking existing trip:', checkError);
-        throw checkError;
-      }
+        if (flightCheckError) {
+          console.error('Error checking existing flight trip:', flightCheckError);
+          throw flightCheckError;
+        }
 
-      if (existingTrip) {
-        // Si ya existe un viaje, actualizar el número de vuelo si se proporcionó uno nuevo
-        if (tripData.flight_number && tripData.flight_number !== existingTrip.flight_number) {
-          const { data: updatedTrip, error: updateError } = await supabase
-            .from('trips')
-            .update({ flight_number: tripData.flight_number })
-            .eq('id', existingTrip.id)
-            .select()
-            .single();
-
-          if (updateError) throw updateError;
-          return updatedTrip;
-        } else {
-          // Si no hay número de vuelo nuevo, mostrar error informativo
-          throw new Error('TRIP_EXISTS');
+        if (existingFlightTrip) {
+          throw new Error('FLIGHT_EXISTS');
         }
       }
 
-      // Si no existe, crear el nuevo viaje
+      // Crear el nuevo viaje sin verificar ruta duplicada
       const { data, error } = await supabase
         .from('trips')
         .insert([tripData])
@@ -72,7 +58,7 @@ export function useTripForm(onSuccess: () => void) {
       return data;
     },
     onSuccess: async (data) => {
-      console.log('Trip created/updated successfully:', data);
+      console.log('Trip created successfully:', data);
       
       // Si el viaje tiene número de vuelo, crear datos de monitoreo
       if (data.flight_number) {
@@ -140,16 +126,14 @@ export function useTripForm(onSuccess: () => void) {
     onError: (error: any) => {
       console.error('Error creating trip:', error);
       
-      if (error.message === 'TRIP_EXISTS') {
-        const routeParts = formData.route.split(' -> ');
-        const [origin, destination] = routeParts;
+      if (error.message === 'FLIGHT_EXISTS') {
         toast({
-          title: "Viaje ya existe",
-          description: `Ya existe un viaje programado para ${format(date!, 'dd/MM/yyyy')} en la ruta ${origin} → ${destination}. Si quiere cambiar el número de vuelo, ingrese uno diferente.`,
+          title: "Número de vuelo ya existe",
+          description: `Ya existe un viaje programado para ${format(date!, 'dd/MM/yyyy')} con el número de vuelo ${formData.flight_number}`,
           variant: "destructive"
         });
       } else if (error.code === '23505') {
-        // Error de restricción única
+        // Error de restricción única por ruta y fecha
         const routeParts = formData.route.split(' -> ');
         const [origin, destination] = routeParts;
         toast({

@@ -257,13 +257,10 @@ export function PackageForm({
           </div>}
       </div>
 
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isLoading}>
+      <div className="w-full">
+        <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? 'Creando...' : 'Crear Encomienda'}
         </Button>
-      </DialogFooter>
+      </div>
     </form>;
 }

@@ -31,10 +31,7 @@ export function PackageLabelPrintStyles() {
           top: 0;
           width: 100%;
           height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
+          display: block;
         }
         
         .screen-only {
@@ -47,14 +44,20 @@ export function PackageLabelPrintStyles() {
         }
         
         .label-item {
-          margin: 0 auto !important;
+          width: 4in !important;
+          height: 6in !important;
+          margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           justify-content: space-between !important;
+          page-break-after: always !important;
+          page-break-inside: avoid !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
         }
         
         .label-item:last-child {
-          page-break-after: auto;
+          page-break-after: auto !important;
         }
       }
     `}</style>

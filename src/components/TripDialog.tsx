@@ -25,36 +25,47 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Nuevo Viaje</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-[500px] uber-card border-0 shadow-xl">
+        <DialogHeader className="space-y-3 pb-6">
+          <DialogTitle className="text-2xl font-bold text-gray-900">Nuevo Viaje</DialogTitle>
+          <DialogDescription className="text-gray-600">
             Crea un nuevo viaje para agrupar encomiendas.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <TripDatePicker
-            date={date}
-            onDateChange={setDate}
-            today={today}
-          />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <TripDatePicker
+              date={date}
+              onDateChange={setDate}
+              today={today}
+            />
 
-          <TripRouteSelector
-            value={formData.route}
-            onValueChange={(value) => updateFormData({ route: value })}
-          />
+            <TripRouteSelector
+              value={formData.route}
+              onValueChange={(value) => updateFormData({ route: value })}
+            />
 
-          <TripFlightInput
-            value={formData.flight_number}
-            onValueChange={(value) => updateFormData({ flight_number: value })}
-          />
+            <TripFlightInput
+              value={formData.flight_number}
+              onValueChange={(value) => updateFormData({ flight_number: value })}
+            />
+          </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="gap-3 pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="flex-1"
+            >
               {isLoading ? 'Creando...' : 'Crear Viaje'}
             </Button>
           </DialogFooter>

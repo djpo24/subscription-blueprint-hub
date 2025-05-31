@@ -26,22 +26,24 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
   };
 
   return (
-    <div>
-      <Label htmlFor="trip_date">Fecha del Viaje</Label>
+    <div className="space-y-2">
+      <Label htmlFor="trip_date" className="text-sm font-medium text-gray-700">
+        Fecha del Viaje
+      </Label>
       <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant={"outline"}
+            variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
+              "w-full h-12 justify-start text-left font-normal bg-white border-gray-200 hover:bg-gray-50",
+              !date && "text-gray-500"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="mr-3 h-4 w-4 text-gray-400" />
             {date ? format(date, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
+        <PopoverContent className="w-auto p-0 border-gray-200 shadow-xl" align="start">
           <Calendar
             mode="single"
             selected={date}

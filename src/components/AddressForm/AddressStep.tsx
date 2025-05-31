@@ -38,15 +38,14 @@ export function AddressStep({
       {country.id !== 'CW' && onBackToCity && (
         <Button 
           type="button"
-          variant="outline" 
+          className="bg-black text-white hover:bg-gray-800 mb-4"
           size="sm" 
           onClick={(e) => {
             console.log('🟠 AddressStep back to city clicked');
             e.preventDefault();
             e.stopPropagation();
             onBackToCity();
-          }} 
-          className="mb-2"
+          }}
         >
           ← Cambiar Ciudad ({city?.name})
         </Button>

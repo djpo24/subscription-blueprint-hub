@@ -9,28 +9,40 @@ export function useFlightMonitor() {
 
   const startMonitoringMutation = useMutation({
     mutationFn: async () => {
-      console.log('Iniciando monitoreo de vuelos...');
+      console.log('=== INICIANDO MONITOREO MANUAL ===');
       
       const response = await supabase.functions.invoke('flight-monitor');
       
-      if (response.error) throw response.error;
+      console.log('Respuesta del edge function:', response);
+      
+      if (response.error) {
+        console.error('Error en edge function:', response.error);
+        throw response.error;
+      }
       
       return response.data;
     },
     onSuccess: (data) => {
+      console.log('Monitoreo completado exitosamente:', data);
+      
       queryClient.invalidateQueries({ queryKey: ['pending-flight-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       
+      const message = data.totalFlightsInDb === 0 
+        ? "No hay vuelos en la base de datos para monitorear. Crea un viaje con número de vuelo primero."
+        : `Se monitorearon ${data.monitored} vuelos. ${data.updated} vuelos actualizados. Total en DB: ${data.totalFlightsInDb}`;
+      
       toast({
         title: "Monitoreo completado",
-        description: `Se monitorearon ${data.monitored} vuelos. ${data.updated} vuelos actualizados.`,
+        description: message,
+        variant: data.totalFlightsInDb === 0 ? "destructive" : "default"
       });
     },
     onError: (error: any) => {
       console.error('Error en monitoreo:', error);
       toast({
         title: "Error en monitoreo",
-        description: "No se pudo completar el monitoreo de vuelos",
+        description: `No se pudo completar el monitoreo: ${error.message || 'Error desconocido'}`,
         variant: "destructive"
       });
     }

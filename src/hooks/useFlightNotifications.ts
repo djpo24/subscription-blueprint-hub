@@ -34,11 +34,68 @@ export function useFlightNotifications() {
     refetchInterval: 30000, // Check every 30 seconds
   });
 
-  // Mutation to process notifications
+  // Mutation to process notifications with WhatsApp integration
   const processNotificationsMutation = useMutation({
     mutationFn: async () => {
+      console.log('Iniciando procesamiento de notificaciones...');
+      
+      // First, run the database function to create notification records
       const { error } = await supabase.rpc('process_arrival_notifications');
       if (error) throw error;
+
+      // Get all pending notifications that were just created
+      const { data: pendingNotifications, error: fetchError } = await supabase
+        .from('notification_log')
+        .select(`
+          id,
+          message,
+          customers (
+            phone,
+            whatsapp_number,
+            name
+          ),
+          packages (
+            tracking_number
+          )
+        `)
+        .eq('status', 'pending')
+        .eq('notification_type', 'arrival');
+
+      if (fetchError) throw fetchError;
+
+      console.log('Notificaciones pendientes encontradas:', pendingNotifications?.length || 0);
+
+      // Send WhatsApp notifications for each pending notification
+      if (pendingNotifications && pendingNotifications.length > 0) {
+        const notificationPromises = pendingNotifications.map(async (notification: any) => {
+          const phone = notification.customers?.whatsapp_number || notification.customers?.phone;
+          
+          if (!phone) {
+            console.log('Sin número de teléfono para:', notification.customers?.name);
+            return;
+          }
+
+          try {
+            const response = await supabase.functions.invoke('send-whatsapp-notification', {
+              body: {
+                notificationId: notification.id,
+                phone: phone,
+                message: notification.message
+              }
+            });
+
+            if (response.error) {
+              console.error('Error enviando notificación:', response.error);
+            } else {
+              console.log('Notificación enviada exitosamente:', notification.id);
+            }
+          } catch (error) {
+            console.error('Error en edge function:', error);
+          }
+        });
+
+        await Promise.all(notificationPromises);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-flight-notifications'] });
@@ -46,7 +103,7 @@ export function useFlightNotifications() {
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
       toast({
         title: "Notificaciones procesadas",
-        description: "Se han enviado las notificaciones de llegada pendientes",
+        description: "Se han enviado las notificaciones de llegada por WhatsApp",
       });
     },
     onError: (error: any) => {
@@ -81,11 +138,43 @@ export function useFlightNotifications() {
     }
   });
 
+  // Mutation to send test notification
+  const sendTestNotificationMutation = useMutation({
+    mutationFn: async ({ phone, message }: { phone: string, message: string }) => {
+      const response = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          notificationId: 'test-' + Date.now(),
+          phone: phone,
+          message: message
+        }
+      });
+
+      if (response.error) throw response.error;
+      return response.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Notificación de prueba enviada",
+        description: "La notificación de prueba se envió correctamente",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error sending test notification:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la notificación de prueba",
+        variant: "destructive"
+      });
+    }
+  });
+
   return {
     pendingFlights,
     isLoading,
     processNotifications: processNotificationsMutation.mutate,
     updateFlightStatus: updateFlightStatusMutation.mutate,
+    sendTestNotification: sendTestNotificationMutation.mutate,
     isProcessing: processNotificationsMutation.isPending,
+    isSendingTest: sendTestNotificationMutation.isPending,
   };
 }

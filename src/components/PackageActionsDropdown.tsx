@@ -7,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Warehouse } from 'lucide-react';
+import { MoreHorizontal, Calendar, Warehouse, Edit } from 'lucide-react';
 import { ReschedulePackageDialog } from './ReschedulePackageDialog';
+import { EditPackageDialog } from './EditPackageDialog';
 import { usePackageActions } from '@/hooks/usePackageActions';
 
 interface Package {
@@ -16,6 +17,9 @@ interface Package {
   tracking_number: string;
   status: string;
   trip_id: string | null;
+  customer_id: string;
+  description: string;
+  weight: number | null;
 }
 
 interface PackageActionsDropdownProps {
@@ -25,6 +29,7 @@ interface PackageActionsDropdownProps {
 
 export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageActionsDropdownProps) {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { moveToWarehouse, isMovingToWarehouse } = usePackageActions();
 
   const handleMoveToWarehouse = async () => {
@@ -34,6 +39,7 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
 
   const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'warehouse';
   const canMoveToWarehouse = pkg.status !== 'delivered' && pkg.status !== 'warehouse';
+  const canEdit = pkg.status !== 'delivered';
 
   return (
     <>
@@ -45,6 +51,12 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {canEdit && (
+            <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar encomienda
+            </DropdownMenuItem>
+          )}
           {canReschedule && (
             <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
               <Calendar className="mr-2 h-4 w-4" />
@@ -62,6 +74,13 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <EditPackageDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        package={pkg}
+        onSuccess={onUpdate}
+      />
 
       <ReschedulePackageDialog
         open={showRescheduleDialog}

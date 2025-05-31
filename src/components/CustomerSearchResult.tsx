@@ -1,6 +1,7 @@
 
 import { User } from 'lucide-react';
 import { isValidEmail, formatPhoneForDisplay, formatNumber } from '@/utils/customerSearchUtils';
+import { getCountryFlagByPhone } from '@/utils/countryUtils';
 
 interface Customer {
   id: string;
@@ -16,6 +17,8 @@ interface CustomerSearchResultProps {
 }
 
 export function CustomerSearchResult({ customer, onSelect }: CustomerSearchResultProps) {
+  const countryFlag = getCountryFlagByPhone(customer.phone);
+  
   return (
     <div
       className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
@@ -29,7 +32,10 @@ export function CustomerSearchResult({ customer, onSelect }: CustomerSearchResul
             {isValidEmail(customer.email) && (
               <div>📧 {customer.email}</div>
             )}
-            <div>📱 {formatPhoneForDisplay(customer.phone)}</div>
+            <div className="flex items-center gap-1">
+              {countryFlag && <span>{countryFlag}</span>}
+              <span>📱 {formatPhoneForDisplay(customer.phone)}</span>
+            </div>
             {customer.id_number && (
               <div>🆔 {formatNumber(customer.id_number)}</div>
             )}

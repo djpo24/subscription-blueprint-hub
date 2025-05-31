@@ -9,14 +9,46 @@ interface TripRouteSelectorProps {
 }
 
 export function TripRouteSelector({ value, onValueChange }: TripRouteSelectorProps) {
+  // Función para convertir el formato visual al formato interno
+  const convertToInternalFormat = (visualValue: string) => {
+    switch (visualValue) {
+      case 'Barranquilla-Curazao':
+        return 'Barranquilla -> Curazao';
+      case 'Curazao-Barranquilla':
+        return 'Curazao -> Barranquilla';
+      default:
+        return visualValue;
+    }
+  };
+
+  // Función para convertir el formato interno al formato visual
+  const convertToVisualFormat = (internalValue: string) => {
+    switch (internalValue) {
+      case 'Barranquilla -> Curazao':
+        return 'Barranquilla-Curazao';
+      case 'Curazao -> Barranquilla':
+        return 'Curazao-Barranquilla';
+      default:
+        return internalValue;
+    }
+  };
+
+  const handleValueChange = (visualValue: string) => {
+    const internalValue = convertToInternalFormat(visualValue);
+    onValueChange(internalValue);
+  };
+
+  // Convertir el valor interno actual al formato visual para mostrar
+  const displayValue = convertToVisualFormat(value);
+
   return (
     <div className="space-y-2">
       <Label htmlFor="route" className="text-sm font-medium text-black">
         Viaje
       </Label>
       <Select 
-        value={value} 
-        onValueChange={onValueChange}
+        value={displayValue} 
+        onValueChange={handleValueChange}
         required
       >
         <SelectTrigger className="h-12 bg-gray-100 border-0 hover:bg-white focus:bg-white focus:ring-2 focus:ring-black rounded-lg">

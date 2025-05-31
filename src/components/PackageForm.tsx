@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
+
 interface PackageFormProps {
   customerId: string;
   tripId?: string;
@@ -212,21 +213,18 @@ export function PackageForm({
         </div>
       </div>
 
-      {/* Large Amount to collect section - made more prominent */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-4 py-[5px] px-[5px]">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <Label htmlFor="amountToCollect" className="text-lg font-semibold text-blue-900">
-            Valor a Cobrar
-          </Label>
-        </div>
+      {/* Amount to collect section with bold title */}
+      <div className="space-y-4">
+        <Label htmlFor="amountToCollect" className="text-lg font-bold text-black">
+          Valor a Cobrar
+        </Label>
         
         <div className="flex gap-3">
           <Select value={formData.currency} onValueChange={value => setFormData(prev => ({
           ...prev,
           currency: value
         }))}>
-            <SelectTrigger className="w-28 h-14 text-lg bg-white border-blue-300 focus:border-blue-500">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -234,10 +232,8 @@ export function PackageForm({
               <SelectItem value="ANG">ANG</SelectItem>
             </SelectContent>
           </Select>
-          <Input id="amountToCollect" type="text" value={formData.amountToCollectFormatted} onChange={handleAmountToCollectChange} placeholder="0" className="flex-1 h-14 text-xl font-semibold bg-white border-blue-300 focus:border-blue-500 placeholder:text-gray-400" />
+          <Input id="amountToCollect" type="text" value={formData.amountToCollectFormatted} onChange={handleAmountToCollectChange} placeholder="0" className="flex-1" />
         </div>
-        
-        
       </div>
 
       {/* Optional description field with toggle - moved to bottom */}

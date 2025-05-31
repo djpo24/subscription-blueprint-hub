@@ -7,9 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Warehouse, Edit } from 'lucide-react';
+import { MoreHorizontal, Calendar, Warehouse, Edit, Printer } from 'lucide-react';
 import { ReschedulePackageDialog } from './ReschedulePackageDialog';
 import { EditPackageDialog } from './EditPackageDialog';
+import { PackageLabelDialog } from './PackageLabelDialog';
 import { usePackageActions } from '@/hooks/usePackageActions';
 
 interface Package {
@@ -20,6 +21,13 @@ interface Package {
   customer_id: string;
   description: string;
   weight: number | null;
+  origin: string;
+  destination: string;
+  created_at: string;
+  customers?: {
+    name: string;
+    email: string;
+  };
 }
 
 interface PackageActionsDropdownProps {
@@ -30,6 +38,7 @@ interface PackageActionsDropdownProps {
 export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageActionsDropdownProps) {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showLabelDialog, setShowLabelDialog] = useState(false);
   const { moveToWarehouse, isMovingToWarehouse } = usePackageActions();
 
   const handleMoveToWarehouse = async () => {
@@ -51,6 +60,10 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setShowLabelDialog(true)}>
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir etiqueta
+          </DropdownMenuItem>
           {canEdit && (
             <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
               <Edit className="mr-2 h-4 w-4" />
@@ -74,6 +87,12 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <PackageLabelDialog
+        open={showLabelDialog}
+        onOpenChange={setShowLabelDialog}
+        package={pkg}
+      />
 
       <EditPackageDialog
         open={showEditDialog}

@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Plus } from 'lucide-react';
+import { InlineCustomerForm } from './InlineCustomerForm';
 
 interface PackageDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface PackageDialogProps {
 
 export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: PackageDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -30,7 +33,7 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
   });
 
   // Fetch customers for the dropdown
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], refetch: refetchCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -64,6 +67,12 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
     const year = new Date().getFullYear();
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `${prefix}-${year}-${random}`;
+  };
+
+  const handleCustomerCreated = (customerId: string) => {
+    setFormData(prev => ({ ...prev, customer_id: customerId }));
+    setShowCustomerForm(false);
+    refetchCustomers();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,22 +168,32 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="customer">Cliente</Label>
-              <Select 
-                value={formData.customer_id} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, customer_id: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select 
+                  value={formData.customer_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, customer_id: value }))}
+                  required
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Seleccionar cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomerForm(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {!tripId && (
@@ -200,6 +219,13 @@ export function PackageDialog({ open, onOpenChange, onSuccess, tripId }: Package
               </div>
             )}
           </div>
+
+          {showCustomerForm && (
+            <InlineCustomerForm
+              onSuccess={handleCustomerCreated}
+              onCancel={() => setShowCustomerForm(false)}
+            />
+          )}
 
           <div>
             <Label htmlFor="description">Descripción</Label>

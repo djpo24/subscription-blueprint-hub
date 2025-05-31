@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { PackageActionsDropdown } from './PackageActionsDropdown';
 
 interface Package {
   id: string;
@@ -12,6 +13,7 @@ interface Package {
   status: string;
   created_at: string;
   description: string;
+  trip_id: string | null;
   customers?: {
     name: string;
     email: string;
@@ -22,9 +24,10 @@ interface PackagesTableProps {
   packages: Package[];
   filteredPackages: Package[];
   isLoading: boolean;
+  onUpdate?: () => void;
 }
 
-export function PackagesTable({ packages, filteredPackages, isLoading }: PackagesTableProps) {
+export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate }: PackagesTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
@@ -35,6 +38,10 @@ export function PackagesTable({ packages, filteredPackages, isLoading }: Package
         return "bg-yellow-100 text-yellow-800";
       case "delayed":
         return "bg-red-100 text-red-800";
+      case "arrived":
+        return "bg-purple-100 text-purple-800";
+      case "warehouse":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -50,8 +57,18 @@ export function PackagesTable({ packages, filteredPackages, isLoading }: Package
         return "Pendiente";
       case "delayed":
         return "Retrasado";
+      case "arrived":
+        return "Llegado";
+      case "warehouse":
+        return "En Bodega";
       default:
         return status;
+    }
+  };
+
+  const handleUpdate = () => {
+    if (onUpdate) {
+      onUpdate();
     }
   };
 
@@ -78,6 +95,7 @@ export function PackagesTable({ packages, filteredPackages, isLoading }: Package
                 <TableHead>Estado</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Descripción</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,11 +104,15 @@ export function PackagesTable({ packages, filteredPackages, isLoading }: Package
                   <TableCell className="font-medium">{pkg.tracking_number}</TableCell>
                   <TableCell>{pkg.customers?.name || 'N/A'}</TableCell>
                   <TableCell>
-                    <div className="flex items-center">
-                      <span className="text-sm">{pkg.origin}</span>
-                      <span className="mx-2">→</span>
-                      <span className="text-sm">{pkg.destination}</span>
-                    </div>
+                    {pkg.status === 'warehouse' ? (
+                      <span className="text-sm text-gray-500">En Bodega</span>
+                    ) : (
+                      <div className="flex items-center">
+                        <span className="text-sm">{pkg.origin}</span>
+                        <span className="mx-2">→</span>
+                        <span className="text-sm">{pkg.destination}</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(pkg.status)}>
@@ -99,6 +121,12 @@ export function PackagesTable({ packages, filteredPackages, isLoading }: Package
                   </TableCell>
                   <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
+                  <TableCell>
+                    <PackageActionsDropdown 
+                      package={pkg} 
+                      onUpdate={handleUpdate}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

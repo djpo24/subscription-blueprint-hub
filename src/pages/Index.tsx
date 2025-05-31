@@ -27,13 +27,13 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Fetch data using existing hooks
-  const { data: packages = [], isLoading: packagesLoading, refetch: refetchPackages } = usePackages();
+  const packagesData = usePackages();
   const { data: trips = [], isLoading: tripsLoading, refetch: refetchTrips } = useTrips();
   const { data: customersCount = 0 } = useCustomersCount();
   const { data: packageStats } = usePackageStats();
 
   // Filter packages based on search term
-  const filteredPackages = packages.filter(pkg => 
+  const filteredPackages = packagesData.data?.filter(pkg => 
     pkg.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pkg.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pkg.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,6 +64,10 @@ const Index = () => {
     setActiveTab('notifications');
   };
 
+  const handlePackagesUpdate = () => {
+    packagesData.refetch();
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -92,17 +96,18 @@ const Index = () => {
               onViewNotifications={handleViewNotifications}
             />
             <PackagesTable 
-              packages={packages}
+              packages={packagesData.data || []}
               filteredPackages={filteredPackages}
-              isLoading={packagesLoading}
+              isLoading={packagesData.isLoading}
+              onUpdate={handlePackagesUpdate}
             />
           </TabsContent>
           
           <TabsContent value="packages" className="space-y-8">
             <PackagesTable 
-              packages={packages}
+              packages={packagesData.data || []}
               filteredPackages={filteredPackages}
-              isLoading={packagesLoading}
+              isLoading={packagesData.isLoading}
             />
           </TabsContent>
           

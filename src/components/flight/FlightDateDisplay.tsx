@@ -1,7 +1,4 @@
 
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-
 interface FlightDateDisplayProps {
   dateTime: string | null;
   className?: string;
@@ -11,9 +8,12 @@ export function FlightDateDisplay({ dateTime, className = '' }: FlightDateDispla
   const formatDate = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      const date = parseISO(dateTime);
-      console.log('formatDate input:', dateTime, 'parsed date:', date, 'formatted:', format(date, 'EEE, dd \'de\' MMM', { locale: es }));
-      return format(date, 'EEE, dd \'de\' MMM', { locale: es });
+      // Extraer solo la fecha del string ISO sin conversiones de zona horaria
+      const date = new Date(dateTime);
+      const year = date.getUTCFullYear();
+      const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+      const day = date.getUTCDate().toString().padStart(2, '0');
+      return `${day}/${month}/${year}`;
     } catch (error) {
       console.error('Error formatting date:', error);
       return '-';

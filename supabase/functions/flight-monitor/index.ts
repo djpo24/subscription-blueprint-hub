@@ -22,42 +22,19 @@ serve(async (req) => {
     console.log('SUPABASE_URL:', Deno.env.get('SUPABASE_URL'))
     console.log('SERVICE_ROLE_KEY disponible:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
 
-    // Primero, verificar qué vuelos existen en total en flight_data
-    console.log('Consultando TODOS los vuelos en flight_data...')
-    const { data: allFlights, error: allFlightsError } = await supabaseClient
-      .from('flight_data')
-      .select('*')
-
-    console.log('Todos los vuelos encontrados:', allFlights?.length || 0)
-    if (allFlightsError) {
-      console.error('Error consultando todos los vuelos:', allFlightsError)
-    }
-
     // Obtener vuelos que necesitan ser monitoreados
     console.log('Consultando vuelos para monitorear...')
     const { data: flights, error: flightsError } = await supabaseClient
       .from('flight_data')
-      .select('*')
+      .select('*, trips!inner(trip_date)')
       .eq('has_landed', false)
       .not('flight_number', 'is', null)
 
-    console.log('Query para vuelos a monitorear:')
-    console.log('- has_landed = false')
-    console.log('- flight_number IS NOT NULL')
-    console.log('Resultados:', flights?.length || 0)
+    console.log('Vuelos encontrados para monitorear:', flights?.length || 0)
 
     if (flightsError) {
       console.error('Error obteniendo vuelos para monitorear:', flightsError)
       throw flightsError
-    }
-
-    if (flights && flights.length > 0) {
-      console.log('Vuelos encontrados para monitorear:', flights.map(f => ({
-        id: f.id,
-        flight_number: f.flight_number,
-        status: f.status,
-        has_landed: f.has_landed
-      })))
     }
 
     const updatedFlights = []
@@ -66,10 +43,16 @@ serve(async (req) => {
       for (const flight of flights) {
         try {
           console.log(`--- Verificando vuelo: ${flight.flight_number} ---`)
+          console.log('Datos del vuelo:', {
+            flight_number: flight.flight_number,
+            scheduled_departure: flight.scheduled_departure,
+            scheduled_arrival: flight.scheduled_arrival,
+            trips: flight.trips
+          })
           
-          // Simular consulta a API de vuelos
-          const flightStatus = await checkFlightStatus(flight.flight_number)
-          console.log(`Estado del vuelo ${flight.flight_number}:`, flightStatus)
+          // Verificar el estado del vuelo basándose en la fecha real
+          const flightStatus = await checkFlightStatusBasedOnDate(flight, flight.trips[0]?.trip_date)
+          console.log(`Estado calculado para vuelo ${flight.flight_number}:`, flightStatus)
           
           if (flightStatus.hasLanded && !flight.has_landed) {
             console.log(`✈️ Vuelo ${flight.flight_number} ha aterrizado - actualizando...`)
@@ -79,6 +62,7 @@ serve(async (req) => {
               .from('flight_data')
               .update({
                 has_landed: true,
+                actual_departure: flightStatus.actualDeparture,
                 actual_arrival: flightStatus.actualArrival,
                 status: 'arrived',
                 last_updated: new Date().toISOString()
@@ -90,11 +74,10 @@ serve(async (req) => {
               console.error('Error actualizando vuelo:', updateError)
             } else {
               console.log(`✅ Vuelo ${flight.flight_number} marcado como aterrizado`)
-              console.log('Datos actualizados:', updatedFlight)
               updatedFlights.push(flight.flight_number)
             }
           } else {
-            console.log(`🛫 Vuelo ${flight.flight_number} aún en vuelo (hasLanded: ${flightStatus.hasLanded}, current has_landed: ${flight.has_landed})`)
+            console.log(`🛫 Vuelo ${flight.flight_number} estado actual: ${flightStatus.status}`)
           }
         } catch (error) {
           console.error(`Error monitoreando vuelo ${flight.flight_number}:`, error)
@@ -108,8 +91,7 @@ serve(async (req) => {
       success: true, 
       monitored: flights?.length || 0,
       updated: updatedFlights.length,
-      updatedFlights,
-      totalFlightsInDb: allFlights?.length || 0
+      updatedFlights
     }
 
     console.log('=== FIN MONITOREO DE VUELOS ===')
@@ -138,24 +120,55 @@ serve(async (req) => {
   }
 })
 
-// Función para verificar el estado de un vuelo
-async function checkFlightStatus(flightNumber: string) {
-  console.log(`Verificando estado del vuelo: ${flightNumber}`)
+// Función para verificar el estado de un vuelo basándose en la fecha real
+async function checkFlightStatusBasedOnDate(flight: any, tripDate: string) {
+  console.log(`Verificando estado del vuelo: ${flight.flight_number} para fecha: ${tripDate}`)
   
-  // Simulación mejorada - algunos vuelos específicos "aterrizan"
-  const simulatedLandedFlights = ['AV123', 'AV456', 'LA789', 'AV101', 'AV102', 'AV001', 'AV002']
-  const hasLanded = simulatedLandedFlights.includes(flightNumber)
-  
-  // Simular hora de llegada
   const now = new Date()
-  const arrivalTime = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000) // Hasta 2 horas atrás
+  const flightDate = new Date(tripDate)
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const flightDateOnly = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate())
   
-  const status = {
-    hasLanded,
-    actualArrival: hasLanded ? arrivalTime.toISOString() : null,
-    status: hasLanded ? 'arrived' : 'in_flight'
+  console.log('Comparación de fechas:', {
+    flightDate: flightDateOnly.toISOString(),
+    todayDate: todayDate.toISOString(),
+    isFlightBeforeToday: flightDateOnly < todayDate,
+    isFlightToday: flightDateOnly.getTime() === todayDate.getTime()
+  })
+
+  // Si la fecha del vuelo es anterior a hoy, definitivamente ya aterrizó
+  if (flightDateOnly < todayDate) {
+    const scheduledDeparture = new Date(flight.scheduled_departure)
+    const scheduledArrival = new Date(flight.scheduled_arrival)
+    
+    return {
+      hasLanded: true,
+      actualDeparture: scheduledDeparture.toISOString(),
+      actualArrival: scheduledArrival.toISOString(),
+      status: 'arrived'
+    }
   }
   
-  console.log(`Estado simulado para ${flightNumber}:`, status)
-  return status
+  // Si es hoy, verificar la hora
+  if (flightDateOnly.getTime() === todayDate.getTime()) {
+    const scheduledArrival = new Date(flight.scheduled_arrival)
+    const currentTime = now.getTime()
+    
+    if (currentTime >= scheduledArrival.getTime()) {
+      return {
+        hasLanded: true,
+        actualDeparture: flight.scheduled_departure,
+        actualArrival: scheduledArrival.toISOString(),
+        status: 'arrived'
+      }
+    }
+  }
+  
+  // El vuelo aún no ha llegado
+  return {
+    hasLanded: false,
+    actualDeparture: null,
+    actualArrival: null,
+    status: 'in_flight'
+  }
 }

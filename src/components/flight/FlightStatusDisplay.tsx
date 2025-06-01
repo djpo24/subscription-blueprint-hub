@@ -12,10 +12,13 @@ interface FlightStatusDisplayProps {
 
 export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   console.log('FlightStatusDisplay flight data:', {
+    flight_number: flight.flight_number,
     scheduled_departure: flight.scheduled_departure,
     scheduled_arrival: flight.scheduled_arrival,
     actual_departure: flight.actual_departure,
-    actual_arrival: flight.actual_arrival
+    actual_arrival: flight.actual_arrival,
+    status: flight.status,
+    has_landed: flight.has_landed
   });
 
   // Mostrar hora real si está disponible, sino la programada
@@ -26,11 +29,13 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const departureDate = flight.actual_departure || flight.scheduled_departure;
   const arrivalDate = flight.actual_arrival || flight.scheduled_arrival;
 
-  console.log('Final date values:', {
+  console.log('Fechas finales para mostrar:', {
+    departureTime,
+    arrivalTime,
     departureDate,
     arrivalDate,
-    formattedDepartureDate: departureDate,
-    formattedArrivalDate: arrivalDate
+    status: flight.status,
+    has_landed: flight.has_landed
   });
 
   return (

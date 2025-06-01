@@ -14,4 +14,9 @@ export interface FlightData {
   airline: string;
   last_updated: string;
   created_at: string;
+  // Nuevos campos para datos de la API
+  api_departure_airport?: string;
+  api_arrival_airport?: string;
+  api_departure_city?: string;
+  api_arrival_city?: string;
 }

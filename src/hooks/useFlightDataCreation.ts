@@ -48,7 +48,9 @@ export function useFlightDataCreation() {
           flightDataFromAPI = response.data;
           console.log('Datos obtenidos con estrategia inteligente:', {
             source: flightDataFromAPI._fallback ? 'fallback' : 'api',
-            status: flightDataFromAPI.flight_status
+            status: flightDataFromAPI.flight_status,
+            departure_airport: flightDataFromAPI.api_departure_airport,
+            arrival_airport: flightDataFromAPI.api_arrival_airport
           });
         }
       } catch (error) {
@@ -136,10 +138,14 @@ export function useFlightDataCreation() {
         dataSource: flightDataFromAPI?._fallback ? 'fallback_inteligente' : flightDataFromAPI ? 'api' : 'fecha'
       });
 
+      // Usar datos de aeropuerto de la API si están disponibles, sino usar los del viaje
+      const departureAirport = flightDataFromAPI?.api_departure_airport || origin;
+      const arrivalAirport = flightDataFromAPI?.api_arrival_airport || destination;
+
       const flightData = {
         flight_number: flightNumber,
-        departure_airport: origin,
-        arrival_airport: destination,
+        departure_airport: departureAirport,
+        arrival_airport: arrivalAirport,
         scheduled_departure: scheduledDeparture.toISOString(),
         scheduled_arrival: scheduledArrival.toISOString(),
         actual_departure: actualDeparture,
@@ -161,6 +167,14 @@ export function useFlightDataCreation() {
       if (error) {
         console.error('Error creating flight data:', error);
         throw error;
+      }
+
+      // Si tenemos datos de la API, agregar los campos adicionales al objeto retornado
+      if (flightDataFromAPI) {
+        data.api_departure_airport = flightDataFromAPI.api_departure_airport;
+        data.api_arrival_airport = flightDataFromAPI.api_arrival_airport;
+        data.api_departure_city = flightDataFromAPI.api_departure_city;
+        data.api_arrival_city = flightDataFromAPI.api_arrival_city;
       }
 
       console.log('Flight data created successfully:', data);

@@ -147,12 +147,25 @@ serve(async (req) => {
       departure: flightData.departure?.airport,
       arrival: flightData.arrival?.airport,
       departure_actual: flightData.departure?.actual,
-      arrival_actual: flightData.arrival?.actual
+      arrival_actual: flightData.arrival?.actual,
+      departure_iata: flightData.departure?.iata,
+      arrival_iata: flightData.arrival?.iata
     })
 
-    // Marcar que estos son datos reales de la API
+    // Marcar que estos son datos reales de la API y agregar información de aeropuertos
     flightData._fallback = false
     flightData._source = 'aviationstack_api'
+    
+    // Agregar información de aeropuertos y ciudades de la API
+    if (flightData.departure) {
+      flightData.api_departure_airport = flightData.departure.iata || flightData.departure.airport
+      flightData.api_departure_city = flightData.departure.airport
+    }
+    
+    if (flightData.arrival) {
+      flightData.api_arrival_airport = flightData.arrival.iata || flightData.arrival.airport
+      flightData.api_arrival_city = flightData.arrival.airport
+    }
 
     return new Response(
       JSON.stringify(flightData),

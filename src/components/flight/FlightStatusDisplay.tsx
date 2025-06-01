@@ -20,7 +20,9 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
     status: flight.status,
     has_landed: flight.has_landed,
     airline: flight.airline,
-    last_updated: flight.last_updated
+    last_updated: flight.last_updated,
+    api_departure_city: flight.api_departure_city,
+    api_arrival_city: flight.api_arrival_city
   });
 
   // Priorizar SIEMPRE los horarios reales cuando estén disponibles
@@ -31,6 +33,10 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const departureDate = flight.actual_departure || flight.scheduled_departure;
   const arrivalDate = flight.actual_arrival || flight.scheduled_arrival;
 
+  // Usar ciudades reales de la API si están disponibles
+  const departureAirport = flight.api_departure_city || flight.departure_airport;
+  const arrivalAirport = flight.api_arrival_city || flight.arrival_airport;
+
   // Determinar si los horarios son reales o programados para mostrar indicadores
   const hasDepartureChanged = flight.actual_departure && flight.actual_departure !== flight.scheduled_departure;
   const hasArrivalChanged = flight.actual_arrival && flight.actual_arrival !== flight.scheduled_arrival;
@@ -38,6 +44,8 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   console.log('Datos de visualización actualizados:', {
     departureTime,
     arrivalTime,
+    departureAirport,
+    arrivalAirport,
     hasDepartureChanged,
     hasArrivalChanged,
     status: flight.status,
@@ -63,7 +71,10 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
             )}
           </div>
           <span className="text-sm text-gray-600">
-            a {flight.arrival_airport}
+            a {arrivalAirport}
+            {flight.api_arrival_city && (
+              <span className="text-xs text-blue-600 ml-1">(API)</span>
+            )}
           </span>
         </div>
         <FlightStatusBadge 
@@ -83,14 +94,19 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
               Datos reales confirmados
             </span>
           )}
+          {(flight.api_departure_city || flight.api_arrival_city) && (
+            <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+              Ciudades de API
+            </span>
+          )}
         </div>
       </div>
 
       {/* Ruta con línea de conexión */}
       <div className="bg-gray-50 rounded-lg p-4 mb-4">
         <FlightRouteDisplay 
-          departureAirport={flight.departure_airport}
-          arrivalAirport={flight.arrival_airport}
+          departureAirport={departureAirport}
+          arrivalAirport={arrivalAirport}
           scheduledDeparture={flight.scheduled_departure}
           scheduledArrival={flight.scheduled_arrival}
         />
@@ -107,18 +123,28 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
           actualArrival={flight.actual_arrival}
           scheduledDeparture={flight.scheduled_departure}
           scheduledArrival={flight.scheduled_arrival}
+          apiDepartureCity={flight.api_departure_city}
+          apiArrivalCity={flight.api_arrival_city}
         />
       </div>
 
       {/* Footer con última actualización y fuente de datos */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <FlightLastUpdated lastUpdated={flight.last_updated} />
-        {(flight.actual_departure || flight.actual_arrival) && (
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            Datos de API en tiempo real
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {(flight.actual_departure || flight.actual_arrival) && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              Horarios de API en tiempo real
+            </span>
+          )}
+          {(flight.api_departure_city || flight.api_arrival_city) && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              Ciudades reales de API
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,4 @@
 
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-
 interface FlightDateDisplayProps {
   dateTime: string | null;
   className?: string;
@@ -10,12 +7,19 @@ interface FlightDateDisplayProps {
 export function FlightDateDisplay({ dateTime, className = '' }: FlightDateDisplayProps) {
   const formatDate = (dateTime: string | null) => {
     if (!dateTime) return '-';
+    
+    // Mostrar EXACTAMENTE como viene de la base de datos sin conversiones
     try {
-      // Mostrar la fecha exactamente como viene de la API, sin conversiones adicionales
-      return format(parseISO(dateTime), 'EEE, dd \'de\' MMM', { locale: es });
+      // Extraer solo la parte de la fecha sin conversiones
+      const date = new Date(dateTime);
+      const year = date.getUTCFullYear();
+      const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+      const day = date.getUTCDate().toString().padStart(2, '0');
+      return `${day}/${month}/${year}`;
     } catch (error) {
-      console.error('Error formatting date:', error);
-      return '-';
+      console.error('Error extracting date:', error);
+      // Si hay error, mostrar directamente el string tal como viene
+      return dateTime.substring(0, 10) || dateTime;
     }
   };
 

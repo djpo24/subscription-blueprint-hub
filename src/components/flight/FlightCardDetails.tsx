@@ -1,6 +1,5 @@
 
 import { Clock, MapPin, Calendar, Plane } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { FlightData } from '@/types/flight';
 
 interface FlightCardDetailsProps {
@@ -10,18 +9,28 @@ interface FlightCardDetailsProps {
 export function FlightCardDetails({ flight }: FlightCardDetailsProps) {
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return 'No programado';
+    
+    // Mostrar EXACTAMENTE como viene de la base de datos
     try {
-      return format(parseISO(dateTime), 'dd/MM/yyyy HH:mm');
+      // Extraer fecha y hora sin conversiones
+      const date = new Date(dateTime);
+      const year = date.getUTCFullYear();
+      const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+      const day = date.getUTCDate().toString().padStart(2, '0');
+      const hours = date.getUTCHours().toString().padStart(2, '0');
+      const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
     } catch {
-      return 'Fecha inválida';
+      // Si hay error, mostrar el string tal como viene
+      return dateTime;
     }
   };
 
   const getDelayStatus = (scheduled: string | null, actual: string | null) => {
     if (!scheduled || !actual) return null;
     
-    const scheduledTime = parseISO(scheduled);
-    const actualTime = parseISO(actual);
+    const scheduledTime = new Date(scheduled);
+    const actualTime = new Date(actual);
     const diffMinutes = Math.round((actualTime.getTime() - scheduledTime.getTime()) / (1000 * 60));
     
     if (diffMinutes > 30) {

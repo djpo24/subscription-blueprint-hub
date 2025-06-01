@@ -32,20 +32,9 @@ export function processFlightData(flightData: any): any {
   flightData._fallback = false;
   flightData._source = 'aviationstack_api';
   
-  // ANÁLISIS DETALLADO: Verificar si hay información de aeropuertos
+  // CORECCIÓN: Extraer información REAL de aeropuertos correctamente
   const departureAirportName = flightData.departure?.airport;
   const arrivalAirportName = flightData.arrival?.airport;
-  
-  console.log('🔍 ANÁLISIS DETALLADO de campos de aeropuerto de la API:', {
-    'departure object': flightData.departure,
-    'arrival object': flightData.arrival,
-    'departure.airport': departureAirportName,
-    'arrival.airport': arrivalAirportName,
-    'departure.iata': flightData.departure?.iata,
-    'arrival.iata': flightData.arrival?.iata,
-    'has_departure_airport': !!departureAirportName,
-    'has_arrival_airport': !!arrivalAirportName
-  });
   
   // Extraer TODA la información completa de la API y agregarla al objeto
   flightData.api_departure_airport = departureAirportName || null;
@@ -54,19 +43,6 @@ export function processFlightData(flightData: any): any {
   // Para ciudades, usar el nombre del aeropuerto si no hay ciudad específica
   flightData.api_departure_city = departureAirportName || null;
   flightData.api_arrival_city = arrivalAirportName || null;
-  
-  // Si no hay nombres de aeropuertos, intentar usar códigos IATA como fallback
-  if (!departureAirportName && flightData.departure?.iata) {
-    flightData.api_departure_airport = `Aeropuerto ${flightData.departure.iata}`;
-    flightData.api_departure_city = `Ciudad ${flightData.departure.iata}`;
-    console.log('🔄 Usando código IATA como fallback para salida:', flightData.departure.iata);
-  }
-  
-  if (!arrivalAirportName && flightData.arrival?.iata) {
-    flightData.api_arrival_airport = `Aeropuerto ${flightData.arrival.iata}`;
-    flightData.api_arrival_city = `Ciudad ${flightData.arrival.iata}`;
-    console.log('🔄 Usando código IATA como fallback para llegada:', flightData.arrival.iata);
-  }
   
   // Información de terminales y puertas
   flightData.api_departure_gate = flightData.departure?.gate || null;
@@ -105,7 +81,7 @@ export function processFlightData(flightData: any): any {
   // Guardar datos en bruto de forma segura (sin referencias circulares)
   flightData.api_raw_data = safeRawData;
 
-  console.log('🎯 Datos FINALES que se van a guardar en la base de datos:', {
+  console.log('🎯 Datos COMPLETOS extraídos y agregados de la API (CORREGIDOS):', {
     api_departure_city: flightData.api_departure_city,
     api_arrival_city: flightData.api_arrival_city,
     api_departure_airport: flightData.api_departure_airport,
@@ -123,9 +99,7 @@ export function processFlightData(flightData: any): any {
     departure_actual: flightData.departure?.actual,
     arrival_scheduled: flightData.arrival?.scheduled,
     arrival_actual: flightData.arrival?.actual,
-    raw_data_saved: !!flightData.api_raw_data,
-    is_fallback: flightData._fallback,
-    data_source: flightData._source
+    raw_data_saved: !!flightData.api_raw_data
   });
 
   return flightData;

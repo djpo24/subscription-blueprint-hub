@@ -26,33 +26,46 @@ export function useFlightDataCreation() {
         return existingFlight;
       }
 
-      // Intentar obtener datos reales del vuelo desde la API
+      // Calcular prioridad basada en número de paquetes
+      const { data: packageCount } = await supabase
+        .from('packages')
+        .select('id', { count: 'exact' })
+        .eq('flight_number', flightNumber);
+      
+      const priority = Math.min(5, Math.max(1, Math.floor((packageCount?.length || 0) / 2) + 1));
+      
+      console.log(`Prioridad calculada para vuelo ${flightNumber}: ${priority} (basada en ${packageCount?.length || 0} paquetes)`);
+
+      // Intentar obtener datos reales del vuelo desde la API con estrategia inteligente
       let flightDataFromAPI = null;
       try {
-        console.log('Intentando obtener datos del vuelo desde API...');
+        console.log('Intentando obtener datos del vuelo con estrategia inteligente...');
         const response = await supabase.functions.invoke('get-flight-data', {
-          body: { flightNumber, tripDate }
+          body: { flightNumber, tripDate, priority }
         });
 
         if (response.data && !response.error) {
           flightDataFromAPI = response.data;
-          console.log('Datos obtenidos de API:', flightDataFromAPI);
+          console.log('Datos obtenidos con estrategia inteligente:', {
+            source: flightDataFromAPI._fallback ? 'fallback' : 'api',
+            status: flightDataFromAPI.flight_status
+          });
         }
       } catch (error) {
-        console.log('No se pudieron obtener datos de API, usando valores por defecto:', error);
+        console.log('Error en estrategia inteligente, usando valores por defecto:', error);
       }
 
-      // Crear las fechas basándose en la fecha real del viaje o datos de API
+      // Crear las fechas basándose en la fecha real del viaje o datos obtenidos
       const tripDateObj = new Date(tripDate);
       
       let scheduledDeparture, scheduledArrival;
       
       if (flightDataFromAPI?.departure?.scheduled && flightDataFromAPI?.arrival?.scheduled) {
-        // Usar horarios reales de la API
+        // Usar horarios de los datos obtenidos (API o fallback inteligente)
         scheduledDeparture = new Date(flightDataFromAPI.departure.scheduled);
         scheduledArrival = new Date(flightDataFromAPI.arrival.scheduled);
       } else {
-        // Usar horarios por defecto
+        // Usar horarios por defecto básicos
         scheduledDeparture = new Date(tripDateObj);
         scheduledDeparture.setHours(6, 0, 0, 0);
         
@@ -70,7 +83,7 @@ export function useFlightDataCreation() {
       let actualDeparture = null;
       let actualArrival = null;
 
-      // Si tenemos datos de la API, usarlos
+      // Si tenemos datos de la estrategia inteligente, usarlos
       if (flightDataFromAPI) {
         actualDeparture = flightDataFromAPI.departure?.actual || null;
         actualArrival = flightDataFromAPI.arrival?.actual || null;
@@ -93,7 +106,7 @@ export function useFlightDataCreation() {
             break;
         }
       } else {
-        // Lógica basada en fecha como fallback
+        // Lógica basada en fecha como fallback final
         if (flightDate < todayDate) {
           status = 'arrived';
           hasLanded = true;
@@ -120,7 +133,7 @@ export function useFlightDataCreation() {
         hasLanded,
         actualDeparture,
         actualArrival,
-        usingAPIData: !!flightDataFromAPI
+        dataSource: flightDataFromAPI?._fallback ? 'fallback_inteligente' : flightDataFromAPI ? 'api' : 'fecha'
       });
 
       const flightData = {

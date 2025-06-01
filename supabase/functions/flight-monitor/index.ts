@@ -18,13 +18,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('=== INICIO MONITOREO DE VUELOS ===')
+    console.log('=== INICIO MONITOREO INTELIGENTE DE VUELOS ===')
     console.log('SUPABASE_URL:', Deno.env.get('SUPABASE_URL'))
     console.log('SERVICE_ROLE_KEY disponible:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
     console.log('AVIATIONSTACK_API_KEY disponible:', !!Deno.env.get('AVIATIONSTACK_API_KEY'))
 
-    // Obtener vuelos que necesitan ser monitoreados
-    console.log('Consultando vuelos para monitorear...')
+    // Obtener vuelos que necesitan ser monitoreados con prioridad
+    console.log('Consultando vuelos para monitorear con sistema de prioridad...')
     const { data: flights, error: flightsError } = await supabaseClient
       .from('flight_data')
       .select('*')
@@ -38,7 +38,7 @@ serve(async (req) => {
       throw flightsError
     }
 
-    // Obtener todos los viajes para hacer el matching manualmente
+    // Obtener todos los viajes y paquetes para calcular prioridades
     const { data: trips, error: tripsError } = await supabaseClient
       .from('trips')
       .select('*')
@@ -48,13 +48,23 @@ serve(async (req) => {
       throw tripsError
     }
 
+    // Calcular prioridades y ordenar vuelos
+    const flightsWithPriority = await calculateFlightPriorities(supabaseClient, flights || [])
+    const sortedFlights = flightsWithPriority.sort((a, b) => b.priority - a.priority)
+
+    console.log('Vuelos ordenados por prioridad:', sortedFlights.map(f => ({
+      flight: f.flight_number,
+      priority: f.priority,
+      packages: f.packageCount
+    })))
+
     const updatedFlights = []
     let totalFlightsInDb = flights?.length || 0
 
-    if (flights && flights.length > 0) {
-      for (const flight of flights) {
+    if (sortedFlights.length > 0) {
+      for (const flight of sortedFlights) {
         try {
-          console.log(`--- Verificando vuelo: ${flight.flight_number} ---`)
+          console.log(`--- Verificando vuelo: ${flight.flight_number} (Prioridad: ${flight.priority}) ---`)
           
           // Encontrar el viaje correspondiente
           const matchingTrip = trips?.find(trip => trip.flight_number === flight.flight_number)
@@ -68,12 +78,13 @@ serve(async (req) => {
             flight_number: flight.flight_number,
             scheduled_departure: flight.scheduled_departure,
             scheduled_arrival: flight.scheduled_arrival,
-            trip_date: matchingTrip.trip_date
+            trip_date: matchingTrip.trip_date,
+            priority: flight.priority
           })
           
-          // Verificar el estado del vuelo usando la API de AviationStack
-          const flightStatus = await checkFlightStatusWithAPI(flight, matchingTrip.trip_date)
-          console.log(`Estado obtenido de API para vuelo ${flight.flight_number}:`, flightStatus)
+          // Verificar el estado del vuelo usando la estrategia inteligente
+          const flightStatus = await checkFlightStatusIntelligent(supabaseClient, flight, matchingTrip.trip_date)
+          console.log(`Estado obtenido para vuelo ${flight.flight_number}:`, flightStatus)
           
           if (flightStatus.hasLanded && !flight.has_landed) {
             console.log(`✈️ Vuelo ${flight.flight_number} ha aterrizado - actualizando...`)
@@ -116,7 +127,7 @@ serve(async (req) => {
           }
         } catch (error) {
           console.error(`Error monitoreando vuelo ${flight.flight_number}:`, error)
-          // En caso de error con la API, usar fallback basado en fecha
+          // En caso de error, usar fallback basado en fecha
           const fallbackStatus = await checkFlightStatusBasedOnDate(flight, matchingTrip.trip_date)
           
           if (fallbackStatus.hasLanded && !flight.has_landed) {
@@ -140,15 +151,21 @@ serve(async (req) => {
       console.log('⚠️ No se encontraron vuelos para monitorear')
     }
 
+    // Mostrar estadísticas de uso de API
+    const dailyUsage = await getDailyApiUsage(supabaseClient)
+    console.log(`📊 Uso de API hoy: ${dailyUsage}/4 consultas`)
+
     const result = { 
       success: true, 
       monitored: flights?.length || 0,
       updated: updatedFlights.length,
       updatedFlights,
-      totalFlightsInDb
+      totalFlightsInDb,
+      dailyApiUsage: dailyUsage,
+      maxDailyQueries: 4
     }
 
-    console.log('=== FIN MONITOREO DE VUELOS ===')
+    console.log('=== FIN MONITOREO INTELIGENTE DE VUELOS ===')
     console.log('Resultado final:', result)
 
     return new Response(
@@ -174,52 +191,56 @@ serve(async (req) => {
   }
 })
 
-// Función para verificar el estado de un vuelo usando la API de AviationStack
-async function checkFlightStatusWithAPI(flight: any, tripDate: string) {
-  const apiKey = Deno.env.get('AVIATIONSTACK_API_KEY')
+// Función para calcular prioridades de vuelos
+async function calculateFlightPriorities(supabaseClient: any, flights: any[]) {
+  const flightsWithPriority = []
   
-  if (!apiKey) {
-    console.log('API key no disponible, usando fallback')
-    return await checkFlightStatusBasedOnDate(flight, tripDate)
+  for (const flight of flights) {
+    // Contar paquetes para este vuelo
+    const { data: packages } = await supabaseClient
+      .from('packages')
+      .select('id', { count: 'exact' })
+      .eq('flight_number', flight.flight_number)
+    
+    const packageCount = packages?.length || 0
+    const priority = Math.min(5, Math.max(1, Math.floor(packageCount / 2) + 1))
+    
+    flightsWithPriority.push({
+      ...flight,
+      packageCount,
+      priority
+    })
   }
+  
+  return flightsWithPriority
+}
 
+// Función para verificar el estado usando la estrategia inteligente
+async function checkFlightStatusIntelligent(supabaseClient: any, flight: any, tripDate: string) {
   try {
-    console.log(`Consultando API para vuelo: ${flight.flight_number}`)
-    
-    // Construir URL de la API de AviationStack
-    const apiUrl = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flight.flight_number}&limit=1`
-    
-    const response = await fetch(apiUrl)
-    const data = await response.json()
-
-    console.log('Respuesta de AviationStack API:', {
-      data: data?.data?.length || 0,
-      error: data?.error || null
+    // Llamar a la función get-flight-data con la estrategia inteligente
+    const response = await supabaseClient.functions.invoke('get-flight-data', {
+      body: { 
+        flightNumber: flight.flight_number, 
+        tripDate: tripDate,
+        priority: flight.priority || 1
+      }
     })
 
-    if (data.error) {
-      console.error('Error de API de AviationStack:', data.error)
+    if (response.error) {
+      console.log('Error en consulta inteligente, usando fallback de fecha')
       return await checkFlightStatusBasedOnDate(flight, tripDate)
     }
 
-    if (!data.data || data.data.length === 0) {
-      console.log('No se encontraron datos para el vuelo en la API')
+    const flightData = response.data
+    if (!flightData) {
       return await checkFlightStatusBasedOnDate(flight, tripDate)
     }
 
-    const flightData = data.data[0]
+    // Procesar respuesta de la estrategia inteligente
     const departure = flightData.departure
     const arrival = flightData.arrival
 
-    console.log('Datos del vuelo desde API:', {
-      flight_status: flightData.flight_status,
-      departure_scheduled: departure?.scheduled,
-      departure_actual: departure?.actual,
-      arrival_scheduled: arrival?.scheduled,
-      arrival_actual: arrival?.actual
-    })
-
-    // Determinar el estado basándose en los datos de la API
     let status = 'scheduled'
     let hasLanded = false
     let actualDeparture = departure?.actual || null
@@ -230,7 +251,6 @@ async function checkFlightStatusWithAPI(flight: any, tripDate: string) {
       case 'arrived':
         status = 'arrived'
         hasLanded = true
-        // Si no hay hora real de llegada pero el estado es landed, usar la programada
         if (!actualArrival && arrival?.scheduled) {
           actualArrival = arrival.scheduled
         }
@@ -246,7 +266,6 @@ async function checkFlightStatusWithAPI(flight: any, tripDate: string) {
         status = 'delayed'
         break
       default:
-        // Para otros estados, verificar basándose en las fechas
         if (actualArrival) {
           status = 'arrived'
           hasLanded = true
@@ -259,19 +278,31 @@ async function checkFlightStatusWithAPI(flight: any, tripDate: string) {
       hasLanded,
       actualDeparture,
       actualArrival,
-      status
+      status,
+      dataSource: flightData._fallback ? 'fallback_inteligente' : 'api'
     }
 
   } catch (error) {
-    console.error('Error consultando API de AviationStack:', error)
-    // En caso de error, usar el método basado en fecha como fallback
+    console.error('Error en estrategia inteligente:', error)
     return await checkFlightStatusBasedOnDate(flight, tripDate)
   }
 }
 
+// Función para obtener uso diario de API
+async function getDailyApiUsage(supabaseClient: any) {
+  const today = new Date().toISOString().split('T')[0]
+  
+  const { data, error } = await supabaseClient
+    .from('flight_api_usage')
+    .select('*', { count: 'exact' })
+    .eq('query_date', today)
+  
+  return data?.length || 0
+}
+
 // Función fallback para verificar el estado de un vuelo basándose en la fecha
 async function checkFlightStatusBasedOnDate(flight: any, tripDate: string) {
-  console.log(`Verificando estado del vuelo con fallback: ${flight.flight_number} para fecha: ${tripDate}`)
+  console.log(`Verificando estado del vuelo con fallback de fecha: ${flight.flight_number} para fecha: ${tripDate}`)
   
   const now = new Date()
   const flightDate = new Date(tripDate)
@@ -294,7 +325,8 @@ async function checkFlightStatusBasedOnDate(flight: any, tripDate: string) {
       hasLanded: true,
       actualDeparture: scheduledDeparture.toISOString(),
       actualArrival: scheduledArrival.toISOString(),
-      status: 'arrived'
+      status: 'arrived',
+      dataSource: 'fecha'
     }
   }
   
@@ -308,7 +340,8 @@ async function checkFlightStatusBasedOnDate(flight: any, tripDate: string) {
         hasLanded: true,
         actualDeparture: flight.scheduled_departure,
         actualArrival: scheduledArrival.toISOString(),
-        status: 'arrived'
+        status: 'arrived',
+        dataSource: 'fecha'
       }
     }
   }
@@ -318,6 +351,7 @@ async function checkFlightStatusBasedOnDate(flight: any, tripDate: string) {
     hasLanded: false,
     actualDeparture: null,
     actualArrival: null,
-    status: 'in_flight'
+    status: 'in_flight',
+    dataSource: 'fecha'
   }
 }

@@ -9,9 +9,11 @@ interface FlightTabsContentProps {
   flight: FlightData;
   isTabExpanded: boolean;
   onToggle: () => void;
+  tripOrigin?: string;
+  tripDestination?: string;
 }
 
-export function FlightTabsContent({ flight, isTabExpanded, onToggle }: FlightTabsContentProps) {
+export function FlightTabsContent({ flight, isTabExpanded, onToggle, tripOrigin, tripDestination }: FlightTabsContentProps) {
   return (
     <>
       <TabsContent value="compact" className="mt-4">
@@ -23,6 +25,8 @@ export function FlightTabsContent({ flight, isTabExpanded, onToggle }: FlightTab
           flight={flight} 
           isExpanded={isTabExpanded}
           onToggle={onToggle}
+          tripOrigin={tripOrigin}
+          tripDestination={tripDestination}
         />
       </TabsContent>
       

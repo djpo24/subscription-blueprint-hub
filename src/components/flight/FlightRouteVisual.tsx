@@ -1,15 +1,14 @@
 
 import { Plane } from 'lucide-react';
 import { FlightData } from '@/types/flight';
-import { extractFlightApiData } from './FlightApiDataExtractor';
 
 interface FlightRouteVisualProps {
   flight: FlightData;
+  tripOrigin?: string;
+  tripDestination?: string;
 }
 
-export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
-  const { departureCity, arrivalCity, departureAirportApi, arrivalAirportApi } = extractFlightApiData(flight);
-
+export function FlightRouteVisual({ flight, tripOrigin, tripDestination }: FlightRouteVisualProps) {
   // Usar horarios reales de la API cuando estén disponibles
   const departureTime = flight.actual_departure || flight.scheduled_departure;
   const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
@@ -31,56 +30,17 @@ export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
 
   const duration = calculateFlightDuration();
 
-  // Mapeo de códigos de aeropuerto a ciudades comunes (como respaldo)
-  const airportCityMap: { [key: string]: string } = {
-    'BOG': 'Bogotá',
-    'MDE': 'Medellín',
-    'CLO': 'Cali',
-    'BAQ': 'Barranquilla',
-    'CTG': 'Cartagena',
-    'BGA': 'Bucaramanga',
-    'PEI': 'Pereira',
-    'ADZ': 'San Andrés',
-    'LET': 'Leticia',
-    'MIA': 'Miami',
-    'LAX': 'Los Ángeles',
-    'JFK': 'Nueva York',
-    'MAD': 'Madrid',
-    'BCN': 'Barcelona',
-    'CUR': 'Curazao'
-  };
+  // Usar las ciudades del trip directamente
+  const departureCity = tripOrigin || flight.departure_airport;
+  const arrivalCity = tripDestination || flight.arrival_airport;
 
-  // Determinar nombres a mostrar con múltiples respaldos - SIEMPRE mostrar algo
-  const getDepartureDisplayName = () => {
-    if (departureCity) return departureCity;
-    if (departureAirportApi) return departureAirportApi;
-    if (airportCityMap[flight.departure_airport]) return airportCityMap[flight.departure_airport];
-    return flight.departure_airport;
-  };
-
-  const getArrivalDisplayName = () => {
-    if (arrivalCity) return arrivalCity;
-    if (arrivalAirportApi) return arrivalAirportApi;
-    if (airportCityMap[flight.arrival_airport]) return airportCityMap[flight.arrival_airport];
-    return flight.arrival_airport;
-  };
-
-  const departureDisplayName = getDepartureDisplayName();
-  const arrivalDisplayName = getArrivalDisplayName();
-
-  console.log('FlightRouteVisual - DEBUGGING COMPLETO:', {
+  console.log('FlightRouteVisual - Mostrando ciudades:', {
     flight_number: flight.flight_number,
-    departure_airport: flight.departure_airport,
-    arrival_airport: flight.arrival_airport,
     departureCity,
     arrivalCity,
-    departureAirportApi,
-    arrivalAirportApi,
-    departureDisplayName,
-    arrivalDisplayName,
-    duration,
-    will_show_departure: departureDisplayName || 'NADA',
-    will_show_arrival: arrivalDisplayName || 'NADA'
+    tripOrigin,
+    tripDestination,
+    duration
   });
 
   return (
@@ -95,7 +55,7 @@ export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
         {/* Ciudad de origen */}
         <div className="text-center min-w-[120px]">
           <div className="text-xl font-bold text-blue-600 mb-1">
-            {departureDisplayName}
+            {departureCity}
           </div>
           <div className="text-sm text-gray-600">
             {flight.departure_airport}
@@ -121,7 +81,7 @@ export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
         {/* Ciudad de destino */}
         <div className="text-center min-w-[120px]">
           <div className="text-xl font-bold text-blue-600 mb-1">
-            {arrivalDisplayName}
+            {arrivalCity}
           </div>
           <div className="text-sm text-gray-600">
             {flight.arrival_airport}

@@ -7,9 +7,11 @@ interface FlightDetailsTabProps {
   flight: FlightData;
   isExpanded?: boolean;
   onToggle?: () => void;
+  tripOrigin?: string;
+  tripDestination?: string;
 }
 
-export function FlightDetailsTab({ flight, isExpanded = false, onToggle }: FlightDetailsTabProps) {
+export function FlightDetailsTab({ flight, isExpanded = false, onToggle, tripOrigin, tripDestination }: FlightDetailsTabProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
       <FlightDetailsHeader 
@@ -17,7 +19,13 @@ export function FlightDetailsTab({ flight, isExpanded = false, onToggle }: Fligh
         isExpanded={isExpanded} 
         onToggle={onToggle} 
       />
-      {isExpanded && <FlightDetailsBody flight={flight} />}
+      {isExpanded && (
+        <FlightDetailsBody 
+          flight={flight} 
+          tripOrigin={tripOrigin}
+          tripDestination={tripDestination}
+        />
+      )}
     </div>
   );
 }

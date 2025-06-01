@@ -11,8 +11,9 @@ export function FlightDateDisplay({ dateTime, className = '' }: FlightDateDispla
   const formatDate = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      // Mostrar la fecha exactamente como viene de la API, sin conversiones adicionales
-      return format(parseISO(dateTime), 'EEE, dd \'de\' MMM', { locale: es });
+      const date = parseISO(dateTime);
+      console.log('formatDate input:', dateTime, 'parsed date:', date, 'formatted:', format(date, 'EEE, dd \'de\' MMM', { locale: es }));
+      return format(date, 'EEE, dd \'de\' MMM', { locale: es });
     } catch (error) {
       console.error('Error formatting date:', error);
       return '-';

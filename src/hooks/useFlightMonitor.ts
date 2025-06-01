@@ -9,11 +9,11 @@ export function useFlightMonitor() {
 
   const startMonitoringMutation = useMutation({
     mutationFn: async () => {
-      console.log('=== INICIANDO MONITOREO INTELIGENTE MANUAL ===');
+      console.log('=== INICIANDO MONITOREO MANUAL ===');
       
       const response = await supabase.functions.invoke('flight-monitor');
       
-      console.log('Respuesta del edge function de monitoreo inteligente:', response);
+      console.log('Respuesta del edge function:', response);
       
       if (response.error) {
         console.error('Error en edge function:', response.error);
@@ -23,29 +23,25 @@ export function useFlightMonitor() {
       return response.data;
     },
     onSuccess: (data) => {
-      console.log('Monitoreo inteligente completado exitosamente:', data);
+      console.log('Monitoreo completado exitosamente:', data);
       
       queryClient.invalidateQueries({ queryKey: ['pending-flight-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       
-      const apiUsageInfo = data.dailyApiUsage !== undefined 
-        ? ` Uso de API hoy: ${data.dailyApiUsage}/${data.maxDailyQueries}.`
-        : '';
-      
       const message = data.totalFlightsInDb === 0 
         ? "No hay vuelos en la base de datos para monitorear. Crea un viaje con número de vuelo primero."
-        : `Monitoreo inteligente completado: ${data.monitored} vuelos analizados, ${data.updated} actualizados.${apiUsageInfo}`;
+        : `Se monitorearon ${data.monitored} vuelos. ${data.updated} vuelos actualizados. Total en DB: ${data.totalFlightsInDb}`;
       
       toast({
-        title: "Monitoreo Inteligente Completado",
+        title: "Monitoreo completado",
         description: message,
         variant: data.totalFlightsInDb === 0 ? "destructive" : "default"
       });
     },
     onError: (error: any) => {
-      console.error('Error en monitoreo inteligente:', error);
+      console.error('Error en monitoreo:', error);
       toast({
-        title: "Error en Monitoreo Inteligente",
+        title: "Error en monitoreo",
         description: `No se pudo completar el monitoreo: ${error.message || 'Error desconocido'}`,
         variant: "destructive"
       });

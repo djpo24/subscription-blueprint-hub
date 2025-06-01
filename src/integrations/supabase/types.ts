@@ -45,54 +45,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flight_api_cache: {
-        Row: {
-          api_response: Json
-          created_at: string
-          flight_number: string
-          id: string
-          query_date: string
-        }
-        Insert: {
-          api_response: Json
-          created_at?: string
-          flight_number: string
-          id?: string
-          query_date: string
-        }
-        Update: {
-          api_response?: Json
-          created_at?: string
-          flight_number?: string
-          id?: string
-          query_date?: string
-        }
-        Relationships: []
-      }
-      flight_api_usage: {
-        Row: {
-          created_at: string
-          flight_number: string
-          id: string
-          query_date: string
-          query_time: string
-        }
-        Insert: {
-          created_at?: string
-          flight_number: string
-          id?: string
-          query_date: string
-          query_time?: string
-        }
-        Update: {
-          created_at?: string
-          flight_number?: string
-          id?: string
-          query_date?: string
-          query_time?: string
-        }
-        Relationships: []
-      }
       flight_data: {
         Row: {
           actual_arrival: string | null

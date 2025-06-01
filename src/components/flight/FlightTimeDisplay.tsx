@@ -11,10 +11,10 @@ export function FlightTimeDisplay({ dateTime, className = '' }: FlightTimeDispla
   const formatTime = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      // Mostrar la hora exactamente como viene de la API, sin conversiones adicionales
-      return format(parseISO(dateTime), 'HH:mm', { locale: es });
-    } catch (error) {
-      console.error('Error formatting time:', error);
+      const date = parseISO(dateTime);
+      console.log('formatTime input:', dateTime, 'parsed date:', date);
+      return format(date, 'h:mm a', { locale: es });
+    } catch {
       return '-';
     }
   };

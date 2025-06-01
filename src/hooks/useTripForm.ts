@@ -34,13 +34,7 @@ export function useTripForm(onSuccess: () => void) {
       
       // Si el viaje tiene número de vuelo, crear datos de monitoreo
       if (data.flight_number) {
-        // Transform the database object to match createFlightData expectations
-        await createFlightData({
-          tripDate: data.trip_date,
-          flightNumber: data.flight_number,
-          origin: data.origin,
-          destination: data.destination
-        });
+        await createFlightData(data);
       } else {
         toast({
           title: "Viaje creado",

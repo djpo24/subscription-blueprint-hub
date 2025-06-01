@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { FlightData } from '@/types/flight';
 
 export interface FlightApiResponse {
   departure?: {
@@ -36,14 +37,14 @@ export interface FlightApiResponse {
   _fallback?: boolean;
 }
 
-export async function checkExistingFlight(flightNumber: string) {
+export async function checkExistingFlight(flightNumber: string): Promise<FlightData | null> {
   const { data: existingFlight } = await supabase
     .from('flight_data')
-    .select('id, flight_number')
+    .select('*')
     .eq('flight_number', flightNumber)
     .single();
 
-  return existingFlight;
+  return existingFlight as FlightData | null;
 }
 
 export async function calculateFlightPriority(flightNumber: string): Promise<number> {
@@ -64,35 +65,54 @@ export async function fetchFlightDataFromAPI(
   priority: number
 ): Promise<FlightApiResponse | null> {
   try {
-    console.log('Intentando obtener datos del vuelo con estrategia inteligente...');
+    console.log('🎯 MONITOREO MANUAL: Iniciando captura COMPLETA de datos de la API...');
     const response = await supabase.functions.invoke('get-flight-data', {
       body: { flightNumber, tripDate, priority }
     });
 
     if (response.data && !response.error) {
       const flightData = response.data;
-      console.log('🎯 Datos COMPLETOS obtenidos de la API:', {
+      console.log('🎯 MONITOREO MANUAL: Datos COMPLETOS capturados de la API:', {
         source: flightData._fallback ? 'fallback' : 'api',
         flight_status: flightData.flight_status,
+        // Información de aeropuertos y ciudades
         api_departure_city: flightData.api_departure_city,
         api_arrival_city: flightData.api_arrival_city,
         api_departure_airport: flightData.api_departure_airport,
         api_arrival_airport: flightData.api_arrival_airport,
+        // Información de terminales y puertas
         api_departure_gate: flightData.api_departure_gate,
         api_arrival_gate: flightData.api_arrival_gate,
         api_departure_terminal: flightData.api_departure_terminal,
         api_arrival_terminal: flightData.api_arrival_terminal,
+        // Información de aeronave y aerolínea
         api_aircraft: flightData.api_aircraft,
         api_airline_name: flightData.api_airline_name,
+        api_aircraft_registration: flightData.api_aircraft_registration,
+        // Códigos IATA/ICAO
+        api_departure_iata: flightData.api_departure_iata,
+        api_arrival_iata: flightData.api_arrival_iata,
+        api_departure_icao: flightData.api_departure_icao,
+        api_arrival_icao: flightData.api_arrival_icao,
+        api_airline_iata: flightData.api_airline_iata,
+        api_airline_icao: flightData.api_airline_icao,
+        // Horarios exactos
         departure_scheduled: flightData.departure?.scheduled,
         departure_actual: flightData.departure?.actual,
         arrival_scheduled: flightData.arrival?.scheduled,
-        arrival_actual: flightData.arrival?.actual
+        arrival_actual: flightData.arrival?.actual,
+        // Zonas horarias
+        api_departure_timezone: flightData.api_departure_timezone,
+        api_arrival_timezone: flightData.api_arrival_timezone,
+        // Datos completos en bruto
+        api_raw_data_available: !!flightData.api_raw_data
       });
+      
+      console.log('✅ MONITOREO MANUAL: Todos los datos de la API han sido capturados exitosamente');
       return flightData;
     }
   } catch (error) {
-    console.log('Error en estrategia inteligente, usando valores por defecto:', error);
+    console.log('❌ MONITOREO MANUAL: Error en captura de datos, usando valores por defecto:', error);
   }
   
   return null;

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -77,6 +78,8 @@ serve(async (req) => {
 
     // Verificar límite diario de consultas
     const dailyUsage = await getDailyApiUsage(supabaseClient)
+    console.log('📊 Uso diario actual de API:', dailyUsage, '/', MAX_DAILY_QUERIES)
+    
     if (dailyUsage >= MAX_DAILY_QUERIES) {
       console.log('🚫 Límite diario de consultas alcanzado, usando fallback')
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
@@ -107,7 +110,7 @@ serve(async (req) => {
     const apiKey = Deno.env.get('AVIATIONSTACK_API_KEY')
     
     if (!apiKey) {
-      console.log('API key no disponible, usando fallback')
+      console.log('❌ API key no disponible, usando fallback')
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
       return new Response(
         JSON.stringify(fallbackData),
@@ -118,7 +121,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('✈️ Realizando consulta a AviationStack API')
+    console.log('✈️ Realizando consulta REAL a AviationStack API para vuelo:', flightNumber)
     const apiUrl = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flightNumber}&limit=1`
     
     const response = await fetch(apiUrl)
@@ -126,15 +129,19 @@ serve(async (req) => {
 
     // Registrar uso de API
     await recordApiUsage(supabaseClient, flightNumber)
+    console.log('✅ Consulta API registrada correctamente')
 
     console.log('Respuesta de AviationStack API:', {
       data: data?.data?.length || 0,
-      error: data?.error || null
+      error: data?.error || null,
+      flight_status: data?.data?.[0]?.flight_status || 'no data'
     })
 
     if (data.error) {
       console.error('Error de API de AviationStack:', data.error)
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
+      fallbackData._fallback = true
+      fallbackData._reason = 'api_error'
       return new Response(
         JSON.stringify(fallbackData),
         { 
@@ -145,8 +152,10 @@ serve(async (req) => {
     }
 
     if (!data.data || data.data.length === 0) {
-      console.log('No se encontraron datos para el vuelo en la API')
+      console.log('❌ No se encontraron datos para el vuelo en la API')
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
+      fallbackData._fallback = true
+      fallbackData._reason = 'no_data'
       return new Response(
         JSON.stringify(fallbackData),
         { 
@@ -160,13 +169,20 @@ serve(async (req) => {
     
     // Guardar en caché
     await saveToCache(supabaseClient, flightNumber, flightData)
+    console.log('💾 Datos guardados en caché correctamente')
     
-    console.log('✅ Datos del vuelo obtenidos de API y guardados en caché:', {
+    console.log('✅ Datos REALES del vuelo obtenidos de API:', {
       flight_status: flightData.flight_status,
       airline: flightData.airline?.name,
       departure: flightData.departure?.airport,
-      arrival: flightData.arrival?.airport
+      arrival: flightData.arrival?.airport,
+      departure_actual: flightData.departure?.actual,
+      arrival_actual: flightData.arrival?.actual
     })
+
+    // Marcar que estos son datos reales de la API
+    flightData._fallback = false
+    flightData._source = 'aviationstack_api'
 
     return new Response(
       JSON.stringify(flightData),
@@ -177,12 +193,14 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error en get-flight-data:', error)
+    console.error('💥 Error crítico en get-flight-data:', error)
     
     // En caso de error, intentar generar datos de fallback
     try {
       const { flightNumber, tripDate } = await req.json()
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
+      fallbackData._fallback = true
+      fallbackData._reason = 'critical_error'
       return new Response(
         JSON.stringify(fallbackData),
         { 
@@ -198,7 +216,7 @@ serve(async (req) => {
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+          status: 500 
         }
       )
     }
@@ -217,7 +235,7 @@ async function checkCache(supabaseClient: any, flightNumber: string) {
     .gte('created_at', cacheExpiry.toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
   
   if (error || !data) return null
   
@@ -266,18 +284,37 @@ async function recordApiUsage(supabaseClient: any, flightNumber: string) {
 async function checkPriorityQueue(supabaseClient: any, currentPriority: number) {
   if (currentPriority >= 3) return false // Alta prioridad, no postponer
   
-  // Verificar si hay vuelos de mayor prioridad pendientes hoy
-  const today = getBogotaDateString();
-  
-  const { data: highPriorityFlights } = await supabaseClient
-    .from('packages')
-    .select('flight_number', { count: 'exact' })
-    .not('flight_number', 'is', null)
-    .gte('created_at', today)
-    .group('flight_number')
-    .having('count(*)', 'gte', 3) // 3 o más paquetes = alta prioridad
-  
-  return (highPriorityFlights?.length || 0) > 0 && currentPriority < 3
+  try {
+    // Verificar si hay vuelos de mayor prioridad pendientes hoy
+    const today = getBogotaDateString();
+    
+    // Contar paquetes por vuelo para determinar prioridad
+    const { data: packageCounts } = await supabaseClient
+      .from('packages')
+      .select('flight_number', { count: 'exact' })
+      .not('flight_number', 'is', null)
+      .gte('created_at', today + 'T00:00:00.000Z')
+    
+    if (!packageCounts || packageCounts.length === 0) {
+      return false
+    }
+    
+    // Agrupar por flight_number manualmente
+    const flightCounts: { [key: string]: number } = {}
+    packageCounts.forEach((pkg: any) => {
+      if (pkg.flight_number) {
+        flightCounts[pkg.flight_number] = (flightCounts[pkg.flight_number] || 0) + 1
+      }
+    })
+    
+    // Verificar si hay algún vuelo con 3 o más paquetes (alta prioridad)
+    const hasHighPriorityFlights = Object.values(flightCounts).some(count => count >= 3)
+    
+    return hasHighPriorityFlights && currentPriority < 3
+  } catch (error) {
+    console.error('Error en checkPriorityQueue:', error)
+    return false // En caso de error, no postponer
+  }
 }
 
 async function generateFallbackData(flightNumber: string, tripDate: string) {
@@ -336,6 +373,7 @@ async function generateFallbackData(flightNumber: string, tripDate: string) {
     flight: {
       iata: flightNumber
     },
-    _fallback: true // Indicador de que son datos de fallback
+    _fallback: true, // Indicador de que son datos de fallback
+    _reason: 'date_based_fallback'
   }
 }

@@ -1,4 +1,5 @@
 
+
 interface FlightLocationInfoProps {
   city: string;
   airport?: string | null;
@@ -11,7 +12,7 @@ export function FlightLocationInfo({ city, airport, gate, terminal, date }: Flig
   return (
     <div className="font-medium mb-2 space-y-1">
       <div>{city} · <span>{date}</span></div>
-      {airport && airport !== city && (
+      {airport && (
         <div className="text-sm text-blue-600">Aeropuerto: {airport}</div>
       )}
       {terminal && (
@@ -23,3 +24,4 @@ export function FlightLocationInfo({ city, airport, gate, terminal, date }: Flig
     </div>
   );
 }
+

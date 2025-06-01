@@ -26,7 +26,7 @@ serve(async (req) => {
     console.log('Consultando vuelos para monitorear...')
     const { data: flights, error: flightsError } = await supabaseClient
       .from('flight_data')
-      .select('*, trips!inner(trip_date)')
+      .select('*')
       .eq('has_landed', false)
       .not('flight_number', 'is', null)
 
@@ -37,21 +37,41 @@ serve(async (req) => {
       throw flightsError
     }
 
+    // Obtener todos los viajes para hacer el matching manualmente
+    const { data: trips, error: tripsError } = await supabaseClient
+      .from('trips')
+      .select('*')
+
+    if (tripsError) {
+      console.error('Error obteniendo viajes:', tripsError)
+      throw tripsError
+    }
+
     const updatedFlights = []
+    let totalFlightsInDb = flights?.length || 0
 
     if (flights && flights.length > 0) {
       for (const flight of flights) {
         try {
           console.log(`--- Verificando vuelo: ${flight.flight_number} ---`)
+          
+          // Encontrar el viaje correspondiente
+          const matchingTrip = trips?.find(trip => trip.flight_number === flight.flight_number)
+          
+          if (!matchingTrip) {
+            console.log(`No se encontró viaje para vuelo ${flight.flight_number}`)
+            continue
+          }
+
           console.log('Datos del vuelo:', {
             flight_number: flight.flight_number,
             scheduled_departure: flight.scheduled_departure,
             scheduled_arrival: flight.scheduled_arrival,
-            trips: flight.trips
+            trip_date: matchingTrip.trip_date
           })
           
           // Verificar el estado del vuelo basándose en la fecha real
-          const flightStatus = await checkFlightStatusBasedOnDate(flight, flight.trips[0]?.trip_date)
+          const flightStatus = await checkFlightStatusBasedOnDate(flight, matchingTrip.trip_date)
           console.log(`Estado calculado para vuelo ${flight.flight_number}:`, flightStatus)
           
           if (flightStatus.hasLanded && !flight.has_landed) {
@@ -91,7 +111,8 @@ serve(async (req) => {
       success: true, 
       monitored: flights?.length || 0,
       updated: updatedFlights.length,
-      updatedFlights
+      updatedFlights,
+      totalFlightsInDb
     }
 
     console.log('=== FIN MONITOREO DE VUELOS ===')

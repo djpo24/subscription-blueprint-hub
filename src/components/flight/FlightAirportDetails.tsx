@@ -19,10 +19,6 @@ export function FlightAirportDetails({ flight }: FlightAirportDetailsProps) {
     arrivalGate
   } = extractFlightApiData(flight);
 
-  // Usar horarios reales de la API cuando estén disponibles
-  const departureTime = flight.actual_departure || flight.scheduled_departure;
-  const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
-
   // Formatear tiempo sin conversiones de zona horaria
   const formatTime = (dateTime: string | null) => {
     if (!dateTime) return '-';
@@ -55,34 +51,22 @@ export function FlightAirportDetails({ flight }: FlightAirportDetailsProps) {
   };
 
   // Determinar si hay retrasos
-  const getDepartureStatus = () => {
+  const getDepartureTimeDiff = () => {
     if (flight.actual_departure && flight.scheduled_departure) {
-      const timeDiff = calculateTimeDifference(flight.scheduled_departure, flight.actual_departure);
-      if (timeDiff && timeDiff.isDelay && timeDiff.minutes > 5) {
-        return {
-          isDelayed: true,
-          originalTime: formatTime(flight.scheduled_departure)
-        };
-      }
+      return calculateTimeDifference(flight.scheduled_departure, flight.actual_departure);
     }
-    return { isDelayed: false };
+    return null;
   };
 
-  const getArrivalStatus = () => {
+  const getArrivalTimeDiff = () => {
     if (flight.actual_arrival && flight.scheduled_arrival) {
-      const timeDiff = calculateTimeDifference(flight.scheduled_arrival, flight.actual_arrival);
-      if (timeDiff && timeDiff.isDelay && timeDiff.minutes > 5) {
-        return {
-          isDelayed: true,
-          originalTime: formatTime(flight.scheduled_arrival)
-        };
-      }
+      return calculateTimeDifference(flight.scheduled_arrival, flight.actual_arrival);
     }
-    return { isDelayed: false };
+    return null;
   };
 
-  const departureStatus = getDepartureStatus();
-  const arrivalStatus = getArrivalStatus();
+  const departureTimeDiff = getDepartureTimeDiff();
+  const arrivalTimeDiff = getArrivalTimeDiff();
 
   // Nombres de aeropuertos (usar API data si está disponible)
   const departureAirportName = departureCity || departureAirportApi || flight.departure_airport;
@@ -95,22 +79,39 @@ export function FlightAirportDetails({ flight }: FlightAirportDetailsProps) {
         <div className="text-sm text-gray-600 underline mb-3">
           Información del aeropuerto
         </div>
-        <div className="space-y-2">
-          <div className="text-lg font-semibold text-gray-900">
-            {departureAirportName} · {formatDate(departureTime)}
+        
+        {/* Aeropuerto de salida */}
+        <div className="text-lg font-semibold text-gray-900 mb-4">
+          {departureAirportName} · {formatDate(flight.scheduled_departure)}
+        </div>
+
+        {/* Horarios de salida */}
+        <div className="space-y-3">
+          {/* Salida Programada */}
+          <div>
+            <div className="text-gray-600 text-sm mb-1">Salida Programada</div>
+            <div className="font-semibold text-lg text-gray-900">
+              {formatTime(flight.scheduled_departure)}
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+
+          {/* Salida Real */}
+          {flight.actual_departure && (
             <div>
-              <div className="text-gray-600">Salió</div>
+              <div className="text-gray-600 text-sm mb-1">Salida Real</div>
               <div className="font-semibold text-lg text-green-600">
-                {formatTime(departureTime)}
+                {formatTime(flight.actual_departure)}
               </div>
-              {departureStatus.isDelayed && (
-                <div className="text-gray-500 line-through text-sm">
-                  {departureStatus.originalTime}
+              {departureTimeDiff && departureTimeDiff.isDelay && departureTimeDiff.minutes > 5 && (
+                <div className="text-red-600 text-sm font-medium">
+                  +{departureTimeDiff.minutes} min retraso
                 </div>
               )}
             </div>
+          )}
+
+          {/* Terminal y Puerta */}
+          <div className="grid grid-cols-2 gap-4 text-sm pt-2">
             <div>
               <div className="text-gray-600">Terminal</div>
               <div className="font-semibold">
@@ -132,22 +133,39 @@ export function FlightAirportDetails({ flight }: FlightAirportDetailsProps) {
         <div className="text-sm text-gray-600 underline mb-3">
           Información del aeropuerto
         </div>
-        <div className="space-y-2">
-          <div className="text-lg font-semibold text-gray-900">
-            {arrivalAirportName} · {formatDate(arrivalTime)}
+        
+        {/* Aeropuerto de llegada */}
+        <div className="text-lg font-semibold text-gray-900 mb-4">
+          {arrivalAirportName} · {formatDate(flight.scheduled_arrival)}
+        </div>
+
+        {/* Horarios de llegada */}
+        <div className="space-y-3">
+          {/* Llegada Programada */}
+          <div>
+            <div className="text-gray-600 text-sm mb-1">Llegada Programada</div>
+            <div className="font-semibold text-lg text-gray-900">
+              {formatTime(flight.scheduled_arrival)}
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+
+          {/* Llegada Real */}
+          {flight.actual_arrival && (
             <div>
-              <div className="text-gray-600">{flight.has_landed ? 'Llegó' : 'Llega'}</div>
+              <div className="text-gray-600 text-sm mb-1">Llegada Real</div>
               <div className="font-semibold text-lg text-green-600">
-                {formatTime(arrivalTime)}
+                {formatTime(flight.actual_arrival)}
               </div>
-              {arrivalStatus.isDelayed && (
-                <div className="text-gray-500 line-through text-sm">
-                  {arrivalStatus.originalTime}
+              {arrivalTimeDiff && arrivalTimeDiff.isDelay && arrivalTimeDiff.minutes > 5 && (
+                <div className="text-red-600 text-sm font-medium">
+                  +{arrivalTimeDiff.minutes} min retraso
                 </div>
               )}
             </div>
+          )}
+
+          {/* Terminal y Puerta */}
+          <div className="grid grid-cols-2 gap-4 text-sm pt-2">
             <div>
               <div className="text-gray-600">Terminal</div>
               <div className="font-semibold">

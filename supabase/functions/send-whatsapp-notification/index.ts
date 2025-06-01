@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationId, phone, message } = await req.json()
+    const { notificationId, phone, message, useTemplate = false, templateName, templateLanguage } = await req.json()
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -30,7 +30,14 @@ serve(async (req) => {
       throw new Error('WhatsApp API credentials not configured')
     }
 
-    console.log('Enviando notificación WhatsApp:', { notificationId, phone, message })
+    console.log('Enviando notificación WhatsApp:', { 
+      notificationId, 
+      phone, 
+      message, 
+      useTemplate, 
+      templateName, 
+      templateLanguage 
+    })
 
     // Clean phone number (remove spaces, dashes, etc.)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
@@ -53,13 +60,33 @@ serve(async (req) => {
     console.log('Teléfono formateado:', { original: phone, formatted: apiPhone })
 
     // Prepare WhatsApp message payload
-    const whatsappPayload = {
-      messaging_product: 'whatsapp',
-      to: apiPhone,
-      type: 'text',
-      text: {
-        body: message
+    let whatsappPayload
+
+    if (useTemplate && templateName) {
+      // Use template message
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: apiPhone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: {
+            code: templateLanguage || 'en_US'
+          }
+        }
       }
+      console.log('Usando plantilla de WhatsApp:', templateName)
+    } else {
+      // Use regular text message
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: apiPhone,
+        type: 'text',
+        text: {
+          body: message
+        }
+      }
+      console.log('Usando mensaje de texto regular')
     }
 
     console.log('Payload para WhatsApp API:', whatsappPayload)
@@ -101,7 +128,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           notificationId,
-          whatsappMessageId: whatsappResult.messages[0].id 
+          whatsappMessageId: whatsappResult.messages[0].id,
+          messageType: useTemplate ? 'template' : 'text'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -139,22 +167,20 @@ serve(async (req) => {
     console.error('Error en send-whatsapp-notification:', error)
     
     // Try to update notification status to failed if we have the ID
-    if (notificationId) {
-      try {
-        const supabaseClient = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
-        await supabaseClient
-          .from('notification_log')
-          .update({ 
-            status: 'failed',
-            error_message: error.message
-          })
-          .eq('id', notificationId)
-      } catch (updateError) {
-        console.error('Error updating failed notification:', updateError)
-      }
+    try {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabaseClient
+        .from('notification_log')
+        .update({ 
+          status: 'failed',
+          error_message: error.message
+        })
+        .eq('id', notificationId)
+    } catch (updateError) {
+      console.error('Error updating failed notification:', updateError)
     }
 
     return new Response(

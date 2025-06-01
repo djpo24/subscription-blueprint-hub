@@ -6,6 +6,7 @@ import { FlightInformationCard } from './flight/FlightInformationCard';
 import { UpcomingFlightsCard } from './flight/UpcomingFlightsCard';
 import { DirectWhatsAppTest } from './flight/DirectWhatsAppTest';
 import { MetaConnectionTest } from './flight/MetaConnectionTest';
+import { WhatsAppTemplateTest } from './flight/WhatsAppTemplateTest';
 
 export function FlightNotificationPanel() {
   const { 
@@ -23,6 +24,8 @@ export function FlightNotificationPanel() {
       <FlightMonitoringCard />
 
       <MetaConnectionTest />
+
+      <WhatsAppTemplateTest />
 
       <DirectWhatsAppTest />
 

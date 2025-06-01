@@ -27,20 +27,32 @@ serve(async (req) => {
     console.log('SERVICE_ROLE_KEY disponible:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
     console.log('AVIATIONSTACK_API_KEY disponible:', !!Deno.env.get('AVIATIONSTACK_API_KEY'))
 
-    // Obtener vuelos que necesitan ser monitoreados con prioridad
-    console.log('Consultando vuelos para monitorear con sistema de prioridad...')
-    const { data: flights, error: flightsError } = await supabaseClient
+    // Obtener TODOS los vuelos (incluso los que ya aterraron) para análisis completo
+    console.log('Consultando todos los vuelos para análisis...')
+    const { data: allFlights, error: allFlightsError } = await supabaseClient
       .from('flight_data')
       .select('*')
-      .eq('has_landed', false)
       .not('flight_number', 'is', null)
 
-    console.log('Vuelos encontrados para monitorear:', flights?.length || 0)
-
-    if (flightsError) {
-      console.error('Error obteniendo vuelos para monitorear:', flightsError)
-      throw flightsError
+    if (allFlightsError) {
+      console.error('Error obteniendo todos los vuelos:', allFlightsError)
+      throw allFlightsError
     }
+
+    console.log('Total de vuelos en BD:', allFlights?.length || 0)
+
+    // Filtrar vuelos que necesitan monitoreo (no aterrizados O aterrizados pero no notificados)
+    const flightsToMonitor = allFlights?.filter(flight => 
+      !flight.has_landed || (flight.has_landed && !flight.notification_sent)
+    ) || []
+
+    console.log('Vuelos que necesitan monitoreo:', flightsToMonitor.length)
+    console.log('Detalle:', flightsToMonitor.map(f => ({
+      flight: f.flight_number,
+      has_landed: f.has_landed,
+      notification_sent: f.notification_sent,
+      status: f.status
+    })))
 
     // Obtener todos los viajes para calcular prioridades
     const { data: trips, error: tripsError } = await supabaseClient
@@ -53,17 +65,19 @@ serve(async (req) => {
     }
 
     // Calcular prioridades y ordenar vuelos
-    const flightsWithPriority = await calculateFlightPriorities(supabaseClient, flights || [])
+    const flightsWithPriority = await calculateFlightPriorities(supabaseClient, flightsToMonitor)
     const sortedFlights = flightsWithPriority.sort((a, b) => b.priority - a.priority)
 
-    console.log('Vuelos ordenados por prioridad:', sortedFlights.map(f => ({
+    console.log('Vuelos ordenados por prioridad para monitoreo:', sortedFlights.map(f => ({
       flight: f.flight_number,
       priority: f.priority,
-      packages: f.packageCount
+      packages: f.packageCount,
+      has_landed: f.has_landed,
+      notification_sent: f.notification_sent
     })))
 
     const updatedFlights: string[] = []
-    let totalFlightsInDb = flights?.length || 0
+    let totalFlightsInDb = allFlights?.length || 0
 
     if (sortedFlights.length > 0) {
       for (const flight of sortedFlights) {
@@ -81,7 +95,7 @@ serve(async (req) => {
         }
       }
     } else {
-      console.log('⚠️ No se encontraron vuelos para monitorear')
+      console.log('⚠️ No se encontraron vuelos que necesiten monitoreo')
     }
 
     // Mostrar estadísticas de uso de API
@@ -90,7 +104,7 @@ serve(async (req) => {
 
     const result: MonitoringResult = { 
       success: true, 
-      monitored: flights?.length || 0,
+      monitored: sortedFlights.length,
       updated: updatedFlights.length,
       updatedFlights,
       totalFlightsInDb,

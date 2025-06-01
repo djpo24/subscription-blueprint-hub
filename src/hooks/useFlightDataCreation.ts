@@ -1,6 +1,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { FlightData } from '@/types/flight';
 
 export function useFlightDataCreation() {
   const queryClient = useQueryClient();
@@ -170,15 +171,18 @@ export function useFlightDataCreation() {
       }
 
       // Si tenemos datos de la API, agregar los campos adicionales al objeto retornado
+      // Properly type-cast the result to include the optional API fields
+      const enrichedData = data as FlightData;
+      
       if (flightDataFromAPI) {
-        data.api_departure_airport = flightDataFromAPI.api_departure_airport;
-        data.api_arrival_airport = flightDataFromAPI.api_arrival_airport;
-        data.api_departure_city = flightDataFromAPI.api_departure_city;
-        data.api_arrival_city = flightDataFromAPI.api_arrival_city;
+        enrichedData.api_departure_airport = flightDataFromAPI.api_departure_airport;
+        enrichedData.api_arrival_airport = flightDataFromAPI.api_arrival_airport;
+        enrichedData.api_departure_city = flightDataFromAPI.api_departure_city;
+        enrichedData.api_arrival_city = flightDataFromAPI.api_arrival_city;
       }
 
-      console.log('Flight data created successfully:', data);
-      return data;
+      console.log('Flight data created successfully:', enrichedData);
+      return enrichedData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });

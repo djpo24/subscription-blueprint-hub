@@ -194,8 +194,21 @@ serve(async (req) => {
     flightData.api_aircraft_registration = flightData.aircraft?.registration || null
     flightData.api_aircraft_iata = flightData.aircraft?.iata || null
     
-    // Guardar datos completos en bruto para referencia futura
-    flightData.api_raw_data = flightData
+    // Crear una copia segura de los datos en bruto SIN referencias circulares
+    const safeRawData = {
+      flight_status: flightData.flight_status,
+      airline: flightData.airline,
+      aircraft: flightData.aircraft,
+      departure: flightData.departure,
+      arrival: flightData.arrival,
+      flight: flightData.flight,
+      flight_date: flightData.flight_date,
+      flight_iata: flightData.flight_iata,
+      flight_icao: flightData.flight_icao
+    }
+    
+    // Guardar datos en bruto de forma segura (sin referencias circulares)
+    flightData.api_raw_data = safeRawData
 
     console.log('🎯 Datos COMPLETOS extraídos y agregados de la API:', {
       api_departure_city: flightData.api_departure_city,
@@ -212,7 +225,8 @@ serve(async (req) => {
       departure_scheduled: flightData.departure?.scheduled,
       departure_actual: flightData.departure?.actual,
       arrival_scheduled: flightData.arrival?.scheduled,
-      arrival_actual: flightData.arrival?.actual
+      arrival_actual: flightData.arrival?.actual,
+      raw_data_saved: !!flightData.api_raw_data
     })
 
     return new Response(

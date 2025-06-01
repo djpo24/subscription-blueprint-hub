@@ -96,7 +96,9 @@ export function FlightDetailsGrid({
     departureDiff,
     arrivalDiff,
     'apiDepartureCity para mostrar': apiDepartureCity,
-    'apiArrivalCity para mostrar': apiArrivalCity
+    'apiArrivalCity para mostrar': apiArrivalCity,
+    'apiDepartureAirport para mostrar': apiDepartureAirport,
+    'apiArrivalAirport para mostrar': apiArrivalAirport
   });
 
   return (
@@ -114,6 +116,7 @@ export function FlightDetailsGrid({
           terminal={displayDepartureInfo.terminal}
           date={<FlightDateDisplay dateTime={departureDate} />}
           apiCity={apiDepartureCity}
+          apiAirport={apiDepartureAirport}
         />
         
         <FlightTimeInfo
@@ -144,6 +147,7 @@ export function FlightDetailsGrid({
           terminal={displayArrivalInfo.terminal}
           date={<FlightDateDisplay dateTime={arrivalDate} />}
           apiCity={apiArrivalCity}
+          apiAirport={apiArrivalAirport}
         />
         
         <FlightTimeInfo

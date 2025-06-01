@@ -1,4 +1,3 @@
-
 import { FlightData } from '@/types/flight';
 import { FlightStatusBadge } from './FlightStatusBadge';
 import { FlightTimeDisplay } from './FlightTimeDisplay';
@@ -9,6 +8,7 @@ import { FlightTerminalGateInfo } from './FlightTerminalGateInfo';
 import { FlightAirlineInfo } from './FlightAirlineInfo';
 import { FlightDataIndicators } from './FlightDataIndicators';
 import { extractFlightApiData } from './FlightApiDataExtractor';
+import { FlightApiDataSummary } from './FlightApiDataSummary';
 
 interface FlightStatusDisplayProps {
   flight: FlightData;
@@ -85,95 +85,100 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   });
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-      {/* Header con hora de llegada y destino */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <FlightTimeDisplay 
-              dateTime={arrivalTime} 
-              className="text-sm text-gray-600"
-            />
-            {flight.actual_arrival && (
-              <span className="text-xs text-green-600 font-medium">
-                (Hora Real API)
-              </span>
-            )}
+    <div className="space-y-4">
+      {/* Resumen de datos REALES de la API */}
+      <FlightApiDataSummary flight={flight} />
+      
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        {/* Header con hora de llegada y destino */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <FlightTimeDisplay 
+                dateTime={arrivalTime} 
+                className="text-sm text-gray-600"
+              />
+              {flight.actual_arrival && (
+                <span className="text-xs text-green-600 font-medium">
+                  (Hora Real API)
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-gray-600">
+              a {arrivalLocation}
+              {arrivalCity && (
+                <span className="text-xs text-blue-600 ml-1">(Ciudad Real API)</span>
+              )}
+            </span>
           </div>
-          <span className="text-sm text-gray-600">
-            a {arrivalLocation}
-            {departureCity && (
-              <span className="text-xs text-blue-600 ml-1">(Ciudad Real API)</span>
-            )}
-          </span>
+          <FlightStatusBadge 
+            status={flight.status} 
+            hasLanded={flight.has_landed} 
+          />
         </div>
-        <FlightStatusBadge 
-          status={flight.status} 
-          hasLanded={flight.has_landed} 
-        />
-      </div>
 
-      {/* Terminal and Gate Information */}
-      <FlightTerminalGateInfo
-        departureTerminal={departureTerminal}
-        departureGate={departureGate}
-        arrivalTerminal={arrivalTerminal}
-        arrivalGate={arrivalGate}
-        departureAirport={departureAirport}
-        arrivalAirport={arrivalAirport}
-      />
-
-      {/* Airline and Flight Information */}
-      <FlightAirlineInfo
-        flight={flight}
-        departureCity={departureCity}
-        arrivalCity={arrivalCity}
-        aircraft={aircraft}
-        flightStatusApi={flightStatusApi}
-      />
-
-      {/* Ruta con línea de conexión */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-4">
-        <FlightRouteDisplay 
-          departureAirport={departureLocation}
-          arrivalAirport={arrivalLocation}
-          scheduledDeparture={flight.scheduled_departure}
-          scheduledArrival={flight.scheduled_arrival}
+        {/* Terminal and Gate Information */}
+        <FlightTerminalGateInfo
+          departureTerminal={departureTerminal}
+          departureGate={departureGate}
+          arrivalTerminal={arrivalTerminal}
+          arrivalGate={arrivalGate}
+          departureAirport={departureAirport}
+          arrivalAirport={arrivalAirport}
         />
 
-        {/* Información detallada con indicadores de datos reales */}
-        <FlightDetailsGrid 
-          departureAirport={flight.departure_airport}
-          arrivalAirport={flight.arrival_airport}
-          departureTime={departureTime}
-          arrivalTime={arrivalTime}
-          departureDate={departureDate}
-          arrivalDate={arrivalDate}
-          actualDeparture={flight.actual_departure}
-          actualArrival={flight.actual_arrival}
-          scheduledDeparture={flight.scheduled_departure}
-          scheduledArrival={flight.scheduled_arrival}
-          apiDepartureCity={departureCity}
-          apiArrivalCity={arrivalCity}
-          apiDepartureAirport={departureAirportApi}
-          apiArrivalAirport={arrivalAirportApi}
-          apiDepartureGate={departureGate}
-          apiArrivalGate={arrivalGate}
-          apiDepartureTerminal={departureTerminal}
-          apiArrivalTerminal={arrivalTerminal}
-        />
-      </div>
-
-      {/* Footer con última actualización y fuente de datos */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <FlightLastUpdated lastUpdated={flight.last_updated} />
-        <FlightDataIndicators
+        {/* Airline and Flight Information */}
+        <FlightAirlineInfo
           flight={flight}
           departureCity={departureCity}
           arrivalCity={arrivalCity}
-          departureGate={departureGate}
-          arrivalGate={arrivalGate}
+          aircraft={aircraft}
+          flightStatusApi={flightStatusApi}
         />
+
+        {/* Ruta con línea de conexión */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+          <FlightRouteDisplay 
+            departureAirport={departureLocation}
+            arrivalAirport={arrivalLocation}
+            scheduledDeparture={flight.scheduled_departure}
+            scheduledArrival={flight.scheduled_arrival}
+          />
+
+          {/* Información detallada con indicadores de datos reales */}
+          <FlightDetailsGrid 
+            departureAirport={flight.departure_airport}
+            arrivalAirport={flight.arrival_airport}
+            departureTime={departureTime}
+            arrivalTime={arrivalTime}
+            departureDate={departureDate}
+            arrivalDate={arrivalDate}
+            actualDeparture={flight.actual_departure}
+            actualArrival={flight.actual_arrival}
+            scheduledDeparture={flight.scheduled_departure}
+            scheduledArrival={flight.scheduled_arrival}
+            apiDepartureCity={departureCity}
+            apiArrivalCity={arrivalCity}
+            apiDepartureAirport={departureAirportApi}
+            apiArrivalAirport={arrivalAirportApi}
+            apiDepartureGate={departureGate}
+            apiArrivalGate={arrivalGate}
+            apiDepartureTerminal={departureTerminal}
+            apiArrivalTerminal={arrivalTerminal}
+          />
+        </div>
+
+        {/* Footer con última actualización y fuente de datos */}
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <FlightLastUpdated lastUpdated={flight.last_updated} />
+          <FlightDataIndicators
+            flight={flight}
+            departureCity={departureCity}
+            arrivalCity={arrivalCity}
+            departureGate={departureGate}
+            arrivalGate={arrivalGate}
+          />
+        </div>
       </div>
     </div>
   );

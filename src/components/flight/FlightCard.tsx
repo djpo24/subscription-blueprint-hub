@@ -1,9 +1,8 @@
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { FlightData } from '@/types/flight';
+import { FlightStatusDisplay } from './FlightStatusDisplay';
 import { FlightCardHeader } from './FlightCardHeader';
-import { FlightCardDetails } from './FlightCardDetails';
-import { FlightCardFooter } from './FlightCardFooter';
 
 interface FlightCardProps {
   flight: FlightData;
@@ -13,16 +12,16 @@ interface FlightCardProps {
 export function FlightCard({ flight, onUpdateFlightStatus }: FlightCardProps) {
   return (
     <Card className="border-l-4 border-l-blue-500">
-      <CardHeader className="pb-3">
-        <FlightCardHeader 
-          flight={flight} 
-          onUpdateFlightStatus={onUpdateFlightStatus} 
-        />
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <FlightCardDetails flight={flight} />
-        <FlightCardFooter flight={flight} />
+      <CardContent className="p-0">
+        <FlightStatusDisplay flight={flight} />
+        {!flight.has_landed && (
+          <div className="p-4 border-t border-gray-100">
+            <FlightCardHeader 
+              flight={flight} 
+              onUpdateFlightStatus={onUpdateFlightStatus} 
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

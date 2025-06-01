@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { TripFormData } from '@/types/tripForm';
 import { createTrip, prepareTripData } from '@/services/tripService';
-import { useFlightDataCreation } from '@/hooks/useFlightDataCreation';
+import { useFlightCreationMutation } from '@/hooks/useFlightCreationMutation';
 import { useTripFormValidation } from '@/hooks/useTripFormValidation';
 
 export function useTripForm(onSuccess: () => void) {
@@ -18,7 +17,7 @@ export function useTripForm(onSuccess: () => void) {
   const today = new Date();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { createFlightData } = useFlightDataCreation();
+  const { createFlightData } = useFlightCreationMutation();
   const { validateForm } = useTripFormValidation();
 
   const updateFormData = (updates: Partial<TripFormData>) => {

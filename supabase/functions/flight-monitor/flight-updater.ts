@@ -41,7 +41,7 @@ export async function updateFlightStatus(
     let wasUpdated = false;
     let updateData: any = {};
     
-    // Preparar datos de actualización
+    // Preparar datos de actualización básicos
     if (flightStatus.actualDeparture && flightStatus.actualDeparture !== flight.actual_departure) {
       updateData.actual_departure = flightStatus.actualDeparture;
       console.log(`🛫 Actualizando salida real: ${flightStatus.actualDeparture}`);
@@ -68,11 +68,41 @@ export async function updateFlightStatus(
       console.log(`🏢 Actualizando aerolínea: ${flight.airline} → ${(flightStatus as any).airline}`);
     }
     
+    // Agregar TODA la información de la API si está disponible
+    if ((flightStatus as any).apiData) {
+      const apiData = (flightStatus as any).apiData;
+      console.log('🎯 Agregando datos completos de la API al update:', apiData);
+      
+      // Incluir TODOS los campos de la API
+      if (apiData.api_departure_airport) updateData.api_departure_airport = apiData.api_departure_airport;
+      if (apiData.api_arrival_airport) updateData.api_arrival_airport = apiData.api_arrival_airport;
+      if (apiData.api_departure_city) updateData.api_departure_city = apiData.api_departure_city;
+      if (apiData.api_arrival_city) updateData.api_arrival_city = apiData.api_arrival_city;
+      if (apiData.api_departure_gate) updateData.api_departure_gate = apiData.api_departure_gate;
+      if (apiData.api_arrival_gate) updateData.api_arrival_gate = apiData.api_arrival_gate;
+      if (apiData.api_departure_terminal) updateData.api_departure_terminal = apiData.api_departure_terminal;
+      if (apiData.api_arrival_terminal) updateData.api_arrival_terminal = apiData.api_arrival_terminal;
+      if (apiData.api_aircraft) updateData.api_aircraft = apiData.api_aircraft;
+      if (apiData.api_flight_status) updateData.api_flight_status = apiData.api_flight_status;
+      if (apiData.api_departure_timezone) updateData.api_departure_timezone = apiData.api_departure_timezone;
+      if (apiData.api_arrival_timezone) updateData.api_arrival_timezone = apiData.api_arrival_timezone;
+      if (apiData.api_departure_iata) updateData.api_departure_iata = apiData.api_departure_iata;
+      if (apiData.api_arrival_iata) updateData.api_arrival_iata = apiData.api_arrival_iata;
+      if (apiData.api_departure_icao) updateData.api_departure_icao = apiData.api_departure_icao;
+      if (apiData.api_arrival_icao) updateData.api_arrival_icao = apiData.api_arrival_icao;
+      if (apiData.api_airline_name) updateData.api_airline_name = apiData.api_airline_name;
+      if (apiData.api_airline_iata) updateData.api_airline_iata = apiData.api_airline_iata;
+      if (apiData.api_airline_icao) updateData.api_airline_icao = apiData.api_airline_icao;
+      if (apiData.api_aircraft_registration) updateData.api_aircraft_registration = apiData.api_aircraft_registration;
+      if (apiData.api_aircraft_iata) updateData.api_aircraft_iata = apiData.api_aircraft_iata;
+      if (apiData.api_raw_data) updateData.api_raw_data = apiData.api_raw_data;
+    }
+    
     // Si hay datos para actualizar, hacer la actualización
     if (Object.keys(updateData).length > 0) {
       updateData.last_updated = new Date().toISOString();
       
-      console.log(`💾 Actualizando vuelo ${flight.flight_number} con datos:`, updateData);
+      console.log(`💾 Actualizando vuelo ${flight.flight_number} con datos COMPLETOS:`, updateData);
       
       const { error: updateError } = await supabaseClient
         .from('flight_data')
@@ -83,7 +113,7 @@ export async function updateFlightStatus(
         console.error('❌ Error actualizando vuelo:', updateError);
         return null;
       } else {
-        console.log(`✅ Vuelo ${flight.flight_number} actualizado exitosamente`);
+        console.log(`✅ Vuelo ${flight.flight_number} actualizado exitosamente con datos completos de la API`);
         
         // Log específico si el vuelo aterrizó
         if (flightStatus.hasLanded && !flight.has_landed) {

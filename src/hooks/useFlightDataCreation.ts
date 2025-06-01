@@ -59,6 +59,7 @@ export function useFlightDataCreation() {
             api_departure_terminal: flightDataFromAPI.api_departure_terminal,
             api_arrival_terminal: flightDataFromAPI.api_arrival_terminal,
             api_aircraft: flightDataFromAPI.api_aircraft,
+            api_airline_name: flightDataFromAPI.api_airline_name,
             departure_scheduled: flightDataFromAPI.departure?.scheduled,
             departure_actual: flightDataFromAPI.departure?.actual,
             arrival_scheduled: flightDataFromAPI.arrival?.scheduled,
@@ -164,6 +165,7 @@ export function useFlightDataCreation() {
       const departureAirport = flightDataFromAPI?.api_departure_airport || origin;
       const arrivalAirport = flightDataFromAPI?.api_arrival_airport || destination;
 
+      // Preparar TODOS los datos del vuelo incluyendo TODA la información de la API
       const flightData = {
         flight_number: flightNumber,
         departure_airport: departureAirport,
@@ -175,10 +177,35 @@ export function useFlightDataCreation() {
         status,
         has_landed: hasLanded,
         notification_sent: false,
-        airline: flightDataFromAPI?.airline?.name || 'Avianca'
+        airline: flightDataFromAPI?.api_airline_name || 'Avianca',
+        // Incluir TODA la información de la API
+        ...(flightDataFromAPI && {
+          api_departure_airport: flightDataFromAPI.api_departure_airport,
+          api_arrival_airport: flightDataFromAPI.api_arrival_airport,
+          api_departure_city: flightDataFromAPI.api_departure_city,
+          api_arrival_city: flightDataFromAPI.api_arrival_city,
+          api_departure_gate: flightDataFromAPI.api_departure_gate,
+          api_arrival_gate: flightDataFromAPI.api_arrival_gate,
+          api_departure_terminal: flightDataFromAPI.api_departure_terminal,
+          api_arrival_terminal: flightDataFromAPI.api_arrival_terminal,
+          api_aircraft: flightDataFromAPI.api_aircraft,
+          api_flight_status: flightDataFromAPI.api_flight_status,
+          api_departure_timezone: flightDataFromAPI.api_departure_timezone,
+          api_arrival_timezone: flightDataFromAPI.api_arrival_timezone,
+          api_departure_iata: flightDataFromAPI.api_departure_iata,
+          api_arrival_iata: flightDataFromAPI.api_arrival_iata,
+          api_departure_icao: flightDataFromAPI.api_departure_icao,
+          api_arrival_icao: flightDataFromAPI.api_arrival_icao,
+          api_airline_name: flightDataFromAPI.api_airline_name,
+          api_airline_iata: flightDataFromAPI.api_airline_iata,
+          api_airline_icao: flightDataFromAPI.api_airline_icao,
+          api_aircraft_registration: flightDataFromAPI.api_aircraft_registration,
+          api_aircraft_iata: flightDataFromAPI.api_aircraft_iata,
+          api_raw_data: flightDataFromAPI.api_raw_data
+        })
       };
 
-      console.log('Creating flight with data:', flightData);
+      console.log('Creating flight with COMPLETE data:', flightData);
 
       const { data, error } = await supabase
         .from('flight_data')
@@ -191,24 +218,8 @@ export function useFlightDataCreation() {
         throw error;
       }
 
-      // Si tenemos datos de la API, agregar TODOS los campos adicionales al objeto retornado
-      const enrichedData = data as FlightData;
-      
-      if (flightDataFromAPI) {
-        enrichedData.api_departure_airport = flightDataFromAPI.api_departure_airport;
-        enrichedData.api_arrival_airport = flightDataFromAPI.api_arrival_airport;
-        enrichedData.api_departure_city = flightDataFromAPI.api_departure_city;
-        enrichedData.api_arrival_city = flightDataFromAPI.api_arrival_city;
-        enrichedData.api_departure_gate = flightDataFromAPI.api_departure_gate;
-        enrichedData.api_arrival_gate = flightDataFromAPI.api_arrival_gate;
-        enrichedData.api_departure_terminal = flightDataFromAPI.api_departure_terminal;
-        enrichedData.api_arrival_terminal = flightDataFromAPI.api_arrival_terminal;
-        enrichedData.api_aircraft = flightDataFromAPI.api_aircraft;
-        enrichedData.api_flight_status = flightDataFromAPI.api_flight_status;
-      }
-
-      console.log('🎯 Flight data created successfully with COMPLETE API data:', enrichedData);
-      return enrichedData;
+      console.log('🎯 Flight data created successfully with COMPLETE API data stored in DB:', data);
+      return data as FlightData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });

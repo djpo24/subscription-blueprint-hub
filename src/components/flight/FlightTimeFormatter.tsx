@@ -12,7 +12,7 @@ export function FlightTimeFormatter({ dateTime, formatType }: FlightTimeFormatte
   try {
     const parsedDate = parseISO(dateTime);
     return formatType === 'time' 
-      ? format(parsedDate, 'HH:mm')
+      ? format(parsedDate, 'h:mm a') // Formato 12 horas con AM/PM
       : format(parsedDate, 'yyyy-MM-dd');
   } catch {
     return null;
@@ -23,7 +23,7 @@ export const useFlightTimeFormatting = () => {
   const formatTime = (dateTime: string | null) => {
     if (!dateTime) return null;
     try {
-      return format(parseISO(dateTime), 'HH:mm');
+      return format(parseISO(dateTime), 'h:mm a'); // Formato 12 horas con AM/PM
     } catch {
       return null;
     }

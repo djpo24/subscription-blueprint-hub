@@ -1,7 +1,7 @@
 
 import { FlightData } from '@/types/flight';
 import { FlightStatusBadge } from './FlightStatusBadge';
-import { FlightLastUpdated } from './FlightLastUpdated';
+import { FlightTerminalGateInfo } from './FlightTerminalGateInfo';
 
 interface FlightStatusHeaderProps {
   flight: FlightData;
@@ -19,7 +19,16 @@ export function FlightStatusHeader({ flight }: FlightStatusHeaderProps) {
           hasLanded={flight.has_landed}
         />
       </div>
-      <FlightLastUpdated lastUpdated={flight.last_updated} />
+      <div className="flex gap-4">
+        <FlightTerminalGateInfo 
+          gate={flight.api_departure_gate} 
+          terminal={flight.api_departure_terminal}
+        />
+        <FlightTerminalGateInfo 
+          gate={flight.api_arrival_gate} 
+          terminal={flight.api_arrival_terminal}
+        />
+      </div>
     </div>
   );
 }

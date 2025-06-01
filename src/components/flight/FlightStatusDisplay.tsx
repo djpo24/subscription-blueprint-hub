@@ -47,6 +47,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
           actualArrival={flight.actual_arrival}
           scheduledDeparture={flight.scheduled_departure}
           scheduledArrival={flight.scheduled_arrival}
+          lastUpdated={flight.last_updated}
           apiDepartureCity={flight.api_departure_city}
           apiArrivalCity={flight.api_arrival_city}
           apiDepartureAirport={flight.api_departure_airport}

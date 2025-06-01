@@ -14,6 +14,7 @@ interface FlightDetailsGridProps {
   actualArrival: string | null;
   scheduledDeparture: string | null;
   scheduledArrival: string | null;
+  lastUpdated: string;
   apiDepartureCity?: string;
   apiArrivalCity?: string;
   apiDepartureAirport?: string;
@@ -40,6 +41,7 @@ export function FlightDetailsGrid({
   actualArrival,
   scheduledDeparture,
   scheduledArrival,
+  lastUpdated,
   apiDepartureCity,
   apiArrivalCity,
   apiDepartureAirport,
@@ -82,8 +84,7 @@ export function FlightDetailsGrid({
           actualDeparture={actualDeparture}
           departureTime={departureTime}
           scheduledDeparture={scheduledDeparture}
-          gate={apiDepartureGate}
-          terminal={apiDepartureTerminal}
+          lastUpdated={lastUpdated}
         />
 
         <FlightArrivalSection
@@ -91,8 +92,7 @@ export function FlightDetailsGrid({
           actualArrival={actualArrival}
           arrivalTime={arrivalTime}
           scheduledArrival={scheduledArrival}
-          gate={apiArrivalGate}
-          terminal={apiArrivalTerminal}
+          lastUpdated={lastUpdated}
         />
       </div>
     </div>

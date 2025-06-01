@@ -70,7 +70,8 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const formatDate = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      return format(parseISO(dateTime), 'EEE, dd \'de\' MMM', { locale: es });
+      const date = parseISO(dateTime);
+      return format(date, 'EEE, dd \'de\' MMM', { locale: es });
     } catch {
       return '-';
     }
@@ -81,6 +82,10 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   // Mostrar hora real si está disponible, sino la programada
   const departureTime = flight.actual_departure || flight.scheduled_departure;
   const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
+
+  // Para las fechas, usar las fechas programadas principalmente
+  const departureDate = flight.scheduled_departure || flight.actual_departure;
+  const arrivalDate = flight.scheduled_arrival || flight.actual_arrival;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
@@ -146,7 +151,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
               Información del aeropuerto
             </div>
             <div className="font-medium">
-              {flight.departure_airport} · {formatDate(departureTime)}
+              {flight.departure_airport} · {formatDate(departureDate)}
             </div>
             <div className="text-sm text-gray-600">
               {flight.actual_departure ? 'Salió' : 'Salida'}
@@ -167,7 +172,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
               Información del aeropuerto
             </div>
             <div className="font-medium">
-              {flight.arrival_airport} · {formatDate(arrivalTime)}
+              {flight.arrival_airport} · {formatDate(arrivalDate)}
             </div>
             <div className="text-sm text-gray-600">
               {flight.actual_arrival ? 'Llegó' : 'Llegada'}

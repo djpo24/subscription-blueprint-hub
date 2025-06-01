@@ -162,10 +162,7 @@ export function FlightDetailsGrid({
         <div className="space-y-3">
           <div className="border-b pb-2">
             <h3 className="font-semibold text-lg">Llegada</h3>
-            <div className="text-sm text-gray-600">
-              {displayArrivalInfo.iata && <span className="font-mono text-lg">{displayArrivalInfo.iata}</span>}
-              {displayArrivalInfo.city && <div className="text-gray-700">{displayArrivalInfo.city}</div>}
-            </div>
+            
           </div>
 
           <div>

@@ -4,7 +4,6 @@ import { FlightMonitoringCard } from './flight/FlightMonitoringCard';
 import { TestNotificationCard } from './flight/TestNotificationCard';
 import { FlightInformationCard } from './flight/FlightInformationCard';
 import { UpcomingFlightsCard } from './flight/UpcomingFlightsCard';
-import { AutoFlightDataRefresh } from './AutoFlightDataRefresh';
 
 export function FlightNotificationPanel() {
   const { 
@@ -19,8 +18,6 @@ export function FlightNotificationPanel() {
 
   return (
     <div className="space-y-6">
-      <AutoFlightDataRefresh />
-
       <FlightMonitoringCard />
 
       <TestNotificationCard 

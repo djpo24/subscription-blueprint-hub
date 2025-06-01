@@ -171,33 +171,30 @@ serve(async (req) => {
     flightData._fallback = false
     flightData._source = 'aviationstack_api'
     
-    // Extraer TODA la información completa de la API y agregarla al objeto
-    flightData.api_departure_airport = flightData.departure?.airport || null
-    flightData.api_arrival_airport = flightData.arrival?.airport || null
-    flightData.api_departure_city = flightData.departure?.airport || null // La API a veces pone ciudad en el campo airport
-    flightData.api_arrival_city = flightData.arrival?.airport || null
-    flightData.api_departure_gate = flightData.departure?.gate || null
-    flightData.api_arrival_gate = flightData.arrival?.gate || null
-    flightData.api_departure_terminal = flightData.departure?.terminal || null
-    flightData.api_arrival_terminal = flightData.arrival?.terminal || null
-    flightData.api_aircraft = flightData.aircraft?.registration || flightData.aircraft?.iata || null
-    flightData.api_flight_status = flightData.flight_status || null
-    flightData.api_departure_timezone = flightData.departure?.timezone || null
-    flightData.api_arrival_timezone = flightData.arrival?.timezone || null
-    flightData.api_departure_iata = flightData.departure?.iata || null
-    flightData.api_arrival_iata = flightData.arrival?.iata || null
-    flightData.api_departure_icao = flightData.departure?.icao || null
-    flightData.api_arrival_icao = flightData.arrival?.icao || null
-    flightData.api_airline_name = flightData.airline?.name || null
-    flightData.api_airline_iata = flightData.airline?.iata || null
-    flightData.api_airline_icao = flightData.airline?.icao || null
-    flightData.api_aircraft_registration = flightData.aircraft?.registration || null
-    flightData.api_aircraft_iata = flightData.aircraft?.iata || null
+    // Extraer información completa de aeropuertos y ciudades EXACTAMENTE como viene de la API
+    if (flightData.departure) {
+      flightData.api_departure_airport = flightData.departure.iata || flightData.departure.icao || 'N/A'
+      flightData.api_departure_city = flightData.departure.airport || 'Ciudad no disponible'
+      flightData.api_departure_gate = flightData.departure.gate || null
+      flightData.api_departure_terminal = flightData.departure.terminal || null
+    }
     
-    // Guardar datos completos en bruto para referencia futura
-    flightData.api_raw_data = flightData
+    if (flightData.arrival) {
+      flightData.api_arrival_airport = flightData.arrival.iata || flightData.arrival.icao || 'N/A'
+      flightData.api_arrival_city = flightData.arrival.airport || 'Ciudad no disponible'
+      flightData.api_arrival_gate = flightData.arrival.gate || null
+      flightData.api_arrival_terminal = flightData.arrival.terminal || null
+    }
 
-    console.log('🎯 Datos COMPLETOS extraídos y agregados de la API:', {
+    // Información adicional de la aeronave
+    if (flightData.aircraft) {
+      flightData.api_aircraft = flightData.aircraft.registration || flightData.aircraft.iata || null
+    }
+
+    // Estado exacto del vuelo de la API
+    flightData.api_flight_status = flightData.flight_status
+
+    console.log('🎯 Datos completos extraídos de la API:', {
       api_departure_city: flightData.api_departure_city,
       api_arrival_city: flightData.api_arrival_city,
       api_departure_airport: flightData.api_departure_airport,
@@ -208,7 +205,6 @@ serve(async (req) => {
       api_arrival_terminal: flightData.api_arrival_terminal,
       api_aircraft: flightData.api_aircraft,
       api_flight_status: flightData.api_flight_status,
-      api_airline_name: flightData.api_airline_name,
       departure_scheduled: flightData.departure?.scheduled,
       departure_actual: flightData.departure?.actual,
       arrival_scheduled: flightData.arrival?.scheduled,

@@ -93,6 +93,67 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
         />
       </div>
 
+      {/* Información de Terminal y Puerta de Embarque */}
+      {(flight.api_departure_terminal || flight.api_departure_gate || flight.api_arrival_terminal || flight.api_arrival_gate) && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Información de Salida */}
+            {(flight.api_departure_terminal || flight.api_departure_gate) && (
+              <div>
+                <div className="text-sm font-medium text-blue-700 mb-1">
+                  🛫 Salida - {departureAirport}
+                </div>
+                <div className="space-y-1">
+                  {flight.api_departure_terminal && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">Terminal:</span>
+                      <span className="text-sm font-bold text-blue-700">
+                        {flight.api_departure_terminal}
+                      </span>
+                    </div>
+                  )}
+                  {flight.api_departure_gate && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">Puerta:</span>
+                      <span className="text-sm font-bold text-blue-700">
+                        {flight.api_departure_gate}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Información de Llegada */}
+            {(flight.api_arrival_terminal || flight.api_arrival_gate) && (
+              <div>
+                <div className="text-sm font-medium text-green-700 mb-1">
+                  🛬 Llegada - {arrivalAirport}
+                </div>
+                <div className="space-y-1">
+                  {flight.api_arrival_terminal && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">Terminal:</span>
+                      <span className="text-sm font-bold text-green-700">
+                        {flight.api_arrival_terminal}
+                      </span>
+                    </div>
+                  )}
+                  {flight.api_arrival_gate && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">Puerta:</span>
+                      <span className="text-sm font-bold text-green-700">
+                        {flight.api_arrival_gate}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Información de la aerolínea y número de vuelo */}
       <div className="mb-6">
         <div className="flex items-center gap-2 flex-wrap">

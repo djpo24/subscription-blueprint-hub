@@ -1,5 +1,4 @@
 
-import { format, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 
@@ -12,9 +11,12 @@ export function FlightTimeDisplay({ dateTime, className = '' }: FlightTimeDispla
   const formatTime = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      // Formatear la hora en zona horaria de Bogotá
-      const bogotaTime = formatInTimeZone(dateTime, 'America/Bogota', 'HH:mm', { locale: es });
-      console.log('formatTime input:', dateTime, 'formatted in Bogotá timezone:', bogotaTime);
+      // Asegurar que la fecha esté en formato ISO correcto
+      const isoDateTime = dateTime.includes('T') ? dateTime : `${dateTime}T00:00:00Z`;
+      
+      // Formatear la hora en zona horaria de Bogotá (UTC-5)
+      const bogotaTime = formatInTimeZone(isoDateTime, 'America/Bogota', 'HH:mm', { locale: es });
+      console.log('FlightTimeDisplay - input:', dateTime, 'output en Bogotá:', bogotaTime);
       return bogotaTime;
     } catch (error) {
       console.error('Error formatting time:', error);

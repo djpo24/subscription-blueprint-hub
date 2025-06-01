@@ -1,7 +1,6 @@
 
 import { FlightTimeDisplay } from './FlightTimeDisplay';
 import { FlightDateDisplay } from './FlightDateDisplay';
-import { formatInTimeZone } from 'date-fns-tz';
 
 interface FlightDetailsGridProps {
   departureAirport: string;
@@ -38,28 +37,21 @@ export function FlightDetailsGrid({
     scheduledArrival
   });
   
-  // Calcular diferencias de tiempo en zona horaria de Bogotá
+  // Calcular diferencias de tiempo
   const calculateTimeDifference = (scheduled: string | null, actual: string | null) => {
     if (!scheduled || !actual) return null;
     
-    try {
-      // Convertir ambas fechas a zona horaria de Bogotá para comparación correcta
-      const scheduledBogota = new Date(formatInTimeZone(scheduled, 'America/Bogota', 'yyyy-MM-dd\'T\'HH:mm:ssXXX'));
-      const actualBogota = new Date(formatInTimeZone(actual, 'America/Bogota', 'yyyy-MM-dd\'T\'HH:mm:ssXXX'));
-      
-      const diffMinutes = Math.round((actualBogota.getTime() - scheduledBogota.getTime()) / (1000 * 60));
-      
-      if (Math.abs(diffMinutes) < 5) return null; // Diferencia insignificante
-      
-      return {
-        minutes: Math.abs(diffMinutes),
-        isDelay: diffMinutes > 0,
-        isEarly: diffMinutes < 0
-      };
-    } catch (error) {
-      console.error('Error calculando diferencia de tiempo:', error);
-      return null;
-    }
+    const scheduledTime = new Date(scheduled);
+    const actualTime = new Date(actual);
+    const diffMinutes = Math.round((actualTime.getTime() - scheduledTime.getTime()) / (1000 * 60));
+    
+    if (Math.abs(diffMinutes) < 5) return null; // Diferencia insignificante
+    
+    return {
+      minutes: Math.abs(diffMinutes),
+      isDelay: diffMinutes > 0,
+      isEarly: diffMinutes < 0
+    };
   };
 
   const departureDiff = calculateTimeDifference(scheduledDeparture, actualDeparture);

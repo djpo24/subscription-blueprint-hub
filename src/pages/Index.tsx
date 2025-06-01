@@ -25,6 +25,7 @@ const Index = () => {
   const [packageDialogOpen, setPackageDialogOpen] = useState(false);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Fetch data using existing hooks
@@ -51,6 +52,11 @@ const Index = () => {
     setPackageDialogOpen(true);
   };
 
+  const handleCreateTripFromCalendar = (date: Date) => {
+    setSelectedDate(date);
+    setTripDialogOpen(true);
+  };
+
   const handlePackageSuccess = () => {
     setPackageDialogOpen(false);
     packagesData.refetch();
@@ -58,7 +64,15 @@ const Index = () => {
 
   const handleTripSuccess = () => {
     setTripDialogOpen(false);
+    setSelectedDate(undefined);
     refetchTrips();
+  };
+
+  const handleTripDialogClose = (open: boolean) => {
+    setTripDialogOpen(open);
+    if (!open) {
+      setSelectedDate(undefined);
+    }
   };
 
   const handleViewNotifications = () => {
@@ -118,6 +132,7 @@ const Index = () => {
               trips={trips}
               isLoading={tripsLoading}
               onAddPackage={handleAddPackageToTrip}
+              onCreateTrip={handleCreateTripFromCalendar}
             />
             <TripsWithFlightsView 
               onAddPackage={handleAddPackageToTrip}
@@ -144,8 +159,9 @@ const Index = () => {
 
       <TripDialog
         open={tripDialogOpen}
-        onOpenChange={setTripDialogOpen}
+        onOpenChange={handleTripDialogClose}
         onSuccess={handleTripSuccess}
+        initialDate={selectedDate}
       />
     </div>
   );

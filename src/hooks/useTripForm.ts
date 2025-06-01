@@ -8,13 +8,13 @@ import { createTrip, prepareTripData } from '@/services/tripService';
 import { useFlightDataCreation } from '@/hooks/useFlightDataCreation';
 import { useTripFormValidation } from '@/hooks/useTripFormValidation';
 
-export function useTripForm(onSuccess: () => void) {
+export function useTripForm(onSuccess: () => void, initialDate?: Date) {
   const [formData, setFormData] = useState<TripFormData>({
     route: '',
     flight_number: ''
   });
 
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(initialDate);
   const today = new Date();
   const queryClient = useQueryClient();
   const { toast } = useToast();

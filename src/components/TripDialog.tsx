@@ -10,9 +10,10 @@ interface TripDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialDate?: Date;
 }
 
-export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
+export function TripDialog({ open, onOpenChange, onSuccess, initialDate }: TripDialogProps) {
   const {
     formData,
     updateFormData,
@@ -21,7 +22,7 @@ export function TripDialog({ open, onOpenChange, onSuccess }: TripDialogProps) {
     today,
     isLoading,
     handleSubmit
-  } = useTripForm(onSuccess);
+  } = useTripForm(onSuccess, initialDate);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

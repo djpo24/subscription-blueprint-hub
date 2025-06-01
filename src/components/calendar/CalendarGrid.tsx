@@ -17,9 +17,10 @@ interface CalendarGridProps {
   currentDate: Date;
   trips: Trip[];
   onAddPackage: (tripId: string) => void;
+  onCreateTrip: (date: Date) => void;
 }
 
-export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }: CalendarGridProps) {
+export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage, onCreateTrip }: CalendarGridProps) {
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   console.log('CalendarGrid total trips:', trips.length);
@@ -63,6 +64,7 @@ export function CalendarGrid({ calendarDays, currentDate, trips, onAddPackage }:
               currentDate={currentDate}
               trips={dayTrips}
               onAddPackage={onAddPackage}
+              onCreateTrip={onCreateTrip}
             />
           );
         })}

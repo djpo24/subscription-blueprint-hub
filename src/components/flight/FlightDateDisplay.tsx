@@ -1,5 +1,6 @@
 
 import { format, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 
 interface FlightDateDisplayProps {
@@ -11,9 +12,10 @@ export function FlightDateDisplay({ dateTime, className = '' }: FlightDateDispla
   const formatDate = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      const date = parseISO(dateTime);
-      console.log('formatDate input:', dateTime, 'parsed date:', date, 'formatted:', format(date, 'EEE, dd \'de\' MMM', { locale: es }));
-      return format(date, 'EEE, dd \'de\' MMM', { locale: es });
+      // Formatear la fecha en zona horaria de Bogotá
+      const bogotaDate = formatInTimeZone(dateTime, 'America/Bogota', 'EEE, dd \'de\' MMM', { locale: es });
+      console.log('formatDate input:', dateTime, 'formatted in Bogotá timezone:', bogotaDate);
+      return bogotaDate;
     } catch (error) {
       console.error('Error formatting date:', error);
       return '-';

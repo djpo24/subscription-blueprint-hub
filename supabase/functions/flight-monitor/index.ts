@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { FlightRecord, TripRecord, MonitoringResult } from './types.ts'
@@ -9,6 +8,22 @@ import { updateFlightStatus } from './flight-updater.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Función para obtener la fecha actual en zona horaria de Bogotá
+function getBogotaDate() {
+  const now = new Date();
+  const bogotaTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Bogota"}));
+  console.log('Fecha y hora actual en Bogotá:', bogotaTime.toISOString());
+  return bogotaTime;
+}
+
+// Función para obtener solo la fecha en formato YYYY-MM-DD en zona horaria de Bogotá
+function getBogotaDateString() {
+  const bogotaDate = getBogotaDate();
+  return bogotaDate.getFullYear() + '-' + 
+         String(bogotaDate.getMonth() + 1).padStart(2, '0') + '-' + 
+         String(bogotaDate.getDate()).padStart(2, '0');
 }
 
 serve(async (req) => {
@@ -22,7 +37,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const bogotaDateString = getBogotaDateString();
+    
     console.log('=== INICIO MONITOREO INTELIGENTE DE VUELOS ===')
+    console.log('Fecha actual en Bogotá:', bogotaDateString)
     console.log('SUPABASE_URL:', Deno.env.get('SUPABASE_URL'))
     console.log('SERVICE_ROLE_KEY disponible:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
     console.log('AVIATIONSTACK_API_KEY disponible:', !!Deno.env.get('AVIATIONSTACK_API_KEY'))

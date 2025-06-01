@@ -1,6 +1,13 @@
 
 import { FlightRecord, TripRecord, FlightStatusResult } from './types.ts';
 
+// Función para obtener la fecha actual en zona horaria de Bogotá
+function getBogotaDate() {
+  const now = new Date();
+  const bogotaTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Bogota"}));
+  return bogotaTime;
+}
+
 export async function checkFlightStatusIntelligent(
   supabaseClient: any, 
   flight: FlightRecord, 
@@ -83,20 +90,21 @@ export async function checkFlightStatusBasedOnDate(
 ): Promise<FlightStatusResult> {
   console.log(`Verificando estado del vuelo con fallback de fecha: ${flight.flight_number} para fecha: ${tripDate}`);
   
-  const now = new Date();
+  const bogotaTime = getBogotaDate();
   const flightDate = new Date(tripDate);
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayBogota = new Date(bogotaTime.getFullYear(), bogotaTime.getMonth(), bogotaTime.getDate());
   const flightDateOnly = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate());
   
-  console.log('Comparación de fechas:', {
+  console.log('Comparación de fechas (zona horaria Bogotá):', {
     flightDate: flightDateOnly.toISOString(),
-    todayDate: todayDate.toISOString(),
-    isFlightBeforeToday: flightDateOnly < todayDate,
-    isFlightToday: flightDateOnly.getTime() === todayDate.getTime()
+    todayBogota: todayBogota.toISOString(),
+    bogotaTime: bogotaTime.toISOString(),
+    isFlightBeforeToday: flightDateOnly < todayBogota,
+    isFlightToday: flightDateOnly.getTime() === todayBogota.getTime()
   });
 
-  // Si la fecha del vuelo es anterior a hoy, definitivamente ya aterrizó
-  if (flightDateOnly < todayDate) {
+  // Si la fecha del vuelo es anterior a hoy (en zona horaria de Bogotá), definitivamente ya aterrizó
+  if (flightDateOnly < todayBogota) {
     const scheduledDeparture = new Date(flight.scheduled_departure);
     const scheduledArrival = new Date(flight.scheduled_arrival);
     
@@ -105,14 +113,14 @@ export async function checkFlightStatusBasedOnDate(
       actualDeparture: scheduledDeparture.toISOString(),
       actualArrival: scheduledArrival.toISOString(),
       status: 'arrived',
-      dataSource: 'fecha'
+      dataSource: 'fecha_bogota'
     };
   }
   
-  // Si es hoy, verificar la hora
-  if (flightDateOnly.getTime() === todayDate.getTime()) {
+  // Si es hoy (en zona horaria de Bogotá), verificar la hora
+  if (flightDateOnly.getTime() === todayBogota.getTime()) {
     const scheduledArrival = new Date(flight.scheduled_arrival);
-    const currentTime = now.getTime();
+    const currentTime = bogotaTime.getTime();
     
     if (currentTime >= scheduledArrival.getTime()) {
       return {
@@ -120,7 +128,7 @@ export async function checkFlightStatusBasedOnDate(
         actualDeparture: flight.scheduled_departure,
         actualArrival: scheduledArrival.toISOString(),
         status: 'arrived',
-        dataSource: 'fecha'
+        dataSource: 'fecha_bogota'
       };
     }
   }
@@ -131,6 +139,6 @@ export async function checkFlightStatusBasedOnDate(
     actualDeparture: null,
     actualArrival: null,
     status: 'in_flight',
-    dataSource: 'fecha'
+    dataSource: 'fecha_bogota'
   };
 }

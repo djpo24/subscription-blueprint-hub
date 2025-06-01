@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -9,6 +8,22 @@ const corsHeaders = {
 
 const MAX_DAILY_QUERIES = 4
 const CACHE_DURATION_HOURS = 2
+
+// Función para obtener la fecha actual en zona horaria de Bogotá
+function getBogotaDate() {
+  const now = new Date();
+  const bogotaTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Bogota"}));
+  console.log('Fecha y hora actual en Bogotá:', bogotaTime.toISOString());
+  return bogotaTime;
+}
+
+// Función para obtener solo la fecha en formato YYYY-MM-DD en zona horaria de Bogotá
+function getBogotaDateString() {
+  const bogotaDate = getBogotaDate();
+  return bogotaDate.getFullYear() + '-' + 
+         String(bogotaDate.getMonth() + 1).padStart(2, '0') + '-' + 
+         String(bogotaDate.getDate()).padStart(2, '0');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,12 +57,14 @@ serve(async (req) => {
       )
     }
 
-    // Verificar si es vuelo de hoy
-    const today = new Date().toISOString().split('T')[0]
+    // Verificar si es vuelo de hoy usando zona horaria de Bogotá
+    const today = getBogotaDateString();
     const flightDate = new Date(tripDate).toISOString().split('T')[0]
     
+    console.log('Comparando fechas - Hoy en Bogotá:', today, 'Fecha del vuelo:', flightDate)
+    
     if (flightDate !== today) {
-      console.log('🚫 Vuelo no es de hoy, usando fallback basado en fecha')
+      console.log('🚫 Vuelo no es de hoy (zona horaria Bogotá), usando fallback basado en fecha')
       const fallbackData = await generateFallbackData(flightNumber, tripDate)
       return new Response(
         JSON.stringify(fallbackData),
@@ -181,7 +198,7 @@ serve(async (req) => {
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500 
+        status: 500 
         }
       )
     }
@@ -212,17 +229,18 @@ async function checkCache(supabaseClient: any, flightNumber: string) {
 }
 
 async function saveToCache(supabaseClient: any, flightNumber: string, apiData: any) {
+  const today = getBogotaDateString();
   await supabaseClient
     .from('flight_api_cache')
     .insert({
       flight_number: flightNumber,
       api_response: JSON.stringify(apiData),
-      query_date: new Date().toISOString().split('T')[0]
+      query_date: today
     })
 }
 
 async function getDailyApiUsage(supabaseClient: any) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getBogotaDateString();
   
   const { data, error } = await supabaseClient
     .from('flight_api_usage')
@@ -233,12 +251,15 @@ async function getDailyApiUsage(supabaseClient: any) {
 }
 
 async function recordApiUsage(supabaseClient: any, flightNumber: string) {
+  const today = getBogotaDateString();
+  const bogotaTime = getBogotaDate();
+  
   await supabaseClient
     .from('flight_api_usage')
     .insert({
       flight_number: flightNumber,
-      query_date: new Date().toISOString().split('T')[0],
-      query_time: new Date().toISOString()
+      query_date: today,
+      query_time: bogotaTime.toISOString()
     })
 }
 
@@ -246,7 +267,7 @@ async function checkPriorityQueue(supabaseClient: any, currentPriority: number) 
   if (currentPriority >= 3) return false // Alta prioridad, no postponer
   
   // Verificar si hay vuelos de mayor prioridad pendientes hoy
-  const today = new Date().toISOString().split('T')[0]
+  const today = getBogotaDateString();
   
   const { data: highPriorityFlights } = await supabaseClient
     .from('packages')
@@ -260,9 +281,9 @@ async function checkPriorityQueue(supabaseClient: any, currentPriority: number) 
 }
 
 async function generateFallbackData(flightNumber: string, tripDate: string) {
-  const now = new Date()
+  const bogotaTime = getBogotaDate();
   const flightDate = new Date(tripDate)
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const todayBogota = new Date(bogotaTime.getFullYear(), bogotaTime.getMonth(), bogotaTime.getDate())
   const flightDateOnly = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate())
   
   // Generar horarios realistas basados en el número de vuelo
@@ -280,13 +301,13 @@ async function generateFallbackData(flightNumber: string, tripDate: string) {
   let actualDeparture = null
   let actualArrival = null
   
-  // Lógica de estado basada en fecha y hora
-  if (flightDateOnly < todayDate) {
+  // Lógica de estado basada en fecha y hora (usando zona horaria de Bogotá)
+  if (flightDateOnly < todayBogota) {
     status = 'landed'
     actualDeparture = scheduledDeparture.toISOString()
     actualArrival = scheduledArrival.toISOString()
-  } else if (flightDateOnly.getTime() === todayDate.getTime()) {
-    const currentTime = now.getTime()
+  } else if (flightDateOnly.getTime() === todayBogota.getTime()) {
+    const currentTime = bogotaTime.getTime()
     if (currentTime >= scheduledArrival.getTime()) {
       status = 'landed'
       actualDeparture = scheduledDeparture.toISOString()

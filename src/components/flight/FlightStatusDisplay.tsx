@@ -45,7 +45,10 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
             <h2 className="text-xl font-semibold">
               Vuelo {flight.flight_number.toUpperCase()}
             </h2>
-            <FlightStatusBadge status={flight.api_flight_status || flight.status} />
+            <FlightStatusBadge 
+              status={flight.api_flight_status || flight.status} 
+              hasLanded={flight.has_landed}
+            />
           </div>
           <FlightLastUpdated lastUpdated={flight.last_updated} />
         </div>

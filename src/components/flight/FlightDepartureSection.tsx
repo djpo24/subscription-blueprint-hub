@@ -1,22 +1,18 @@
-
 import { FlightTimeDisplay } from './FlightTimeDisplay';
 import { FlightDateDisplay } from './FlightDateDisplay';
-import { FlightLastUpdated } from './FlightLastUpdated';
 
 interface FlightDepartureSectionProps {
   departureDate: string | null;
   actualDeparture: string | null;
   departureTime: string | null;
   scheduledDeparture: string | null;
-  lastUpdated: string;
 }
 
 export function FlightDepartureSection({
   departureDate,
   actualDeparture,
   departureTime,
-  scheduledDeparture,
-  lastUpdated
+  scheduledDeparture
 }: FlightDepartureSectionProps) {
   // Calcular diferencias de tiempo
   const calculateTimeDifference = (scheduled: string | null, actual: string | null) => {
@@ -70,8 +66,6 @@ export function FlightDepartureSection({
           </div>
         )}
       </div>
-
-      <FlightLastUpdated lastUpdated={lastUpdated} />
     </div>
   );
 }

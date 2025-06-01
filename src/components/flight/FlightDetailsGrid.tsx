@@ -2,6 +2,7 @@
 import { FlightInfoHeader } from './FlightInfoHeader';
 import { FlightDepartureSection } from './FlightDepartureSection';
 import { FlightArrivalSection } from './FlightArrivalSection';
+import { FlightLastUpdated } from './FlightLastUpdated';
 
 interface FlightDetailsGridProps {
   departureAirport: string;
@@ -84,7 +85,6 @@ export function FlightDetailsGrid({
           actualDeparture={actualDeparture}
           departureTime={departureTime}
           scheduledDeparture={scheduledDeparture}
-          lastUpdated={lastUpdated}
         />
 
         <FlightArrivalSection
@@ -92,9 +92,10 @@ export function FlightDetailsGrid({
           actualArrival={actualArrival}
           arrivalTime={arrivalTime}
           scheduledArrival={scheduledArrival}
-          lastUpdated={lastUpdated}
         />
       </div>
+
+      <FlightLastUpdated lastUpdated={lastUpdated} />
     </div>
   );
 }

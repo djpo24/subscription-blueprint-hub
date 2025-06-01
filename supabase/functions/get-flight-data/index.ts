@@ -141,31 +141,75 @@ serve(async (req) => {
     await saveToCache(supabaseClient, flightNumber, flightData)
     console.log('💾 Datos guardados en caché correctamente')
     
-    console.log('✅ Datos REALES del vuelo obtenidos de API:', {
+    console.log('✅ Datos REALES completos del vuelo obtenidos de API:', {
       flight_status: flightData.flight_status,
       airline: flightData.airline?.name,
-      departure: flightData.departure?.airport,
-      arrival: flightData.arrival?.airport,
-      departure_actual: flightData.departure?.actual,
-      arrival_actual: flightData.arrival?.actual,
-      departure_iata: flightData.departure?.iata,
-      arrival_iata: flightData.arrival?.iata
+      aircraft: flightData.aircraft?.registration,
+      departure: {
+        airport: flightData.departure?.airport,
+        iata: flightData.departure?.iata,
+        icao: flightData.departure?.icao,
+        terminal: flightData.departure?.terminal,
+        gate: flightData.departure?.gate,
+        scheduled: flightData.departure?.scheduled,
+        actual: flightData.departure?.actual,
+        timezone: flightData.departure?.timezone
+      },
+      arrival: {
+        airport: flightData.arrival?.airport,
+        iata: flightData.arrival?.iata,
+        icao: flightData.arrival?.icao,
+        terminal: flightData.arrival?.terminal,
+        gate: flightData.arrival?.gate,
+        scheduled: flightData.arrival?.scheduled,
+        actual: flightData.arrival?.actual,
+        timezone: flightData.arrival?.timezone
+      }
     })
 
-    // Marcar que estos son datos reales de la API y agregar información de aeropuertos
+    // Capturar TODOS los datos disponibles de la API sin modificaciones
     flightData._fallback = false
     flightData._source = 'aviationstack_api'
     
-    // Agregar información de aeropuertos y ciudades de la API
+    // Extraer información completa de aeropuertos y ciudades EXACTAMENTE como viene de la API
     if (flightData.departure) {
-      flightData.api_departure_airport = flightData.departure.iata || flightData.departure.airport
-      flightData.api_departure_city = flightData.departure.airport
+      flightData.api_departure_airport = flightData.departure.iata || flightData.departure.icao || 'N/A'
+      flightData.api_departure_city = flightData.departure.airport || 'Ciudad no disponible'
+      flightData.api_departure_gate = flightData.departure.gate || null
+      flightData.api_departure_terminal = flightData.departure.terminal || null
     }
     
     if (flightData.arrival) {
-      flightData.api_arrival_airport = flightData.arrival.iata || flightData.arrival.airport
-      flightData.api_arrival_city = flightData.arrival.airport
+      flightData.api_arrival_airport = flightData.arrival.iata || flightData.arrival.icao || 'N/A'
+      flightData.api_arrival_city = flightData.arrival.airport || 'Ciudad no disponible'
+      flightData.api_arrival_gate = flightData.arrival.gate || null
+      flightData.api_arrival_terminal = flightData.arrival.terminal || null
     }
+
+    // Información adicional de la aeronave
+    if (flightData.aircraft) {
+      flightData.api_aircraft = flightData.aircraft.registration || flightData.aircraft.iata || null
+    }
+
+    // Estado exacto del vuelo de la API
+    flightData.api_flight_status = flightData.flight_status
+
+    console.log('🎯 Datos completos extraídos de la API:', {
+      api_departure_city: flightData.api_departure_city,
+      api_arrival_city: flightData.api_arrival_city,
+      api_departure_airport: flightData.api_departure_airport,
+      api_arrival_airport: flightData.api_arrival_airport,
+      api_departure_gate: flightData.api_departure_gate,
+      api_arrival_gate: flightData.api_arrival_gate,
+      api_departure_terminal: flightData.api_departure_terminal,
+      api_arrival_terminal: flightData.api_arrival_terminal,
+      api_aircraft: flightData.api_aircraft,
+      api_flight_status: flightData.api_flight_status,
+      departure_scheduled: flightData.departure?.scheduled,
+      departure_actual: flightData.departure?.actual,
+      arrival_scheduled: flightData.arrival?.scheduled,
+      arrival_actual: flightData.arrival?.actual
+    })
 
     return new Response(
       JSON.stringify(flightData),

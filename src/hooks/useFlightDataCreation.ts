@@ -47,11 +47,22 @@ export function useFlightDataCreation() {
 
         if (response.data && !response.error) {
           flightDataFromAPI = response.data;
-          console.log('Datos obtenidos con estrategia inteligente:', {
+          console.log('🎯 Datos COMPLETOS obtenidos de la API:', {
             source: flightDataFromAPI._fallback ? 'fallback' : 'api',
-            status: flightDataFromAPI.flight_status,
-            departure_airport: flightDataFromAPI.api_departure_airport,
-            arrival_airport: flightDataFromAPI.api_arrival_airport
+            flight_status: flightDataFromAPI.flight_status,
+            api_departure_city: flightDataFromAPI.api_departure_city,
+            api_arrival_city: flightDataFromAPI.api_arrival_city,
+            api_departure_airport: flightDataFromAPI.api_departure_airport,
+            api_arrival_airport: flightDataFromAPI.api_arrival_airport,
+            api_departure_gate: flightDataFromAPI.api_departure_gate,
+            api_arrival_gate: flightDataFromAPI.api_arrival_gate,
+            api_departure_terminal: flightDataFromAPI.api_departure_terminal,
+            api_arrival_terminal: flightDataFromAPI.api_arrival_terminal,
+            api_aircraft: flightDataFromAPI.api_aircraft,
+            departure_scheduled: flightDataFromAPI.departure?.scheduled,
+            departure_actual: flightDataFromAPI.departure?.actual,
+            arrival_scheduled: flightDataFromAPI.arrival?.scheduled,
+            arrival_actual: flightDataFromAPI.arrival?.actual
           });
         }
       } catch (error) {
@@ -64,9 +75,13 @@ export function useFlightDataCreation() {
       let scheduledDeparture, scheduledArrival;
       
       if (flightDataFromAPI?.departure?.scheduled && flightDataFromAPI?.arrival?.scheduled) {
-        // Usar horarios de los datos obtenidos (API o fallback inteligente)
+        // Usar horarios EXACTOS de la API sin conversiones
         scheduledDeparture = new Date(flightDataFromAPI.departure.scheduled);
         scheduledArrival = new Date(flightDataFromAPI.arrival.scheduled);
+        console.log('📅 Usando horarios REALES de API (sin conversión):', {
+          scheduled_departure: flightDataFromAPI.departure.scheduled,
+          scheduled_arrival: flightDataFromAPI.arrival.scheduled
+        });
       } else {
         // Usar horarios por defecto básicos
         scheduledDeparture = new Date(tripDateObj);
@@ -86,10 +101,16 @@ export function useFlightDataCreation() {
       let actualDeparture = null;
       let actualArrival = null;
 
-      // Si tenemos datos de la estrategia inteligente, usarlos
+      // Si tenemos datos de la estrategia inteligente, usarlos EXACTAMENTE
       if (flightDataFromAPI) {
+        // Usar horarios REALES exactos de la API sin conversiones
         actualDeparture = flightDataFromAPI.departure?.actual || null;
         actualArrival = flightDataFromAPI.arrival?.actual || null;
+        
+        console.log('⏰ Horarios REALES de API (exactos):', {
+          actual_departure: actualDeparture,
+          actual_arrival: actualArrival
+        });
         
         switch (flightDataFromAPI.flight_status) {
           case 'landed':
@@ -170,8 +191,7 @@ export function useFlightDataCreation() {
         throw error;
       }
 
-      // Si tenemos datos de la API, agregar los campos adicionales al objeto retornado
-      // Properly type-cast the result to include the optional API fields
+      // Si tenemos datos de la API, agregar TODOS los campos adicionales al objeto retornado
       const enrichedData = data as FlightData;
       
       if (flightDataFromAPI) {
@@ -179,9 +199,15 @@ export function useFlightDataCreation() {
         enrichedData.api_arrival_airport = flightDataFromAPI.api_arrival_airport;
         enrichedData.api_departure_city = flightDataFromAPI.api_departure_city;
         enrichedData.api_arrival_city = flightDataFromAPI.api_arrival_city;
+        enrichedData.api_departure_gate = flightDataFromAPI.api_departure_gate;
+        enrichedData.api_arrival_gate = flightDataFromAPI.api_arrival_gate;
+        enrichedData.api_departure_terminal = flightDataFromAPI.api_departure_terminal;
+        enrichedData.api_arrival_terminal = flightDataFromAPI.api_arrival_terminal;
+        enrichedData.api_aircraft = flightDataFromAPI.api_aircraft;
+        enrichedData.api_flight_status = flightDataFromAPI.api_flight_status;
       }
 
-      console.log('Flight data created successfully:', enrichedData);
+      console.log('🎯 Flight data created successfully with COMPLETE API data:', enrichedData);
       return enrichedData;
     },
     onSuccess: () => {

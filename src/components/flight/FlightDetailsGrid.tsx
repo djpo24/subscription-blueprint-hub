@@ -13,9 +13,15 @@ interface FlightDetailsGridProps {
   actualArrival: string | null;
   scheduledDeparture: string | null;
   scheduledArrival: string | null;
-  // Nuevos campos para mostrar datos reales de la API
+  // Campos completos para mostrar datos reales de la API
   apiDepartureCity?: string;
   apiArrivalCity?: string;
+  apiDepartureAirport?: string;
+  apiArrivalAirport?: string;
+  apiDepartureGate?: string;
+  apiArrivalGate?: string;
+  apiDepartureTerminal?: string;
+  apiArrivalTerminal?: string;
 }
 
 export function FlightDetailsGrid({
@@ -30,16 +36,30 @@ export function FlightDetailsGrid({
   scheduledDeparture,
   scheduledArrival,
   apiDepartureCity,
-  apiArrivalCity
+  apiArrivalCity,
+  apiDepartureAirport,
+  apiArrivalAirport,
+  apiDepartureGate,
+  apiArrivalGate,
+  apiDepartureTerminal,
+  apiArrivalTerminal
 }: FlightDetailsGridProps) {
   
-  console.log('FlightDetailsGrid - datos recibidos:', {
+  console.log('FlightDetailsGrid - datos COMPLETOS recibidos:', {
     departureTime,
     arrivalTime,
     actualDeparture,
     actualArrival,
     scheduledDeparture,
-    scheduledArrival
+    scheduledArrival,
+    apiDepartureCity,
+    apiArrivalCity,
+    apiDepartureAirport,
+    apiArrivalAirport,
+    apiDepartureGate,
+    apiArrivalGate,
+    apiDepartureTerminal,
+    apiArrivalTerminal
   });
   
   // Calcular diferencias de tiempo
@@ -62,19 +82,30 @@ export function FlightDetailsGrid({
   const departureDiff = calculateTimeDifference(scheduledDeparture, actualDeparture);
   const arrivalDiff = calculateTimeDifference(scheduledArrival, actualArrival);
 
-  // SIEMPRE priorizar horarios reales si existen
+  // SIEMPRE priorizar horarios REALES de la API sin conversiones
   const displayDepartureTime = actualDeparture || departureTime;
   const displayArrivalTime = actualArrival || arrivalTime;
 
-  // Mostrar ciudades reales de la API si están disponibles
-  const displayDepartureCity = apiDepartureCity || departureAirport;
-  const displayArrivalCity = apiArrivalCity || arrivalAirport;
+  // Mostrar información COMPLETA de aeropuertos de la API
+  const displayDepartureInfo = {
+    city: apiDepartureCity || departureAirport,
+    airport: apiDepartureAirport || departureAirport,
+    gate: apiDepartureGate,
+    terminal: apiDepartureTerminal
+  };
 
-  console.log('FlightDetailsGrid - ciudades y horarios finales a mostrar:', {
+  const displayArrivalInfo = {
+    city: apiArrivalCity || arrivalAirport,
+    airport: apiArrivalAirport || arrivalAirport,
+    gate: apiArrivalGate,
+    terminal: apiArrivalTerminal
+  };
+
+  console.log('🎯 FlightDetailsGrid - información FINAL a mostrar:', {
     displayDepartureTime,
     displayArrivalTime,
-    displayDepartureCity,
-    displayArrivalCity,
+    displayDepartureInfo,
+    displayArrivalInfo,
     departureDiff,
     arrivalDiff
   });
@@ -84,13 +115,22 @@ export function FlightDetailsGrid({
       {/* Salida */}
       <div>
         <div className="text-sm text-gray-500 mb-1">
-          Información del aeropuerto
+          Información de salida
         </div>
-        <div className="font-medium mb-2">
-          {displayDepartureCity} · <FlightDateDisplay dateTime={departureDate} />
+        <div className="font-medium mb-2 space-y-1">
+          <div>{displayDepartureInfo.city} · <FlightDateDisplay dateTime={departureDate} /></div>
+          {displayDepartureInfo.airport && displayDepartureInfo.airport !== displayDepartureInfo.city && (
+            <div className="text-sm text-blue-600">Aeropuerto: {displayDepartureInfo.airport}</div>
+          )}
+          {displayDepartureInfo.terminal && (
+            <div className="text-sm text-purple-600">Terminal: {displayDepartureInfo.terminal}</div>
+          )}
+          {displayDepartureInfo.gate && (
+            <div className="text-sm text-orange-600">Gate: {displayDepartureInfo.gate}</div>
+          )}
         </div>
         <div className="text-sm text-gray-600 mb-1">
-          {actualDeparture ? 'Salida Real' : 'Salida Programada'}
+          {actualDeparture ? 'Salida Real (API)' : 'Salida Programada'}
         </div>
         <div className={`text-2xl font-bold mb-1 ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
           <FlightTimeDisplay dateTime={displayDepartureTime} />
@@ -110,33 +150,48 @@ export function FlightDetailsGrid({
           </div>
         )}
         
-        {/* Indicador de datos reales */}
-        {actualDeparture && (
-          <div className="flex items-center gap-1 mt-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span className="text-xs text-green-600">Hora real confirmada</span>
-          </div>
-        )}
-        
-        {/* Indicador de ciudad real de API */}
-        {apiDepartureCity && (
-          <div className="flex items-center gap-1 mt-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            <span className="text-xs text-blue-600">Datos de API real</span>
-          </div>
-        )}
+        {/* Indicadores de datos reales */}
+        <div className="mt-2 space-y-1">
+          {actualDeparture && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="text-xs text-green-600">Hora REAL de API</span>
+            </div>
+          )}
+          {apiDepartureCity && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="text-xs text-blue-600">Ciudad REAL de API</span>
+            </div>
+          )}
+          {(apiDepartureGate || apiDepartureTerminal) && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+              <span className="text-xs text-purple-600">Info completa de API</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Llegada */}
       <div>
         <div className="text-sm text-gray-500 mb-1">
-          Información del aeropuerto
+          Información de llegada
         </div>
-        <div className="font-medium mb-2">
-          {displayArrivalCity} · <FlightDateDisplay dateTime={arrivalDate} />
+        <div className="font-medium mb-2 space-y-1">
+          <div>{displayArrivalInfo.city} · <FlightDateDisplay dateTime={arrivalDate} /></div>
+          {displayArrivalInfo.airport && displayArrivalInfo.airport !== displayArrivalInfo.city && (
+            <div className="text-sm text-blue-600">Aeropuerto: {displayArrivalInfo.airport}</div>
+          )}
+          {displayArrivalInfo.terminal && (
+            <div className="text-sm text-purple-600">Terminal: {displayArrivalInfo.terminal}</div>
+          )}
+          {displayArrivalInfo.gate && (
+            <div className="text-sm text-orange-600">Gate: {displayArrivalInfo.gate}</div>
+          )}
         </div>
         <div className="text-sm text-gray-600 mb-1">
-          {actualArrival ? 'Llegada Real' : 'Llegada Programada'}
+          {actualArrival ? 'Llegada Real (API)' : 'Llegada Programada'}
         </div>
         <div className={`text-2xl font-bold mb-1 ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
           <FlightTimeDisplay dateTime={displayArrivalTime} />
@@ -156,21 +211,27 @@ export function FlightDetailsGrid({
           </div>
         )}
         
-        {/* Indicador de datos reales */}
-        {actualArrival && (
-          <div className="flex items-center gap-1 mt-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span className="text-xs text-green-600">Hora real confirmada</span>
-          </div>
-        )}
-        
-        {/* Indicador de ciudad real de API */}
-        {apiArrivalCity && (
-          <div className="flex items-center gap-1 mt-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            <span className="text-xs text-blue-600">Datos de API real</span>
-          </div>
-        )}
+        {/* Indicadores de datos reales */}
+        <div className="mt-2 space-y-1">
+          {actualArrival && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="text-xs text-green-600">Hora REAL de API</span>
+            </div>
+          )}
+          {apiArrivalCity && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="text-xs text-blue-600">Ciudad REAL de API</span>
+            </div>
+          )}
+          {(apiArrivalGate || apiArrivalTerminal) && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+              <span className="text-xs text-purple-600">Info completa de API</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

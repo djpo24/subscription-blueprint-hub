@@ -14,14 +14,14 @@ interface FlightDetailsGridProps {
   scheduledDeparture: string | null;
   scheduledArrival: string | null;
   // Campos completos para mostrar datos reales de la API
-  apiDepartureCity?: string;
-  apiArrivalCity?: string;
-  apiDepartureAirport?: string;
-  apiArrivalAirport?: string;
-  apiDepartureGate?: string;
-  apiArrivalGate?: string;
-  apiDepartureTerminal?: string;
-  apiArrivalTerminal?: string;
+  apiDepartureCity?: string | null;
+  apiArrivalCity?: string | null;
+  apiDepartureAirport?: string | null;
+  apiArrivalAirport?: string | null;
+  apiDepartureGate?: string | null;
+  apiArrivalGate?: string | null;
+  apiDepartureTerminal?: string | null;
+  apiArrivalTerminal?: string | null;
 }
 
 export function FlightDetailsGrid({

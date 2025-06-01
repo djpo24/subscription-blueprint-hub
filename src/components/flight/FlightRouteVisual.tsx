@@ -39,7 +39,7 @@ export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
     <div className="mb-6">
       {/* Ruta de ciudades con línea y avión */}
       <div className="flex items-center justify-center mb-4">
-        <div className="text-2xl font-bold text-gray-900">
+        <div className="text-xl font-semibold text-gray-900 text-center">
           {departureAirportName}
         </div>
         <div className="flex-1 mx-6 relative">
@@ -48,13 +48,13 @@ export function FlightRouteVisual({ flight }: FlightRouteVisualProps) {
             <Plane className="h-5 w-5 text-blue-600 rotate-90" />
           </div>
         </div>
-        <div className="text-2xl font-bold text-gray-900">
+        <div className="text-xl font-semibold text-gray-900 text-center">
           {arrivalAirportName}
         </div>
       </div>
 
-      {/* Ruta con duración */}
-      <div className="flex items-center justify-center mb-2">
+      {/* Códigos de aeropuertos con duración */}
+      <div className="flex items-center justify-center">
         <div className="text-3xl font-bold text-gray-900">{departureCode}</div>
         <div className="flex-1 mx-6 relative">
           <div className="h-0.5 bg-green-500 w-full"></div>

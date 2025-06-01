@@ -32,15 +32,25 @@ export function processFlightData(flightData: any): any {
   flightData._fallback = false;
   flightData._source = 'aviationstack_api';
   
+  // CORECCIÓN: Extraer información REAL de aeropuertos correctamente
+  const departureAirportName = flightData.departure?.airport;
+  const arrivalAirportName = flightData.arrival?.airport;
+  
   // Extraer TODA la información completa de la API y agregarla al objeto
-  flightData.api_departure_airport = flightData.departure?.airport || null;
-  flightData.api_arrival_airport = flightData.arrival?.airport || null;
-  flightData.api_departure_city = flightData.departure?.airport || null; // La API a veces pone ciudad en el campo airport
-  flightData.api_arrival_city = flightData.arrival?.airport || null;
+  flightData.api_departure_airport = departureAirportName || null;
+  flightData.api_arrival_airport = arrivalAirportName || null;
+  
+  // Para ciudades, usar el nombre del aeropuerto si no hay ciudad específica
+  flightData.api_departure_city = departureAirportName || null;
+  flightData.api_arrival_city = arrivalAirportName || null;
+  
+  // Información de terminales y puertas
   flightData.api_departure_gate = flightData.departure?.gate || null;
   flightData.api_arrival_gate = flightData.arrival?.gate || null;
   flightData.api_departure_terminal = flightData.departure?.terminal || null;
   flightData.api_arrival_terminal = flightData.arrival?.terminal || null;
+  
+  // Información adicional
   flightData.api_aircraft = flightData.aircraft?.registration || flightData.aircraft?.iata || null;
   flightData.api_flight_status = flightData.flight_status || null;
   flightData.api_departure_timezone = flightData.departure?.timezone || null;
@@ -71,11 +81,13 @@ export function processFlightData(flightData: any): any {
   // Guardar datos en bruto de forma segura (sin referencias circulares)
   flightData.api_raw_data = safeRawData;
 
-  console.log('🎯 Datos COMPLETOS extraídos y agregados de la API:', {
+  console.log('🎯 Datos COMPLETOS extraídos y agregados de la API (CORREGIDOS):', {
     api_departure_city: flightData.api_departure_city,
     api_arrival_city: flightData.api_arrival_city,
     api_departure_airport: flightData.api_departure_airport,
     api_arrival_airport: flightData.api_arrival_airport,
+    departure_airport_original: departureAirportName,
+    arrival_airport_original: arrivalAirportName,
     api_departure_gate: flightData.api_departure_gate,
     api_arrival_gate: flightData.api_arrival_gate,
     api_departure_terminal: flightData.api_departure_terminal,

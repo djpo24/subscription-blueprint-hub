@@ -21,6 +21,11 @@ interface FlightDetailsGridProps {
   apiArrivalGate?: string;
   apiDepartureTerminal?: string;
   apiArrivalTerminal?: string;
+  apiDepartureIata?: string;
+  apiArrivalIata?: string;
+  apiAirlineName?: string;
+  apiAircraftRegistration?: string;
+  apiFlightStatus?: string;
 }
 
 export function FlightDetailsGrid({
@@ -41,30 +46,33 @@ export function FlightDetailsGrid({
   apiDepartureGate,
   apiArrivalGate,
   apiDepartureTerminal,
-  apiArrivalTerminal
+  apiArrivalTerminal,
+  apiDepartureIata,
+  apiArrivalIata,
+  apiAirlineName,
+  apiAircraftRegistration,
+  apiFlightStatus
 }: FlightDetailsGridProps) {
   
-  console.log('FlightDetailsGrid - datos COMPLETOS recibidos:', {
-    departureTime,
-    arrivalTime,
-    actualDeparture,
-    actualArrival,
-    scheduledDeparture,
-    scheduledArrival,
+  console.log('FlightDetailsGrid - TODOS los datos de la API:', {
     apiDepartureCity,
     apiArrivalCity,
-    apiDepartureAirport,
-    apiArrivalAirport,
+    apiDepartureIata,
+    apiArrivalIata,
     apiDepartureGate,
     apiArrivalGate,
     apiDepartureTerminal,
-    apiArrivalTerminal
+    apiArrivalTerminal,
+    apiAirlineName,
+    apiAircraftRegistration,
+    apiFlightStatus
   });
 
-  // Usar información de la API si está disponible
+  // Usar información completa de la API
   const displayDepartureInfo = {
     city: apiDepartureCity || departureAirport,
     airport: apiDepartureAirport || departureAirport,
+    iata: apiDepartureIata,
     gate: apiDepartureGate,
     terminal: apiDepartureTerminal
   };
@@ -72,6 +80,7 @@ export function FlightDetailsGrid({
   const displayArrivalInfo = {
     city: apiArrivalCity || arrivalAirport,
     airport: apiArrivalAirport || arrivalAirport,
+    iata: apiArrivalIata,
     gate: apiArrivalGate,
     terminal: apiArrivalTerminal
   };
@@ -98,83 +107,141 @@ export function FlightDetailsGrid({
   const departureDiff = calculateTimeDifference(scheduledDeparture, actualDeparture);
   const arrivalDiff = calculateTimeDifference(scheduledArrival, actualArrival);
 
-  console.log('🎯 FlightDetailsGrid - información FINAL a mostrar:', {
-    displayDepartureTime: departureTime,
-    displayArrivalTime: arrivalTime,
-    displayDepartureInfo,
-    displayArrivalInfo,
-    departureDiff,
-    arrivalDiff
-  });
-
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {/* Salida */}
-      <div>
-        <div className="text-sm text-gray-500 mb-1">
-          Información del aeropuerto
-        </div>
-        <div className="font-medium">
-          {displayDepartureInfo.airport} · <FlightDateDisplay dateTime={departureDate} />
-        </div>
-        {displayDepartureInfo.gate && (
-          <div className="text-xs text-gray-500">
-            Puerta: {displayDepartureInfo.gate}
-            {displayDepartureInfo.terminal && ` - Terminal ${displayDepartureInfo.terminal}`}
-          </div>
-        )}
-        <div className="text-sm text-gray-600 mt-2">
-          {actualDeparture ? 'Salió' : 'Salida'}
-        </div>
-        <div className={`text-2xl font-bold ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
-          <FlightTimeDisplay dateTime={departureTime} />
-        </div>
-        {scheduledDeparture && actualDeparture && scheduledDeparture !== actualDeparture && (
-          <div className="flex flex-col">
-            <div className="text-sm text-gray-500 line-through">
-              <FlightTimeDisplay dateTime={scheduledDeparture} />
+    <div className="space-y-6">
+      {/* Información de estado y aerolínea */}
+      {(apiFlightStatus || apiAirlineName || apiAircraftRegistration) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
+          {apiFlightStatus && (
+            <div>
+              <div className="text-sm text-gray-500">Estado del Vuelo</div>
+              <div className="font-medium capitalize">{apiFlightStatus}</div>
             </div>
-            {departureDiff && (
-              <div className={`text-xs ${departureDiff.isDelay ? 'text-red-500' : 'text-green-500'}`}>
-                {departureDiff.isDelay ? `+${departureDiff.minutes} min retraso` : `-${departureDiff.minutes} min adelanto`}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+          {apiAirlineName && (
+            <div>
+              <div className="text-sm text-gray-500">Aerolínea</div>
+              <div className="font-medium">{apiAirlineName}</div>
+            </div>
+          )}
+          {apiAircraftRegistration && (
+            <div>
+              <div className="text-sm text-gray-500">Aeronave</div>
+              <div className="font-medium">{apiAircraftRegistration}</div>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Llegada */}
-      <div>
-        <div className="text-sm text-gray-500 mb-1">
-          Información del aeropuerto
-        </div>
-        <div className="font-medium">
-          {displayArrivalInfo.airport} · <FlightDateDisplay dateTime={arrivalDate} />
-        </div>
-        {displayArrivalInfo.gate && (
-          <div className="text-xs text-gray-500">
-            Puerta: {displayArrivalInfo.gate}
-            {displayArrivalInfo.terminal && ` - Terminal ${displayArrivalInfo.terminal}`}
-          </div>
-        )}
-        <div className="text-sm text-gray-600 mt-2">
-          {actualArrival ? 'Llegó' : 'Llegada'}
-        </div>
-        <div className={`text-2xl font-bold ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
-          <FlightTimeDisplay dateTime={arrivalTime} />
-        </div>
-        {scheduledArrival && actualArrival && scheduledArrival !== actualArrival && (
-          <div className="flex flex-col">
-            <div className="text-sm text-gray-500 line-through">
-              <FlightTimeDisplay dateTime={scheduledArrival} />
+      {/* Información de aeropuertos */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Salida */}
+        <div className="space-y-3">
+          <div className="border-b pb-2">
+            <h3 className="font-semibold text-lg">Salida</h3>
+            <div className="text-sm text-gray-600">
+              {displayDepartureInfo.iata && (
+                <span className="font-mono text-lg">{displayDepartureInfo.iata}</span>
+              )}
+              {displayDepartureInfo.city && (
+                <div className="text-gray-700">{displayDepartureInfo.city}</div>
+              )}
             </div>
-            {arrivalDiff && (
-              <div className={`text-xs ${arrivalDiff.isDelay ? 'text-red-500' : 'text-green-500'}`}>
-                {arrivalDiff.isDelay ? `+${arrivalDiff.minutes} min retraso` : `-${arrivalDiff.minutes} min adelanto`}
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">Fecha</div>
+            <div className="font-medium">
+              <FlightDateDisplay dateTime={departureDate} />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">
+              {actualDeparture ? 'Hora Real de Salida' : 'Hora Programada'}
+            </div>
+            <div className={`text-2xl font-bold ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
+              <FlightTimeDisplay dateTime={actualDeparture || departureTime} />
+            </div>
+            {scheduledDeparture && actualDeparture && scheduledDeparture !== actualDeparture && (
+              <div className="flex flex-col mt-1">
+                <div className="text-sm text-gray-500 line-through">
+                  Programado: <FlightTimeDisplay dateTime={scheduledDeparture} />
+                </div>
+                {departureDiff && (
+                  <div className={`text-xs ${departureDiff.isDelay ? 'text-red-500' : 'text-green-500'}`}>
+                    {departureDiff.isDelay ? `+${departureDiff.minutes} min retraso` : `-${departureDiff.minutes} min adelanto`}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+
+          {(displayDepartureInfo.gate || displayDepartureInfo.terminal) && (
+            <div>
+              <div className="text-sm text-gray-500">Terminal y Puerta</div>
+              <div className="font-medium">
+                {displayDepartureInfo.terminal && `Terminal ${displayDepartureInfo.terminal}`}
+                {displayDepartureInfo.terminal && displayDepartureInfo.gate && ' - '}
+                {displayDepartureInfo.gate && `Puerta ${displayDepartureInfo.gate}`}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Llegada */}
+        <div className="space-y-3">
+          <div className="border-b pb-2">
+            <h3 className="font-semibold text-lg">Llegada</h3>
+            <div className="text-sm text-gray-600">
+              {displayArrivalInfo.iata && (
+                <span className="font-mono text-lg">{displayArrivalInfo.iata}</span>
+              )}
+              {displayArrivalInfo.city && (
+                <div className="text-gray-700">{displayArrivalInfo.city}</div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">Fecha</div>
+            <div className="font-medium">
+              <FlightDateDisplay dateTime={arrivalDate} />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">
+              {actualArrival ? 'Hora Real de Llegada' : 'Hora Programada'}
+            </div>
+            <div className={`text-2xl font-bold ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
+              <FlightTimeDisplay dateTime={actualArrival || arrivalTime} />
+            </div>
+            {scheduledArrival && actualArrival && scheduledArrival !== actualArrival && (
+              <div className="flex flex-col mt-1">
+                <div className="text-sm text-gray-500 line-through">
+                  Programado: <FlightTimeDisplay dateTime={scheduledArrival} />
+                </div>
+                {arrivalDiff && (
+                  <div className={`text-xs ${arrivalDiff.isDelay ? 'text-red-500' : 'text-green-500'}`}>
+                    {arrivalDiff.isDelay ? `+${arrivalDiff.minutes} min retraso` : `-${arrivalDiff.minutes} min adelanto`}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {(displayArrivalInfo.gate || displayArrivalInfo.terminal) && (
+            <div>
+              <div className="text-sm text-gray-500">Terminal y Puerta</div>
+              <div className="font-medium">
+                {displayArrivalInfo.terminal && `Terminal ${displayArrivalInfo.terminal}`}
+                {displayArrivalInfo.terminal && displayArrivalInfo.gate && ' - '}
+                {displayArrivalInfo.gate && `Puerta ${displayArrivalInfo.gate}`}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

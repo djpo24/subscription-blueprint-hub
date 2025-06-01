@@ -2,7 +2,7 @@
 import { FlightData } from '@/types/flight';
 import { extractFlightApiData } from './FlightApiDataExtractor';
 import { calculateTimeDifference } from './FlightTimeDifferenceCalculator';
-import { ChevronUp } from 'lucide-react';
+import { ChevronUp, Plane } from 'lucide-react';
 
 interface FlightDetailsTabProps {
   flight: FlightData;
@@ -157,6 +157,24 @@ export function FlightDetailsTab({ flight, isExpanded = false, onToggle }: Fligh
       {/* Contenido expandido */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-6">
+          {/* Ruta de ciudades con línea y avión */}
+          <div className="mb-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="text-2xl font-bold text-gray-900">
+                {departureAirportName}
+              </div>
+              <div className="flex-1 mx-6 relative">
+                <div className="h-0.5 bg-blue-500 w-full"></div>
+                <div className="absolute right-2 top-0 transform -translate-y-1/2">
+                  <Plane className="h-5 w-5 text-blue-600 rotate-90" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {arrivalAirportName}
+              </div>
+            </div>
+          </div>
+
           {/* Ruta con duración */}
           <div className="mb-6">
             <div className="flex items-center justify-center mb-2">

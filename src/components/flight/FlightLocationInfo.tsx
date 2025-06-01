@@ -4,7 +4,7 @@ interface FlightLocationInfoProps {
   airport?: string | null;
   gate?: string | null;
   terminal?: string | null;
-  date: string | null;
+  date: React.ReactNode;
 }
 
 export function FlightLocationInfo({ city, airport, gate, terminal, date }: FlightLocationInfoProps) {

@@ -9,6 +9,13 @@ interface FlightStatusDisplayProps {
 }
 
 export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
+  console.log('FlightStatusDisplay flight data:', {
+    scheduled_departure: flight.scheduled_departure,
+    scheduled_arrival: flight.scheduled_arrival,
+    actual_departure: flight.actual_departure,
+    actual_arrival: flight.actual_arrival
+  });
+
   const getStatusConfig = (status: string, hasLanded: boolean) => {
     if (hasLanded || status === 'arrived') {
       return {
@@ -61,7 +68,9 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const formatTime = (dateTime: string | null) => {
     if (!dateTime) return '-';
     try {
-      return format(parseISO(dateTime), 'h:mm a', { locale: es });
+      const date = parseISO(dateTime);
+      console.log('formatTime input:', dateTime, 'parsed date:', date);
+      return format(date, 'h:mm a', { locale: es });
     } catch {
       return '-';
     }
@@ -71,8 +80,10 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
     if (!dateTime) return '-';
     try {
       const date = parseISO(dateTime);
+      console.log('formatDate input:', dateTime, 'parsed date:', date, 'formatted:', format(date, 'EEE, dd \'de\' MMM', { locale: es }));
       return format(date, 'EEE, dd \'de\' MMM', { locale: es });
-    } catch {
+    } catch (error) {
+      console.error('Error formatting date:', error);
       return '-';
     }
   };
@@ -86,6 +97,13 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   // Para las fechas, usar las fechas programadas principalmente
   const departureDate = flight.scheduled_departure || flight.actual_departure;
   const arrivalDate = flight.scheduled_arrival || flight.actual_arrival;
+
+  console.log('Final date values:', {
+    departureDate,
+    arrivalDate,
+    formattedDepartureDate: formatDate(departureDate),
+    formattedArrivalDate: formatDate(arrivalDate)
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">

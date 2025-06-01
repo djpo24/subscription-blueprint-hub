@@ -28,6 +28,15 @@ export function FlightDetailsGrid({
   scheduledArrival
 }: FlightDetailsGridProps) {
   
+  console.log('FlightDetailsGrid - datos recibidos:', {
+    departureTime,
+    arrivalTime,
+    actualDeparture,
+    actualArrival,
+    scheduledDeparture,
+    scheduledArrival
+  });
+  
   // Calcular diferencias de tiempo
   const calculateTimeDifference = (scheduled: string | null, actual: string | null) => {
     if (!scheduled || !actual) return null;
@@ -48,6 +57,17 @@ export function FlightDetailsGrid({
   const departureDiff = calculateTimeDifference(scheduledDeparture, actualDeparture);
   const arrivalDiff = calculateTimeDifference(scheduledArrival, actualArrival);
 
+  // Determinar qué horarios mostrar - SIEMPRE priorizar horarios reales si existen
+  const displayDepartureTime = actualDeparture || departureTime;
+  const displayArrivalTime = actualArrival || arrivalTime;
+
+  console.log('FlightDetailsGrid - horarios a mostrar:', {
+    displayDepartureTime,
+    displayArrivalTime,
+    departureDiff,
+    arrivalDiff
+  });
+
   return (
     <div className="grid grid-cols-2 gap-6">
       {/* Salida */}
@@ -62,7 +82,7 @@ export function FlightDetailsGrid({
           {actualDeparture ? 'Salida Real' : 'Salida Programada'}
         </div>
         <div className={`text-2xl font-bold mb-1 ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
-          <FlightTimeDisplay dateTime={departureTime} />
+          <FlightTimeDisplay dateTime={displayDepartureTime} />
         </div>
         
         {/* Mostrar horario programado si hay diferencia */}
@@ -100,7 +120,7 @@ export function FlightDetailsGrid({
           {actualArrival ? 'Llegada Real' : 'Llegada Programada'}
         </div>
         <div className={`text-2xl font-bold mb-1 ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
-          <FlightTimeDisplay dateTime={arrivalTime} />
+          <FlightTimeDisplay dateTime={displayArrivalTime} />
         </div>
         
         {/* Mostrar horario programado si hay diferencia */}

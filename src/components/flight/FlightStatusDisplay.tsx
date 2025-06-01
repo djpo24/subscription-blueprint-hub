@@ -23,7 +23,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
     last_updated: flight.last_updated
   });
 
-  // Determinar qué horarios mostrar - priorizar horarios reales
+  // Priorizar SIEMPRE los horarios reales cuando estén disponibles
   const departureTime = flight.actual_departure || flight.scheduled_departure;
   const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
 
@@ -35,13 +35,15 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const hasDepartureChanged = flight.actual_departure && flight.actual_departure !== flight.scheduled_departure;
   const hasArrivalChanged = flight.actual_arrival && flight.actual_arrival !== flight.scheduled_arrival;
 
-  console.log('Datos de visualización:', {
+  console.log('Datos de visualización actualizados:', {
     departureTime,
     arrivalTime,
     hasDepartureChanged,
     hasArrivalChanged,
     status: flight.status,
-    has_landed: flight.has_landed
+    has_landed: flight.has_landed,
+    actual_departure: flight.actual_departure,
+    actual_arrival: flight.actual_arrival
   });
 
   return (
@@ -54,7 +56,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
               dateTime={arrivalTime} 
               className="text-sm text-gray-600"
             />
-            {hasArrivalChanged && (
+            {flight.actual_arrival && (
               <span className="text-xs text-green-600 font-medium">
                 (Real)
               </span>

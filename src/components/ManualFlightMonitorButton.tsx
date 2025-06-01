@@ -8,6 +8,13 @@ export function ManualFlightMonitorButton() {
 
   const handleManualMonitoring = () => {
     console.log('🎯 INICIANDO MONITOREO MANUAL COMPLETO - Consulta API para AV92');
+    console.log('📋 PROCESO: Se obtendrán TODOS los datos disponibles de la API incluyendo:');
+    console.log('   - Ciudades de origen y destino reales');
+    console.log('   - Aeropuertos completos');
+    console.log('   - Terminales y puertas');
+    console.log('   - Información de aeronave');
+    console.log('   - Horarios exactos');
+    console.log('   - Datos completos en bruto');
     startMonitoring();
   };
 

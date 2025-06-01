@@ -6,13 +6,17 @@ interface FlightRouteDisplayProps {
   arrivalAirport: string;
   scheduledDeparture: string | null;
   scheduledArrival: string | null;
+  apiDepartureCity?: string;
+  apiArrivalCity?: string;
 }
 
 export function FlightRouteDisplay({ 
   departureAirport, 
   arrivalAirport, 
   scheduledDeparture, 
-  scheduledArrival 
+  scheduledArrival,
+  apiDepartureCity,
+  apiArrivalCity
 }: FlightRouteDisplayProps) {
   const calculateFlightDuration = () => {
     if (!scheduledDeparture || !scheduledArrival) return null;
@@ -31,10 +35,23 @@ export function FlightRouteDisplay({
 
   const duration = calculateFlightDuration();
 
+  // Usar ciudades de la API si están disponibles, sino usar códigos de aeropuerto
+  const displayDeparture = apiDepartureCity || departureAirport;
+  const displayArrival = apiArrivalCity || arrivalAirport;
+
+  console.log('FlightRouteDisplay - Datos recibidos:', {
+    departureAirport,
+    arrivalAirport,
+    apiDepartureCity,
+    apiArrivalCity,
+    displayDeparture,
+    displayArrival
+  });
+
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="text-3xl font-bold text-gray-900">
-        {departureAirport}
+        {displayDeparture}
       </div>
       <div className="flex-1 mx-4 relative">
         <div className="h-0.5 bg-green-500 w-full"></div>
@@ -48,7 +65,7 @@ export function FlightRouteDisplay({
         )}
       </div>
       <div className="text-3xl font-bold text-gray-900">
-        {arrivalAirport}
+        {displayArrival}
       </div>
     </div>
   );

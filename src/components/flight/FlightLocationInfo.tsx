@@ -18,7 +18,7 @@ export function FlightLocationInfo({ city, airport, gate, terminal, date }: Flig
         <div className="text-sm text-purple-600">Terminal: {terminal}</div>
       )}
       {gate && (
-        <div className="text-sm text-orange-600">Gate: {gate}</div>
+        <div className="text-sm text-orange-600">Puerta: {gate}</div>
       )}
     </div>
   );

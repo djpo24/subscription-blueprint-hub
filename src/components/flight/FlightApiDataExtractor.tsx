@@ -1,43 +1,40 @@
 
-interface ApiField {
-  _type?: string;
-  value?: string;
-}
+import { FlightData } from '@/types/flight';
 
-export interface ExtractedFlightData {
-  departureTerminal: string | null;
-  departureGate: string | null;
-  arrivalTerminal: string | null;
-  arrivalGate: string | null;
-  departureCity: string | null;
-  arrivalCity: string | null;
-  departureAirportApi: string | null;
-  arrivalAirportApi: string | null;
-  aircraft: string | null;
-  flightStatusApi: string | null;
-}
+export function extractFlightApiData(flight: FlightData) {
+  console.log('🔍 FlightApiDataExtractor - datos RAW recibidos:', {
+    api_departure_terminal: flight.api_departure_terminal,
+    api_departure_gate: flight.api_departure_gate,
+    api_arrival_terminal: flight.api_arrival_terminal,
+    api_arrival_gate: flight.api_arrival_gate,
+    api_departure_city: flight.api_departure_city,
+    api_arrival_city: flight.api_arrival_city,
+    api_departure_airport: flight.api_departure_airport,
+    api_arrival_airport: flight.api_arrival_airport,
+    api_aircraft: flight.api_aircraft,
+    api_flight_status: flight.api_flight_status
+  });
 
-// Helper function to extract value from API objects
-export const getApiValue = (apiField: any): string | null => {
-  if (!apiField) return null;
-  if (typeof apiField === 'string') return apiField;
-  if (typeof apiField === 'object' && apiField.value && apiField.value !== 'undefined') {
-    return apiField.value;
-  }
-  return null;
-};
+  // Función helper para extraer valores seguros de objetos complejos
+  const extractValue = (data: any): string | null => {
+    if (!data) return null;
+    if (typeof data === 'string') return data;
+    if (typeof data === 'object' && data.value !== undefined) {
+      return data.value === 'undefined' ? null : data.value;
+    }
+    return null;
+  };
 
-export const extractFlightApiData = (flight: any): ExtractedFlightData => {
-  const departureTerminal = getApiValue(flight.api_departure_terminal);
-  const departureGate = getApiValue(flight.api_departure_gate);
-  const arrivalTerminal = getApiValue(flight.api_arrival_terminal);
-  const arrivalGate = getApiValue(flight.api_arrival_gate);
-  const departureCity = getApiValue(flight.api_departure_city);
-  const arrivalCity = getApiValue(flight.api_arrival_city);
-  const departureAirportApi = getApiValue(flight.api_departure_airport);
-  const arrivalAirportApi = getApiValue(flight.api_arrival_airport);
-  const aircraft = getApiValue(flight.api_aircraft);
-  const flightStatusApi = getApiValue(flight.api_flight_status);
+  const departureTerminal = extractValue(flight.api_departure_terminal);
+  const departureGate = extractValue(flight.api_departure_gate);
+  const arrivalTerminal = extractValue(flight.api_arrival_terminal);
+  const arrivalGate = extractValue(flight.api_arrival_gate);
+  const departureCity = extractValue(flight.api_departure_city);
+  const arrivalCity = extractValue(flight.api_arrival_city);
+  const departureAirportApi = extractValue(flight.api_departure_airport);
+  const arrivalAirportApi = extractValue(flight.api_arrival_airport);
+  const aircraft = extractValue(flight.api_aircraft);
+  const flightStatusApi = extractValue(flight.api_flight_status);
 
   console.log('🔍 Valores extraídos de la API:', {
     departureTerminal,
@@ -64,4 +61,4 @@ export const extractFlightApiData = (flight: any): ExtractedFlightData => {
     aircraft,
     flightStatusApi
   };
-};
+}

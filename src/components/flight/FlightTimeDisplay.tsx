@@ -13,7 +13,8 @@ export function FlightTimeDisplay({ dateTime, className = '' }: FlightTimeDispla
     try {
       const date = parseISO(dateTime);
       console.log('formatTime input:', dateTime, 'parsed date:', date);
-      return format(date, 'h:mm a', { locale: es });
+      // Format time in 24-hour format for clarity
+      return format(date, 'HH:mm', { locale: es });
     } catch {
       return '-';
     }

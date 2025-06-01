@@ -27,6 +27,7 @@ export function TripDialog({ open, onOpenChange, onSuccess, initialDate }: TripD
   } = useTripForm(onSuccess, initialDate);
 
   const isDatePreselected = !!initialDate;
+  const displayDate = isDatePreselected ? initialDate : date;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,8 +35,8 @@ export function TripDialog({ open, onOpenChange, onSuccess, initialDate }: TripD
         <DialogHeader className="space-y-3 pb-6 flex-shrink-0">
           <DialogTitle className="text-2xl font-bold text-black">Nuevo Viaje</DialogTitle>
           <DialogDescription className="text-gray-600">
-            {isDatePreselected 
-              ? `Crea un nuevo viaje para el ${format(date!, 'dd/MM/yyyy', { locale: es })}`
+            {isDatePreselected && displayDate
+              ? `Crea un nuevo viaje para el ${format(displayDate, 'dd/MM/yyyy', { locale: es })}`
               : "Crea un nuevo viaje para agrupar encomiendas."
             }
           </DialogDescription>
@@ -49,7 +50,7 @@ export function TripDialog({ open, onOpenChange, onSuccess, initialDate }: TripD
                   Fecha del Viaje
                 </label>
                 <div className="w-full h-12 px-3 py-2 bg-gray-100 border rounded-lg flex items-center text-gray-700">
-                  {format(date!, 'dd/MM/yyyy', { locale: es })}
+                  {displayDate ? format(displayDate, 'dd/MM/yyyy', { locale: es }) : 'Fecha no válida'}
                 </div>
               </div>
             ) : (

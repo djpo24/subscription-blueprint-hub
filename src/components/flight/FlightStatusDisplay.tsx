@@ -2,7 +2,7 @@
 import { FlightData } from '@/types/flight';
 import { Tabs } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { FlightDataSummarySection } from './FlightDataSummarySection';
+import { FlightCardDetails } from './FlightCardDetails';
 import { FlightTabsNavigation } from './FlightTabsNavigation';
 import { FlightTabsContent } from './FlightTabsContent';
 
@@ -37,8 +37,8 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
 
   return (
     <div className="space-y-4">
-      {/* Resumen de datos REALES de la API */}
-      <FlightDataSummarySection flight={flight} />
+      {/* Detalles básicos del vuelo */}
+      <FlightCardDetails flight={flight} />
       
       <Tabs defaultValue="compact" className="w-full">
         <FlightTabsNavigation />

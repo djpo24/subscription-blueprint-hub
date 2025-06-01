@@ -5,7 +5,6 @@ import { TestNotificationCard } from './flight/TestNotificationCard';
 import { FlightInformationCard } from './flight/FlightInformationCard';
 import { UpcomingFlightsCard } from './flight/UpcomingFlightsCard';
 import { ManualFlightMonitorButton } from './ManualFlightMonitorButton';
-import { ClearCacheButton } from './ClearCacheButton';
 
 export function FlightNotificationPanel() {
   const { 
@@ -25,15 +24,7 @@ export function FlightNotificationPanel() {
         <p className="text-gray-600 mb-4">
           Ejecuta una consulta completa a la API para obtener y actualizar toda la información del vuelo AV92.
         </p>
-        <div className="flex gap-3">
-          <ClearCacheButton />
-          <ManualFlightMonitorButton />
-        </div>
-        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
-            <strong>Proceso recomendado:</strong> Primero limpia el caché, luego ejecuta la consulta manual para obtener datos frescos de la API con toda la información completa.
-          </p>
-        </div>
+        <ManualFlightMonitorButton />
       </div>
 
       <FlightMonitoringCard />

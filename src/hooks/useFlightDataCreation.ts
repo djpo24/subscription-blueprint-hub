@@ -2,6 +2,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FlightData } from '@/types/flight';
+import { 
+  checkExistingFlight, 
+  calculateFlightPriority, 
+  fetchFlightDataFromAPI 
+} from '@/services/flightDataService';
+import { calculateFlightStatus } from '@/utils/flightStatusCalculator';
+import { mapFlightDataForDatabase } from '@/utils/flightDataMapper';
 
 export function useFlightDataCreation() {
   const queryClient = useQueryClient();
@@ -16,196 +23,29 @@ export function useFlightDataCreation() {
       console.log('Creating flight data for:', { tripDate, flightNumber, origin, destination });
       
       // Verificar si ya existe un vuelo con este número
-      const { data: existingFlight } = await supabase
-        .from('flight_data')
-        .select('id, flight_number')
-        .eq('flight_number', flightNumber)
-        .single();
-
+      const existingFlight = await checkExistingFlight(flightNumber);
       if (existingFlight) {
         console.log('Flight already exists:', existingFlight);
         return existingFlight;
       }
 
       // Calcular prioridad basada en número de paquetes
-      const { data: packageCount } = await supabase
-        .from('packages')
-        .select('id', { count: 'exact' })
-        .eq('flight_number', flightNumber);
-      
-      const priority = Math.min(5, Math.max(1, Math.floor((packageCount?.length || 0) / 2) + 1));
-      
-      console.log(`Prioridad calculada para vuelo ${flightNumber}: ${priority} (basada en ${packageCount?.length || 0} paquetes)`);
+      const priority = await calculateFlightPriority(flightNumber);
 
       // Intentar obtener datos reales del vuelo desde la API con estrategia inteligente
-      let flightDataFromAPI = null;
-      try {
-        console.log('Intentando obtener datos del vuelo con estrategia inteligente...');
-        const response = await supabase.functions.invoke('get-flight-data', {
-          body: { flightNumber, tripDate, priority }
-        });
+      const flightDataFromAPI = await fetchFlightDataFromAPI(flightNumber, tripDate, priority);
 
-        if (response.data && !response.error) {
-          flightDataFromAPI = response.data;
-          console.log('🎯 Datos COMPLETOS obtenidos de la API:', {
-            source: flightDataFromAPI._fallback ? 'fallback' : 'api',
-            flight_status: flightDataFromAPI.flight_status,
-            api_departure_city: flightDataFromAPI.api_departure_city,
-            api_arrival_city: flightDataFromAPI.api_arrival_city,
-            api_departure_airport: flightDataFromAPI.api_departure_airport,
-            api_arrival_airport: flightDataFromAPI.api_arrival_airport,
-            api_departure_gate: flightDataFromAPI.api_departure_gate,
-            api_arrival_gate: flightDataFromAPI.api_arrival_gate,
-            api_departure_terminal: flightDataFromAPI.api_departure_terminal,
-            api_arrival_terminal: flightDataFromAPI.api_arrival_terminal,
-            api_aircraft: flightDataFromAPI.api_aircraft,
-            api_airline_name: flightDataFromAPI.api_airline_name,
-            departure_scheduled: flightDataFromAPI.departure?.scheduled,
-            departure_actual: flightDataFromAPI.departure?.actual,
-            arrival_scheduled: flightDataFromAPI.arrival?.scheduled,
-            arrival_actual: flightDataFromAPI.arrival?.actual
-          });
-        }
-      } catch (error) {
-        console.log('Error en estrategia inteligente, usando valores por defecto:', error);
-      }
+      // Calcular el estado del vuelo
+      const flightStatusResult = calculateFlightStatus(tripDate, flightDataFromAPI);
 
-      // Crear las fechas basándose en la fecha real del viaje o datos obtenidos
-      const tripDateObj = new Date(tripDate);
-      
-      let scheduledDeparture, scheduledArrival;
-      
-      if (flightDataFromAPI?.departure?.scheduled && flightDataFromAPI?.arrival?.scheduled) {
-        // Usar horarios EXACTOS de la API sin conversiones
-        scheduledDeparture = new Date(flightDataFromAPI.departure.scheduled);
-        scheduledArrival = new Date(flightDataFromAPI.arrival.scheduled);
-        console.log('📅 Usando horarios REALES de API (sin conversión):', {
-          scheduled_departure: flightDataFromAPI.departure.scheduled,
-          scheduled_arrival: flightDataFromAPI.arrival.scheduled
-        });
-      } else {
-        // Usar horarios por defecto básicos
-        scheduledDeparture = new Date(tripDateObj);
-        scheduledDeparture.setHours(6, 0, 0, 0);
-        
-        scheduledArrival = new Date(tripDateObj);
-        scheduledArrival.setHours(8, 0, 0, 0);
-      }
-
-      // Determinar el estado del vuelo
-      const now = new Date();
-      const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const flightDate = new Date(tripDateObj.getFullYear(), tripDateObj.getMonth(), tripDateObj.getDate());
-      
-      let status = 'scheduled';
-      let hasLanded = false;
-      let actualDeparture = null;
-      let actualArrival = null;
-
-      // Si tenemos datos de la estrategia inteligente, usarlos EXACTAMENTE
-      if (flightDataFromAPI) {
-        // Usar horarios REALES exactos de la API sin conversiones
-        actualDeparture = flightDataFromAPI.departure?.actual || null;
-        actualArrival = flightDataFromAPI.arrival?.actual || null;
-        
-        console.log('⏰ Horarios REALES de API (exactos):', {
-          actual_departure: actualDeparture,
-          actual_arrival: actualArrival
-        });
-        
-        switch (flightDataFromAPI.flight_status) {
-          case 'landed':
-          case 'arrived':
-            status = 'arrived';
-            hasLanded = true;
-            break;
-          case 'active':
-          case 'en-route':
-            status = 'in_flight';
-            break;
-          case 'cancelled':
-            status = 'cancelled';
-            break;
-          case 'delayed':
-            status = 'delayed';
-            break;
-        }
-      } else {
-        // Lógica basada en fecha como fallback final
-        if (flightDate < todayDate) {
-          status = 'arrived';
-          hasLanded = true;
-          actualDeparture = scheduledDeparture.toISOString();
-          actualArrival = scheduledArrival.toISOString();
-        } else if (flightDate.getTime() === todayDate.getTime()) {
-          const currentHour = now.getHours();
-          if (currentHour >= 8) {
-            status = 'arrived';
-            hasLanded = true;
-            actualDeparture = scheduledDeparture.toISOString();
-            actualArrival = scheduledArrival.toISOString();
-          } else if (currentHour >= 6) {
-            status = 'in_flight';
-            actualDeparture = scheduledDeparture.toISOString();
-          }
-        }
-      }
-
-      console.log('Flight status calculated:', {
-        flightDate: flightDate.toISOString(),
-        todayDate: todayDate.toISOString(),
-        status,
-        hasLanded,
-        actualDeparture,
-        actualArrival,
-        dataSource: flightDataFromAPI?._fallback ? 'fallback_inteligente' : flightDataFromAPI ? 'api' : 'fecha'
-      });
-
-      // Usar datos de aeropuerto de la API si están disponibles, sino usar los del viaje
-      const departureAirport = flightDataFromAPI?.api_departure_airport || origin;
-      const arrivalAirport = flightDataFromAPI?.api_arrival_airport || destination;
-
-      // Preparar TODOS los datos del vuelo incluyendo TODA la información de la API
-      const flightData = {
-        flight_number: flightNumber,
-        departure_airport: departureAirport,
-        arrival_airport: arrivalAirport,
-        scheduled_departure: scheduledDeparture.toISOString(),
-        scheduled_arrival: scheduledArrival.toISOString(),
-        actual_departure: actualDeparture,
-        actual_arrival: actualArrival,
-        status,
-        has_landed: hasLanded,
-        notification_sent: false,
-        airline: flightDataFromAPI?.api_airline_name || 'Avianca',
-        // Incluir TODA la información de la API
-        ...(flightDataFromAPI && {
-          api_departure_airport: flightDataFromAPI.api_departure_airport,
-          api_arrival_airport: flightDataFromAPI.api_arrival_airport,
-          api_departure_city: flightDataFromAPI.api_departure_city,
-          api_arrival_city: flightDataFromAPI.api_arrival_city,
-          api_departure_gate: flightDataFromAPI.api_departure_gate,
-          api_arrival_gate: flightDataFromAPI.api_arrival_gate,
-          api_departure_terminal: flightDataFromAPI.api_departure_terminal,
-          api_arrival_terminal: flightDataFromAPI.api_arrival_terminal,
-          api_aircraft: flightDataFromAPI.api_aircraft,
-          api_flight_status: flightDataFromAPI.api_flight_status,
-          api_departure_timezone: flightDataFromAPI.api_departure_timezone,
-          api_arrival_timezone: flightDataFromAPI.api_arrival_timezone,
-          api_departure_iata: flightDataFromAPI.api_departure_iata,
-          api_arrival_iata: flightDataFromAPI.api_arrival_iata,
-          api_departure_icao: flightDataFromAPI.api_departure_icao,
-          api_arrival_icao: flightDataFromAPI.api_arrival_icao,
-          api_airline_name: flightDataFromAPI.api_airline_name,
-          api_airline_iata: flightDataFromAPI.api_airline_iata,
-          api_airline_icao: flightDataFromAPI.api_airline_icao,
-          api_aircraft_registration: flightDataFromAPI.api_aircraft_registration,
-          api_aircraft_iata: flightDataFromAPI.api_aircraft_iata,
-          api_raw_data: flightDataFromAPI.api_raw_data
-        })
-      };
-
-      console.log('Creating flight with COMPLETE data:', flightData);
+      // Mapear datos para la base de datos
+      const flightData = mapFlightDataForDatabase(
+        flightNumber,
+        origin,
+        destination,
+        flightStatusResult,
+        flightDataFromAPI
+      );
 
       const { data, error } = await supabase
         .from('flight_data')

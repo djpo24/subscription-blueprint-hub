@@ -11,42 +11,55 @@ interface FlightStatusDisplayProps {
 }
 
 export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
-  console.log('FlightStatusDisplay flight data:', {
+  console.log('FlightStatusDisplay datos del vuelo:', {
     flight_number: flight.flight_number,
     scheduled_departure: flight.scheduled_departure,
     scheduled_arrival: flight.scheduled_arrival,
     actual_departure: flight.actual_departure,
     actual_arrival: flight.actual_arrival,
     status: flight.status,
-    has_landed: flight.has_landed
+    has_landed: flight.has_landed,
+    airline: flight.airline,
+    last_updated: flight.last_updated
   });
 
-  // Mostrar hora real si está disponible, sino la programada
+  // Determinar qué horarios mostrar - priorizar horarios reales
   const departureTime = flight.actual_departure || flight.scheduled_departure;
   const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
 
-  // Para las fechas, usar las fechas reales si están disponibles, sino las programadas
+  // Para las fechas de visualización, usar los horarios reales si están disponibles
   const departureDate = flight.actual_departure || flight.scheduled_departure;
   const arrivalDate = flight.actual_arrival || flight.scheduled_arrival;
 
-  console.log('Fechas finales para mostrar:', {
+  // Determinar si los horarios son reales o programados para mostrar indicadores
+  const hasDepartureChanged = flight.actual_departure && flight.actual_departure !== flight.scheduled_departure;
+  const hasArrivalChanged = flight.actual_arrival && flight.actual_arrival !== flight.scheduled_arrival;
+
+  console.log('Datos de visualización:', {
     departureTime,
     arrivalTime,
-    departureDate,
-    arrivalDate,
+    hasDepartureChanged,
+    hasArrivalChanged,
     status: flight.status,
     has_landed: flight.has_landed
   });
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-      {/* Header con hora y destino */}
+      {/* Header con hora de llegada y destino */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <FlightTimeDisplay 
-            dateTime={arrivalTime} 
-            className="text-sm text-gray-600"
-          />
+          <div className="flex items-center gap-2">
+            <FlightTimeDisplay 
+              dateTime={arrivalTime} 
+              className="text-sm text-gray-600"
+            />
+            {hasArrivalChanged && (
+              <span className="text-xs text-green-600 font-medium">
+                (Real)
+              </span>
+            )}
+          </div>
           <span className="text-sm text-gray-600">
             a {flight.arrival_airport}
           </span>
@@ -57,11 +70,18 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
         />
       </div>
 
-      {/* Número de vuelo */}
+      {/* Información de la aerolínea y número de vuelo */}
       <div className="mb-6">
-        <span className="text-2xl font-bold text-gray-900">
-          {flight.airline} {flight.flight_number}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold text-gray-900">
+            {flight.airline} {flight.flight_number}
+          </span>
+          {flight.has_landed && (
+            <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
+              Datos reales confirmados
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Ruta con línea de conexión */}
@@ -73,7 +93,7 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
           scheduledArrival={flight.scheduled_arrival}
         />
 
-        {/* Información detallada */}
+        {/* Información detallada con indicadores de datos reales */}
         <FlightDetailsGrid 
           departureAirport={flight.departure_airport}
           arrivalAirport={flight.arrival_airport}
@@ -88,8 +108,16 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
         />
       </div>
 
-      {/* Footer con última actualización */}
-      <FlightLastUpdated lastUpdated={flight.last_updated} />
+      {/* Footer con última actualización y fuente de datos */}
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <FlightLastUpdated lastUpdated={flight.last_updated} />
+        {(flight.actual_departure || flight.actual_arrival) && (
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            Datos de API en tiempo real
+          </span>
+        )}
+      </div>
     </div>
   );
 }

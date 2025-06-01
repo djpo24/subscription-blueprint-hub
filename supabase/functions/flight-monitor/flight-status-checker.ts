@@ -14,6 +14,8 @@ export async function checkFlightStatusIntelligent(
   tripDate: string
 ): Promise<FlightStatusResult> {
   try {
+    console.log(`🔍 Consultando estado inteligente para vuelo ${flight.flight_number}`);
+    
     // Llamar a la función get-flight-data con la estrategia inteligente
     const response = await supabaseClient.functions.invoke('get-flight-data', {
       body: { 
@@ -24,14 +26,23 @@ export async function checkFlightStatusIntelligent(
     });
 
     if (response.error) {
-      console.log('Error en consulta inteligente, usando fallback de fecha');
+      console.log('❌ Error en consulta inteligente, usando fallback de fecha:', response.error);
       return await checkFlightStatusBasedOnDate(flight, tripDate);
     }
 
     const flightData = response.data;
     if (!flightData) {
+      console.log('❌ No se recibieron datos, usando fallback');
       return await checkFlightStatusBasedOnDate(flight, tripDate);
     }
+
+    console.log(`📊 Datos recibidos para vuelo ${flight.flight_number}:`, {
+      flight_status: flightData.flight_status,
+      departure_actual: flightData.departure?.actual,
+      arrival_actual: flightData.arrival?.actual,
+      source: flightData._fallback ? 'fallback' : 'api',
+      airline: flightData.airline?.name
+    });
 
     // Procesar respuesta de la estrategia inteligente
     const departure = flightData.departure;
@@ -42,11 +53,13 @@ export async function checkFlightStatusIntelligent(
     let actualDeparture = departure?.actual || null;
     let actualArrival = arrival?.actual || null;
 
-    switch (flightData.flight_status) {
+    // Procesar estado del vuelo según la API
+    switch (flightData.flight_status?.toLowerCase()) {
       case 'landed':
       case 'arrived':
         status = 'arrived';
         hasLanded = true;
+        // Si no hay hora real de llegada pero el vuelo aterrizó, usar la programada
         if (!actualArrival && arrival?.scheduled) {
           actualArrival = arrival.scheduled;
         }
@@ -62,6 +75,7 @@ export async function checkFlightStatusIntelligent(
         status = 'delayed';
         break;
       default:
+        // Lógica adicional basada en horarios reales
         if (actualArrival) {
           status = 'arrived';
           hasLanded = true;
@@ -70,16 +84,21 @@ export async function checkFlightStatusIntelligent(
         }
     }
 
-    return {
+    const result = {
       hasLanded,
       actualDeparture,
       actualArrival,
       status,
-      dataSource: flightData._fallback ? 'fallback_inteligente' : 'api'
+      dataSource: flightData._fallback ? 'fallback_inteligente' : 'api',
+      // Agregar información adicional de la aerolínea
+      airline: flightData.airline?.name || null
     };
 
+    console.log(`✅ Estado procesado para vuelo ${flight.flight_number}:`, result);
+    return result;
+
   } catch (error) {
-    console.error('Error en estrategia inteligente:', error);
+    console.error('💥 Error en estrategia inteligente:', error);
     return await checkFlightStatusBasedOnDate(flight, tripDate);
   }
 }
@@ -88,7 +107,7 @@ export async function checkFlightStatusBasedOnDate(
   flight: FlightRecord, 
   tripDate: string
 ): Promise<FlightStatusResult> {
-  console.log(`Verificando estado del vuelo con fallback de fecha: ${flight.flight_number} para fecha: ${tripDate}`);
+  console.log(`📅 Verificando estado del vuelo con fallback de fecha: ${flight.flight_number} para fecha: ${tripDate}`);
   
   const bogotaTime = getBogotaDate();
   const flightDate = new Date(tripDate);

@@ -27,25 +27,63 @@ export function FlightDetailsGrid({
   scheduledDeparture,
   scheduledArrival
 }: FlightDetailsGridProps) {
+  
+  // Calcular diferencias de tiempo
+  const calculateTimeDifference = (scheduled: string | null, actual: string | null) => {
+    if (!scheduled || !actual) return null;
+    
+    const scheduledTime = new Date(scheduled);
+    const actualTime = new Date(actual);
+    const diffMinutes = Math.round((actualTime.getTime() - scheduledTime.getTime()) / (1000 * 60));
+    
+    if (Math.abs(diffMinutes) < 5) return null; // Diferencia insignificante
+    
+    return {
+      minutes: Math.abs(diffMinutes),
+      isDelay: diffMinutes > 0,
+      isEarly: diffMinutes < 0
+    };
+  };
+
+  const departureDiff = calculateTimeDifference(scheduledDeparture, actualDeparture);
+  const arrivalDiff = calculateTimeDifference(scheduledArrival, actualArrival);
+
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-6">
       {/* Salida */}
       <div>
         <div className="text-sm text-gray-500 mb-1">
           Información del aeropuerto
         </div>
-        <div className="font-medium">
+        <div className="font-medium mb-2">
           {departureAirport} · <FlightDateDisplay dateTime={departureDate} />
         </div>
-        <div className="text-sm text-gray-600">
-          {actualDeparture ? 'Salió' : 'Salida'}
+        <div className="text-sm text-gray-600 mb-1">
+          {actualDeparture ? 'Salida Real' : 'Salida Programada'}
         </div>
-        <div className={`text-2xl font-bold ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
+        <div className={`text-2xl font-bold mb-1 ${actualDeparture ? 'text-green-600' : 'text-gray-900'}`}>
           <FlightTimeDisplay dateTime={departureTime} />
         </div>
-        {scheduledDeparture && actualDeparture && scheduledDeparture !== actualDeparture && (
-          <div className="text-sm text-gray-500 line-through">
-            <FlightTimeDisplay dateTime={scheduledDeparture} />
+        
+        {/* Mostrar horario programado si hay diferencia */}
+        {actualDeparture && scheduledDeparture && actualDeparture !== scheduledDeparture && (
+          <div className="space-y-1">
+            <div className="text-sm text-gray-500">
+              Programado: <span className="line-through"><FlightTimeDisplay dateTime={scheduledDeparture} /></span>
+            </div>
+            {departureDiff && (
+              <div className={`text-xs font-medium ${departureDiff.isDelay ? 'text-red-600' : 'text-green-600'}`}>
+                {departureDiff.isDelay ? '+' : '-'}{departureDiff.minutes} min {departureDiff.isDelay ? 'retraso' : 'adelanto'}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Indicador de datos reales */}
+        {actualDeparture && (
+          <div className="flex items-center gap-1 mt-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span className="text-xs text-green-600">Hora real confirmada</span>
           </div>
         )}
       </div>
@@ -55,18 +93,35 @@ export function FlightDetailsGrid({
         <div className="text-sm text-gray-500 mb-1">
           Información del aeropuerto
         </div>
-        <div className="font-medium">
+        <div className="font-medium mb-2">
           {arrivalAirport} · <FlightDateDisplay dateTime={arrivalDate} />
         </div>
-        <div className="text-sm text-gray-600">
-          {actualArrival ? 'Llegó' : 'Llegada'}
+        <div className="text-sm text-gray-600 mb-1">
+          {actualArrival ? 'Llegada Real' : 'Llegada Programada'}
         </div>
-        <div className={`text-2xl font-bold ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
+        <div className={`text-2xl font-bold mb-1 ${actualArrival ? 'text-green-600' : 'text-gray-900'}`}>
           <FlightTimeDisplay dateTime={arrivalTime} />
         </div>
-        {scheduledArrival && actualArrival && scheduledArrival !== actualArrival && (
-          <div className="text-sm text-gray-500 line-through">
-            <FlightTimeDisplay dateTime={scheduledArrival} />
+        
+        {/* Mostrar horario programado si hay diferencia */}
+        {actualArrival && scheduledArrival && actualArrival !== scheduledArrival && (
+          <div className="space-y-1">
+            <div className="text-sm text-gray-500">
+              Programado: <span className="line-through"><FlightTimeDisplay dateTime={scheduledArrival} /></span>
+            </div>
+            {arrivalDiff && (
+              <div className={`text-xs font-medium ${arrivalDiff.isDelay ? 'text-red-600' : 'text-green-600'}`}>
+                {arrivalDiff.isDelay ? '+' : '-'}{arrivalDiff.minutes} min {arrivalDiff.isDelay ? 'retraso' : 'adelanto'}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Indicador de datos reales */}
+        {actualArrival && (
+          <div className="flex items-center gap-1 mt-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span className="text-xs text-green-600">Hora real confirmada</span>
           </div>
         )}
       </div>

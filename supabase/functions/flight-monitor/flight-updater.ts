@@ -15,7 +15,9 @@ export async function updateFlightStatus(
       has_landed: flight.has_landed,
       notification_sent: flight.notification_sent,
       status: flight.status,
-      actual_arrival: flight.actual_arrival
+      actual_arrival: flight.actual_arrival,
+      actual_departure: flight.actual_departure,
+      airline: flight.airline
     });
     
     // Si el vuelo ya aterrizó y fue notificado, no hacer nada
@@ -24,7 +26,7 @@ export async function updateFlightStatus(
       return null;
     }
     
-    console.log('Datos del vuelo:', {
+    console.log('Datos del vuelo y viaje:', {
       flight_number: flight.flight_number,
       scheduled_departure: flight.scheduled_departure,
       scheduled_arrival: flight.scheduled_arrival,
@@ -34,100 +36,70 @@ export async function updateFlightStatus(
     
     // Verificar el estado del vuelo usando la estrategia inteligente
     const flightStatus = await checkFlightStatusIntelligent(supabaseClient, flight, matchingTrip.trip_date);
-    console.log(`Estado obtenido para vuelo ${flight.flight_number}:`, flightStatus);
+    console.log(`📊 Estado obtenido para vuelo ${flight.flight_number}:`, flightStatus);
     
     let wasUpdated = false;
+    let updateData: any = {};
     
-    // Si el vuelo ha aterrizado pero no estaba marcado como tal
-    if (flightStatus.hasLanded && !flight.has_landed) {
-      console.log(`✈️ Vuelo ${flight.flight_number} ha aterrizado - actualizando...`);
+    // Preparar datos de actualización
+    if (flightStatus.actualDeparture && flightStatus.actualDeparture !== flight.actual_departure) {
+      updateData.actual_departure = flightStatus.actualDeparture;
+      console.log(`🛫 Actualizando salida real: ${flightStatus.actualDeparture}`);
+    }
+    
+    if (flightStatus.actualArrival && flightStatus.actualArrival !== flight.actual_arrival) {
+      updateData.actual_arrival = flightStatus.actualArrival;
+      console.log(`🛬 Actualizando llegada real: ${flightStatus.actualArrival}`);
+    }
+    
+    if (flightStatus.status !== flight.status) {
+      updateData.status = flightStatus.status;
+      console.log(`📊 Actualizando estado: ${flight.status} → ${flightStatus.status}`);
+    }
+    
+    if (flightStatus.hasLanded !== flight.has_landed) {
+      updateData.has_landed = flightStatus.hasLanded;
+      console.log(`✈️ Actualizando estado de aterrizaje: ${flight.has_landed} → ${flightStatus.hasLanded}`);
+    }
+    
+    // Actualizar aerolínea si viene de la API
+    if ((flightStatus as any).airline && (flightStatus as any).airline !== flight.airline) {
+      updateData.airline = (flightStatus as any).airline;
+      console.log(`🏢 Actualizando aerolínea: ${flight.airline} → ${(flightStatus as any).airline}`);
+    }
+    
+    // Si hay datos para actualizar, hacer la actualización
+    if (Object.keys(updateData).length > 0) {
+      updateData.last_updated = new Date().toISOString();
       
-      // Actualizar estado del vuelo
+      console.log(`💾 Actualizando vuelo ${flight.flight_number} con datos:`, updateData);
+      
       const { error: updateError } = await supabaseClient
         .from('flight_data')
-        .update({
-          has_landed: true,
-          actual_departure: flightStatus.actualDeparture,
-          actual_arrival: flightStatus.actualArrival,
-          status: flightStatus.status,
-          last_updated: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', flight.id);
 
       if (updateError) {
-        console.error('Error actualizando vuelo:', updateError);
+        console.error('❌ Error actualizando vuelo:', updateError);
         return null;
       } else {
-        console.log(`✅ Vuelo ${flight.flight_number} marcado como aterrizado`);
-        wasUpdated = true;
-      }
-    } 
-    // Si el vuelo ya aterrizado pero necesita actualizar datos
-    else if (flightStatus.hasLanded && flight.has_landed) {
-      console.log(`🔄 Vuelo ${flight.flight_number} ya aterrizado, verificando si necesita actualización de datos`);
-      
-      let needsUpdate = false;
-      const updates: any = {};
-      
-      // Verificar si necesita actualizar horarios reales
-      if (flightStatus.actualDeparture && flightStatus.actualDeparture !== flight.actual_departure) {
-        updates.actual_departure = flightStatus.actualDeparture;
-        needsUpdate = true;
-      }
-      
-      if (flightStatus.actualArrival && flightStatus.actualArrival !== flight.actual_arrival) {
-        updates.actual_arrival = flightStatus.actualArrival;
-        needsUpdate = true;
-      }
-      
-      if (flightStatus.status !== flight.status) {
-        updates.status = flightStatus.status;
-        needsUpdate = true;
-      }
-      
-      if (needsUpdate) {
-        updates.last_updated = new Date().toISOString();
+        console.log(`✅ Vuelo ${flight.flight_number} actualizado exitosamente`);
         
-        await supabaseClient
-          .from('flight_data')
-          .update(updates)
-          .eq('id', flight.id);
-        
-        console.log(`📝 Datos actualizados para vuelo ${flight.flight_number}:`, updates);
-        wasUpdated = true;
-      } else {
-        console.log(`ℹ️ Vuelo ${flight.flight_number} ya tiene los datos más recientes`);
-      }
-    } 
-    // Vuelo en proceso - actualizar información
-    else {
-      console.log(`🛫 Vuelo ${flight.flight_number} estado actual: ${flightStatus.status}`);
-      
-      // Actualizar información del vuelo aunque no haya aterrizado
-      if (flightStatus.actualDeparture || flightStatus.status !== flight.status) {
-        const updates: any = {
-          status: flightStatus.status,
-          last_updated: new Date().toISOString()
-        };
-        
-        if (flightStatus.actualDeparture) {
-          updates.actual_departure = flightStatus.actualDeparture;
+        // Log específico si el vuelo aterrizó
+        if (flightStatus.hasLanded && !flight.has_landed) {
+          console.log(`🎉 VUELO ATERRIZADO: ${flight.flight_number} - Datos de fuente: ${flightStatus.dataSource}`);
         }
         
-        await supabaseClient
-          .from('flight_data')
-          .update(updates)
-          .eq('id', flight.id);
-        
-        console.log(`📝 Información actualizada para vuelo ${flight.flight_number}`);
         wasUpdated = true;
       }
+    } else {
+      console.log(`ℹ️ Vuelo ${flight.flight_number} no necesita actualización`);
     }
     
     return wasUpdated ? flight.flight_number : null;
     
   } catch (error) {
-    console.error(`Error monitoreando vuelo ${flight.flight_number}:`, error);
+    console.error(`💥 Error monitoreando vuelo ${flight.flight_number}:`, error);
     // En caso de error, usar fallback basado en fecha
     const fallbackStatus = await checkFlightStatusBasedOnDate(flight, matchingTrip.trip_date);
     

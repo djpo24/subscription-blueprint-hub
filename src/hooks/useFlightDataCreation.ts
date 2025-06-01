@@ -26,18 +26,41 @@ export function useFlightDataCreation() {
         return existingFlight;
       }
 
-      // Crear las fechas basándose en la fecha real del viaje
+      // Intentar obtener datos reales del vuelo desde la API
+      let flightDataFromAPI = null;
+      try {
+        console.log('Intentando obtener datos del vuelo desde API...');
+        const response = await supabase.functions.invoke('get-flight-data', {
+          body: { flightNumber, tripDate }
+        });
+
+        if (response.data && !response.error) {
+          flightDataFromAPI = response.data;
+          console.log('Datos obtenidos de API:', flightDataFromAPI);
+        }
+      } catch (error) {
+        console.log('No se pudieron obtener datos de API, usando valores por defecto:', error);
+      }
+
+      // Crear las fechas basándose en la fecha real del viaje o datos de API
       const tripDateObj = new Date(tripDate);
       
-      // Programar salida a las 6:00 AM del día del viaje
-      const scheduledDeparture = new Date(tripDateObj);
-      scheduledDeparture.setHours(6, 0, 0, 0);
+      let scheduledDeparture, scheduledArrival;
       
-      // Programar llegada a las 8:00 AM del día del viaje (2 horas de vuelo)
-      const scheduledArrival = new Date(tripDateObj);
-      scheduledArrival.setHours(8, 0, 0, 0);
+      if (flightDataFromAPI?.departure?.scheduled && flightDataFromAPI?.arrival?.scheduled) {
+        // Usar horarios reales de la API
+        scheduledDeparture = new Date(flightDataFromAPI.departure.scheduled);
+        scheduledArrival = new Date(flightDataFromAPI.arrival.scheduled);
+      } else {
+        // Usar horarios por defecto
+        scheduledDeparture = new Date(tripDateObj);
+        scheduledDeparture.setHours(6, 0, 0, 0);
+        
+        scheduledArrival = new Date(tripDateObj);
+        scheduledArrival.setHours(8, 0, 0, 0);
+      }
 
-      // Determinar el estado del vuelo basándose en la fecha actual
+      // Determinar el estado del vuelo
       const now = new Date();
       const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const flightDate = new Date(tripDateObj.getFullYear(), tripDateObj.getMonth(), tripDateObj.getDate());
@@ -47,26 +70,46 @@ export function useFlightDataCreation() {
       let actualDeparture = null;
       let actualArrival = null;
 
-      // Si la fecha del vuelo es anterior a hoy, el vuelo ya debería haber llegado
-      if (flightDate < todayDate) {
-        status = 'arrived';
-        hasLanded = true;
-        // Simular que salió y llegó en los horarios programados
-        actualDeparture = scheduledDeparture.toISOString();
-        actualArrival = scheduledArrival.toISOString();
-      } else if (flightDate.getTime() === todayDate.getTime()) {
-        // Si es hoy, verificar la hora actual
-        const currentHour = now.getHours();
-        if (currentHour >= 8) {
-          // Ya debería haber llegado
+      // Si tenemos datos de la API, usarlos
+      if (flightDataFromAPI) {
+        actualDeparture = flightDataFromAPI.departure?.actual || null;
+        actualArrival = flightDataFromAPI.arrival?.actual || null;
+        
+        switch (flightDataFromAPI.flight_status) {
+          case 'landed':
+          case 'arrived':
+            status = 'arrived';
+            hasLanded = true;
+            break;
+          case 'active':
+          case 'en-route':
+            status = 'in_flight';
+            break;
+          case 'cancelled':
+            status = 'cancelled';
+            break;
+          case 'delayed':
+            status = 'delayed';
+            break;
+        }
+      } else {
+        // Lógica basada en fecha como fallback
+        if (flightDate < todayDate) {
           status = 'arrived';
           hasLanded = true;
           actualDeparture = scheduledDeparture.toISOString();
           actualArrival = scheduledArrival.toISOString();
-        } else if (currentHour >= 6) {
-          // Está en vuelo
-          status = 'in_flight';
-          actualDeparture = scheduledDeparture.toISOString();
+        } else if (flightDate.getTime() === todayDate.getTime()) {
+          const currentHour = now.getHours();
+          if (currentHour >= 8) {
+            status = 'arrived';
+            hasLanded = true;
+            actualDeparture = scheduledDeparture.toISOString();
+            actualArrival = scheduledArrival.toISOString();
+          } else if (currentHour >= 6) {
+            status = 'in_flight';
+            actualDeparture = scheduledDeparture.toISOString();
+          }
         }
       }
 
@@ -76,7 +119,8 @@ export function useFlightDataCreation() {
         status,
         hasLanded,
         actualDeparture,
-        actualArrival
+        actualArrival,
+        usingAPIData: !!flightDataFromAPI
       });
 
       const flightData = {
@@ -90,7 +134,7 @@ export function useFlightDataCreation() {
         status,
         has_landed: hasLanded,
         notification_sent: false,
-        airline: 'Avianca'
+        airline: flightDataFromAPI?.airline?.name || 'Avianca'
       };
 
       console.log('Creating flight with data:', flightData);

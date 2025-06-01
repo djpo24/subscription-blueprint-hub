@@ -1,4 +1,3 @@
-
 import { FlightData } from '@/types/flight';
 import { FlightStatusBadge } from './FlightStatusBadge';
 import { FlightTimeDisplay } from './FlightTimeDisplay';
@@ -11,6 +10,7 @@ import { FlightDataIndicators } from './FlightDataIndicators';
 import { extractFlightApiData } from './FlightApiDataExtractor';
 import { FlightApiDataSummary } from './FlightApiDataSummary';
 import { FlightDetailsTab } from './FlightDetailsTab';
+import { FlightCompactDisplay } from './FlightCompactDisplay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 
@@ -95,11 +95,16 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
       {/* Resumen de datos REALES de la API */}
       <FlightApiDataSummary flight={flight} />
       
-      <Tabs defaultValue="new-format" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="compact" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="compact">Estilo Compacto</TabsTrigger>
           <TabsTrigger value="new-format">Formato Nuevo</TabsTrigger>
           <TabsTrigger value="detailed">Vista Detallada</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="compact" className="mt-4">
+          <FlightCompactDisplay flight={flight} />
+        </TabsContent>
         
         <TabsContent value="new-format" className="mt-4">
           <FlightDetailsTab 

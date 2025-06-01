@@ -22,9 +22,9 @@ export function FlightStatusDisplay({ flight }: FlightStatusDisplayProps) {
   const departureTime = flight.actual_departure || flight.scheduled_departure;
   const arrivalTime = flight.actual_arrival || flight.scheduled_arrival;
 
-  // Para las fechas, usar las fechas programadas principalmente
-  const departureDate = flight.scheduled_departure || flight.actual_departure;
-  const arrivalDate = flight.scheduled_arrival || flight.actual_arrival;
+  // Para las fechas, usar las fechas reales si están disponibles, sino las programadas
+  const departureDate = flight.actual_departure || flight.scheduled_departure;
+  const arrivalDate = flight.actual_arrival || flight.scheduled_arrival;
 
   console.log('Final date values:', {
     departureDate,

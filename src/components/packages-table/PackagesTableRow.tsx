@@ -37,6 +37,11 @@ export function PackagesTableRow({
   onActionsClick, 
   onUpdate 
 }: PackagesTableRowProps) {
+  const formatCurrency = (value: number | null) => {
+    if (!value) return 'N/A';
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   return (
     <TableRow 
       className={`hover:bg-gray-50 ${
@@ -61,8 +66,8 @@ export function PackagesTableRow({
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
       <TableCell>{pkg.weight ? `${pkg.weight} kg` : 'N/A'}</TableCell>
-      <TableCell>{pkg.freight ? `$${pkg.freight.toLocaleString()}` : 'N/A'}</TableCell>
-      <TableCell>{pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString()}` : 'N/A'}</TableCell>
+      <TableCell>{formatCurrency(pkg.freight)}</TableCell>
+      <TableCell>{formatCurrency(pkg.amount_to_collect)}</TableCell>
       <TableCell onClick={onActionsClick}>
         <PackageActionsDropdown 
           package={pkg} 

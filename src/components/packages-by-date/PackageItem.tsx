@@ -1,3 +1,4 @@
+
 import { Badge } from '@/components/ui/badge';
 import { Package, Weight, Truck, DollarSign } from 'lucide-react';
 
@@ -75,6 +76,11 @@ export function PackageItem({ package: pkg, onClick }: PackageItemProps) {
     return `${firstTwo}, ${thirdItemPreview}`;
   };
 
+  const formatCurrency = (value: number | null) => {
+    if (!value) return 'N/A';
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   const handleClick = () => {
     if (pkg.status !== 'delivered') {
       onClick(pkg);
@@ -116,14 +122,14 @@ export function PackageItem({ package: pkg, onClick }: PackageItemProps) {
         <div className="flex items-center gap-1 text-gray-600">
           <Truck className="h-3 w-3 text-blue-500" />
           <span className="font-medium">Flete:</span>
-          <span className="text-gray-700">{pkg.freight ? `$${pkg.freight.toLocaleString()}` : 'N/A'}</span>
+          <span className="text-gray-700">{formatCurrency(pkg.freight)}</span>
         </div>
         
         {pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
           <div className="flex items-center gap-1 text-green-600">
             <DollarSign className="h-3 w-3 text-green-500" />
             <span className="font-medium">A Cobrar:</span>
-            <span className="text-green-700 font-semibold">${pkg.amount_to_collect.toLocaleString()}</span>
+            <span className="text-green-700 font-semibold">{formatCurrency(pkg.amount_to_collect)}</span>
           </div>
         )}
       </div>

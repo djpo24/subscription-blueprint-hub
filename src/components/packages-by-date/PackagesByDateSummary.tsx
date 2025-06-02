@@ -14,6 +14,10 @@ export function PackagesByDateSummary({
 }: PackagesByDateSummaryProps) {
   if (totalPackages === 0) return null;
 
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   return (
     <div className="grid grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
       <div className="text-center">
@@ -25,11 +29,11 @@ export function PackagesByDateSummary({
         <div className="text-xs text-gray-600">Peso Total</div>
       </div>
       <div className="text-center">
-        <div className="text-2xl font-bold text-orange-600">${totalFreight}</div>
+        <div className="text-2xl font-bold text-orange-600">{formatCurrency(totalFreight)}</div>
         <div className="text-xs text-gray-600">Flete Total</div>
       </div>
       <div className="text-center">
-        <div className="text-2xl font-bold text-green-600">${totalAmountToCollect}</div>
+        <div className="text-2xl font-bold text-green-600">{formatCurrency(totalAmountToCollect)}</div>
         <div className="text-xs text-gray-600">A Cobrar</div>
       </div>
     </div>

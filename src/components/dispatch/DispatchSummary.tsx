@@ -33,6 +33,10 @@ export function DispatchSummary({ selectedPackages, packages }: DispatchSummaryP
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
 
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   if (selectedPackages.length === 0) return null;
 
   return (
@@ -59,14 +63,14 @@ export function DispatchSummary({ selectedPackages, packages }: DispatchSummaryP
           <Truck className="h-4 w-4 text-blue-600" />
           <div>
             <div className="text-blue-600">Flete Total</div>
-            <div className="font-bold">${totals.freight}</div>
+            <div className="font-bold">{formatCurrency(totals.freight)}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <DollarSign className="h-4 w-4 text-green-600" />
           <div>
             <div className="text-green-600">A Cobrar</div>
-            <div className="font-bold text-green-700">${totals.amount_to_collect}</div>
+            <div className="font-bold text-green-700">{formatCurrency(totals.amount_to_collect)}</div>
           </div>
         </div>
       </div>

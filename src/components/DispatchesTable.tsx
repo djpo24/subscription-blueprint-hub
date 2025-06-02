@@ -33,6 +33,11 @@ export function DispatchesTable({ selectedDate }: DispatchesTableProps) {
     }
   };
 
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value) return '$0';
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   const handleViewDetails = (dispatchId: string) => {
     setSelectedDispatchId(dispatchId);
     setShowDetailsDialog(true);
@@ -120,14 +125,14 @@ export function DispatchesTable({ selectedDate }: DispatchesTableProps) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Truck className="h-4 w-4 text-orange-500" />
-                        <span>${dispatch.total_freight || 0}</span>
+                        <span>{formatCurrency(dispatch.total_freight)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-green-500" />
                         <span className="font-medium text-green-700">
-                          ${dispatch.total_amount_to_collect || 0}
+                          {formatCurrency(dispatch.total_amount_to_collect)}
                         </span>
                       </div>
                     </TableCell>

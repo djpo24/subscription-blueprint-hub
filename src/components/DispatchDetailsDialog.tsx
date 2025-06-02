@@ -23,6 +23,11 @@ export function DispatchDetailsDialog({
 
   if (!dispatchId) return null;
 
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value) return '$0';
+    return `$${value.toLocaleString('es-CO')}`;
+  };
+
   const totals = packages.reduce(
     (acc, pkg) => ({
       weight: acc.weight + (pkg.weight || 0),
@@ -79,7 +84,7 @@ export function DispatchDetailsDialog({
                   <div className="flex items-center gap-2">
                     <Truck className="h-4 w-4 text-orange-500" />
                     <div>
-                      <div className="text-2xl font-bold">${totals.freight}</div>
+                      <div className="text-2xl font-bold">{formatCurrency(totals.freight)}</div>
                       <div className="text-xs text-gray-600">Flete Total</div>
                     </div>
                   </div>
@@ -91,7 +96,7 @@ export function DispatchDetailsDialog({
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-500" />
                     <div>
-                      <div className="text-2xl font-bold text-green-700">${totals.amount_to_collect}</div>
+                      <div className="text-2xl font-bold text-green-700">{formatCurrency(totals.amount_to_collect)}</div>
                       <div className="text-xs text-gray-600">A Cobrar</div>
                     </div>
                   </div>
@@ -162,9 +167,9 @@ export function DispatchDetailsDialog({
                             </div>
                           </TableCell>
                           <TableCell>{pkg.weight || 0} kg</TableCell>
-                          <TableCell>${pkg.freight || 0}</TableCell>
+                          <TableCell>{formatCurrency(pkg.freight)}</TableCell>
                           <TableCell className="font-medium text-green-700">
-                            ${pkg.amount_to_collect || 0}
+                            {formatCurrency(pkg.amount_to_collect)}
                           </TableCell>
                         </TableRow>
                       ))}

@@ -56,7 +56,21 @@ export function useNotifications() {
 
       if (notificationError) {
         console.error('Error sending notification:', notificationError);
+        
+        // Detectar si es un error de token expirado
+        if (notificationError.message && notificationError.message.includes('Session has expired')) {
+          throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
+        }
+        
         throw new Error('Error al enviar notificación: ' + notificationError.message);
+      }
+
+      // Verificar si la respuesta indica un error de token
+      if (responseData && !responseData.success && responseData.error) {
+        if (responseData.error.includes('Session has expired') || responseData.error.includes('access token')) {
+          throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
+        }
+        throw new Error('Error de WhatsApp: ' + responseData.error);
       }
 
       console.log('Manual notification sent successfully:', responseData);

@@ -118,7 +118,21 @@ export function useChatMessages() {
 
         if (functionError) {
           console.error('Function error:', functionError);
+          
+          // Detectar si es un error de token expirado
+          if (functionError.message && functionError.message.includes('Session has expired')) {
+            throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
+          }
+          
           throw new Error('Error al enviar mensaje por WhatsApp: ' + functionError.message);
+        }
+
+        // Verificar si la respuesta indica un error de token
+        if (responseData && !responseData.success && responseData.error) {
+          if (responseData.error.includes('Session has expired') || responseData.error.includes('access token')) {
+            throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
+          }
+          throw new Error('Error de WhatsApp: ' + responseData.error);
         }
 
         console.log('WhatsApp notification sent successfully:', responseData);
@@ -154,7 +168,9 @@ export function useChatMessages() {
       let errorMessage = "No se pudo enviar el mensaje";
       
       if (error instanceof Error) {
-        if (error.message.includes('row-level security policy')) {
+        if (error.message.includes('Token de WhatsApp expirado')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('row-level security policy')) {
           errorMessage = "Error de permisos para subir imágenes. Intente nuevamente.";
         } else if (error.message.includes('Bucket not found')) {
           errorMessage = "Error de configuración de almacenamiento. Reintentando...";

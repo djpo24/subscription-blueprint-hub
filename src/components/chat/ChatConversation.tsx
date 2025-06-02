@@ -5,7 +5,9 @@ import { Phone } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
+import { TokenExpirationAlert } from '@/components/TokenExpirationAlert';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useState } from 'react';
 
 interface ChatMessage {
   id: string;
@@ -38,6 +40,7 @@ export function ChatConversation({
   profileImageUrl
 }: ChatConversationProps) {
   const isMobile = useIsMobile();
+  const [showTokenAlert, setShowTokenAlert] = useState(false);
 
   const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return 'Sin teléfono';
@@ -45,6 +48,19 @@ export function ChatConversation({
       return `+${phoneNumber.slice(0, 2)} ${phoneNumber.slice(2, 5)} ${phoneNumber.slice(5, 8)} ${phoneNumber.slice(8)}`;
     }
     return `+${phoneNumber}`;
+  };
+
+  const handleSendMessage = async (message: string, image?: File) => {
+    try {
+      await onSendMessage(message, image);
+      setShowTokenAlert(false); // Ocultar alerta si el envío es exitoso
+    } catch (error: any) {
+      // Mostrar alerta si hay error de token expirado
+      if (error.message && error.message.includes('Token de WhatsApp expirado')) {
+        setShowTokenAlert(true);
+      }
+      throw error; // Re-lanzar el error para que lo maneje el componente padre
+    }
   };
 
   const hasMessages = messages.length > 0;
@@ -77,6 +93,13 @@ export function ChatConversation({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Alerta de token expirado */}
+      {showTokenAlert && (
+        <div className="p-4 border-b border-gray-200">
+          <TokenExpirationAlert />
         </div>
       )}
 
@@ -113,7 +136,7 @@ export function ChatConversation({
       {/* Input - Solo mostrar si hay teléfono */}
       {hasPhone && (
         <ChatInput
-          onSendMessage={onSendMessage}
+          onSendMessage={handleSendMessage}
           isLoading={isLoading}
         />
       )}

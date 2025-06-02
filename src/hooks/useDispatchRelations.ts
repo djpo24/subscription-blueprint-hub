@@ -33,11 +33,23 @@ interface PackageInDispatch {
   } | null;
 }
 
+// Helper function to format date consistently avoiding timezone issues
+const formatDateForQuery = (date: Date): string => {
+  // Use local date components to avoid timezone conversion
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function useDispatchRelations(date?: Date) {
   return useQuery({
-    queryKey: ['dispatch-relations', date ? format(date, 'yyyy-MM-dd') : 'all'],
+    queryKey: ['dispatch-relations', date ? formatDateForQuery(date) : 'all'],
     queryFn: async (): Promise<DispatchRelation[]> => {
       console.log('🔍 Fecha recibida en useDispatchRelations:', date);
+      console.log('🔍 Fecha original (getDate):', date ? date.getDate() : 'undefined');
+      console.log('🔍 Fecha original (getMonth):', date ? date.getMonth() + 1 : 'undefined');
+      console.log('🔍 Fecha original (getFullYear):', date ? date.getFullYear() : 'undefined');
       
       let query = supabase
         .from('dispatch_relations')
@@ -45,8 +57,8 @@ export function useDispatchRelations(date?: Date) {
         .order('created_at', { ascending: false });
 
       if (date) {
-        const formattedDate = format(date, 'yyyy-MM-dd');
-        console.log('📅 Fecha formateada para consulta:', formattedDate);
+        const formattedDate = formatDateForQuery(date);
+        console.log('📅 Fecha formateada para consulta (nueva función):', formattedDate);
         query = query.eq('dispatch_date', formattedDate);
       }
 
@@ -133,11 +145,11 @@ export function useCreateDispatch() {
         { weight: 0, freight: 0, amount_to_collect: 0 }
       );
 
-      // Crear el despacho
+      // Crear el despacho usando la nueva función de formateo
       const { data: dispatch, error: dispatchError } = await supabase
         .from('dispatch_relations')
         .insert({
-          dispatch_date: format(date, 'yyyy-MM-dd'),
+          dispatch_date: formatDateForQuery(date),
           total_packages: packageIds.length,
           total_weight: totals.weight,
           total_freight: totals.freight,

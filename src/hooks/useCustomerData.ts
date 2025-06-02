@@ -8,6 +8,7 @@ interface Customer {
   phone: string;
   whatsapp_number?: string;
   email: string;
+  profile_image_url?: string;
 }
 
 export function useCustomerData(customerId: string | null) {
@@ -18,7 +19,7 @@ export function useCustomerData(customerId: string | null) {
       
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, phone, whatsapp_number, email')
+        .select('id, name, phone, whatsapp_number, email, profile_image_url')
         .eq('id', customerId)
         .single();
       

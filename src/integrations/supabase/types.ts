@@ -18,6 +18,7 @@ export type Database = {
           id_number: string | null
           name: string
           phone: string
+          profile_image_url: string | null
           updated_at: string
           whatsapp_number: string | null
         }
@@ -29,6 +30,7 @@ export type Database = {
           id_number?: string | null
           name: string
           phone: string
+          profile_image_url?: string | null
           updated_at?: string
           whatsapp_number?: string | null
         }
@@ -40,6 +42,7 @@ export type Database = {
           id_number?: string | null
           name?: string
           phone?: string
+          profile_image_url?: string | null
           updated_at?: string
           whatsapp_number?: string | null
         }

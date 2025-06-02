@@ -95,6 +95,7 @@ export function ChatDialog({
                 isRegistered={true}
                 onSendMessage={handleSendMessageWrapper}
                 isLoading={isManualSending}
+                profileImageUrl={customer?.profile_image_url}
               />
             </div>
           )}

@@ -1,9 +1,10 @@
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { CustomerAvatar } from './CustomerAvatar';
 
 interface ChatMessage {
   id: string;
@@ -22,6 +23,7 @@ interface ChatConversationProps {
   isRegistered: boolean;
   onSendMessage: (message: string, image?: File) => void;
   isLoading: boolean;
+  profileImageUrl?: string;
 }
 
 export function ChatConversation({ 
@@ -31,7 +33,8 @@ export function ChatConversation({
   messages, 
   isRegistered, 
   onSendMessage,
-  isLoading 
+  isLoading,
+  profileImageUrl
 }: ChatConversationProps) {
   const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return 'Sin teléfono';
@@ -49,9 +52,11 @@ export function ChatConversation({
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-full">
-            <User className="h-5 w-5 text-blue-600" />
-          </div>
+          <CustomerAvatar 
+            customerName={customerName}
+            profileImageUrl={profileImageUrl}
+            size="md"
+          />
           <div className="flex-1">
             <h3 className="font-semibold">
               {customerName || 'Cliente'}

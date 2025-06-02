@@ -14,14 +14,14 @@ export function DirectWhatsAppTest() {
     setIsSending(true);
     
     try {
-      console.log('Iniciando prueba directa de WhatsApp...');
+      console.log('Enviando mensaje directo de WhatsApp...');
       
       // First create a notification log entry
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
         .insert({
           notification_type: 'test',
-          message: 'Hola! Este es un mensaje de prueba del sistema de Envíos Ojitos.',
+          message: 'hola didi',
           status: 'pending'
         })
         .select()
@@ -39,7 +39,7 @@ export function DirectWhatsAppTest() {
         body: {
           notificationId: notificationData.id,
           phone: '+573014940399',
-          message: 'Hola! Este es un mensaje de prueba del sistema de Envíos Ojitos.'
+          message: 'hola didi'
         }
       });
 
@@ -53,7 +53,7 @@ export function DirectWhatsAppTest() {
       if (response.data?.success) {
         toast({
           title: "✅ Mensaje enviado exitosamente",
-          description: `WhatsApp ID: ${response.data.whatsappMessageId || 'N/A'}`,
+          description: `Mensaje "hola didi" enviado a +573014940399`,
         });
         console.log('Mensaje enviado exitosamente:', response.data);
       } else {
@@ -82,10 +82,10 @@ export function DirectWhatsAppTest() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-blue-800">
           <MessageCircle className="h-5 w-5" />
-          Prueba Directa WhatsApp
+          Enviar Mensaje a Didi
         </CardTitle>
         <CardDescription className="text-blue-600">
-          Enviar mensaje de prueba a +573014940399
+          Enviar "hola didi" a +573014940399
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -93,7 +93,7 @@ export function DirectWhatsAppTest() {
           <div className="p-3 bg-white rounded border border-blue-200">
             <p className="text-sm text-gray-700">
               <strong>Número:</strong> +573014940399<br/>
-              <strong>Mensaje:</strong> "Hola! Este es un mensaje de prueba del sistema de Envíos Ojitos."
+              <strong>Mensaje:</strong> "hola didi"
             </p>
           </div>
           
@@ -102,7 +102,7 @@ export function DirectWhatsAppTest() {
             disabled={isSending}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            {isSending ? 'Enviando mensaje...' : 'Enviar Mensaje de Prueba'}
+            {isSending ? 'Enviando mensaje...' : 'Enviar "hola didi" por WhatsApp'}
           </Button>
         </div>
       </CardContent>

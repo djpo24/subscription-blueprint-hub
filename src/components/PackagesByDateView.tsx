@@ -149,37 +149,14 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                             )}
                           </div>
 
-                          {/* Información de flete, peso y valor a cobrar */}
-                          <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg">
-                            {/* Flete */}
-                            <div className="flex items-center gap-2">
-                              <Truck className="h-4 w-4 text-gray-500" />
-                              <div className="text-xs">
-                                <div className="text-gray-500">Flete</div>
-                                <div className="font-medium">
-                                  ${pkg.freight || '0'} COP
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Peso */}
-                            <div className="flex items-center gap-2">
+                          {/* Información de peso - solo mostramos peso ya que existe en la BD */}
+                          <div className="flex justify-center">
+                            <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
                               <Weight className="h-4 w-4 text-gray-500" />
-                              <div className="text-xs">
+                              <div className="text-sm">
                                 <div className="text-gray-500">Peso</div>
                                 <div className="font-medium">
                                   {pkg.weight || '0'} kg
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Valor a cobrar - RESALTADO */}
-                            <div className="flex items-center gap-2 bg-green-100 p-2 rounded border-l-4 border-l-green-500">
-                              <DollarSign className="h-4 w-4 text-green-600" />
-                              <div className="text-xs">
-                                <div className="text-green-600 font-medium">A Cobrar</div>
-                                <div className="font-bold text-green-700 text-sm">
-                                  ${pkg.amount_to_collect || '0'} COP
                                 </div>
                               </div>
                             </div>

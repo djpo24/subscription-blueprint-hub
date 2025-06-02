@@ -48,8 +48,8 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
     onUpdate();
   };
 
-  const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'warehouse';
-  const canMoveToWarehouse = pkg.status !== 'delivered' && pkg.status !== 'warehouse';
+  const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'bodega';
+  const canMoveToWarehouse = pkg.status !== 'delivered' && pkg.status !== 'bodega';
   const canEdit = pkg.status !== 'delivered';
 
   return (

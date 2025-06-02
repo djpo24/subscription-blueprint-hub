@@ -8,16 +8,27 @@ interface PackageStatusBadgeProps {
 export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "recibido":
+        return "bg-blue-100 text-blue-800";
+      case "bodega":
+        return "bg-gray-100 text-gray-800";
+      case "procesado":
+        return "bg-orange-100 text-orange-800";
+      case "transito":
+        return "bg-purple-100 text-purple-800";
+      case "en_destino":
+        return "bg-yellow-100 text-yellow-800";
       case "delivered":
         return "bg-green-100 text-green-800";
+      // Estados legacy para compatibilidad
       case "in_transit":
-        return "bg-blue-100 text-blue-800";
+        return "bg-purple-100 text-purple-800";
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-blue-100 text-blue-800";
       case "delayed":
         return "bg-red-100 text-red-800";
       case "arrived":
-        return "bg-purple-100 text-purple-800";
+        return "bg-yellow-100 text-yellow-800";
       case "warehouse":
         return "bg-gray-100 text-gray-800";
       default:
@@ -27,8 +38,19 @@ export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case "recibido":
+        return "Recibido";
+      case "bodega":
+        return "Bodega";
+      case "procesado":
+        return "Procesado";
+      case "transito":
+        return "Tránsito";
+      case "en_destino":
+        return "En Destino";
       case "delivered":
         return "Entregado";
+      // Estados legacy para compatibilidad
       case "in_transit":
         return "En Tránsito";
       case "pending":

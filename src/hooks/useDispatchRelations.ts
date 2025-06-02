@@ -173,11 +173,43 @@ export function useCreateDispatch() {
 
       if (relationError) throw relationError;
 
+      // NUEVO: Actualizar el estado de las encomiendas a "procesado"
+      const { error: updateError } = await supabase
+        .from('packages')
+        .update({ 
+          status: 'procesado',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', packageIds);
+
+      if (updateError) {
+        console.error('Error updating package status:', updateError);
+        // No lanzamos el error para no fallar todo el proceso
+      }
+
+      // Crear eventos de tracking para cada paquete
+      const trackingEvents = packageIds.map(packageId => ({
+        package_id: packageId,
+        event_type: 'processed',
+        description: 'Encomienda procesada para despacho',
+        location: 'Centro de procesamiento'
+      }));
+
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert(trackingEvents);
+
+      if (trackingError) {
+        console.error('Error creating tracking events:', trackingError);
+        // No lanzamos el error para no fallar todo el proceso
+      }
+
       return dispatch;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
     }
   });
 }

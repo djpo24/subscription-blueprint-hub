@@ -26,7 +26,7 @@ export function usePackageActions() {
           flight_number: tripData.flight_number,
           origin: tripData.origin,
           destination: tripData.destination,
-          status: 'pending', // Reset status to pending when rescheduled
+          status: 'recibido', // Usar el nuevo estado
           updated_at: new Date().toISOString()
         })
         .eq('id', packageId);
@@ -68,7 +68,7 @@ export function usePackageActions() {
       const { error: updateError } = await supabase
         .from('packages')
         .update({
-          status: 'warehouse',
+          status: 'bodega', // Usar el nuevo estado
           trip_id: null,
           flight_number: null,
           updated_at: new Date().toISOString()

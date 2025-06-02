@@ -24,7 +24,7 @@ export function TripsTab({
   onBack,
 }: TripsTabProps) {
   return (
-    <TabsContent value="trips" className="space-y-8">
+    <TabsContent value="trips" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       {viewingPackagesByDate ? (
         <PackagesByDateView 
           selectedDate={viewingPackagesByDate}

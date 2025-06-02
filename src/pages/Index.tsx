@@ -88,14 +88,14 @@ export default function Index() {
     <div className="min-h-screen bg-gray-50">
       <Header searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <MainTabs 
           activeTab={activeTab} 
           onTabChange={setActiveTab}
           unreadCount={unreadCount}
         />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-8">
           <DashboardTab
             packageStats={packageStats}
             customersCount={customersCount}

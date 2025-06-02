@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ProductDetailsInput } from './package-form/ProductDetailsInput';
-import { FreightAndWeightFields } from './package-form/FreightAndWeightFields';
-import { AmountToCollectSection } from './package-form/AmountToCollectSection';
-import { OptionalDescriptionField } from './package-form/OptionalDescriptionField';
+import { usePackageActions } from '@/hooks/usePackageActions';
+import { Trash2, Warehouse } from 'lucide-react';
 
 interface Package {
   id: string;
@@ -36,60 +38,26 @@ export function EditPackageForm({
   onCancel
 }: EditPackageFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showWarehouseDialog, setShowWarehouseDialog] = useState(false);
   const { toast } = useToast();
+  const { moveToWarehouse } = usePackageActions();
   
   const [formData, setFormData] = useState({
-    description: '',
-    weight: '',
-    freight: '',
-    freightFormatted: '',
-    amountToCollect: '',
-    amountToCollectFormatted: '',
-    currency: 'COP',
-    details: ['']
+    description: pkg.description || '',
+    weight: pkg.weight?.toString() || '',
+    freight: pkg.freight?.toString() || '',
+    amount_to_collect: pkg.amount_to_collect?.toString() || ''
   });
 
-  // Initialize form data with package information
   useEffect(() => {
-    if (pkg) {
-      // Parse description to extract optional description and product details
-      const description = pkg.description || '';
-      let optionalDescription = '';
-      let productDetails = [''];
-
-      // Try to split description if it contains " - " separator
-      if (description.includes(' - ')) {
-        const parts = description.split(' - ');
-        optionalDescription = parts[0];
-        productDetails = parts[1].split(', ').filter(detail => detail.trim() !== '');
-      } else {
-        // If no separator, treat entire description as product details
-        productDetails = description.split(', ').filter(detail => detail.trim() !== '');
-      }
-
-      // Ensure at least one empty detail for adding new ones
-      if (productDetails.length === 0) {
-        productDetails = [''];
-      } else if (productDetails[productDetails.length - 1] !== '') {
-        productDetails.push('');
-      }
-
-      setFormData({
-        description: optionalDescription,
-        weight: pkg.weight ? pkg.weight.toString() : '',
-        freight: pkg.freight ? pkg.freight.toString() : '',
-        freightFormatted: pkg.freight ? pkg.freight.toString() : '',
-        amountToCollect: pkg.amount_to_collect ? pkg.amount_to_collect.toString() : '',
-        amountToCollectFormatted: pkg.amount_to_collect ? pkg.amount_to_collect.toString() : '',
-        currency: 'COP',
-        details: productDetails
-      });
-    }
+    setFormData({
+      description: pkg.description || '',
+      weight: pkg.weight?.toString() || '',
+      freight: pkg.freight?.toString() || '',
+      amount_to_collect: pkg.amount_to_collect?.toString() || ''
+    });
   }, [pkg]);
-
-  const getFilledDetails = () => {
-    return formData.details.filter(detail => detail.trim() !== '');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,16 +66,6 @@ export function EditPackageForm({
       toast({
         title: "Error",
         description: "Debe seleccionar un cliente y un viaje",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const filledDetails = getFilledDetails();
-    if (filledDetails.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debe ingresar al menos un detalle del producto",
         variant: "destructive"
       });
       return;
@@ -125,25 +83,14 @@ export function EditPackageForm({
 
       if (tripError) throw tripError;
 
-      // Create package description from details and optional description
-      let finalDescription = filledDetails.join(', ');
-      if (formData.description.trim()) {
-        finalDescription = `${formData.description.trim()} - ${finalDescription}`;
-      }
-
-      console.log('Actualizando encomienda con valores:', {
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
-      });
-
       const { error } = await supabase
         .from('packages')
         .update({
           customer_id: customerId,
-          description: finalDescription,
+          description: formData.description,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           freight: formData.freight ? parseFloat(formData.freight) : 0,
-          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+          amount_to_collect: formData.amount_to_collect ? parseFloat(formData.amount_to_collect) : 0,
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,
@@ -154,7 +101,7 @@ export function EditPackageForm({
 
       if (error) throw error;
 
-      // Create tracking event for the update
+      // Create tracking event
       await supabase
         .from('tracking_events')
         .insert([{
@@ -166,7 +113,7 @@ export function EditPackageForm({
 
       toast({
         title: "Encomienda actualizada",
-        description: `La encomienda ${pkg.tracking_number} ha sido actualizada exitosamente`
+        description: "La información ha sido actualizada correctamente"
       });
 
       onSuccess();
@@ -182,49 +129,177 @@ export function EditPackageForm({
     }
   };
 
+  const handleDelete = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Delete tracking events first
+      await supabase
+        .from('tracking_events')
+        .delete()
+        .eq('package_id', pkg.id);
+
+      // Delete the package
+      const { error } = await supabase
+        .from('packages')
+        .delete()
+        .eq('id', pkg.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Encomienda eliminada",
+        description: "La encomienda ha sido eliminada correctamente"
+      });
+
+      setShowDeleteDialog(false);
+      onSuccess();
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la encomienda",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMoveToWarehouse = () => {
+    moveToWarehouse(pkg.id);
+    setShowWarehouseDialog(false);
+    onSuccess();
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <ProductDetailsInput
-        details={formData.details}
-        onChange={(details) => setFormData(prev => ({ ...prev, details }))}
-      />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Descripción de la encomienda"
+              required
+            />
+          </div>
 
-      <FreightAndWeightFields
-        freight={formData.freight}
-        freightFormatted={formData.freightFormatted}
-        weight={formData.weight}
-        onFreightChange={(freight, freightFormatted) =>
-          setFormData(prev => ({ ...prev, freight, freightFormatted }))
-        }
-        onWeightChange={(weight) =>
-          setFormData(prev => ({ ...prev, weight }))
-        }
-      />
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="weight">Peso (kg)</Label>
+              <Input
+                id="weight"
+                type="number"
+                step="0.1"
+                value={formData.weight}
+                onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
+                placeholder="0.0"
+              />
+            </div>
 
-      <AmountToCollectSection
-        currency={formData.currency}
-        amountToCollect={formData.amountToCollect}
-        amountToCollectFormatted={formData.amountToCollectFormatted}
-        onCurrencyChange={(currency) =>
-          setFormData(prev => ({ ...prev, currency }))
-        }
-        onAmountChange={(amountToCollect, amountToCollectFormatted) =>
-          setFormData(prev => ({ ...prev, amountToCollect, amountToCollectFormatted }))
-        }
-      />
+            <div>
+              <Label htmlFor="freight">Flete</Label>
+              <Input
+                id="freight"
+                type="number"
+                step="0.01"
+                value={formData.freight}
+                onChange={(e) => setFormData(prev => ({ ...prev, freight: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
 
-      <OptionalDescriptionField
-        description={formData.description}
-        onChange={(description) =>
-          setFormData(prev => ({ ...prev, description }))
-        }
-      />
+            <div>
+              <Label htmlFor="amount_to_collect">Valor a Cobrar</Label>
+              <Input
+                id="amount_to_collect"
+                type="number"
+                step="0.01"
+                value={formData.amount_to_collect}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount_to_collect: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
 
-      <div className="w-full">
-        <Button type="submit" disabled={isLoading} className="w-full">
-          {isLoading ? 'Actualizando...' : 'Actualizar Encomienda'}
-        </Button>
-      </div>
-    </form>
+        <div className="flex flex-col gap-3">
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? 'Actualizando...' : 'Actualizar Encomienda'}
+          </Button>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowWarehouseDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Warehouse className="h-4 w-4" />
+              Mover a Bodega
+            </Button>
+            
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </Button>
+          </div>
+          
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full">
+            Cancelar
+          </Button>
+        </div>
+      </form>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente la encomienda {pkg.tracking_number}. 
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Warehouse Confirmation Dialog */}
+      <AlertDialog open={showWarehouseDialog} onOpenChange={setShowWarehouseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Mover a bodega?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción moverá la encomienda {pkg.tracking_number} a bodega y 
+              la desasignará del viaje actual.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMoveToWarehouse}>
+              Mover a Bodega
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

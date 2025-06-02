@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -8,6 +9,7 @@ import { ArrowLeft, Package, Plus, Calendar, Weight, DollarSign, Truck } from 'l
 import { usePackagesByDate } from '@/hooks/usePackagesByDate';
 import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
+import { EditPackageDialog } from './EditPackageDialog';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -17,11 +19,24 @@ interface PackagesByDateViewProps {
 
 export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: PackagesByDateViewProps) {
   const [showCreateDispatch, setShowCreateDispatch] = useState(false);
-  const { data: packagesByTrip = [], isLoading } = usePackagesByDate(selectedDate);
+  const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const { data: packagesByTrip = [], isLoading, refetch } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
 
   const formatDate = (date: Date) => {
     return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+  };
+
+  const handlePackageClick = (pkg: any) => {
+    setSelectedPackage(pkg);
+    setEditPackageDialogOpen(true);
+  };
+
+  const handleEditPackageSuccess = () => {
+    setEditPackageDialogOpen(false);
+    setSelectedPackage(null);
+    refetch();
   };
 
   if (isLoading) {
@@ -174,7 +189,8 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                         return (
                           <div
                             key={pkg.id}
-                            className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                            className="bg-white border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
+                            onClick={() => handlePackageClick(pkg)}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="font-medium text-sm">
@@ -257,9 +273,16 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
       <CreateDispatchDialog
         open={showCreateDispatch}
         onOpenChange={setShowCreateDispatch}
-        tripDate={selectedDate} // Pasar como tripDate para referencia
+        tripDate={selectedDate}
         packages={allPackages}
         onSuccess={handleCreateDispatchSuccess}
+      />
+
+      <EditPackageDialog
+        open={editPackageDialogOpen}
+        onOpenChange={setEditPackageDialogOpen}
+        package={selectedPackage}
+        onSuccess={handleEditPackageSuccess}
       />
     </>
   );

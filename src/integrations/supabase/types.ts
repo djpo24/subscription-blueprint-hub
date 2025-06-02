@@ -930,16 +930,70 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      collection_stats: {
+        Row: {
+          delivered_packages: number | null
+          overdue_30_days: number | null
+          overdue_60_days: number | null
+          paid_packages: number | null
+          pending_delivery: number | null
+          pending_payment: number | null
+          total_amount_to_collect: number | null
+          total_collected: number | null
+          total_packages: number | null
+          total_pending: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_debt_days: {
         Args: { debt_start_date: string }
         Returns: number
       }
+      deliver_package_with_payment: {
+        Args: {
+          p_package_id: string
+          p_delivered_by: string
+          p_payment_amount?: number
+          p_payment_method?: string
+        }
+        Returns: undefined
+      }
       generate_batch_label: {
         Args: { p_trip_id: string; p_batch_number: string }
         Returns: string
+      }
+      get_collection_packages: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_status_filter?: string
+          p_payment_status_filter?: string
+          p_traveler_filter?: string
+          p_overdue_days?: number
+        }
+        Returns: {
+          package_id: string
+          tracking_number: string
+          customer_name: string
+          customer_phone: string
+          destination: string
+          origin: string
+          traveler_name: string
+          package_status: string
+          amount_to_collect: number
+          freight: number
+          delivered_at: string
+          debt_id: string
+          debt_status: string
+          debt_type: string
+          debt_start_date: string
+          pending_amount: number
+          paid_amount: number
+          debt_days: number
+          created_at: string
+        }[]
       }
       get_incoming_messages_with_customers: {
         Args: Record<PropertyKey, never>
@@ -976,6 +1030,20 @@ export type Database = {
       }
       process_arrival_notifications: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_collection_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      register_payment: {
+        Args: {
+          p_package_id: string
+          p_amount: number
+          p_payment_method?: string
+          p_notes?: string
+          p_created_by?: string
+        }
         Returns: undefined
       }
       update_batch_totals: {

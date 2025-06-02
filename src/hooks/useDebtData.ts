@@ -6,91 +6,61 @@ export function useDebtData() {
   return useQuery({
     queryKey: ['debt-data'],
     queryFn: async () => {
-      // Fetch package debts with customer and package information
-      const { data: debts, error: debtsError } = await supabase
-        .from('package_debts')
-        .select(`
-          *,
-          packages (
-            tracking_number,
-            destination,
-            origin,
-            trip_id,
-            customers (
-              name,
-              phone,
-              email
-            ),
-            trips (
-              traveler_id,
-              travelers (
-                first_name,
-                last_name
-              )
-            )
-          )
-        `)
-        .order('debt_start_date', { ascending: false });
+      // Fetch collection packages using the new database function
+      const { data: debts, error: debtsError } = await supabase.rpc('get_collection_packages', {
+        p_limit: 1000,
+        p_offset: 0
+      });
 
       if (debtsError) throw debtsError;
 
-      // Fetch payment statistics by traveler
-      const { data: travelerStats, error: statsError } = await supabase
-        .from('packages')
-        .select(`
-          trip_id,
-          amount_to_collect,
-          freight,
-          status,
-          trips (
-            traveler_id,
-            travelers (
-              first_name,
-              last_name
-            )
-          )
-        `)
-        .not('trip_id', 'is', null);
+      // Fetch collection statistics
+      const { data: stats, error: statsError } = await supabase
+        .from('collection_stats')
+        .select('*')
+        .single();
 
       if (statsError) throw statsError;
 
       // Process traveler statistics
-      const travelerSummary = travelerStats.reduce((acc, pkg) => {
-        const travelerId = pkg.trips?.traveler_id;
-        if (!travelerId) return acc;
-
-        const travelerName = `${pkg.trips.travelers?.first_name} ${pkg.trips.travelers?.last_name}`;
+      const travelerSummary = debts.reduce((acc: Record<string, any>, debt: any) => {
+        const travelerId = debt.traveler_name || 'Sin asignar';
         
         if (!acc[travelerId]) {
           acc[travelerId] = {
             id: travelerId,
-            name: travelerName,
+            name: debt.traveler_name || 'Sin asignar',
             totalPackages: 0,
             totalAmountToCollect: 0,
             totalFreight: 0,
             deliveredPackages: 0,
             pendingPackages: 0,
-            revenue: 0
+            revenue: 0,
+            totalCollected: 0,
+            pendingAmount: 0
           };
         }
 
         acc[travelerId].totalPackages += 1;
-        acc[travelerId].totalAmountToCollect += Number(pkg.amount_to_collect || 0);
-        acc[travelerId].totalFreight += Number(pkg.freight || 0);
+        acc[travelerId].totalAmountToCollect += Number(debt.amount_to_collect || 0);
+        acc[travelerId].totalFreight += Number(debt.freight || 0);
+        acc[travelerId].totalCollected += Number(debt.paid_amount || 0);
+        acc[travelerId].pendingAmount += Number(debt.pending_amount || 0);
         
-        if (pkg.status === 'delivered') {
+        if (debt.package_status === 'delivered') {
           acc[travelerId].deliveredPackages += 1;
-          acc[travelerId].revenue += Number(pkg.freight || 0);
+          acc[travelerId].revenue += Number(debt.freight || 0);
         } else {
           acc[travelerId].pendingPackages += 1;
         }
 
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
 
       return {
         debts: debts || [],
-        travelerStats: Object.values(travelerSummary)
+        travelerStats: Object.values(travelerSummary),
+        collectionStats: stats || {}
       };
     }
   });

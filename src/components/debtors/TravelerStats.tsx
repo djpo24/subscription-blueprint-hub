@@ -24,6 +24,17 @@ export function TravelerStats({ travelerStats }: TravelerStatsProps) {
     return `${efficiency.toFixed(1)}%`;
   };
 
+  const getCollectionEfficiency = (collected: number, toCollect: number) => {
+    return toCollect > 0 ? (collected / toCollect) * 100 : 0;
+  };
+
+  const getCollectionColor = (collected: number, toCollect: number) => {
+    const efficiency = getCollectionEfficiency(collected, toCollect);
+    if (efficiency >= 90) return 'text-green-600';
+    if (efficiency >= 70) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -37,41 +48,58 @@ export function TravelerStats({ travelerStats }: TravelerStatsProps) {
               <TableHead>Total Paquetes</TableHead>
               <TableHead>Entregados</TableHead>
               <TableHead>Pendientes</TableHead>
-              <TableHead>Eficiencia</TableHead>
+              <TableHead>Eficiencia Entrega</TableHead>
               <TableHead>Por Cobrar</TableHead>
-              <TableHead>Ingresos Flete</TableHead>
+              <TableHead>Cobrado</TableHead>
+              <TableHead>Pendiente</TableHead>
+              <TableHead>Eficiencia Cobranza</TableHead>
               <TableHead>Revenue</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {travelerStats.map((traveler) => (
-              <TableRow key={traveler.id}>
-                <TableCell className="font-medium">
-                  {traveler.name}
-                </TableCell>
-                <TableCell>{traveler.totalPackages}</TableCell>
-                <TableCell className="text-green-600">
-                  {traveler.deliveredPackages}
-                </TableCell>
-                <TableCell className="text-orange-600">
-                  {traveler.pendingPackages}
-                </TableCell>
-                <TableCell>
-                  <Badge className={getEfficiencyColor(traveler.deliveredPackages, traveler.totalPackages)}>
-                    {getEfficiencyLabel(traveler.deliveredPackages, traveler.totalPackages)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(traveler.totalAmountToCollect)}
-                </TableCell>
-                <TableCell>
-                  {formatCurrency(traveler.totalFreight)}
-                </TableCell>
-                <TableCell className="font-medium text-green-600">
-                  {formatCurrency(traveler.revenue)}
-                </TableCell>
-              </TableRow>
-            ))}
+            {travelerStats.map((traveler) => {
+              const collectionEfficiency = getCollectionEfficiency(
+                traveler.totalCollected, 
+                traveler.totalAmountToCollect
+              );
+              
+              return (
+                <TableRow key={traveler.id}>
+                  <TableCell className="font-medium">
+                    {traveler.name}
+                  </TableCell>
+                  <TableCell>{traveler.totalPackages}</TableCell>
+                  <TableCell className="text-green-600">
+                    {traveler.deliveredPackages}
+                  </TableCell>
+                  <TableCell className="text-orange-600">
+                    {traveler.pendingPackages}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getEfficiencyColor(traveler.deliveredPackages, traveler.totalPackages)}>
+                      {getEfficiencyLabel(traveler.deliveredPackages, traveler.totalPackages)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {formatCurrency(traveler.totalAmountToCollect)}
+                  </TableCell>
+                  <TableCell className="text-green-600">
+                    {formatCurrency(traveler.totalCollected)}
+                  </TableCell>
+                  <TableCell className="text-red-600">
+                    {formatCurrency(traveler.pendingAmount)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`font-medium ${getCollectionColor(traveler.totalCollected, traveler.totalAmountToCollect)}`}>
+                      {collectionEfficiency.toFixed(1)}%
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium text-green-600">
+                    {formatCurrency(traveler.revenue)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

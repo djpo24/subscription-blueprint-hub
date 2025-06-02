@@ -1,38 +1,38 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Clock, TrendingDown, TrendingUp } from 'lucide-react';
+import { Calculator, Clock, TrendingDown, TrendingUp, Package } from 'lucide-react';
 
 interface DebtSummaryProps {
-  debts: any[];
+  collectionStats: any;
 }
 
-export function DebtSummary({ debts }: DebtSummaryProps) {
-  const totalDebt = debts.reduce((sum, debt) => sum + Number(debt.pending_amount || 0), 0);
-  const totalPaid = debts.reduce((sum, debt) => sum + Number(debt.paid_amount || 0), 0);
-  const activeDebts = debts.filter(debt => debt.status !== 'paid').length;
-  const overdueDays30 = debts.filter(debt => {
-    if (!debt.debt_start_date) return false;
-    const daysDiff = Math.floor((new Date().getTime() - new Date(debt.debt_start_date).getTime()) / (1000 * 60 * 60 * 24));
-    return daysDiff > 30 && debt.status !== 'paid';
-  }).length;
-
+export function DebtSummary({ collectionStats }: DebtSummaryProps) {
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('es-CO')}`;
   };
+
+  const {
+    total_pending = 0,
+    total_collected = 0,
+    pending_payment = 0,
+    overdue_30_days = 0,
+    total_packages = 0,
+    delivered_packages = 0
+  } = collectionStats;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Deuda Total</CardTitle>
+          <CardTitle className="text-sm font-medium">Pendiente de Cobro</CardTitle>
           <TrendingDown className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-red-600">
-            {formatCurrency(totalDebt)}
+            {formatCurrency(total_pending)}
           </div>
           <p className="text-xs text-muted-foreground">
-            Pendiente por cobrar
+            {pending_payment} paquetes pendientes
           </p>
         </CardContent>
       </Card>
@@ -44,23 +44,25 @@ export function DebtSummary({ debts }: DebtSummaryProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {formatCurrency(totalPaid)}
+            {formatCurrency(total_collected)}
           </div>
           <p className="text-xs text-muted-foreground">
-            Recaudado a la fecha
+            Recaudado exitosamente
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Deudas Activas</CardTitle>
-          <Calculator className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-sm font-medium">Eficiencia Entrega</CardTitle>
+          <Package className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{activeDebts}</div>
+          <div className="text-2xl font-bold">
+            {total_packages > 0 ? Math.round((delivered_packages / total_packages) * 100) : 0}%
+          </div>
           <p className="text-xs text-muted-foreground">
-            Paquetes con deuda
+            {delivered_packages} de {total_packages} entregados
           </p>
         </CardContent>
       </Card>
@@ -71,9 +73,9 @@ export function DebtSummary({ debts }: DebtSummaryProps) {
           <Clock className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{overdueDays30}</div>
+          <div className="text-2xl font-bold text-orange-600">{overdue_30_days}</div>
           <p className="text-xs text-muted-foreground">
-            Requieren atención
+            Requieren atención urgente
           </p>
         </CardContent>
       </Card>

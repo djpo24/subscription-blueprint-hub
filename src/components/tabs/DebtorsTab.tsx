@@ -1,7 +1,5 @@
 
-import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent as InnerTabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DebtorsList } from '@/components/debtors/DebtorsList';
 import { TravelerStats } from '@/components/debtors/TravelerStats';
@@ -19,12 +17,12 @@ export function DebtorsTab() {
     );
   }
 
-  const { debts = [], travelerStats = [] } = data || {};
+  const { debts = [], travelerStats = [], collectionStats = {} } = data || {};
 
   return (
     <TabsContent value="debtors" className="space-y-8">
       <div className="space-y-6">
-        <DebtSummary debts={debts} />
+        <DebtSummary collectionStats={collectionStats} />
         
         <Tabs defaultValue="debtors" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

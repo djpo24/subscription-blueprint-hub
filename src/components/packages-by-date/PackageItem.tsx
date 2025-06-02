@@ -59,17 +59,17 @@ export function PackageItem({ package: pkg, onClick, onOpenChat }: PackageItemPr
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-lg">{pkg.customers?.name || 'Cliente no especificado'}</span>
+              <Badge className={getStatusColor(pkg.status)}>
+                {pkg.status}
+              </Badge>
+            </div>
             <span className="font-semibold text-lg">{pkg.tracking_number}</span>
-            <Badge className={getStatusColor(pkg.status)}>
-              {pkg.status}
-            </Badge>
           </div>
           
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-            <div>
-              <span className="font-medium">Cliente:</span> {pkg.customers?.name || 'N/A'}
-            </div>
             <div>
               <span className="font-medium">Peso:</span> {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
             </div>

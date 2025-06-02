@@ -13,6 +13,8 @@ interface Package {
   trip_id: string | null;
   description: string;
   weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
   status: string;
 }
 

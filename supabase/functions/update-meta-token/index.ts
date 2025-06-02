@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,27 +60,22 @@ serve(async (req) => {
 
     console.log('Token validated successfully');
 
-    // Update the secret in Supabase
-    const updateUrl = `https://api.supabase.com/v1/projects/bnuahsuehizwwcejqilm/secrets`;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Create a Supabase client with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const updateResponse = await fetch(updateUrl, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([
-        {
-          name: 'META_WHATSAPP_TOKEN',
-          value: token.trim(),
-        }
-      ]),
-    });
+    // Use Supabase vault to store the secret securely
+    const { error: vaultError } = await supabase
+      .from('vault.secrets')
+      .upsert({
+        name: 'META_WHATSAPP_TOKEN',
+        secret: token.trim(),
+      });
 
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('Failed to update secret:', errorText);
+    if (vaultError) {
+      console.error('Failed to update secret in vault:', vaultError);
       return new Response(
         JSON.stringify({ error: 'Error al actualizar el token en la configuración' }),
         { 
@@ -89,7 +85,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Token updated successfully in Supabase secrets');
+    console.log('Token updated successfully in Supabase vault');
 
     return new Response(
       JSON.stringify({ success: true, message: 'Token actualizado correctamente' }),

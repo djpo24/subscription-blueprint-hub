@@ -2,10 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Plane } from 'lucide-react';
+import { Plus, Plane, MapPin } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { FlightCard } from '../flight/FlightCard';
 import { FlightData } from '@/types/flight';
+import { useTripActions } from '@/hooks/useTripActions';
 
 interface TripWithFlightCardProps {
   trip: {
@@ -22,6 +23,8 @@ interface TripWithFlightCardProps {
 }
 
 export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }: TripWithFlightCardProps) {
+  const { markTripAsArrived, isMarkingAsArrived } = useTripActions();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -59,6 +62,14 @@ export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }:
     return format(parseISO(normalizedDate), 'dd/MM/yyyy');
   };
 
+  const handleMarkAsArrived = () => {
+    markTripAsArrived(trip.id);
+  };
+
+  // Show "Mark as Arrived" button only for trips that are in progress or have landed flights
+  const canMarkAsArrived = trip.status === 'in_progress' || 
+    (trip.flight_data?.has_landed && trip.status !== 'completed');
+
   return (
     <Card className="border-l-4 border-l-blue-500">
       <CardHeader>
@@ -78,14 +89,28 @@ export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }:
               )}
             </div>
           </div>
-          <Button 
-            size="sm" 
-            onClick={() => onAddPackage(trip.id)}
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-3 w-3" />
-            Agregar Encomienda
-          </Button>
+          <div className="flex gap-2">
+            {canMarkAsArrived && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={handleMarkAsArrived}
+                disabled={isMarkingAsArrived}
+                className="flex items-center gap-1"
+              >
+                <MapPin className="h-3 w-3" />
+                {isMarkingAsArrived ? 'Marcando...' : 'Marcar como Llegado'}
+              </Button>
+            )}
+            <Button 
+              size="sm" 
+              onClick={() => onAddPackage(trip.id)}
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-3 w-3" />
+              Agregar Encomienda
+            </Button>
+          </div>
         </div>
       </CardHeader>
       

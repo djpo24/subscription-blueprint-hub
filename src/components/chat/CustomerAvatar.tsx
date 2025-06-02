@@ -28,12 +28,16 @@ export function CustomerAvatar({
     return names[0][0].toUpperCase();
   };
 
+  console.log('CustomerAvatar - Name:', customerName, 'Image URL:', profileImageUrl);
+
   return (
     <Avatar className={sizeClasses[size]}>
       {profileImageUrl && (
         <AvatarImage 
           src={profileImageUrl} 
-          alt={customerName || 'Cliente'} 
+          alt={customerName || 'Cliente'}
+          onLoad={() => console.log('Avatar image loaded successfully')}
+          onError={() => console.log('Avatar image failed to load')}
         />
       )}
       <AvatarFallback className="bg-blue-100 text-blue-600">

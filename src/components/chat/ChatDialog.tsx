@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChatConversation } from './ChatConversation';
 import { useChatData } from '@/hooks/useChatData';
@@ -26,6 +25,14 @@ export function ChatDialog({
   const { customer, isLoading: customerLoading, getPhoneNumber } = useCustomerData(customerId);
   const { handleSendMessage, isManualSending } = useChatMessages();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+
+  // Debug log para ver la información del cliente
+  useEffect(() => {
+    if (customer) {
+      console.log('ChatDialog - Customer data:', customer);
+      console.log('ChatDialog - Profile image URL:', customer.profile_image_url);
+    }
+  }, [customer]);
 
   // Buscar el teléfono del cliente en las conversaciones existentes o usar el del customer
   useEffect(() => {

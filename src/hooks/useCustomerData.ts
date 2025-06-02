@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,6 +16,8 @@ export function useCustomerData(customerId: string | null) {
     queryFn: async (): Promise<Customer | null> => {
       if (!customerId) return null;
       
+      console.log('Fetching customer data for ID:', customerId);
+      
       const { data, error } = await supabase
         .from('customers')
         .select('id, name, phone, whatsapp_number, email, profile_image_url')
@@ -27,6 +28,9 @@ export function useCustomerData(customerId: string | null) {
         console.error('Error fetching customer:', error);
         return null;
       }
+      
+      console.log('Customer data fetched:', data);
+      console.log('Profile image URL:', data?.profile_image_url);
       
       // Después de obtener el cliente, vincular mensajes existentes si es necesario
       if (data) {

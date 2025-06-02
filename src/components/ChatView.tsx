@@ -3,10 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, User, Clock, Phone } from 'lucide-react';
+import { MessageSquare, User, Clock, Phone, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useState } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useToast } from '@/hooks/use-toast';
 
 interface IncomingMessage {
   id: string;
@@ -22,6 +27,10 @@ interface IncomingMessage {
 }
 
 export function ChatView() {
+  const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+  const { sendManualNotification, isManualSending } = useNotifications();
+
   const { data: incomingMessages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-messages'],
     queryFn: async (): Promise<IncomingMessage[]> => {
@@ -64,6 +73,83 @@ export function ChatView() {
     acc[phone].push(message);
     return acc;
   }, {} as Record<string, IncomingMessage[]>);
+
+  const handleReplyChange = (phone: string, message: string) => {
+    setReplyMessages(prev => ({
+      ...prev,
+      [phone]: message
+    }));
+  };
+
+  const handleSendReply = async (phone: string, customerId: string | null) => {
+    const message = replyMessages[phone];
+    if (!message?.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor escriba un mensaje antes de enviar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // If we don't have a customer ID, we need to create a temporary one or handle it differently
+      if (!customerId) {
+        // Create notification log entry without customer ID
+        const { data: notificationData, error: logError } = await supabase
+          .from('notification_log')
+          .insert({
+            package_id: null,
+            customer_id: null,
+            notification_type: 'manual_reply',
+            message: message,
+            status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (logError) throw logError;
+
+        // Send WhatsApp notification
+        const response = await supabase.functions.invoke('send-whatsapp-notification', {
+          body: {
+            notificationId: notificationData.id,
+            phone: phone,
+            message: message
+          }
+        });
+
+        if (response.error) throw response.error;
+      } else {
+        // Use the existing sendManualNotification for registered customers
+        await sendManualNotification({
+          customerId: customerId,
+          packageId: '', // We don't have a specific package for chat replies
+          message: message,
+          phone: phone
+        });
+      }
+
+      // Clear the reply input
+      setReplyMessages(prev => ({
+        ...prev,
+        [phone]: ''
+      }));
+
+      toast({
+        title: "Mensaje enviado",
+        description: "Su respuesta ha sido enviada por WhatsApp",
+      });
+
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getMessageTypeColor = (type: string) => {
     switch (type) {
@@ -158,7 +244,7 @@ export function ChatView() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <ScrollArea className="h-40">
                     <div className="space-y-3">
                       {messages.slice().reverse().map((message) => (
@@ -181,9 +267,29 @@ export function ChatView() {
                       ))}
                     </div>
                   </ScrollArea>
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="text-xs text-gray-500">
+                  
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="text-xs text-gray-500 mb-3">
                       {messages.length} mensaje{messages.length !== 1 ? 's' : ''}
+                    </div>
+                    
+                    {/* Reply Form */}
+                    <div className="space-y-3">
+                      <Textarea
+                        placeholder="Escribir respuesta..."
+                        value={replyMessages[phone] || ''}
+                        onChange={(e) => handleReplyChange(phone, e.target.value)}
+                        className="min-h-[80px] resize-none"
+                      />
+                      <Button
+                        onClick={() => handleSendReply(phone, latestMessage.customer_id)}
+                        disabled={isManualSending || !replyMessages[phone]?.trim()}
+                        className="w-full"
+                        size="sm"
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {isManualSending ? 'Enviando...' : 'Enviar Respuesta'}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

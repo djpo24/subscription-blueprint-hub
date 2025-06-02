@@ -22,7 +22,7 @@ export function useNotifications() {
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
         .insert({
-          package_id: packageId,
+          package_id: packageId || null,
           customer_id: customerId,
           notification_type: 'manual',
           message: message,

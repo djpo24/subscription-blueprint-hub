@@ -21,6 +21,8 @@ interface Package {
   customer_id: string;
   description: string;
   weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
   origin: string;
   destination: string;
   created_at: string;

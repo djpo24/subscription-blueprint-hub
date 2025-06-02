@@ -69,6 +69,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             <TripSelector
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
+              readOnly={true}
             />
           </div>
 

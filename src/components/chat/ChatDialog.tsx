@@ -22,7 +22,7 @@ export function ChatDialog({
   customerName,
   phone 
 }: ChatDialogProps) {
-  const { conversationsByPhone, isLoading: chatLoading } = useChatData();
+  const { conversationsByPhone, isLoading: chatLoading, refetch: refetchChats } = useChatData();
   const { customer, isLoading: customerLoading, getPhoneNumber } = useCustomerData(customerId);
   const { handleSendMessage, isManualSending } = useChatMessages();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
@@ -30,20 +30,40 @@ export function ChatDialog({
   // Buscar el teléfono del cliente en las conversaciones existentes o usar el del customer
   useEffect(() => {
     if (open && customerId) {
-      // Primero intentar encontrar una conversación existente
-      const phoneForCustomer = Object.keys(conversationsByPhone || {}).find(phone => 
-        conversationsByPhone[phone].customerId === customerId
-      );
+      const customerPhone = getPhoneNumber();
       
-      if (phoneForCustomer) {
-        setSelectedPhone(phoneForCustomer);
-      } else {
-        // Si no hay conversación existente, usar el teléfono del cliente
-        const customerPhone = getPhoneNumber();
-        setSelectedPhone(customerPhone);
+      if (customerPhone) {
+        // Normalizar el número para la búsqueda
+        const normalizedCustomerPhone = customerPhone.replace(/[\s\-\(\)\+]/g, '');
+        
+        // Buscar conversación existente por número de teléfono (comparación más flexible)
+        const phoneForCustomer = Object.keys(conversationsByPhone || {}).find(phone => {
+          const normalizedPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+          return normalizedPhone === normalizedCustomerPhone || 
+                 normalizedPhone.endsWith(normalizedCustomerPhone) || 
+                 normalizedCustomerPhone.endsWith(normalizedPhone);
+        });
+        
+        if (phoneForCustomer) {
+          console.log('Found existing conversation for phone:', phoneForCustomer);
+          setSelectedPhone(phoneForCustomer);
+        } else {
+          console.log('No existing conversation found, using customer phone:', customerPhone);
+          setSelectedPhone(customerPhone);
+        }
       }
     }
   }, [open, customerId, conversationsByPhone, getPhoneNumber]);
+
+  // Refrescar chats cuando se vinculan mensajes
+  useEffect(() => {
+    if (customer && open) {
+      // Pequeño delay para permitir que la vinculación se complete
+      setTimeout(() => {
+        refetchChats();
+      }, 1000);
+    }
+  }, [customer, open, refetchChats]);
 
   const handleSendMessageWrapper = async (message: string, image?: File) => {
     if (!customerId) return;
@@ -61,6 +81,9 @@ export function ChatDialog({
       message,
       image
     );
+    
+    // Refrescar chats después de enviar mensaje
+    refetchChats();
   };
 
   if (!open || !customerId) return null;

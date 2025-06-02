@@ -28,7 +28,7 @@ interface ChatMessage {
 export function useChatData() {
   const { sentMessages } = useSentMessages();
 
-  const { data: incomingMessages = [], isLoading } = useQuery({
+  const { data: incomingMessages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-messages'],
     queryFn: async (): Promise<IncomingMessage[]> => {
       const { data, error } = await supabase
@@ -74,7 +74,14 @@ export function useChatData() {
   // Crear conversaciones completas con mensajes enviados y recibidos
   const conversationsByPhone = Object.keys(messagesByPhone).reduce((acc, phone) => {
     const incoming = messagesByPhone[phone];
-    const outgoing = sentMessages.filter(msg => msg.phone === phone);
+    const outgoing = sentMessages.filter(msg => {
+      // Comparación más flexible de números de teléfono
+      const msgPhone = msg.phone.replace(/[\s\-\(\)\+]/g, '');
+      const incomingPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+      return msgPhone === incomingPhone || 
+             msgPhone.endsWith(incomingPhone) || 
+             incomingPhone.endsWith(msgPhone);
+    });
     
     const allMessages: ChatMessage[] = [
       ...incoming.map(msg => ({
@@ -121,6 +128,7 @@ export function useChatData() {
   return {
     chatList,
     conversationsByPhone,
-    isLoading
+    isLoading,
+    refetch
   };
 }

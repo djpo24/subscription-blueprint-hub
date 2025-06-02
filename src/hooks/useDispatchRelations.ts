@@ -37,6 +37,8 @@ export function useDispatchRelations(date?: Date) {
   return useQuery({
     queryKey: ['dispatch-relations', date ? format(date, 'yyyy-MM-dd') : 'all'],
     queryFn: async (): Promise<DispatchRelation[]> => {
+      console.log('🔍 Fecha recibida en useDispatchRelations:', date);
+      
       let query = supabase
         .from('dispatch_relations')
         .select('*')
@@ -44,12 +46,24 @@ export function useDispatchRelations(date?: Date) {
 
       if (date) {
         const formattedDate = format(date, 'yyyy-MM-dd');
+        console.log('📅 Fecha formateada para consulta:', formattedDate);
         query = query.eq('dispatch_date', formattedDate);
       }
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error en consulta de despachos:', error);
+        throw error;
+      }
+      
+      console.log('📦 Despachos encontrados:', data);
+      console.log('📊 Número de despachos:', data?.length || 0);
+      
+      if (data && data.length > 0) {
+        console.log('🗓️ Fechas de despacho en los datos:', data.map(d => d.dispatch_date));
+      }
+      
       return data || [];
     }
   });

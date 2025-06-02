@@ -5,6 +5,8 @@ import { usePackagesByDate } from '@/hooks/usePackagesByDate';
 import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
 import { EditPackageDialog } from './EditPackageDialog';
+import { CreateBatchDialog } from './batch/CreateBatchDialog';
+import { BatchManagementCardIntegrated } from './batch/BatchManagementCardIntegrated';
 import { PackagesByDateHeader } from './packages-by-date/PackagesByDateHeader';
 import { PackagesByDateSummary } from './packages-by-date/PackagesByDateSummary';
 import { TripPackageCard } from './packages-by-date/TripPackageCard';
@@ -20,6 +22,10 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
   const [showCreateDispatch, setShowCreateDispatch] = useState(false);
   const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [createBatchDialogOpen, setCreateBatchDialogOpen] = useState(false);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [viewingBatchDetails, setViewingBatchDetails] = useState<string | null>(null);
+  
   const { data: packagesByTrip = [], isLoading, refetch } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
 
@@ -50,6 +56,23 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
 
   const handleCreateDispatchSuccess = () => {
     setShowCreateDispatch(false);
+  };
+
+  const handleCreateBatch = (tripId: string) => {
+    setSelectedTripId(tripId);
+    setCreateBatchDialogOpen(true);
+  };
+
+  const handleCreateBatchSuccess = () => {
+    setCreateBatchDialogOpen(false);
+    setSelectedTripId('');
+    refetch();
+  };
+
+  const handleViewBatch = (batchId: string) => {
+    setViewingBatchDetails(batchId);
+    // TODO: Implement batch details view
+    console.log('View batch details:', batchId);
   };
 
   if (isLoading) {
@@ -112,12 +135,21 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
             <EmptyTripsState selectedDate={selectedDate} />
           ) : (
             packagesByTrip.map((trip) => (
-              <TripPackageCard
-                key={trip.id}
-                trip={trip}
-                onAddPackage={onAddPackage}
-                onPackageClick={handlePackageClick}
-              />
+              <div key={trip.id} className="space-y-4">
+                <TripPackageCard
+                  trip={trip}
+                  onAddPackage={onAddPackage}
+                  onPackageClick={handlePackageClick}
+                  onCreateBatch={handleCreateBatch}
+                />
+                
+                <BatchManagementCardIntegrated
+                  tripId={trip.id}
+                  tripDate={selectedDate}
+                  onCreateBatch={handleCreateBatch}
+                  onViewBatch={handleViewBatch}
+                />
+              </div>
             ))
           )}
         </CardContent>
@@ -136,6 +168,12 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
         onOpenChange={setEditPackageDialogOpen}
         package={selectedPackage}
         onSuccess={handleEditPackageSuccess}
+      />
+
+      <CreateBatchDialog
+        open={createBatchDialogOpen}
+        onOpenChange={setCreateBatchDialogOpen}
+        tripId={selectedTripId}
       />
     </>
   );

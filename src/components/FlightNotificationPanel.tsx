@@ -8,6 +8,7 @@ import { DirectWhatsAppTest } from './flight/DirectWhatsAppTest';
 import { MetaConnectionTest } from './flight/MetaConnectionTest';
 import { WhatsAppTemplateTest } from './flight/WhatsAppTemplateTest';
 import { WebhookSetupGuide } from './WebhookSetupGuide';
+import { WebhookTester } from './WebhookTester';
 import { MessageDeliveryStatus } from './MessageDeliveryStatus';
 import { IncomingMessages } from './IncomingMessages';
 
@@ -27,6 +28,8 @@ export function FlightNotificationPanel() {
       <FlightMonitoringCard />
 
       <MetaConnectionTest />
+
+      <WebhookTester />
 
       <WebhookSetupGuide />
 

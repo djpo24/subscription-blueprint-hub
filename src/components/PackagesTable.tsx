@@ -6,6 +6,7 @@ import { EditPackageDialog } from './EditPackageDialog';
 import { MultipleLabelsDialog } from './MultipleLabelsDialog';
 import { PackagesTableHeader } from './packages-table/PackagesTableHeader';
 import { PackagesTableRow } from './packages-table/PackagesTableRow';
+import { ChatDialog } from './chat/ChatDialog';
 
 interface Package {
   id: string;
@@ -37,6 +38,9 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showMultipleLabelsDialog, setShowMultipleLabelsDialog] = useState(false);
+  const [showChatDialog, setShowChatDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
 
   // Ensure filteredPackages is always an array
   const safeFilteredPackages = filteredPackages || [];
@@ -66,6 +70,12 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
 
   const handlePrintMultiple = () => {
     setShowMultipleLabelsDialog(true);
+  };
+
+  const handleOpenChat = (customerId: string, customerName?: string) => {
+    setSelectedCustomerId(customerId);
+    setSelectedCustomerName(customerName);
+    setShowChatDialog(true);
   };
 
   return (
@@ -104,6 +114,7 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
                     onRowClick={handleRowClick}
                     onActionsClick={handleActionsClick}
                     onUpdate={handleUpdate}
+                    onOpenChat={handleOpenChat}
                   />
                 ))}
               </TableBody>
@@ -123,6 +134,13 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
         open={showMultipleLabelsDialog}
         onOpenChange={setShowMultipleLabelsDialog}
         packages={safeFilteredPackages}
+      />
+
+      <ChatDialog
+        open={showChatDialog}
+        onOpenChange={setShowChatDialog}
+        customerId={selectedCustomerId}
+        customerName={selectedCustomerName}
       />
     </>
   );

@@ -29,13 +29,15 @@ interface PackagesTableRowProps {
   onRowClick: (pkg: Package) => void;
   onActionsClick: (e: React.MouseEvent) => void;
   onUpdate: () => void;
+  onOpenChat?: (customerId: string, customerName?: string) => void;
 }
 
 export function PackagesTableRow({ 
   package: pkg, 
   onRowClick, 
   onActionsClick, 
-  onUpdate 
+  onUpdate,
+  onOpenChat
 }: PackagesTableRowProps) {
   const formatCurrency = (value: number | null) => {
     if (!value) return 'N/A';
@@ -72,6 +74,7 @@ export function PackagesTableRow({
         <PackageActionsDropdown 
           package={pkg} 
           onUpdate={onUpdate}
+          onOpenChat={onOpenChat}
         />
       </TableCell>
     </TableRow>

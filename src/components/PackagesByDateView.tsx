@@ -5,6 +5,7 @@ import { usePackagesByDate } from '@/hooks/usePackagesByDate';
 import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
 import { EditPackageDialog } from './EditPackageDialog';
+import { ChatDialog } from './chat/ChatDialog';
 import { PackagesByDateHeader } from './packages-by-date/PackagesByDateHeader';
 import { PackagesByDateSummary } from './packages-by-date/PackagesByDateSummary';
 import { TripPackageCard } from './packages-by-date/TripPackageCard';
@@ -20,6 +21,9 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
   const [showCreateDispatch, setShowCreateDispatch] = useState(false);
   const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [showChatDialog, setShowChatDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
   const { data: packagesByTrip = [], isLoading, refetch } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
 
@@ -50,6 +54,12 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
 
   const handleCreateDispatchSuccess = () => {
     setShowCreateDispatch(false);
+  };
+
+  const handleOpenChat = (customerId: string, customerName?: string) => {
+    setSelectedCustomerId(customerId);
+    setSelectedCustomerName(customerName);
+    setShowChatDialog(true);
   };
 
   if (isLoading) {
@@ -117,6 +127,7 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                 trip={trip}
                 onAddPackage={onAddPackage}
                 onPackageClick={handlePackageClick}
+                onOpenChat={handleOpenChat}
               />
             ))
           )}
@@ -136,6 +147,13 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
         onOpenChange={setEditPackageDialogOpen}
         package={selectedPackage}
         onSuccess={handleEditPackageSuccess}
+      />
+
+      <ChatDialog
+        open={showChatDialog}
+        onOpenChange={setShowChatDialog}
+        customerId={selectedCustomerId}
+        customerName={selectedCustomerName}
       />
     </>
   );

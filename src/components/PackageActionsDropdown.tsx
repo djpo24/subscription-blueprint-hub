@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Warehouse, Edit, Printer } from 'lucide-react';
+import { MoreHorizontal, Calendar, Warehouse, Edit, Printer, MessageSquare } from 'lucide-react';
 import { ReschedulePackageDialog } from './ReschedulePackageDialog';
 import { EditPackageDialog } from './EditPackageDialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
@@ -35,9 +35,14 @@ interface Package {
 interface PackageActionsDropdownProps {
   package: Package;
   onUpdate: () => void;
+  onOpenChat?: (customerId: string, customerName?: string) => void;
 }
 
-export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageActionsDropdownProps) {
+export function PackageActionsDropdown({ 
+  package: pkg, 
+  onUpdate, 
+  onOpenChat 
+}: PackageActionsDropdownProps) {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLabelDialog, setShowLabelDialog] = useState(false);
@@ -46,6 +51,12 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
   const handleMoveToWarehouse = async () => {
     await moveToWarehouse(pkg.id);
     onUpdate();
+  };
+
+  const handleOpenChat = () => {
+    if (onOpenChat) {
+      onOpenChat(pkg.customer_id, pkg.customers?.name);
+    }
   };
 
   const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'bodega';
@@ -62,6 +73,10 @@ export function PackageActionsDropdown({ package: pkg, onUpdate }: PackageAction
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleOpenChat}>
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Abrir chat
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setShowLabelDialog(true)}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir etiqueta

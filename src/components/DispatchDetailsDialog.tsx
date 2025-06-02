@@ -5,8 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Truck, Package, Weight, DollarSign, User, MapPin } from 'lucide-react';
-import { useDispatchPackages } from '@/hooks/useDispatchRelations';
+import { Button } from '@/components/ui/button';
+import { Truck, Package, Weight, DollarSign, User, MapPin, Send } from 'lucide-react';
+import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
+import { useTripActions } from '@/hooks/useTripActions';
 
 interface DispatchDetailsDialogProps {
   open: boolean;
@@ -20,6 +22,10 @@ export function DispatchDetailsDialog({
   dispatchId 
 }: DispatchDetailsDialogProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
+  const { 
+    markTripAsInTransit, 
+    isMarkingAsInTransit 
+  } = useTripActions();
 
   if (!dispatchId) return null;
 
@@ -37,14 +43,38 @@ export function DispatchDetailsDialog({
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
 
+  // Obtener información del viaje desde el primer paquete
+  const firstPackage = packages[0];
+  const canMarkAsInTransit = firstPackage && packages.some(pkg => pkg.status === 'procesado');
+
+  const handleMarkAsInTransit = () => {
+    if (firstPackage && firstPackage.trip_id) {
+      markTripAsInTransit(firstPackage.trip_id);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Detalles del Despacho
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Detalles del Despacho
+            </DialogTitle>
+            {canMarkAsInTransit && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={handleMarkAsInTransit}
+                disabled={isMarkingAsInTransit}
+                className="flex items-center gap-1"
+              >
+                <Send className="h-3 w-3" />
+                {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {isLoading ? (
@@ -153,8 +183,8 @@ export function DispatchDetailsDialog({
                               variant="outline"
                               className={`text-xs ${
                                 pkg.status === 'delivered' ? 'bg-green-50 text-green-700' :
-                                pkg.status === 'in_transit' ? 'bg-blue-50 text-blue-700' :
-                                pkg.status === 'arrived' ? 'bg-orange-50 text-orange-700' :
+                                pkg.status === 'transito' ? 'bg-blue-50 text-blue-700' :
+                                pkg.status === 'procesado' ? 'bg-orange-50 text-orange-700' :
                                 'bg-gray-50 text-gray-700'
                               }`}
                             >

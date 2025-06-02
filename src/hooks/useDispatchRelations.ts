@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -27,6 +26,7 @@ interface PackageInDispatch {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  trip_id: string | null;
   customers: {
     name: string;
     email: string;
@@ -98,6 +98,7 @@ export function useDispatchPackages(dispatchId: string) {
             weight,
             freight,
             amount_to_collect,
+            trip_id,
             customers (
               name,
               email

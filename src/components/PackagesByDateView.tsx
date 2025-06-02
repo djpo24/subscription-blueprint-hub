@@ -107,43 +107,49 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {trip.packages.map((pkg) => (
-                      <div
-                        key={pkg.id}
-                        className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium text-sm">
-                            {pkg.tracking_number}
+                    {trip.packages.map((pkg) => {
+                      // Contar items en la descripción
+                      const itemCount = pkg.description 
+                        ? pkg.description.split(',').filter(item => item.trim()).length 
+                        : 0;
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-medium text-sm">
+                              {pkg.tracking_number}
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                pkg.status === 'delivered' ? 'bg-green-50 text-green-700' :
+                                pkg.status === 'in_transit' ? 'bg-blue-50 text-blue-700' :
+                                pkg.status === 'arrived' ? 'bg-orange-50 text-orange-700' :
+                                'bg-gray-50 text-gray-700'
+                              }`}
+                            >
+                              {pkg.status}
+                            </Badge>
                           </div>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              pkg.status === 'delivered' ? 'bg-green-50 text-green-700' :
-                              pkg.status === 'in_transit' ? 'bg-blue-50 text-blue-700' :
-                              pkg.status === 'arrived' ? 'bg-orange-50 text-orange-700' :
-                              'bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            {pkg.status}
-                          </Badge>
-                        </div>
-                        
-                        <div className="text-sm text-gray-600 mb-1">
-                          Cliente: {pkg.customers?.name || 'N/A'}
-                        </div>
-                        
-                        <div className="text-xs text-gray-500 mb-2">
-                          {pkg.origin} → {pkg.destination}
-                        </div>
-                        
-                        {pkg.description && (
-                          <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                            {pkg.description}
+                          
+                          {/* Cliente resaltado */}
+                          <div className="text-base font-bold text-blue-700 mb-2">
+                            {pkg.customers?.name || 'Cliente no especificado'}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          
+                          {/* Mostrar conteo de items en lugar de la descripción completa */}
+                          {itemCount > 0 && (
+                            <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded flex items-center gap-1">
+                              <Package className="h-4 w-4" />
+                              <span className="font-medium">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

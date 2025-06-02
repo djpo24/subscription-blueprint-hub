@@ -33,7 +33,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   useEffect(() => {
     if (open && pkg) {
       console.log('Inicializando EditPackageDialog con paquete:', pkg);
-      setSelectedCustomerId(pkg.customer_id);
+      setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(pkg.trip_id || '');
     } else if (!open) {
       // Reset when dialog closes
@@ -68,13 +68,15 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             <CustomerSearchSelector
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
-              key={`customer-${open}-${pkg.id}-${selectedCustomerId}`}
+              readOnly={true}
+              key={`customer-${pkg.id}-${selectedCustomerId}`}
             />
 
             <TripSelector
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
-              key={`trip-${open}-${pkg.id}-${selectedTripId}`}
+              readOnly={true}
+              key={`trip-${pkg.id}-${selectedTripId}`}
             />
           </div>
 

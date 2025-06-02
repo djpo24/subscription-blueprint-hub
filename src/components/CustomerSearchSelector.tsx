@@ -54,7 +54,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
         .from('customers')
         .select('id, name, email, phone, id_number')
         .eq('id', selectedCustomerId)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error al buscar cliente:', error);
@@ -67,17 +67,28 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     enabled: !!selectedCustomerId
   });
 
+  // Update search term when customer is selected externally or when customers data loads
+  useEffect(() => {
+    if (selectedCustomer && readOnly) {
+      console.log('Actualizando searchTerm con cliente seleccionado (readOnly):', selectedCustomer.name);
+      setSearchTerm(selectedCustomer.name);
+    } else if (selectedCustomer && !readOnly && (!searchTerm || searchTerm !== selectedCustomer.name)) {
+      console.log('Actualizando searchTerm con cliente seleccionado (editable):', selectedCustomer.name);
+      setSearchTerm(selectedCustomer.name);
+    }
+  }, [selectedCustomer, readOnly]);
+
   // Reset search term when selectedCustomerId is cleared
   useEffect(() => {
-    if (!selectedCustomerId) {
+    if (!selectedCustomerId && !readOnly) {
       setSearchTerm('');
       setShowResults(false);
     }
-  }, [selectedCustomerId]);
+  }, [selectedCustomerId, readOnly]);
 
   // Filter customers based on search term
   const filteredCustomers = useMemo(() => {
-    if (!searchTerm.trim()) return [];
+    if (!searchTerm.trim() || readOnly) return [];
     
     const term = searchTerm.toLowerCase();
     return customers.filter(customer => 
@@ -86,10 +97,12 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
       (isValidEmail(customer.email) && customer.email.toLowerCase().includes(term)) ||
       (customer.id_number && customer.id_number.includes(term))
     );
-  }, [customers, searchTerm]);
+  }, [customers, searchTerm, readOnly]);
 
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer) => {
+    if (readOnly) return;
+    
     onCustomerChange(customer.id);
     setSearchTerm(customer.name);
     setShowResults(false);
@@ -110,6 +123,8 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
 
   // Handle customer creation
   const handleCustomerCreated = (customerId: string) => {
+    if (readOnly) return;
+    
     onCustomerChange(customerId);
     refetchCustomers();
     // Update search term with new customer name
@@ -119,14 +134,6 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     }
   };
 
-  // Update search term when customer is selected externally or when customers data loads
-  useEffect(() => {
-    if (selectedCustomer && (!searchTerm || searchTerm !== selectedCustomer.name)) {
-      console.log('Actualizando searchTerm con cliente seleccionado:', selectedCustomer.name);
-      setSearchTerm(selectedCustomer.name);
-    }
-  }, [selectedCustomer]);
-
   const handleFocus = () => {
     if (!readOnly && searchTerm.trim()) {
       setShowResults(true);
@@ -134,8 +141,10 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
   };
 
   const handleBlur = () => {
-    // Delay hiding results to allow clicks
-    setTimeout(() => setShowResults(false), 200);
+    if (!readOnly) {
+      // Delay hiding results to allow clicks
+      setTimeout(() => setShowResults(false), 200);
+    }
   };
 
   // Display read-only version
@@ -163,12 +172,22 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
           </div>
         </div>
       );
-    } else {
+    } else if (selectedCustomerId) {
+      // We have an ID but couldn't find the customer
       return (
         <div>
           <Label htmlFor="customer">Cliente</Label>
           <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
             Cliente no encontrado
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <Label htmlFor="customer">Cliente</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Sin cliente asignado
           </div>
         </div>
       );

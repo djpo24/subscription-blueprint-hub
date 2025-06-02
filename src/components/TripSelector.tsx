@@ -39,7 +39,7 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
         .from('trips')
         .select('id, trip_date, origin, destination, flight_number')
         .eq('id', selectedTripId)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error al buscar viaje:', error);

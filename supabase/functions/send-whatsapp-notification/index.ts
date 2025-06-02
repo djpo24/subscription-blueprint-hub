@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationId, phone, message, useTemplate = false, templateName, templateLanguage } = await req.json()
+    const { notificationId, phone, message, imageUrl, useTemplate = false, templateName, templateLanguage } = await req.json()
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -34,6 +34,7 @@ serve(async (req) => {
       notificationId, 
       phone, 
       message, 
+      imageUrl,
       useTemplate, 
       templateName, 
       templateLanguage 
@@ -76,6 +77,18 @@ serve(async (req) => {
         }
       }
       console.log('Usando plantilla de WhatsApp:', templateName)
+    } else if (imageUrl) {
+      // Send image with optional text caption
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: apiPhone,
+        type: 'image',
+        image: {
+          link: imageUrl,
+          caption: message || ''
+        }
+      }
+      console.log('Enviando imagen con WhatsApp:', imageUrl)
     } else {
       // Use regular text message
       whatsappPayload = {
@@ -129,7 +142,7 @@ serve(async (req) => {
           success: true, 
           notificationId,
           whatsappMessageId: whatsappResult.messages[0].id,
-          messageType: useTemplate ? 'template' : 'text'
+          messageType: useTemplate ? 'template' : (imageUrl ? 'image' : 'text')
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -9,9 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, User, Clock, Phone, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useToast } from '@/hooks/use-toast';
+import { useSentMessages } from '@/hooks/useSentMessages';
+import { ImageUpload } from '@/components/ImageUpload';
 
 interface IncomingMessage {
   id: string;
@@ -26,10 +28,22 @@ interface IncomingMessage {
   } | null;
 }
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  timestamp: string;
+  type: 'incoming' | 'outgoing';
+  messageType?: string;
+  imageUrl?: string;
+}
+
 export function ChatView() {
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+  const [selectedImages, setSelectedImages] = useState<Record<string, File | null>>({});
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const { toast } = useToast();
   const { sendManualNotification, isManualSending } = useNotifications();
+  const { sentMessages, saveSentMessage } = useSentMessages();
 
   const { data: incomingMessages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-messages'],
@@ -61,10 +75,10 @@ export function ChatView() {
         customers: msg.customers
       }));
     },
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 5000,
   });
 
-  // Group messages by phone number
+  // Combinar mensajes entrantes y enviados por teléfono
   const messagesByPhone = incomingMessages.reduce((acc, message) => {
     const phone = message.from_phone;
     if (!acc[phone]) {
@@ -74,6 +88,43 @@ export function ChatView() {
     return acc;
   }, {} as Record<string, IncomingMessage[]>);
 
+  // Crear conversaciones completas con mensajes enviados y recibidos
+  const conversationsByPhone = Object.keys(messagesByPhone).reduce((acc, phone) => {
+    const incoming = messagesByPhone[phone];
+    const outgoing = sentMessages.filter(msg => msg.phone === phone);
+    
+    const allMessages: ChatMessage[] = [
+      ...incoming.map(msg => ({
+        id: msg.id,
+        content: msg.message_content || '(Sin contenido de texto)',
+        timestamp: msg.message_timestamp,
+        type: 'incoming' as const,
+        messageType: msg.message_type
+      })),
+      ...outgoing.map(msg => ({
+        id: msg.id,
+        content: msg.message,
+        timestamp: msg.sent_at,
+        type: 'outgoing' as const,
+        imageUrl: msg.image_url
+      }))
+    ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    acc[phone] = {
+      messages: allMessages,
+      latestIncoming: incoming[0],
+      customerName: incoming[0]?.customers?.name,
+      customerId: incoming[0]?.customer_id
+    };
+
+    return acc;
+  }, {} as Record<string, {
+    messages: ChatMessage[];
+    latestIncoming: IncomingMessage;
+    customerName?: string;
+    customerId: string | null;
+  }>);
+
   const handleReplyChange = (phone: string, message: string) => {
     setReplyMessages(prev => ({
       ...prev,
@@ -81,28 +132,73 @@ export function ChatView() {
     }));
   };
 
+  const handleImageSelect = (phone: string, file: File) => {
+    setSelectedImages(prev => ({
+      ...prev,
+      [phone]: file
+    }));
+  };
+
+  const handleImageRemove = (phone: string) => {
+    setSelectedImages(prev => ({
+      ...prev,
+      [phone]: null
+    }));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, phone: string, customerId: string | null) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendReply(phone, customerId);
+    }
+  };
+
   const handleSendReply = async (phone: string, customerId: string | null) => {
     const message = replyMessages[phone];
-    if (!message?.trim()) {
+    const selectedImage = selectedImages[phone];
+    
+    if (!message?.trim() && !selectedImage) {
       toast({
         title: "Error",
-        description: "Por favor escriba un mensaje antes de enviar",
+        description: "Por favor escriba un mensaje o seleccione una imagen antes de enviar",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      // If we don't have a customer ID, we need to create a temporary one or handle it differently
+      let imageUrl: string | undefined;
+
+      // Si hay una imagen seleccionada, subirla primero
+      if (selectedImage) {
+        const fileExt = selectedImage.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('chat-images')
+          .upload(fileName, selectedImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(uploadData.path);
+        
+        imageUrl = publicUrl;
+      }
+
+      // Crear el mensaje final
+      const finalMessage = message?.trim() || (imageUrl ? '📷 Imagen' : '');
+
       if (!customerId) {
-        // Create notification log entry without customer ID
+        // Crear entrada de notificación sin customer ID
         const { data: notificationData, error: logError } = await supabase
           .from('notification_log')
           .insert({
             package_id: null,
             customer_id: null,
             notification_type: 'manual_reply',
-            message: message,
+            message: finalMessage,
             status: 'pending'
           })
           .select()
@@ -110,30 +206,43 @@ export function ChatView() {
 
         if (logError) throw logError;
 
-        // Send WhatsApp notification
+        // Enviar notificación WhatsApp
         const response = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
             phone: phone,
-            message: message
+            message: finalMessage,
+            imageUrl: imageUrl
           }
         });
 
         if (response.error) throw response.error;
       } else {
-        // Use the existing sendManualNotification for registered customers
+        // Usar sendManualNotification para clientes registrados
         await sendManualNotification({
           customerId: customerId,
-          packageId: '', // We don't have a specific package for chat replies
-          message: message,
+          packageId: '',
+          message: finalMessage,
           phone: phone
         });
       }
 
-      // Clear the reply input
+      // Guardar mensaje enviado en nuestra tabla
+      saveSentMessage({
+        customerId: customerId,
+        phone: phone,
+        message: finalMessage,
+        imageUrl: imageUrl
+      });
+
+      // Limpiar inputs
       setReplyMessages(prev => ({
         ...prev,
         [phone]: ''
+      }));
+      setSelectedImages(prev => ({
+        ...prev,
+        [phone]: null
       }));
 
       toast({
@@ -167,7 +276,6 @@ export function ChatView() {
   };
 
   const formatPhoneNumber = (phone: string) => {
-    // Format phone number for display
     if (phone.startsWith('57')) {
       return `+${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
     }
@@ -187,15 +295,15 @@ export function ChatView() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Chat con Clientes</h2>
-          <p className="text-gray-600">Mensajes entrantes de WhatsApp</p>
+          <p className="text-gray-600">Mensajes entrantes y salientes de WhatsApp</p>
         </div>
         <Badge variant="secondary" className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4" />
-          {Object.keys(messagesByPhone).length} conversaciones
+          {Object.keys(conversationsByPhone).length} conversaciones
         </Badge>
       </div>
 
-      {Object.keys(messagesByPhone).length === 0 ? (
+      {Object.keys(conversationsByPhone).length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
@@ -207,10 +315,9 @@ export function ChatView() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Object.entries(messagesByPhone).map(([phone, messages]) => {
-            const latestMessage = messages[0];
-            const customerName = latestMessage.customers?.name;
-            const isRegistered = !!latestMessage.customer_id;
+          {Object.entries(conversationsByPhone).map(([phone, conversation]) => {
+            const { messages, latestIncoming, customerName, customerId } = conversation;
+            const isRegistered = !!customerId;
 
             return (
               <Card key={phone} className="h-fit">
@@ -239,29 +346,51 @@ export function ChatView() {
                       </Badge>
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Clock className="h-3 w-3" />
-                        {format(new Date(latestMessage.message_timestamp), 'dd/MM HH:mm', { locale: es })}
+                        {format(new Date(latestIncoming.message_timestamp), 'dd/MM HH:mm', { locale: es })}
                       </div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ScrollArea className="h-40">
+                  <ScrollArea className="h-60">
                     <div className="space-y-3">
-                      {messages.slice().reverse().map((message) => (
-                        <div key={message.id} className="bg-gray-50 rounded-lg p-3">
+                      {messages.map((message) => (
+                        <div 
+                          key={message.id} 
+                          className={`rounded-lg p-3 ${
+                            message.type === 'incoming' 
+                              ? 'bg-gray-50 ml-0 mr-8' 
+                              : 'bg-blue-50 ml-8 mr-0'
+                          }`}
+                        >
                           <div className="flex items-start justify-between mb-2">
-                            <Badge 
-                              className={getMessageTypeColor(message.message_type)} 
-                              variant="secondary"
-                            >
-                              {message.message_type}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              {message.type === 'incoming' ? (
+                                <Badge 
+                                  className={getMessageTypeColor(message.messageType || 'text')} 
+                                  variant="secondary"
+                                >
+                                  {message.messageType || 'text'}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-blue-100 text-blue-800" variant="secondary">
+                                  enviado
+                                </Badge>
+                              )}
+                            </div>
                             <span className="text-xs text-gray-500">
-                              {format(new Date(message.message_timestamp), 'HH:mm', { locale: es })}
+                              {format(new Date(message.timestamp), 'HH:mm', { locale: es })}
                             </span>
                           </div>
-                          <div className="text-sm">
-                            {message.message_content || '(Sin contenido de texto)'}
+                          <div className="text-sm space-y-2">
+                            {message.content}
+                            {message.imageUrl && (
+                              <img 
+                                src={message.imageUrl} 
+                                alt="Imagen enviada" 
+                                className="max-w-48 rounded border"
+                              />
+                            )}
                           </div>
                         </div>
                       ))}
@@ -273,17 +402,24 @@ export function ChatView() {
                       {messages.length} mensaje{messages.length !== 1 ? 's' : ''}
                     </div>
                     
-                    {/* Reply Form */}
                     <div className="space-y-3">
+                      <ImageUpload
+                        onImageSelect={(file) => handleImageSelect(phone, file)}
+                        selectedImage={selectedImages[phone] || null}
+                        onImageRemove={() => handleImageRemove(phone)}
+                      />
+                      
                       <Textarea
-                        placeholder="Escribir respuesta..."
+                        ref={(el) => textareaRefs.current[phone] = el}
+                        placeholder="Escribir respuesta... (Enter para enviar)"
                         value={replyMessages[phone] || ''}
                         onChange={(e) => handleReplyChange(phone, e.target.value)}
+                        onKeyPress={(e) => handleKeyPress(e, phone, customerId)}
                         className="min-h-[80px] resize-none"
                       />
                       <Button
-                        onClick={() => handleSendReply(phone, latestMessage.customer_id)}
-                        disabled={isManualSending || !replyMessages[phone]?.trim()}
+                        onClick={() => handleSendReply(phone, customerId)}
+                        disabled={isManualSending || (!replyMessages[phone]?.trim() && !selectedImages[phone])}
                         className="w-full"
                         size="sm"
                       >

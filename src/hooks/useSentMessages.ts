@@ -20,7 +20,8 @@ export function useSentMessages() {
   const { data: sentMessages = [], isLoading } = useQuery({
     queryKey: ['sent-messages'],
     queryFn: async (): Promise<SentMessage[]> => {
-      const { data, error } = await supabase
+      // Use type assertion since sent_messages table exists but types aren't updated yet
+      const { data, error } = await (supabase as any)
         .from('sent_messages')
         .select('*')
         .order('sent_at', { ascending: false })
@@ -48,7 +49,7 @@ export function useSentMessages() {
       message: string;
       imageUrl?: string;
     }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('sent_messages')
         .insert({
           customer_id: customerId,

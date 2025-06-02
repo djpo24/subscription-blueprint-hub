@@ -625,6 +625,47 @@ export type Database = {
           },
         ]
       }
+      sent_messages: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          id: string
+          image_url: string | null
+          message: string
+          phone: string
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          image_url?: string | null
+          message: string
+          phone: string
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          image_url?: string | null
+          message?: string
+          phone?: string
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sent_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipment_batches: {
         Row: {
           batch_label: string

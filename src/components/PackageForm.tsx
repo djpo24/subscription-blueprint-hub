@@ -88,6 +88,11 @@ export function PackageForm({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
+      console.log('Creando encomienda con valores:', {
+        freight: formData.freight ? parseFloat(formData.freight) : 0,
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+      });
+
       const { error } = await supabase
         .from('packages')
         .insert([{
@@ -95,6 +100,8 @@ export function PackageForm({
           customer_id: customerId,
           description: finalDescription,
           weight: formData.weight ? parseFloat(formData.weight) : null,
+          freight: formData.freight ? parseFloat(formData.freight) : 0,
+          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,

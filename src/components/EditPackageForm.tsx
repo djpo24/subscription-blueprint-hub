@@ -7,7 +7,6 @@ import { ProductDetailsInput } from './package-form/ProductDetailsInput';
 import { FreightAndWeightFields } from './package-form/FreightAndWeightFields';
 import { AmountToCollectSection } from './package-form/AmountToCollectSection';
 import { OptionalDescriptionField } from './package-form/OptionalDescriptionField';
-import { formatNumber } from '@/utils/numberFormatter';
 
 interface Package {
   id: string;
@@ -16,6 +15,8 @@ interface Package {
   trip_id: string | null;
   description: string;
   weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
   status: string;
 }
 
@@ -76,10 +77,10 @@ export function EditPackageForm({
       setFormData({
         description: optionalDescription,
         weight: pkg.weight ? pkg.weight.toString() : '',
-        freight: '',
-        freightFormatted: '',
-        amountToCollect: '',
-        amountToCollectFormatted: '',
+        freight: pkg.freight ? pkg.freight.toString() : '',
+        freightFormatted: pkg.freight ? pkg.freight.toString() : '',
+        amountToCollect: pkg.amount_to_collect ? pkg.amount_to_collect.toString() : '',
+        amountToCollectFormatted: pkg.amount_to_collect ? pkg.amount_to_collect.toString() : '',
         currency: 'COP',
         details: productDetails
       });
@@ -130,12 +131,19 @@ export function EditPackageForm({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
+      console.log('Actualizando encomienda con valores:', {
+        freight: formData.freight ? parseFloat(formData.freight) : 0,
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+      });
+
       const { error } = await supabase
         .from('packages')
         .update({
           customer_id: customerId,
           description: finalDescription,
           weight: formData.weight ? parseFloat(formData.weight) : null,
+          freight: formData.freight ? parseFloat(formData.freight) : 0,
+          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,

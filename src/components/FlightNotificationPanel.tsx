@@ -7,6 +7,9 @@ import { UpcomingFlightsCard } from './flight/UpcomingFlightsCard';
 import { DirectWhatsAppTest } from './flight/DirectWhatsAppTest';
 import { MetaConnectionTest } from './flight/MetaConnectionTest';
 import { WhatsAppTemplateTest } from './flight/WhatsAppTemplateTest';
+import { WebhookSetupGuide } from './WebhookSetupGuide';
+import { MessageDeliveryStatus } from './MessageDeliveryStatus';
+import { IncomingMessages } from './IncomingMessages';
 
 export function FlightNotificationPanel() {
   const { 
@@ -25,6 +28,8 @@ export function FlightNotificationPanel() {
 
       <MetaConnectionTest />
 
+      <WebhookSetupGuide />
+
       <WhatsAppTemplateTest />
 
       <DirectWhatsAppTest />
@@ -33,6 +38,11 @@ export function FlightNotificationPanel() {
         onSendTestNotification={sendTestNotification}
         isSendingTest={isSendingTest}
       />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MessageDeliveryStatus />
+        <IncomingMessages />
+      </div>
 
       <UpcomingFlightsCard />
 

@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Package, Plus, Calendar } from 'lucide-react';
+import { ArrowLeft, Package, Plus, Calendar, Weight, DollarSign, Truck } from 'lucide-react';
 import { usePackagesByDate } from '@/hooks/usePackagesByDate';
 
 interface PackagesByDateViewProps {
@@ -136,7 +136,7 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                           </div>
                           
                           {/* Cliente y conteo de items en la misma línea */}
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="text-base font-bold text-blue-700">
                               {pkg.customers?.name || 'Cliente no especificado'}
                             </div>
@@ -147,6 +147,42 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                                 <span className="font-medium">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
                               </div>
                             )}
+                          </div>
+
+                          {/* Información de flete, peso y valor a cobrar */}
+                          <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg">
+                            {/* Flete */}
+                            <div className="flex items-center gap-2">
+                              <Truck className="h-4 w-4 text-gray-500" />
+                              <div className="text-xs">
+                                <div className="text-gray-500">Flete</div>
+                                <div className="font-medium">
+                                  ${pkg.freight || '0'} COP
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Peso */}
+                            <div className="flex items-center gap-2">
+                              <Weight className="h-4 w-4 text-gray-500" />
+                              <div className="text-xs">
+                                <div className="text-gray-500">Peso</div>
+                                <div className="font-medium">
+                                  {pkg.weight || '0'} kg
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Valor a cobrar - RESALTADO */}
+                            <div className="flex items-center gap-2 bg-green-100 p-2 rounded border-l-4 border-l-green-500">
+                              <DollarSign className="h-4 w-4 text-green-600" />
+                              <div className="text-xs">
+                                <div className="text-green-600 font-medium">A Cobrar</div>
+                                <div className="font-bold text-green-700 text-sm">
+                                  ${pkg.amount_to_collect || '0'} COP
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +19,7 @@ import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { usePackageStats } from '@/hooks/usePackageStats';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { TripsWithFlightsView } from '@/components/TripsWithFlightsView';
+import { DispatchesTable } from '@/components/DispatchesTable';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,10 +103,11 @@ const Index = () => {
       
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="packages">Encomiendas</TabsTrigger>
             <TabsTrigger value="trips">Viajes</TabsTrigger>
+            <TabsTrigger value="dispatches">Despachos</TabsTrigger>
             <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
             <TabsTrigger value="settings">Configuración</TabsTrigger>
           </TabsList>
@@ -159,6 +160,10 @@ const Index = () => {
                 />
               </>
             )}
+          </TabsContent>
+          
+          <TabsContent value="dispatches" className="space-y-8">
+            <DispatchesTable />
           </TabsContent>
           
           <TabsContent value="notifications" className="space-y-8">

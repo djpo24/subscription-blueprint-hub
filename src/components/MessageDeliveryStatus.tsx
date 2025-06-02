@@ -7,27 +7,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface MessageDeliveryStatus {
+  id: string;
+  notification_id: string | null;
+  whatsapp_message_id: string;
+  status: string;
+  timestamp: string;
+  recipient_phone: string;
+  notification_log?: {
+    message: string;
+    customers?: {
+      name: string;
+      phone: string;
+    } | null;
+  } | null;
+}
+
 export function MessageDeliveryStatus() {
   const { data: deliveryStatuses = [], isLoading } = useQuery({
     queryKey: ['message-delivery-status'],
-    queryFn: async () => {
+    queryFn: async (): Promise<MessageDeliveryStatus[]> => {
       const { data, error } = await supabase
-        .from('message_delivery_status')
-        .select(`
-          *,
-          notification_log (
-            message,
-            customers (
-              name,
-              phone
-            )
-          )
-        `)
-        .order('timestamp', { ascending: false })
+        .rpc('get_message_delivery_status_with_details')
         .limit(50);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching delivery status:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
     refetchInterval: 10000, // Refresh every 10 seconds
   });

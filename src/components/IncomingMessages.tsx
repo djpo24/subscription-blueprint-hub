@@ -7,23 +7,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface IncomingMessage {
+  id: string;
+  whatsapp_message_id: string;
+  from_phone: string;
+  customer_id: string | null;
+  message_type: string;
+  message_content: string | null;
+  timestamp: string;
+  customers?: {
+    name: string;
+  } | null;
+}
+
 export function IncomingMessages() {
   const { data: incomingMessages = [], isLoading } = useQuery({
     queryKey: ['incoming-messages'],
-    queryFn: async () => {
+    queryFn: async (): Promise<IncomingMessage[]> => {
       const { data, error } = await supabase
-        .from('incoming_messages')
-        .select(`
-          *,
-          customers (
-            name
-          )
-        `)
-        .order('timestamp', { ascending: false })
+        .rpc('get_incoming_messages_with_customers')
         .limit(50);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching incoming messages:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
     refetchInterval: 5000, // Refresh every 5 seconds
   });
@@ -105,7 +115,7 @@ export function IncomingMessages() {
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs">
-                    <div className="truncate" title={message.message_content}>
+                    <div className="truncate" title={message.message_content || ''}>
                       {message.message_content || '(Sin contenido de texto)'}
                     </div>
                   </TableCell>

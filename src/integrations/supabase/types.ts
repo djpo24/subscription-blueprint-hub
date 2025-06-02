@@ -324,6 +324,88 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_messages: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          from_phone: string
+          id: string
+          message_content: string | null
+          message_type: string
+          raw_data: Json | null
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          from_phone: string
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          raw_data?: Json | null
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          from_phone?: string
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          raw_data?: Json | null
+          timestamp?: string
+          whatsapp_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_delivery_status: {
+        Row: {
+          created_at: string
+          id: string
+          notification_id: string | null
+          recipient_phone: string
+          status: string
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          recipient_phone: string
+          status: string
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          recipient_phone?: string
+          status?: string
+          timestamp?: string
+          whatsapp_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_delivery_status_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           created_at: string

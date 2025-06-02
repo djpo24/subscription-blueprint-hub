@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -256,10 +255,10 @@ export function DebtorsList({ debts }: DebtorsListProps) {
                     <p className="text-xs text-gray-500">{debt.customer_phone}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 ml-2">
-                    <Badge className={getDebtTypeColor(debt.debt_type)} className="text-xs">
+                    <Badge className={`${getDebtTypeColor(debt.debt_type)} text-xs`}>
                       {getDebtTypeLabel(debt.debt_type)}
                     </Badge>
-                    <Badge className={getStatusColor(debt.debt_status)} className="text-xs">
+                    <Badge className={`${getStatusColor(debt.debt_status)} text-xs`}>
                       {getStatusLabel(debt.debt_status)}
                     </Badge>
                   </div>

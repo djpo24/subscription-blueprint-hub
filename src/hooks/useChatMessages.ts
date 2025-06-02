@@ -9,6 +9,27 @@ export function useChatMessages() {
   const { sendManualNotification, isManualSending } = useNotifications();
   const { saveSentMessage } = useSentMessages();
 
+  const ensureChatStorageBucket = async () => {
+    try {
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const chatBucketExists = buckets?.some(bucket => bucket.name === 'chat-images');
+      
+      if (!chatBucketExists) {
+        // Try to create the bucket using the edge function
+        const { error } = await supabase.functions.invoke('create-chat-storage');
+        if (error) {
+          console.error('Error creating chat storage bucket:', error);
+          throw error;
+        }
+        console.log('Chat storage bucket created successfully');
+      }
+    } catch (error) {
+      console.error('Error ensuring chat storage bucket:', error);
+      throw error;
+    }
+  };
+
   const handleSendMessage = async (
     selectedPhone: string, 
     customerId: string | null,
@@ -20,6 +41,9 @@ export function useChatMessages() {
 
       // Si hay una imagen seleccionada, subirla primero
       if (image) {
+        // Ensure the bucket exists before uploading
+        await ensureChatStorageBucket();
+
         const fileExt = image.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         
@@ -27,13 +51,17 @@ export function useChatMessages() {
           .from('chat-images')
           .upload(fileName, image);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('chat-images')
           .getPublicUrl(uploadData.path);
         
         imageUrl = publicUrl;
+        console.log('Image uploaded successfully:', imageUrl);
       }
 
       // Crear el mensaje final
@@ -91,9 +119,25 @@ export function useChatMessages() {
 
     } catch (error) {
       console.error('Error sending reply:', error);
+      let errorMessage = "No se pudo enviar el mensaje";
+      
+      if (error.message?.includes('Bucket not found')) {
+        errorMessage = "Error de configuración de almacenamiento. Reintentando...";
+        // Retry once after ensuring bucket exists
+        try {
+          await ensureChatStorageBucket();
+          toast({
+            title: "Reintentando",
+            description: "Configuración de almacenamiento reparada. Intente enviar nuevamente.",
+          });
+        } catch (retryError) {
+          console.error('Error in retry:', retryError);
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje",
+        description: errorMessage,
         variant: "destructive"
       });
     }

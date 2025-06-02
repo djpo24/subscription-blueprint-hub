@@ -1,6 +1,6 @@
 
 import { Badge } from '@/components/ui/badge';
-import { Package } from 'lucide-react';
+import { Package, Weight, Truck, DollarSign } from 'lucide-react';
 
 interface PackageData {
   id: string;
@@ -88,15 +88,29 @@ export function PackageItem({ package: pkg, onClick }: PackageItemProps) {
         <div>{pkg.customers?.email}</div>
       </div>
       
-      <div className="text-sm text-gray-500 mb-2">
+      <div className="text-sm text-gray-500 mb-3">
         {pkg.description}
       </div>
       
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>Peso: {pkg.weight ? `${pkg.weight} kg` : 'N/A'}</span>
-        <span>Flete: {pkg.freight ? `$${pkg.freight.toLocaleString()}` : 'N/A'}</span>
+      <div className="flex flex-wrap gap-4 text-xs">
+        <div className="flex items-center gap-1 text-gray-600">
+          <Weight className="h-3 w-3 text-gray-500" />
+          <span className="font-medium">Peso:</span>
+          <span className="text-gray-700">{pkg.weight ? `${pkg.weight} kg` : 'N/A'}</span>
+        </div>
+        
+        <div className="flex items-center gap-1 text-gray-600">
+          <Truck className="h-3 w-3 text-blue-500" />
+          <span className="font-medium">Flete:</span>
+          <span className="text-gray-700">{pkg.freight ? `$${pkg.freight.toLocaleString()}` : 'N/A'}</span>
+        </div>
+        
         {pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
-          <span>A Cobrar: ${pkg.amount_to_collect.toLocaleString()}</span>
+          <div className="flex items-center gap-1 text-green-600">
+            <DollarSign className="h-3 w-3 text-green-500" />
+            <span className="font-medium">A Cobrar:</span>
+            <span className="text-green-700 font-semibold">${pkg.amount_to_collect.toLocaleString()}</span>
+          </div>
         )}
       </div>
     </div>

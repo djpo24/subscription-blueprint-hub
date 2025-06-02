@@ -8,6 +8,8 @@ import { PackageItem } from './PackageItem';
 interface PackageData {
   id: string;
   tracking_number: string;
+  customer_id: string;
+  trip_id: string | null;
   origin: string;
   destination: string;
   status: string;

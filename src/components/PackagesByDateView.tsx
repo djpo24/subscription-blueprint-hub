@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -258,7 +257,7 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
       <CreateDispatchDialog
         open={showCreateDispatch}
         onOpenChange={setShowCreateDispatch}
-        date={selectedDate}
+        tripDate={selectedDate} // Pasar como tripDate para referencia
         packages={allPackages}
         onSuccess={handleCreateDispatchSuccess}
       />

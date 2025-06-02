@@ -29,7 +29,7 @@ interface PackageInfo {
 interface CreateDispatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  date: Date;
+  tripDate: Date; // Solo para mostrar en el título, pero usaremos fecha actual para el despacho
   packages: PackageInfo[];
   onSuccess?: () => void;
 }
@@ -37,7 +37,7 @@ interface CreateDispatchDialogProps {
 export function CreateDispatchDialog({ 
   open, 
   onOpenChange, 
-  date, 
+  tripDate, 
   packages, 
   onSuccess 
 }: CreateDispatchDialogProps) {
@@ -77,8 +77,13 @@ export function CreateDispatchDialog({
     if (selectedPackages.length === 0) return;
 
     try {
+      // Usar la fecha actual para el despacho
+      const currentDate = new Date();
+      console.log('📅 Creando despacho con fecha actual:', currentDate);
+      console.log('📅 Fecha del viaje (solo referencia):', tripDate);
+      
       await createDispatch.mutateAsync({
-        date,
+        date: currentDate, // Usar fecha actual
         packageIds: selectedPackages,
         notes: notes.trim() || undefined
       });
@@ -92,17 +97,33 @@ export function CreateDispatchDialog({
     }
   };
 
+  // Fecha actual para mostrar en el diálogo
+  const currentDate = new Date();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Crear Despacho para {format(date, "d 'de' MMMM 'de' yyyy", { locale: es })}
+            Crear Despacho - {format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: es })}
           </DialogTitle>
+          <div className="text-sm text-gray-600">
+            Encomiendas del viaje: {format(tripDate, "d 'de' MMMM 'de' yyyy", { locale: es })}
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Información automática de fecha */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="text-sm text-blue-800">
+              <strong>Fecha del despacho:</strong> {format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: es })} (Fecha actual)
+            </div>
+            <div className="text-xs text-blue-600 mt-1">
+              El despacho se registrará automáticamente con la fecha actual del sistema
+            </div>
+          </div>
+
           {/* Selección de paquetes */}
           <div>
             <div className="flex items-center justify-between mb-3">

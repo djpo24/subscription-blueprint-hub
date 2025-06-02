@@ -1,3 +1,4 @@
+
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Truck, Package, Weight, DollarSign, User, MapPin, Send, AlertCircle, CheckCircle } from 'lucide-react';
-import { useDispatchPackages } from '@/hooks/useDispatchRelations';
+import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
 
 interface DispatchDetailsDialogProps {
@@ -21,6 +22,7 @@ export function DispatchDetailsDialog({
   dispatchId 
 }: DispatchDetailsDialogProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
+  const { data: dispatches = [] } = useDispatchRelations();
   const { 
     markTripAsInTransit, 
     isMarkingAsInTransit,
@@ -44,10 +46,11 @@ export function DispatchDetailsDialog({
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
 
-  // Obtener información del viaje desde el primer paquete
+  // Obtener información del despacho y del viaje
+  const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
   const firstPackage = packages[0];
   const canMarkAsInTransit = firstPackage && packages.some(pkg => pkg.status === 'procesado');
-  const canMarkAsArrived = firstPackage && packages.some(pkg => pkg.status === 'transito');
+  const canMarkAsArrived = currentDispatch?.status === 'en_transito';
 
   const handleMarkAsInTransit = () => {
     if (firstPackage && firstPackage.trip_id) {

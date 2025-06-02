@@ -1,0 +1,37 @@
+
+interface PackagesByDateSummaryProps {
+  totalPackages: number;
+  totalWeight: number;
+  totalFreight: number;
+  totalAmountToCollect: number;
+}
+
+export function PackagesByDateSummary({
+  totalPackages,
+  totalWeight,
+  totalFreight,
+  totalAmountToCollect
+}: PackagesByDateSummaryProps) {
+  if (totalPackages === 0) return null;
+
+  return (
+    <div className="grid grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+      <div className="text-center">
+        <div className="text-2xl font-bold text-blue-600">{totalPackages}</div>
+        <div className="text-xs text-gray-600">Paquetes</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold text-purple-600">{totalWeight} kg</div>
+        <div className="text-xs text-gray-600">Peso Total</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold text-orange-600">${totalFreight}</div>
+        <div className="text-xs text-gray-600">Flete Total</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold text-green-600">${totalAmountToCollect}</div>
+        <div className="text-xs text-gray-600">A Cobrar</div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,50 @@
+
+import { CalendarView } from '@/components/CalendarView';
+import { PackagesByDateView } from '@/components/PackagesByDateView';
+import { TripsWithFlightsView } from '@/components/TripsWithFlightsView';
+import { TabsContent } from '@/components/ui/tabs';
+
+interface TripsTabProps {
+  viewingPackagesByDate: Date | null;
+  trips: any[];
+  tripsLoading: boolean;
+  onAddPackage: (tripId: string) => void;
+  onCreateTrip: (date: Date) => void;
+  onViewPackagesByDate: (date: Date) => void;
+  onBack: () => void;
+}
+
+export function TripsTab({
+  viewingPackagesByDate,
+  trips,
+  tripsLoading,
+  onAddPackage,
+  onCreateTrip,
+  onViewPackagesByDate,
+  onBack,
+}: TripsTabProps) {
+  return (
+    <TabsContent value="trips" className="space-y-8">
+      {viewingPackagesByDate ? (
+        <PackagesByDateView 
+          selectedDate={viewingPackagesByDate}
+          onBack={onBack}
+          onAddPackage={onAddPackage}
+        />
+      ) : (
+        <>
+          <CalendarView 
+            trips={trips}
+            isLoading={tripsLoading}
+            onAddPackage={onAddPackage}
+            onCreateTrip={onCreateTrip}
+            onViewPackagesByDate={onViewPackagesByDate}
+          />
+          <TripsWithFlightsView 
+            onAddPackage={onAddPackage}
+          />
+        </>
+      )}
+    </TabsContent>
+  );
+}

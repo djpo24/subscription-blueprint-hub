@@ -69,6 +69,7 @@ export function ChatView() {
               isRegistered={!!conversationsByPhone[selectedPhone].customerId}
               onSendMessage={handleSendMessageWrapper}
               isLoading={isManualSending}
+              profileImageUrl={conversationsByPhone[selectedPhone].profileImageUrl}
             />
           ) : (
             <Card className="h-full">

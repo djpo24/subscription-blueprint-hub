@@ -13,6 +13,7 @@ interface IncomingMessage {
   message_timestamp: string;
   customers?: {
     name: string;
+    profile_image_url?: string;
   } | null;
 }
 
@@ -36,7 +37,8 @@ export function useChatData() {
         .select(`
           *,
           customers (
-            name
+            name,
+            profile_image_url
           )
         `)
         .order('timestamp', { ascending: false })
@@ -104,7 +106,8 @@ export function useChatData() {
       messages: allMessages,
       latestIncoming: incoming[0],
       customerName: incoming[0]?.customers?.name,
-      customerId: incoming[0]?.customer_id
+      customerId: incoming[0]?.customer_id,
+      profileImageUrl: incoming[0]?.customers?.profile_image_url
     };
 
     return acc;
@@ -113,6 +116,7 @@ export function useChatData() {
     latestIncoming: IncomingMessage;
     customerName?: string;
     customerId: string | null;
+    profileImageUrl?: string;
   }>);
 
   // Crear lista de chats para la columna izquierda
@@ -122,7 +126,8 @@ export function useChatData() {
     lastMessage: conversation.messages[conversation.messages.length - 1]?.content || 'Sin mensajes',
     lastMessageTime: conversation.latestIncoming.message_timestamp,
     isRegistered: !!conversation.customerId,
-    unreadCount: 0 // Podrías implementar esto más tarde
+    unreadCount: 0, // Podrías implementar esto más tarde
+    profileImageUrl: conversation.profileImageUrl
   })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
   return {

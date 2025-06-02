@@ -114,10 +114,85 @@ async function processMessagesChange(value: any, supabaseClient: any) {
     }
   }
 
-  // Handle contacts info
+  // Handle contacts info - extract profile images
   if (value.contacts && Array.isArray(value.contacts)) {
     for (const contact of value.contacts) {
-      console.log('Contact info:', contact)
+      await handleContactInfo(contact, supabaseClient)
+    }
+  }
+}
+
+async function handleContactInfo(contact: any, supabaseClient: any) {
+  const { wa_id, profile } = contact
+  
+  console.log('Processing contact info:', contact)
+
+  if (!wa_id) return
+
+  // Extract profile image URL if available
+  const profileImageUrl = profile?.profile_url || null
+  const contactName = profile?.name || null
+
+  console.log('Contact profile data:', {
+    wa_id,
+    profileImageUrl,
+    contactName
+  })
+
+  // Try to find existing customer by WhatsApp number
+  const { data: existingCustomer, error: findError } = await supabaseClient
+    .from('customers')
+    .select('*')
+    .or(`phone.ilike.%${wa_id}%,whatsapp_number.ilike.%${wa_id}%`)
+    .limit(1)
+    .maybeSingle()
+
+  if (findError) {
+    console.error('Error finding customer:', findError)
+    return
+  }
+
+  if (existingCustomer) {
+    // Update existing customer with profile image
+    const updateData: any = {}
+    
+    if (profileImageUrl && profileImageUrl !== existingCustomer.profile_image_url) {
+      updateData.profile_image_url = profileImageUrl
+    }
+    
+    // Only update name if customer doesn't have one or WhatsApp provides a different one
+    if (contactName && (!existingCustomer.name || existingCustomer.name === 'Cliente')) {
+      updateData.name = contactName
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await supabaseClient
+        .from('customers')
+        .update(updateData)
+        .eq('id', existingCustomer.id)
+
+      if (updateError) {
+        console.error('Error updating customer profile:', updateError)
+      } else {
+        console.log('Customer profile updated successfully:', updateData)
+      }
+    }
+  } else {
+    // Create new customer if they don't exist
+    const { error: createError } = await supabaseClient
+      .from('customers')
+      .insert({
+        name: contactName || 'Cliente',
+        phone: wa_id,
+        whatsapp_number: wa_id,
+        email: `${wa_id}@whatsapp.placeholder`,
+        profile_image_url: profileImageUrl
+      })
+
+    if (createError) {
+      console.error('Error creating customer from contact:', createError)
+    } else {
+      console.log('New customer created from WhatsApp contact')
     }
   }
 }
@@ -198,7 +273,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     .select('*')
     .or(`phone.ilike.%${from}%,whatsapp_number.ilike.%${from}%`)
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (customerError && customerError.code !== 'PGRST116') {
     console.error('Error finding customer:', customerError)

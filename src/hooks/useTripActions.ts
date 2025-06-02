@@ -34,6 +34,28 @@ export function useTripActions() {
 
       if (updateError) throw updateError;
 
+      // Update dispatch status to "en_transito" for all dispatches containing these packages
+      const packageIds = packages.map(pkg => pkg.id);
+      const { data: dispatchPackages, error: dispatchPackagesError } = await supabase
+        .from('dispatch_packages')
+        .select('dispatch_id')
+        .in('package_id', packageIds);
+
+      if (dispatchPackagesError) throw dispatchPackagesError;
+
+      if (dispatchPackages && dispatchPackages.length > 0) {
+        const dispatchIds = [...new Set(dispatchPackages.map(dp => dp.dispatch_id))];
+        const { error: dispatchUpdateError } = await supabase
+          .from('dispatch_relations')
+          .update({
+            status: 'en_transito',
+            updated_at: new Date().toISOString()
+          })
+          .in('id', dispatchIds);
+
+        if (dispatchUpdateError) throw dispatchUpdateError;
+      }
+
       // Create tracking events for each package
       const trackingEvents = packages.map(pkg => ({
         package_id: pkg.id,
@@ -64,6 +86,7 @@ export function useTripActions() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       toast({
         title: "Viaje marcado en tránsito",
         description: `${data.updatedPackages} paquetes actualizados a "En Tránsito"`,
@@ -106,6 +129,28 @@ export function useTripActions() {
 
       if (updateError) throw updateError;
 
+      // Update dispatch status to "llegado" for all dispatches containing these packages
+      const packageIds = packages.map(pkg => pkg.id);
+      const { data: dispatchPackages, error: dispatchPackagesError } = await supabase
+        .from('dispatch_packages')
+        .select('dispatch_id')
+        .in('package_id', packageIds);
+
+      if (dispatchPackagesError) throw dispatchPackagesError;
+
+      if (dispatchPackages && dispatchPackages.length > 0) {
+        const dispatchIds = [...new Set(dispatchPackages.map(dp => dp.dispatch_id))];
+        const { error: dispatchUpdateError } = await supabase
+          .from('dispatch_relations')
+          .update({
+            status: 'llegado',
+            updated_at: new Date().toISOString()
+          })
+          .in('id', dispatchIds);
+
+        if (dispatchUpdateError) throw dispatchUpdateError;
+      }
+
       // Create tracking events for each package
       const trackingEvents = packages.map(pkg => ({
         package_id: pkg.id,
@@ -136,6 +181,7 @@ export function useTripActions() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       toast({
         title: "Viaje marcado como llegado",
         description: `${data.updatedPackages} paquetes actualizados a "En Destino"`,

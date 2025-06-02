@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -146,7 +147,7 @@ export function useCreateDispatch() {
         { weight: 0, freight: 0, amount_to_collect: 0 }
       );
 
-      // Crear el despacho usando la nueva función de formateo
+      // Crear el despacho usando el estado inicial "procesado"
       const { data: dispatch, error: dispatchError } = await supabase
         .from('dispatch_relations')
         .insert({
@@ -155,6 +156,7 @@ export function useCreateDispatch() {
           total_weight: totals.weight,
           total_freight: totals.freight,
           total_amount_to_collect: totals.amount_to_collect,
+          status: 'procesado', // Estado inicial en español
           notes: notes || null
         })
         .select()
@@ -174,7 +176,7 @@ export function useCreateDispatch() {
 
       if (relationError) throw relationError;
 
-      // NUEVO: Actualizar el estado de las encomiendas a "procesado"
+      // Actualizar el estado de las encomiendas a "procesado"
       const { error: updateError } = await supabase
         .from('packages')
         .update({ 

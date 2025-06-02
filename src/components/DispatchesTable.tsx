@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Truck, Package, Weight, DollarSign, Calendar, Eye } from 'lucide-react';
-import { useDispatchRelations, useDispatchPackages } from '@/hooks/useDispatchRelations';
+import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { DispatchDetailsDialog } from './DispatchDetailsDialog';
 
 interface DispatchesTableProps {
@@ -22,14 +22,27 @@ export function DispatchesTable({ selectedDate }: DispatchesTableProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'in_transit':
+      case 'procesado':
+        return 'bg-orange-100 text-orange-800';
+      case 'en_transito':
         return 'bg-blue-100 text-blue-800';
-      case 'delivered':
+      case 'llegado':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'procesado':
+        return 'Procesado';
+      case 'en_transito':
+        return 'En Tránsito';
+      case 'llegado':
+        return 'Llegado';
+      default:
+        return status;
     }
   };
 
@@ -138,7 +151,7 @@ export function DispatchesTable({ selectedDate }: DispatchesTableProps) {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(dispatch.status)}>
-                        {dispatch.status}
+                        {getStatusLabel(dispatch.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>

@@ -760,6 +760,33 @@ export type Database = {
           },
         ]
       }
+      travelers: {
+        Row: {
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           created_at: string
@@ -768,6 +795,7 @@ export type Database = {
           id: string
           origin: string
           status: string
+          traveler_id: string | null
           trip_date: string
           updated_at: string
         }
@@ -778,6 +806,7 @@ export type Database = {
           id?: string
           origin: string
           status?: string
+          traveler_id?: string | null
           trip_date: string
           updated_at?: string
         }
@@ -788,10 +817,19 @@ export type Database = {
           id?: string
           origin?: string
           status?: string
+          traveler_id?: string | null
           trip_date?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trips_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "travelers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

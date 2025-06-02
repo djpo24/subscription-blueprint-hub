@@ -11,7 +11,8 @@ import { useTripFormValidation } from '@/hooks/useTripFormValidation';
 export function useTripForm(onSuccess: () => void, initialDate?: Date) {
   const [formData, setFormData] = useState<TripFormData>({
     route: '',
-    flight_number: ''
+    flight_number: '',
+    traveler_id: ''
   });
 
   const [date, setDate] = useState<Date | undefined>(initialDate);
@@ -46,7 +47,7 @@ export function useTripForm(onSuccess: () => void, initialDate?: Date) {
       queryClient.invalidateQueries({ queryKey: ['pending-flight-notifications'] });
       
       // Reset form
-      setFormData({ route: '', flight_number: '' });
+      setFormData({ route: '', flight_number: '', traveler_id: '' });
       setDate(undefined);
       onSuccess();
     },

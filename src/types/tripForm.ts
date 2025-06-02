@@ -2,6 +2,7 @@
 export interface TripFormData {
   route: string;
   flight_number: string;
+  traveler_id: string;
 }
 
 export interface TripData {
@@ -9,6 +10,7 @@ export interface TripData {
   origin: string;
   destination: string;
   flight_number: string | null;
+  traveler_id: string | null;
   status: string;
 }
 

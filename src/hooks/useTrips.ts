@@ -8,7 +8,15 @@ export function useTrips() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trips')
-        .select('*')
+        .select(`
+          *,
+          travelers:traveler_id (
+            id,
+            first_name,
+            last_name,
+            phone
+          )
+        `)
         .order('trip_date', { ascending: false });
       
       if (error) throw error;

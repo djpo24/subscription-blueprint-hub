@@ -5,31 +5,29 @@ import { TripFormData } from '@/types/tripForm';
 export function useTripFormValidation() {
   const { toast } = useToast();
 
-  const validateForm = (date: Date | undefined, formData: TripFormData): boolean => {
-    if (!date || !formData.route) {
+  const validateForm = (date: Date | undefined, formData: TripFormData) => {
+    if (!date) {
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos requeridos",
+        description: "Por favor selecciona una fecha para el viaje",
         variant: "destructive"
       });
       return false;
     }
 
-    // Validar formato de ruta
-    if (!formData.route.includes(' -> ')) {
+    if (!formData.route) {
       toast({
-        title: "Error",
-        description: "Por favor selecciona una ruta válida",
+        title: "Error", 
+        description: "Por favor selecciona una ruta para el viaje",
         variant: "destructive"
       });
       return false;
     }
 
-    const routeParts = formData.route.split(' -> ');
-    if (routeParts.length !== 2 || !routeParts[0] || !routeParts[1]) {
+    if (!formData.traveler_id) {
       toast({
         title: "Error",
-        description: "Formato de ruta inválido",
+        description: "Por favor selecciona un viajero para el viaje",
         variant: "destructive"
       });
       return false;

@@ -1,4 +1,3 @@
-
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Truck, Package, Weight, DollarSign, User, MapPin, Send, AlertCircle } from 'lucide-react';
+import { Truck, Package, Weight, DollarSign, User, MapPin, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDispatchPackages } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
 
@@ -24,7 +23,9 @@ export function DispatchDetailsDialog({
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { 
     markTripAsInTransit, 
-    isMarkingAsInTransit 
+    isMarkingAsInTransit,
+    markTripAsArrived,
+    isMarkingAsArrived
   } = useTripActions();
 
   if (!dispatchId) return null;
@@ -46,6 +47,7 @@ export function DispatchDetailsDialog({
   // Obtener información del viaje desde el primer paquete
   const firstPackage = packages[0];
   const canMarkAsInTransit = firstPackage && packages.some(pkg => pkg.status === 'procesado');
+  const canMarkAsArrived = firstPackage && packages.some(pkg => pkg.status === 'transito');
 
   const handleMarkAsInTransit = () => {
     if (firstPackage && firstPackage.trip_id) {
@@ -53,6 +55,15 @@ export function DispatchDetailsDialog({
       markTripAsInTransit(firstPackage.trip_id);
     } else {
       console.error('❌ No se puede marcar como en tránsito: no hay trip_id');
+    }
+  };
+
+  const handleMarkAsArrived = () => {
+    if (firstPackage && firstPackage.trip_id) {
+      console.log('🏁 Marcando viaje como llegado:', firstPackage.trip_id);
+      markTripAsArrived(firstPackage.trip_id);
+    } else {
+      console.error('❌ No se puede marcar como llegado: no hay trip_id');
     }
   };
 
@@ -103,24 +114,38 @@ export function DispatchDetailsDialog({
               <Truck className="h-5 w-5" />
               Detalles del Despacho
             </DialogTitle>
-            {canMarkAsInTransit && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={handleMarkAsInTransit}
-                disabled={isMarkingAsInTransit}
-                className="flex items-center gap-1"
-              >
-                <Send className="h-3 w-3" />
-                {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
-              </Button>
-            )}
-            {!canMarkAsInTransit && packages.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <AlertCircle className="h-4 w-4" />
-                No hay paquetes procesados para marcar en tránsito
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {canMarkAsInTransit && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleMarkAsInTransit}
+                  disabled={isMarkingAsInTransit}
+                  className="flex items-center gap-1"
+                >
+                  <Send className="h-3 w-3" />
+                  {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
+                </Button>
+              )}
+              {canMarkAsArrived && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleMarkAsArrived}
+                  disabled={isMarkingAsArrived}
+                  className="flex items-center gap-1"
+                >
+                  <CheckCircle className="h-3 w-3" />
+                  {isMarkingAsArrived ? 'Marcando...' : 'Llegado'}
+                </Button>
+              )}
+              {!canMarkAsInTransit && !canMarkAsArrived && packages.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <AlertCircle className="h-4 w-4" />
+                  No hay acciones disponibles para este despacho
+                </div>
+              )}
+            </div>
           </div>
         </DialogHeader>
 

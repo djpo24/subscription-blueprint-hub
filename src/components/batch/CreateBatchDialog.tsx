@@ -40,9 +40,8 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
 
   const handleDestinationChange = (newDestination: string) => {
     setDestination(newDestination);
-    // Auto-select all packages for this destination
-    const packagesForDestination = packagesByDestination[newDestination] || [];
-    setSelectedPackages(packagesForDestination.map(pkg => pkg.id));
+    // Clear previous selection when changing destination
+    setSelectedPackages([]);
   };
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
@@ -51,6 +50,21 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
         ? [...prev, packageId]
         : prev.filter(id => id !== packageId)
     );
+  };
+
+  const handleSelectAllForDestination = () => {
+    if (!destination) return;
+    
+    const packagesForDestination = packagesByDestination[destination] || [];
+    const allPackageIds = packagesForDestination.map(pkg => pkg.id);
+    
+    // If all packages are already selected, deselect them; otherwise select all
+    const allSelected = allPackageIds.every(id => selectedPackages.includes(id));
+    if (allSelected) {
+      setSelectedPackages([]);
+    } else {
+      setSelectedPackages(allPackageIds);
+    }
   };
 
   const handleCreateBatch = async () => {
@@ -81,7 +95,7 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
 
       toast({
         title: "Bulto creado",
-        description: "El bulto ha sido creado exitosamente"
+        description: `Bulto creado exitosamente con ${selectedPackages.length} encomienda${selectedPackages.length > 1 ? 's' : ''}`
       });
 
       onOpenChange(false);
@@ -138,7 +152,7 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
             </div>
             
             {destinations.length === 0 && (
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-sm mt-2">
                 No hay encomiendas disponibles para crear bultos en este viaje
               </p>
             )}
@@ -147,9 +161,22 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
           {/* Package Selection */}
           {destination && (
             <div>
-              <Label className="text-base font-medium mb-3 block">
-                Encomiendas para {destination}
-              </Label>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-base font-medium">
+                  Encomiendas para {destination}
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAllForDestination}
+                >
+                  {selectedPackages.length === packagesByDestination[destination]?.length 
+                    ? 'Deseleccionar Todo' 
+                    : 'Seleccionar Todo'
+                  }
+                </Button>
+              </div>
               
               <div className="border rounded-lg max-h-60 overflow-y-auto">
                 <div className="space-y-2 p-3">
@@ -188,6 +215,9 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
                             {formatCurrency(pkg.amount_to_collect || 0)}
                           </span>
                         </div>
+                        <div className="text-xs text-gray-500 mt-1 truncate">
+                          {pkg.description}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -200,7 +230,7 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
           {selectedPackages.length > 0 && (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-medium text-blue-900 mb-2">
-                Resumen del Bulto
+                Resumen del Bulto ({selectedPackages.length} encomienda{selectedPackages.length > 1 ? 's' : ''})
               </h3>
               <div className="grid grid-cols-4 gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -247,7 +277,7 @@ export function CreateBatchDialog({ open, onOpenChange, tripId }: CreateBatchDia
               onClick={handleCreateBatch}
               disabled={selectedPackages.length === 0 || !destination || createBatchMutation.isPending}
             >
-              {createBatchMutation.isPending ? 'Creando...' : 'Crear Bulto'}
+              {createBatchMutation.isPending ? 'Creando...' : `Crear Bulto${selectedPackages.length > 1 ? ` (${selectedPackages.length} encomiendas)` : ''}`}
             </Button>
           </div>
         </div>

@@ -1,14 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePackageActions } from '@/hooks/usePackageActions';
 import { Trash2, Warehouse } from 'lucide-react';
+import { ProductDetailsInput } from './package-form/ProductDetailsInput';
+import { FreightAndWeightFields } from './package-form/FreightAndWeightFields';
+import { AmountToCollectSection } from './package-form/AmountToCollectSection';
+import { OptionalDescriptionField } from './package-form/OptionalDescriptionField';
 
 interface Package {
   id: string;
@@ -44,20 +45,57 @@ export function EditPackageForm({
   const { moveToWarehouse } = usePackageActions();
   
   const [formData, setFormData] = useState({
-    description: pkg.description || '',
-    weight: pkg.weight?.toString() || '',
-    freight: pkg.freight?.toString() || '',
-    amount_to_collect: pkg.amount_to_collect?.toString() || ''
+    description: '',
+    weight: '',
+    freight: '',
+    freightFormatted: '',
+    amountToCollect: '',
+    amountToCollectFormatted: '',
+    currency: 'COP',
+    details: ['']
   });
 
   useEffect(() => {
-    setFormData({
-      description: pkg.description || '',
-      weight: pkg.weight?.toString() || '',
-      freight: pkg.freight?.toString() || '',
-      amount_to_collect: pkg.amount_to_collect?.toString() || ''
-    });
+    if (pkg) {
+      // Parse existing description to extract details and optional description
+      const description = pkg.description || '';
+      let optionalDescription = '';
+      let details = [''];
+
+      // Try to split description if it contains " - " (separator from create form)
+      if (description.includes(' - ')) {
+        const parts = description.split(' - ');
+        optionalDescription = parts[0];
+        const detailsString = parts.slice(1).join(' - ');
+        details = detailsString.split(', ').filter(detail => detail.trim());
+      } else {
+        // If no separator, treat as details only
+        details = description.split(', ').filter(detail => detail.trim());
+      }
+
+      // Ensure at least one empty detail for input
+      if (details.length === 0) {
+        details = [''];
+      } else if (details[details.length - 1] !== '') {
+        details.push('');
+      }
+
+      setFormData({
+        description: optionalDescription,
+        weight: pkg.weight?.toString() || '',
+        freight: pkg.freight?.toString() || '',
+        freightFormatted: pkg.freight ? `$${pkg.freight.toLocaleString()}` : '',
+        amountToCollect: pkg.amount_to_collect?.toString() || '',
+        amountToCollectFormatted: pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString()}` : '',
+        currency: 'COP',
+        details: details
+      });
+    }
   }, [pkg]);
+
+  const getFilledDetails = () => {
+    return formData.details.filter(detail => detail.trim() !== '');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +104,16 @@ export function EditPackageForm({
       toast({
         title: "Error",
         description: "Debe seleccionar un cliente y un viaje",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const filledDetails = getFilledDetails();
+    if (filledDetails.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debe ingresar al menos un detalle del producto",
         variant: "destructive"
       });
       return;
@@ -83,14 +131,25 @@ export function EditPackageForm({
 
       if (tripError) throw tripError;
 
+      // Create package description from details and optional description
+      let finalDescription = filledDetails.join(', ');
+      if (formData.description.trim()) {
+        finalDescription = `${formData.description.trim()} - ${finalDescription}`;
+      }
+
+      console.log('Actualizando encomienda con valores:', {
+        freight: formData.freight ? parseFloat(formData.freight) : 0,
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+      });
+
       const { error } = await supabase
         .from('packages')
         .update({
           customer_id: customerId,
-          description: formData.description,
+          description: finalDescription,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           freight: formData.freight ? parseFloat(formData.freight) : 0,
-          amount_to_collect: formData.amount_to_collect ? parseFloat(formData.amount_to_collect) : 0,
+          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,
@@ -175,60 +234,45 @@ export function EditPackageForm({
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Descripción de la encomienda"
-              required
-            />
-          </div>
+        <ProductDetailsInput
+          details={formData.details}
+          onChange={(details) => setFormData(prev => ({ ...prev, details }))}
+        />
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="weight">Peso (kg)</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.1"
-                value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-                placeholder="0.0"
-              />
-            </div>
+        <FreightAndWeightFields
+          freight={formData.freight}
+          freightFormatted={formData.freightFormatted}
+          weight={formData.weight}
+          onFreightChange={(freight, freightFormatted) =>
+            setFormData(prev => ({ ...prev, freight, freightFormatted }))
+          }
+          onWeightChange={(weight) =>
+            setFormData(prev => ({ ...prev, weight }))
+          }
+        />
 
-            <div>
-              <Label htmlFor="freight">Flete</Label>
-              <Input
-                id="freight"
-                type="number"
-                step="0.01"
-                value={formData.freight}
-                onChange={(e) => setFormData(prev => ({ ...prev, freight: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
+        <AmountToCollectSection
+          currency={formData.currency}
+          amountToCollect={formData.amountToCollect}
+          amountToCollectFormatted={formData.amountToCollectFormatted}
+          onCurrencyChange={(currency) =>
+            setFormData(prev => ({ ...prev, currency }))
+          }
+          onAmountChange={(amountToCollect, amountToCollectFormatted) =>
+            setFormData(prev => ({ ...prev, amountToCollect, amountToCollectFormatted }))
+          }
+        />
 
-            <div>
-              <Label htmlFor="amount_to_collect">Valor a Cobrar</Label>
-              <Input
-                id="amount_to_collect"
-                type="number"
-                step="0.01"
-                value={formData.amount_to_collect}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount_to_collect: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-        </div>
+        <OptionalDescriptionField
+          description={formData.description}
+          onChange={(description) =>
+            setFormData(prev => ({ ...prev, description }))
+          }
+        />
 
         <div className="flex flex-col gap-3">
           <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? 'Actualizando...' : 'Actualizar Encomienda'}
+            {isLoading ? 'Actualizando...' : 'Actualizar'}
           </Button>
           
           <div className="grid grid-cols-2 gap-3">

@@ -20,9 +20,10 @@ interface Customer {
 interface CustomerSearchSelectorProps {
   selectedCustomerId: string;
   onCustomerChange: (customerId: string) => void;
+  readOnly?: boolean;
 }
 
-export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }: CustomerSearchSelectorProps) {
+export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, readOnly = false }: CustomerSearchSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
@@ -74,6 +75,8 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
 
   // Handle search input change
   const handleSearchChange = (value: string) => {
+    if (readOnly) return; // No permitir cambios si es solo lectura
+    
     setSearchTerm(value);
     setShowResults(value.trim().length > 0);
     
@@ -102,7 +105,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
   }, [selectedCustomer, searchTerm]);
 
   const handleFocus = () => {
-    if (searchTerm.trim()) {
+    if (!readOnly && searchTerm.trim()) {
       setShowResults(true);
     }
   };
@@ -111,6 +114,21 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
     // Delay hiding results to allow clicks
     setTimeout(() => setShowResults(false), 200);
   };
+
+  // Display read-only version
+  if (readOnly && selectedCustomer) {
+    return (
+      <div>
+        <Label htmlFor="customer">Cliente</Label>
+        <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+          {selectedCustomer.name}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          {selectedCustomer.email} • {selectedCustomer.phone}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -127,30 +145,34 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange }:
             onBlur={handleBlur}
           />
           
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCustomerDialog(true)}
-            className="px-3"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCustomerDialog(true)}
+              className="px-3"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
         {/* Selected customer validation */}
-        {searchTerm && !selectedCustomerId && (
+        {!readOnly && searchTerm && !selectedCustomerId && (
           <div className="text-xs text-red-600 mt-1">
             Debe seleccionar un cliente de la lista
           </div>
         )}
       </div>
 
-      <CustomerFormDialog
-        open={showCustomerDialog}
-        onOpenChange={setShowCustomerDialog}
-        onSuccess={handleCustomerCreated}
-      />
+      {!readOnly && (
+        <CustomerFormDialog
+          open={showCustomerDialog}
+          onOpenChange={setShowCustomerDialog}
+          onSuccess={handleCustomerCreated}
+        />
+      )}
     </>
   );
 }

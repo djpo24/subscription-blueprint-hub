@@ -63,7 +63,8 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             <CustomerSearchSelector
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
-              key={`${open}-${pkg.id}`} // Force re-render when dialog opens with new package
+              readOnly={true}
+              key={`${open}-${pkg.id}`}
             />
 
             <TripSelector

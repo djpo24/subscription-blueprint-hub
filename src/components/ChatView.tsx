@@ -1,7 +1,6 @@
-
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
 import { useChatData } from '@/hooks/useChatData';
@@ -11,6 +10,13 @@ export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const { chatList, conversationsByPhone, isLoading } = useChatData();
   const { handleSendMessage, isManualSending } = useChatMessages();
+
+  // Marcar como visitado cuando se accede a la vista de chat
+  useEffect(() => {
+    const now = new Date().toISOString();
+    localStorage.setItem('chat-last-visited', now);
+    console.log('Chat visited at:', now);
+  }, []);
 
   const handleSendMessageWrapper = async (message: string, image?: File) => {
     if (!selectedPhone) return;

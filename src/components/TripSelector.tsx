@@ -28,39 +28,67 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
     enabled: !disabled && !readOnly
   });
 
-  // Fetch specific trip data when in readOnly mode
+  // Fetch specific trip data when in readOnly mode or when we have a selectedTripId
   const { data: selectedTrip } = useQuery({
     queryKey: ['trip-details', selectedTripId],
     queryFn: async () => {
       if (!selectedTripId) return null;
       
+      console.log('Buscando detalles del viaje:', selectedTripId);
       const { data, error } = await supabase
         .from('trips')
         .select('id, trip_date, origin, destination, flight_number')
         .eq('id', selectedTripId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error al buscar viaje:', error);
+        throw error;
+      }
+      
+      console.log('Viaje encontrado:', data);
       return data;
     },
-    enabled: readOnly && !!selectedTripId
+    enabled: !!selectedTripId && (readOnly || !trips.some(t => t.id === selectedTripId))
   });
 
   if (disabled) {
     return null;
   }
 
-  // Display read-only version with trip date
-  if (readOnly && selectedTrip) {
-    return (
-      <div>
-        <Label htmlFor="trip">Viaje</Label>
-        <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
-          {new Date(selectedTrip.trip_date).toLocaleDateString()} - {selectedTrip.origin} → {selectedTrip.destination}
-          {selectedTrip.flight_number && ` (${selectedTrip.flight_number})`}
+  // Display read-only version
+  if (readOnly) {
+    if (selectedTrip) {
+      return (
+        <div>
+          <Label htmlFor="trip">Viaje</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            {new Date(selectedTrip.trip_date).toLocaleDateString()} - {selectedTrip.origin} → {selectedTrip.destination}
+            {selectedTrip.flight_number && ` (${selectedTrip.flight_number})`}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else if (selectedTripId) {
+      // Show loading state when we have an ID but no data yet
+      return (
+        <div>
+          <Label htmlFor="trip">Viaje</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Cargando viaje...
+          </div>
+        </div>
+      );
+    } else {
+      // No trip selected
+      return (
+        <div>
+          <Label htmlFor="trip">Viaje</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Sin viaje asignado
+          </div>
+        </div>
+      );
+    }
   }
 
   return (

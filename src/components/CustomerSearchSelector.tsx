@@ -97,12 +97,13 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     }
   };
 
-  // Update search term when customer is selected externally
+  // Update search term when customer is selected externally or when customers data loads
   useEffect(() => {
-    if (selectedCustomer && searchTerm !== selectedCustomer.name) {
+    if (selectedCustomer && (!searchTerm || searchTerm !== selectedCustomer.name)) {
+      console.log('Actualizando searchTerm con cliente seleccionado:', selectedCustomer.name);
       setSearchTerm(selectedCustomer.name);
     }
-  }, [selectedCustomer, searchTerm]);
+  }, [selectedCustomer, customers]);
 
   const handleFocus = () => {
     if (!readOnly && searchTerm.trim()) {
@@ -116,18 +117,30 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
   };
 
   // Display read-only version
-  if (readOnly && selectedCustomer) {
-    return (
-      <div>
-        <Label htmlFor="customer">Cliente</Label>
-        <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
-          {selectedCustomer.name}
+  if (readOnly) {
+    if (selectedCustomer) {
+      return (
+        <div>
+          <Label htmlFor="customer">Cliente</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            {selectedCustomer.name}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {selectedCustomer.email} • {selectedCustomer.phone}
+          </div>
         </div>
-        <div className="text-xs text-gray-500 mt-1">
-          {selectedCustomer.email} • {selectedCustomer.phone}
+      );
+    } else {
+      // Show loading state or empty state in read-only mode
+      return (
+        <div>
+          <Label htmlFor="customer">Cliente</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Cargando cliente...
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   return (

@@ -19,7 +19,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN')
+    // Get verify token from environment or use default for testing
+    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN') || 'ojitos_webhook_verify'
 
     if (req.method === 'GET') {
       // Webhook verification - Meta requires this
@@ -28,17 +29,30 @@ serve(async (req) => {
       const token = url.searchParams.get('hub.verify_token')
       const challenge = url.searchParams.get('hub.challenge')
 
-      console.log('Webhook verification attempt:', { mode, token, challenge })
+      console.log('Webhook verification attempt:', { 
+        mode, 
+        token, 
+        challenge,
+        expectedToken: verifyToken,
+        tokenMatch: token === verifyToken
+      })
 
       if (mode === 'subscribe' && token === verifyToken) {
         console.log('Webhook verified successfully')
         return new Response(challenge, { 
           status: 200,
-          headers: { 'Content-Type': 'text/plain' }
+          headers: { 
+            'Content-Type': 'text/plain',
+            ...corsHeaders
+          }
         })
       } else {
-        console.log('Webhook verification failed')
-        return new Response('Forbidden', { status: 403 })
+        console.log('Webhook verification failed - token mismatch')
+        console.log(`Expected: ${verifyToken}, Received: ${token}`)
+        return new Response('Forbidden', { 
+          status: 403,
+          headers: corsHeaders
+        })
       }
     }
 

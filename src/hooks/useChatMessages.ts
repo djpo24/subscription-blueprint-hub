@@ -60,8 +60,7 @@ export function useChatMessages() {
           console.error('Error uploading image:', uploadError);
           console.error('Upload error details:', {
             message: uploadError.message,
-            statusCode: uploadError.statusCode,
-            error: uploadError.error
+            name: uploadError.name
           });
           
           // Try to provide more specific error handling

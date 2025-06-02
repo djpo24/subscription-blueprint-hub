@@ -18,11 +18,11 @@ export function WebhookTester() {
 
   const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook';
 
-  // Test webhook verification
+  // Test webhook verification with the correct token from Meta
   const testWebhookVerification = async () => {
     setIsTesting(true);
     try {
-      const verifyUrl = `${webhookUrl}?hub.mode=subscribe&hub.verify_token=ojitos_webhook_verify&hub.challenge=1234567890`;
+      const verifyUrl = `${webhookUrl}?hub.mode=subscribe&hub.verify_token=1371636570719904&hub.challenge=1234567890`;
       
       const response = await fetch(verifyUrl, {
         method: 'GET',
@@ -34,12 +34,12 @@ export function WebhookTester() {
         setTestResults(prev => [...prev, {
           type: 'verification',
           status: 'success',
-          message: 'Verificación exitosa',
+          message: 'Verificación exitosa con token de Meta',
           details: { challenge: result, status: response.status }
         }]);
         toast({
           title: "✅ Verificación exitosa",
-          description: "El webhook responde correctamente a la verificación",
+          description: "El webhook responde correctamente a la verificación de Meta",
         });
       } else {
         throw new Error(`Verificación falló: ${response.status} - ${result}`);
@@ -259,7 +259,8 @@ export function WebhookTester() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Estas pruebas simulan los eventos que Facebook envía a tu webhook. Úsalas para verificar que todo funciona antes de la configuración final.
+            <strong>Token actualizado:</strong> Ahora usa el token correcto de Meta (1371636570719904). 
+            Asegúrate de que este mismo token esté configurado en la Meta Developer Console.
           </AlertDescription>
         </Alert>
 
@@ -281,7 +282,7 @@ export function WebhookTester() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="verification">Verificación de Webhook</SelectItem>
+                <SelectItem value="verification">Verificación de Webhook (Token Meta)</SelectItem>
                 <SelectItem value="message_status">Estado de Mensaje</SelectItem>
                 <SelectItem value="incoming_message">Mensaje Entrante</SelectItem>
               </SelectContent>
@@ -344,7 +345,7 @@ export function WebhookTester() {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Próximos pasos:</strong> Una vez que todas las pruebas pasen exitosamente, puedes configurar esta URL en la Meta Developer Console con confianza.
+              <strong>Próximos pasos:</strong> Una vez que todas las pruebas pasen exitosamente, el webhook está listo para recibir eventos de Meta con el token 1371636570719904.
             </AlertDescription>
           </Alert>
         </div>

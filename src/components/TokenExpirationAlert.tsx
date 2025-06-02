@@ -21,7 +21,7 @@ export function TokenExpirationAlert() {
           <ol className="list-decimal list-inside space-y-1 text-sm">
             <li>Vaya a Meta Developer Console</li>
             <li>Seleccione su aplicación de WhatsApp</li>
-            <li>Vaya a WhatsApp > API Setup</li>
+            <li>Vaya a WhatsApp {'->'} API Setup</li>
             <li>Genere un nuevo token temporal o configure un token permanente</li>
             <li>Actualice el token en la configuración de Supabase</li>
           </ol>

@@ -7,6 +7,78 @@ export function useTripActions() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const markTripAsInTransitMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      // Get all packages that are "procesado" (dispatched but not in transit) for this trip
+      const { data: packages, error: packagesError } = await supabase
+        .from('packages')
+        .select('id, tracking_number')
+        .eq('trip_id', tripId)
+        .eq('status', 'procesado');
+
+      if (packagesError) throw packagesError;
+
+      if (!packages || packages.length === 0) {
+        throw new Error('No packages found in "procesado" status for this trip');
+      }
+
+      // Update all packages to "transito" status
+      const { error: updateError } = await supabase
+        .from('packages')
+        .update({
+          status: 'transito',
+          updated_at: new Date().toISOString()
+        })
+        .eq('trip_id', tripId)
+        .eq('status', 'procesado');
+
+      if (updateError) throw updateError;
+
+      // Create tracking events for each package
+      const trackingEvents = packages.map(pkg => ({
+        package_id: pkg.id,
+        event_type: 'in_transit',
+        description: 'Paquete en tránsito',
+        location: 'En vuelo'
+      }));
+
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert(trackingEvents);
+
+      if (trackingError) throw trackingError;
+
+      // Update trip status to "in_progress"
+      const { error: tripUpdateError } = await supabase
+        .from('trips')
+        .update({
+          status: 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tripId);
+
+      if (tripUpdateError) throw tripUpdateError;
+
+      return { updatedPackages: packages.length };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      toast({
+        title: "Viaje marcado en tránsito",
+        description: `${data.updatedPackages} paquetes actualizados a "En Tránsito"`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error marking trip as in transit:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo marcar el viaje como en tránsito",
+        variant: "destructive"
+      });
+    }
+  });
+
   const markTripAsArrivedMutation = useMutation({
     mutationFn: async (tripId: string) => {
       // Get all packages in transit for this trip
@@ -48,6 +120,17 @@ export function useTripActions() {
 
       if (trackingError) throw trackingError;
 
+      // Update trip status to "completed"
+      const { error: tripUpdateError } = await supabase
+        .from('trips')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tripId);
+
+      if (tripUpdateError) throw tripUpdateError;
+
       return { updatedPackages: packages.length };
     },
     onSuccess: (data) => {
@@ -69,6 +152,8 @@ export function useTripActions() {
   });
 
   return {
+    markTripAsInTransit: markTripAsInTransitMutation.mutate,
+    isMarkingAsInTransit: markTripAsInTransitMutation.isPending,
     markTripAsArrived: markTripAsArrivedMutation.mutate,
     isMarkingAsArrived: markTripAsArrivedMutation.isPending,
   };

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Plane, MapPin } from 'lucide-react';
+import { Plus, Plane, MapPin, Send } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { FlightCard } from '../flight/FlightCard';
 import { FlightData } from '@/types/flight';
@@ -23,7 +23,12 @@ interface TripWithFlightCardProps {
 }
 
 export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }: TripWithFlightCardProps) {
-  const { markTripAsArrived, isMarkingAsArrived } = useTripActions();
+  const { 
+    markTripAsInTransit, 
+    isMarkingAsInTransit,
+    markTripAsArrived, 
+    isMarkingAsArrived 
+  } = useTripActions();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -62,11 +67,16 @@ export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }:
     return format(parseISO(normalizedDate), 'dd/MM/yyyy');
   };
 
+  const handleMarkAsInTransit = () => {
+    markTripAsInTransit(trip.id);
+  };
+
   const handleMarkAsArrived = () => {
     markTripAsArrived(trip.id);
   };
 
-  // Show "Mark as Arrived" button only for trips that are in progress or have landed flights
+  // Determinar qué botón mostrar basado en el estado del viaje
+  const canMarkAsInTransit = trip.status === 'scheduled';
   const canMarkAsArrived = trip.status === 'in_progress' || 
     (trip.flight_data?.has_landed && trip.status !== 'completed');
 
@@ -90,6 +100,18 @@ export function TripWithFlightCard({ trip, onAddPackage, onUpdateFlightStatus }:
             </div>
           </div>
           <div className="flex gap-2">
+            {canMarkAsInTransit && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={handleMarkAsInTransit}
+                disabled={isMarkingAsInTransit}
+                className="flex items-center gap-1"
+              >
+                <Send className="h-3 w-3" />
+                {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
+              </Button>
+            )}
             {canMarkAsArrived && (
               <Button 
                 size="sm" 

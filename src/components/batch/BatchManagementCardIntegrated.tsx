@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, Weight, DollarSign, Truck, Plus, Eye, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useShipmentBatches } from '@/hooks/useShipmentBatches';
 
 interface BatchManagementCardIntegratedProps {
@@ -57,16 +55,6 @@ export function BatchManagementCardIntegrated({
     return `$${value.toLocaleString('es-CO')}`;
   };
 
-  const totalStats = batches.reduce(
-    (acc, batch) => ({
-      packages: acc.packages + batch.total_packages,
-      weight: acc.weight + (batch.total_weight || 0),
-      freight: acc.freight + (batch.total_freight || 0),
-      amount_to_collect: acc.amount_to_collect + (batch.total_amount_to_collect || 0)
-    }),
-    { packages: 0, weight: 0, freight: 0, amount_to_collect: 0 }
-  );
-
   if (isLoading) {
     return (
       <Card>
@@ -76,6 +64,17 @@ export function BatchManagementCardIntegrated({
       </Card>
     );
   }
+
+  // Solo calcular estadísticas si hay bultos
+  const totalStats = batches.length > 0 ? batches.reduce(
+    (acc, batch) => ({
+      packages: acc.packages + batch.total_packages,
+      weight: acc.weight + (batch.total_weight || 0),
+      freight: acc.freight + (batch.total_freight || 0),
+      amount_to_collect: acc.amount_to_collect + (batch.total_amount_to_collect || 0)
+    }),
+    { packages: 0, weight: 0, freight: 0, amount_to_collect: 0 }
+  ) : null;
 
   return (
     <Card className="border-l-4 border-l-orange-500">
@@ -95,7 +94,8 @@ export function BatchManagementCardIntegrated({
           </Button>
         </div>
         
-        {batches.length > 0 && (
+        {/* Solo mostrar estadísticas si hay bultos creados */}
+        {totalStats && batches.length > 0 && (
           <div className="grid grid-cols-4 gap-4 mt-4 p-3 bg-orange-50 rounded-lg">
             <div className="text-center">
               <div className="text-lg font-bold text-blue-600">{totalStats.packages}</div>

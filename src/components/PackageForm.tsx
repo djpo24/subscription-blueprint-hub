@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -106,7 +105,7 @@ export function PackageForm({
           destination: tripData.destination,
           flight_number: tripData.flight_number,
           trip_id: tripId,
-          status: 'pending'
+          status: 'recibido' // Usar el nuevo estado en español
         }]);
 
       if (error) throw error;

@@ -20,9 +20,10 @@ interface CalendarViewProps {
   isLoading: boolean;
   onAddPackage: (tripId: string) => void;
   onCreateTrip: (date: Date) => void;
+  onViewPackagesByDate?: (date: Date) => void;
 }
 
-export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip }: CalendarViewProps) {
+export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip, onViewPackagesByDate }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   console.log('CalendarView received trips:', trips);
@@ -76,6 +77,7 @@ export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip }: C
           trips={trips}
           onAddPackage={onAddPackage}
           onCreateTrip={onCreateTrip}
+          onViewPackagesByDate={onViewPackagesByDate}
         />
       </CardContent>
     </Card>

@@ -12,6 +12,7 @@ import { FlightNotificationPanel } from '@/components/FlightNotificationPanel';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { PackageDialog } from '@/components/PackageDialog';
 import { TripDialog } from '@/components/TripDialog';
+import { PackagesByDateView } from '@/components/PackagesByDateView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
@@ -27,6 +28,7 @@ const Index = () => {
   const [selectedTripId, setSelectedTripId] = useState<string | undefined>();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [viewingPackagesByDate, setViewingPackagesByDate] = useState<Date | null>(null);
 
   // Fetch data using existing hooks
   const packagesData = usePackages();
@@ -57,6 +59,11 @@ const Index = () => {
     setTripDialogOpen(true);
   };
 
+  const handleViewPackagesByDate = (date: Date) => {
+    setViewingPackagesByDate(date);
+    setActiveTab('trips');
+  };
+
   const handlePackageSuccess = () => {
     setPackageDialogOpen(false);
     packagesData.refetch();
@@ -81,6 +88,10 @@ const Index = () => {
 
   const handlePackagesUpdate = () => {
     packagesData.refetch();
+  };
+
+  const handleBackToCalendar = () => {
+    setViewingPackagesByDate(null);
   };
 
   return (
@@ -128,15 +139,26 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="trips" className="space-y-8">
-            <CalendarView 
-              trips={trips}
-              isLoading={tripsLoading}
-              onAddPackage={handleAddPackageToTrip}
-              onCreateTrip={handleCreateTripFromCalendar}
-            />
-            <TripsWithFlightsView 
-              onAddPackage={handleAddPackageToTrip}
-            />
+            {viewingPackagesByDate ? (
+              <PackagesByDateView 
+                selectedDate={viewingPackagesByDate}
+                onBack={handleBackToCalendar}
+                onAddPackage={handleAddPackageToTrip}
+              />
+            ) : (
+              <>
+                <CalendarView 
+                  trips={trips}
+                  isLoading={tripsLoading}
+                  onAddPackage={handleAddPackageToTrip}
+                  onCreateTrip={handleCreateTripFromCalendar}
+                  onViewPackagesByDate={handleViewPackagesByDate}
+                />
+                <TripsWithFlightsView 
+                  onAddPackage={handleAddPackageToTrip}
+                />
+              </>
+            )}
           </TabsContent>
           
           <TabsContent value="notifications" className="space-y-8">

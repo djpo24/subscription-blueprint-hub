@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Package, ArrowLeft, Plane } from 'lucide-react';
+import { Plus, Package, ArrowLeft, Plane, Calendar } from 'lucide-react';
 import { getStatusColor, getStatusLabel } from '@/utils/calendarUtils';
 import { usePackagesByTrip } from '@/hooks/usePackagesByTrip';
 
@@ -22,11 +22,13 @@ interface TripPopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddPackage: (tripId: string) => void;
+  onViewPackagesByDate?: (date: Date) => void;
+  selectedDate: Date;
 }
 
 type ViewMode = 'trips' | 'packages';
 
-export function TripPopover({ trips, open, onOpenChange, onAddPackage }: TripPopoverProps) {
+export function TripPopover({ trips, open, onOpenChange, onAddPackage, onViewPackagesByDate, selectedDate }: TripPopoverProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('trips');
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const { data: packages = [], isLoading: packagesLoading } = usePackagesByTrip(selectedTripId || '');
@@ -39,6 +41,13 @@ export function TripPopover({ trips, open, onOpenChange, onAddPackage }: TripPop
   const handleViewPackages = (tripId: string) => {
     setSelectedTripId(tripId);
     setViewMode('packages');
+  };
+
+  const handleViewAllPackages = () => {
+    if (onViewPackagesByDate) {
+      onViewPackagesByDate(selectedDate);
+      onOpenChange(false);
+    }
   };
 
   const handleBackToTrips = () => {
@@ -91,49 +100,67 @@ export function TripPopover({ trips, open, onOpenChange, onAddPackage }: TripPop
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-          {viewMode === 'trips' && trips.map((trip) => (
-            <div
-              key={trip.id}
-              className="bg-gray-50 rounded-xl p-3 border"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <Badge className={`${getStatusColor(trip.status)} text-xs px-2 py-1 font-medium border rounded-full`}>
-                  {getStatusLabel(trip.status)}
-                </Badge>
-              </div>
-              
-              <div className="font-bold text-black text-sm mb-2">
-                {trip.origin} → {trip.destination}
-              </div>
-              
-              {trip.flight_number && (
-                <div className="text-gray-600 text-xs mb-3 font-medium">
-                  Vuelo: {trip.flight_number}
+          {viewMode === 'trips' && (
+            <>
+              {/* Botón para ver todas las encomiendas del día */}
+              {onViewPackagesByDate && trips.length > 0 && (
+                <div className="border-b pb-3 mb-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleViewAllPackages}
+                    className="w-full text-sm h-10"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Ver Todas las Encomiendas del Día
+                  </Button>
                 </div>
               )}
-              
-              <div className="space-y-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleViewPackages(trip.id)}
-                  className="w-full text-xs h-8"
+
+              {trips.map((trip) => (
+                <div
+                  key={trip.id}
+                  className="bg-gray-50 rounded-xl p-3 border"
                 >
-                  <Package className="h-3 w-3 mr-1" />
-                  Ver Encomiendas
-                </Button>
-                
-                <Button
-                  size="sm"
-                  onClick={() => handleAddPackage(trip.id)}
-                  className="w-full uber-button-primary text-xs h-8"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Agregar Encomienda
-                </Button>
-              </div>
-            </div>
-          ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge className={`${getStatusColor(trip.status)} text-xs px-2 py-1 font-medium border rounded-full`}>
+                      {getStatusLabel(trip.status)}
+                    </Badge>
+                  </div>
+                  
+                  <div className="font-bold text-black text-sm mb-2">
+                    {trip.origin} → {trip.destination}
+                  </div>
+                  
+                  {trip.flight_number && (
+                    <div className="text-gray-600 text-xs mb-3 font-medium">
+                      Vuelo: {trip.flight_number}
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewPackages(trip.id)}
+                      className="w-full text-xs h-8"
+                    >
+                      <Package className="h-3 w-3 mr-1" />
+                      Ver Encomiendas
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddPackage(trip.id)}
+                      className="w-full uber-button-primary text-xs h-8"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Agregar Encomienda
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
 
           {viewMode === 'packages' && (
             <>

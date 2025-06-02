@@ -20,9 +20,10 @@ interface CalendarDayProps {
   trips: Trip[];
   onAddPackage: (tripId: string) => void;
   onCreateTrip: (date: Date) => void;
+  onViewPackagesByDate?: (date: Date) => void;
 }
 
-export function CalendarDay({ day, currentDate, trips, onAddPackage, onCreateTrip }: CalendarDayProps) {
+export function CalendarDay({ day, currentDate, trips, onAddPackage, onCreateTrip, onViewPackagesByDate }: CalendarDayProps) {
   const [showPopover, setShowPopover] = useState(false);
   
   const isCurrentMonth = isSameMonth(day, currentDate);
@@ -92,6 +93,8 @@ export function CalendarDay({ day, currentDate, trips, onAddPackage, onCreateTri
         open={showPopover}
         onOpenChange={setShowPopover}
         onAddPackage={onAddPackage}
+        onViewPackagesByDate={onViewPackagesByDate}
+        selectedDate={day}
       />
     </>
   );

@@ -37,6 +37,18 @@ export function useChatMessages() {
     image?: File
   ) => {
     try {
+      console.log('Sending message:', { selectedPhone, customerId, message, hasImage: !!image });
+
+      // Validar que tengamos al menos un mensaje o imagen
+      if (!message.trim() && !image) {
+        throw new Error('Debe proporcionar un mensaje o una imagen');
+      }
+
+      // Validar el número de teléfono
+      if (!selectedPhone || selectedPhone.trim() === '') {
+        throw new Error('Número de teléfono requerido');
+      }
+
       let imageUrl: string | undefined;
 
       // Si hay una imagen seleccionada, subirla primero
@@ -58,17 +70,7 @@ export function useChatMessages() {
 
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
-          console.error('Upload error details:', {
-            message: uploadError.message,
-            name: uploadError.name
-          });
-          
-          // Try to provide more specific error handling
-          if (uploadError.message?.includes('row-level security policy')) {
-            throw new Error('Error de permisos de almacenamiento. Por favor, contacte al administrador.');
-          }
-          
-          throw uploadError;
+          throw new Error('Error al subir la imagen: ' + uploadError.message);
         }
 
         const { data: { publicUrl } } = supabase.storage
@@ -80,9 +82,10 @@ export function useChatMessages() {
       }
 
       // Crear el mensaje final
-      const finalMessage = message || (imageUrl ? '📷 Imagen' : '');
+      const finalMessage = message.trim() || (imageUrl ? '📷 Imagen' : '');
 
       if (!customerId) {
+        console.log('Sending to unregistered customer');
         // Crear entrada de notificación sin customer ID
         const { data: notificationData, error: logError } = await supabase
           .from('notification_log')
@@ -96,10 +99,15 @@ export function useChatMessages() {
           .select()
           .single();
 
-        if (logError) throw logError;
+        if (logError) {
+          console.error('Error creating notification log:', logError);
+          throw new Error('Error al crear registro de notificación');
+        }
+
+        console.log('Notification log created:', notificationData.id);
 
         // Enviar notificación WhatsApp
-        const response = await supabase.functions.invoke('send-whatsapp-notification', {
+        const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
             phone: selectedPhone,
@@ -108,18 +116,26 @@ export function useChatMessages() {
           }
         });
 
-        if (response.error) throw response.error;
+        if (functionError) {
+          console.error('Function error:', functionError);
+          throw new Error('Error al enviar mensaje por WhatsApp: ' + functionError.message);
+        }
+
+        console.log('WhatsApp notification sent successfully:', responseData);
       } else {
+        console.log('Sending to registered customer:', customerId);
         // Usar sendManualNotification para clientes registrados
         await sendManualNotification({
           customerId: customerId,
           packageId: '',
           message: finalMessage,
-          phone: selectedPhone
+          phone: selectedPhone,
+          imageUrl: imageUrl
         });
       }
 
       // Guardar mensaje enviado en nuestra tabla
+      console.log('Saving sent message');
       saveSentMessage({
         customerId: customerId,
         phone: selectedPhone,
@@ -134,21 +150,28 @@ export function useChatMessages() {
 
     } catch (error) {
       console.error('Error sending reply:', error);
+      
       let errorMessage = "No se pudo enviar el mensaje";
       
-      if (error.message?.includes('row-level security policy')) {
-        errorMessage = "Error de permisos para subir imágenes. Intente nuevamente.";
-      } else if (error.message?.includes('Bucket not found')) {
-        errorMessage = "Error de configuración de almacenamiento. Reintentando...";
-        // Retry once after ensuring bucket exists
-        try {
-          await ensureChatStorageBucket();
-          toast({
-            title: "Reintentando",
-            description: "Configuración de almacenamiento reparada. Intente enviar nuevamente.",
-          });
-        } catch (retryError) {
-          console.error('Error in retry:', retryError);
+      if (error instanceof Error) {
+        if (error.message.includes('row-level security policy')) {
+          errorMessage = "Error de permisos para subir imágenes. Intente nuevamente.";
+        } else if (error.message.includes('Bucket not found')) {
+          errorMessage = "Error de configuración de almacenamiento. Reintentando...";
+          // Retry once after ensuring bucket exists
+          try {
+            await ensureChatStorageBucket();
+            toast({
+              title: "Reintentando",
+              description: "Configuración de almacenamiento reparada. Intente enviar nuevamente.",
+            });
+            return;
+          } catch (retryError) {
+            console.error('Error in retry:', retryError);
+            errorMessage = "Error persistente de configuración de almacenamiento";
+          }
+        } else {
+          errorMessage = error.message;
         }
       }
       

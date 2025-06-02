@@ -1,162 +1,79 @@
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './use-toast';
+
+interface ManualNotificationData {
+  customerId: string;
+  packageId: string;
+  message: string;
+  phone: string;
+  imageUrl?: string;
+}
 
 export function useNotifications() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const sendManualNotificationMutation = useMutation({
-    mutationFn: async ({ 
-      customerId, 
-      packageId, 
-      message, 
-      phone 
-    }: { 
-      customerId: string;
-      packageId: string;
-      message: string;
-      phone: string;
-    }) => {
-      // First, create the notification log entry
-      const { data: notificationData, error: logError } = await supabase
+    mutationFn: async (data: ManualNotificationData) => {
+      console.log('Sending manual notification:', data);
+
+      // Validar datos requeridos
+      if (!data.customerId || !data.phone || !data.message) {
+        throw new Error('Datos incompletos para enviar notificación');
+      }
+
+      // Crear entrada en notification_log
+      const { data: logEntry, error: logError } = await supabase
         .from('notification_log')
         .insert({
-          package_id: packageId || null,
-          customer_id: customerId,
-          notification_type: 'manual',
-          message: message,
+          customer_id: data.customerId,
+          package_id: data.packageId || null,
+          notification_type: 'manual_reply',
+          message: data.message,
           status: 'pending'
         })
         .select()
         .single();
 
-      if (logError) throw logError;
+      if (logError) {
+        console.error('Error creating notification log:', logError);
+        throw new Error('Error al crear registro de notificación');
+      }
 
-      // Then send the WhatsApp notification
-      const response = await supabase.functions.invoke('send-whatsapp-notification', {
+      console.log('Notification log created:', logEntry.id);
+
+      // Enviar notificación
+      const { data: responseData, error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
-          notificationId: notificationData.id,
-          phone: phone,
-          message: message
+          notificationId: logEntry.id,
+          phone: data.phone,
+          message: data.message,
+          imageUrl: data.imageUrl
         }
       });
 
-      if (response.error) throw response.error;
-      
-      return response.data;
+      if (notificationError) {
+        console.error('Error sending notification:', notificationError);
+        throw new Error('Error al enviar notificación: ' + notificationError.message);
+      }
+
+      console.log('Manual notification sent successfully:', responseData);
+      return responseData;
     },
     onSuccess: () => {
-      toast({
-        title: "Notificación enviada",
-        description: "La notificación se envió correctamente por WhatsApp",
-      });
+      // Refrescar datos relacionados
+      queryClient.invalidateQueries({ queryKey: ['notification-log'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
     },
     onError: (error: any) => {
       console.error('Error sending manual notification:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar la notificación",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const sendPackageStatusNotificationMutation = useMutation({
-    mutationFn: async ({ 
-      packageId, 
-      status 
-    }: { 
-      packageId: string;
-      status: string;
-    }) => {
-      // Get package and customer information
-      const { data: packageData, error: packageError } = await supabase
-        .from('packages')
-        .select(`
-          *,
-          customers (
-            name,
-            phone,
-            whatsapp_number
-          )
-        `)
-        .eq('id', packageId)
-        .single();
-
-      if (packageError) throw packageError;
-
-      const customer = packageData.customers;
-      const phone = customer?.whatsapp_number || customer?.phone;
-
-      if (!phone) {
-        throw new Error('No se encontró número de teléfono para el cliente');
-      }
-
-      // Create appropriate message based on status
-      let message = '';
-      switch (status) {
-        case 'in_transit':
-          message = `Su encomienda ${packageData.tracking_number} está en tránsito hacia ${packageData.destination}.`;
-          break;
-        case 'arrived':
-          message = `¡Su encomienda ${packageData.tracking_number} ha llegado a ${packageData.destination}! Ya puede recogerla en nuestras oficinas.`;
-          break;
-        case 'delivered':
-          message = `Su encomienda ${packageData.tracking_number} ha sido entregada exitosamente. ¡Gracias por confiar en Envíos Ojitos!`;
-          break;
-        default:
-          message = `Actualización de su encomienda ${packageData.tracking_number}: ${status}`;
-      }
-
-      // Create notification log entry
-      const { data: notificationData, error: logError } = await supabase
-        .from('notification_log')
-        .insert({
-          package_id: packageId,
-          customer_id: packageData.customer_id,
-          notification_type: 'status_update',
-          message: message,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (logError) throw logError;
-
-      // Send WhatsApp notification
-      const response = await supabase.functions.invoke('send-whatsapp-notification', {
-        body: {
-          notificationId: notificationData.id,
-          phone: phone,
-          message: message
-        }
-      });
-
-      if (response.error) throw response.error;
-      
-      return response.data;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Notificación de estado enviada",
-        description: "Se notificó al cliente sobre el cambio de estado",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error sending status notification:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar la notificación de estado",
-        variant: "destructive"
-      });
     }
   });
 
   return {
-    sendManualNotification: sendManualNotificationMutation.mutate,
-    sendPackageStatusNotification: sendPackageStatusNotificationMutation.mutate,
+    sendManualNotification: sendManualNotificationMutation.mutateAsync,
     isManualSending: sendManualNotificationMutation.isPending,
-    isStatusSending: sendPackageStatusNotificationMutation.isPending,
   };
 }

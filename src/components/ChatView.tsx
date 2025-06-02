@@ -1,15 +1,19 @@
+
 import { Card, CardContent } from '@/components/ui/card';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const { chatList, conversationsByPhone, isLoading } = useChatData();
   const { handleSendMessage, isManualSending } = useChatMessages();
+  const isMobile = useIsMobile();
 
   // Marcar como visitado cuando se accede a la vista de chat
   useEffect(() => {
@@ -32,6 +36,10 @@ export function ChatView() {
     );
   };
 
+  const handleBackToList = () => {
+    setSelectedPhone(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -40,6 +48,71 @@ export function ChatView() {
     );
   }
 
+  // Vista móvil - mostrar solo lista o solo conversación
+  if (isMobile) {
+    // Si hay una conversación seleccionada, mostrar solo la conversación
+    if (selectedPhone && conversationsByPhone[selectedPhone]) {
+      return (
+        <div className="h-[calc(100vh-12rem)]">
+          <div className="h-full flex flex-col">
+            {/* Header móvil con botón de volver */}
+            <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToList}
+                className="p-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-lg font-semibold">
+                {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
+              </h2>
+            </div>
+            
+            {/* Conversación completa */}
+            <div className="flex-1">
+              <ChatConversation
+                phone={selectedPhone}
+                customerName={conversationsByPhone[selectedPhone].customerName}
+                customerId={conversationsByPhone[selectedPhone].customerId}
+                messages={conversationsByPhone[selectedPhone].messages}
+                isRegistered={!!conversationsByPhone[selectedPhone].customerId}
+                onSendMessage={handleSendMessageWrapper}
+                isLoading={isManualSending}
+                profileImageUrl={conversationsByPhone[selectedPhone].profileImageUrl}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Vista de lista de chats en móvil
+    return (
+      <div className="h-[calc(100vh-12rem)]">
+        {chatList.length === 0 ? (
+          <Card className="h-full">
+            <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold mb-2">No hay mensajes</h3>
+              <p className="text-gray-500">
+                Los mensajes de WhatsApp aparecerán aquí cuando los clientes escriban
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <ChatList
+            chats={chatList}
+            selectedPhone={selectedPhone}
+            onChatSelect={setSelectedPhone}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Vista desktop - mantener el layout actual de dos columnas
   return (
     <div className="h-[calc(100vh-12rem)]">
       <div className="h-full flex">

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +13,7 @@ import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { PackageDialog } from '@/components/PackageDialog';
 import { TripDialog } from '@/components/TripDialog';
 import { PackagesByDateView } from '@/components/PackagesByDateView';
+import { ChatView } from '@/components/ChatView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
@@ -103,10 +105,11 @@ const Index = () => {
       
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="trips">Viajes</TabsTrigger>
             <TabsTrigger value="dispatches">Despachos</TabsTrigger>
+            <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
             <TabsTrigger value="settings">Configuración</TabsTrigger>
           </TabsList>
@@ -154,6 +157,10 @@ const Index = () => {
           
           <TabsContent value="dispatches" className="space-y-8">
             <DispatchesTable />
+          </TabsContent>
+          
+          <TabsContent value="chat" className="space-y-8">
+            <ChatView />
           </TabsContent>
           
           <TabsContent value="notifications" className="space-y-8">

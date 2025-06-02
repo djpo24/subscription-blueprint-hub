@@ -37,7 +37,7 @@ export function useUnreadMessages() {
         return 0;
       }
     },
-    refetchInterval: 30000, // Refrescar cada 30 segundos
+    refetchInterval: 5000, // Refrescar cada 5 segundos para notificaciones más rápidas
   });
 
   return {

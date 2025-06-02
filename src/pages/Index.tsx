@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -38,7 +39,17 @@ const Index = () => {
   const { data: trips = [], isLoading: tripsLoading, refetch: refetchTrips } = useTrips();
   const { data: customersCount = 0 } = useCustomersCount();
   const { data: packageStats } = usePackageStats();
-  const { unreadCount } = useUnreadMessages();
+  const { unreadCount, refetch: refetchUnreadMessages } = useUnreadMessages();
+
+  // Actualizar notificaciones cuando cambie de pestaña
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      // Cuando entra al chat, marcar como visitado y limpiar notificaciones
+      const now = new Date().toISOString();
+      localStorage.setItem('chat-last-visited', now);
+      refetchUnreadMessages();
+    }
+  }, [activeTab, refetchUnreadMessages]);
 
   // Filter packages based on search term - ensure we always return an array
   const filteredPackages = (packagesData.data || []).filter(pkg => 

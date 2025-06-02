@@ -543,6 +543,97 @@ export type Database = {
           },
         ]
       }
+      package_debts: {
+        Row: {
+          created_at: string
+          debt_start_date: string | null
+          debt_type: string
+          delivery_date: string | null
+          id: string
+          package_id: string
+          paid_amount: number
+          pending_amount: number
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          debt_start_date?: string | null
+          debt_type?: string
+          delivery_date?: string | null
+          id?: string
+          package_id: string
+          paid_amount?: number
+          pending_amount: number
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          debt_start_date?: string | null
+          debt_type?: string
+          delivery_date?: string | null
+          id?: string
+          package_id?: string
+          paid_amount?: number
+          pending_amount?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_debts_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: true
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          package_id: string
+          payment_method: string
+          payment_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          package_id: string
+          payment_method?: string
+          payment_type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          package_id?: string
+          payment_method?: string
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packages: {
         Row: {
           actual_arrival: string | null
@@ -550,6 +641,8 @@ export type Database = {
           batch_id: string | null
           created_at: string
           customer_id: string
+          delivered_at: string | null
+          delivered_by: string | null
           description: string
           destination: string
           dimensions: string | null
@@ -570,6 +663,8 @@ export type Database = {
           batch_id?: string | null
           created_at?: string
           customer_id: string
+          delivered_at?: string | null
+          delivered_by?: string | null
           description: string
           destination: string
           dimensions?: string | null
@@ -590,6 +685,8 @@ export type Database = {
           batch_id?: string | null
           created_at?: string
           customer_id?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
           description?: string
           destination?: string
           dimensions?: string | null
@@ -836,6 +933,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_debt_days: {
+        Args: { debt_start_date: string }
+        Returns: number
+      }
       generate_batch_label: {
         Args: { p_trip_id: string; p_batch_number: string }
         Returns: string
@@ -864,6 +965,10 @@ export type Database = {
           recipient_phone: string
           notification_log: Json
         }[]
+      }
+      mark_package_as_delivered: {
+        Args: { p_package_id: string; p_delivered_by?: string }
+        Returns: undefined
       }
       migrate_existing_dispatches: {
         Args: Record<PropertyKey, never>

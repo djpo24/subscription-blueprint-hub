@@ -29,18 +29,26 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedTripId, setSelectedTripId] = useState('');
 
-  // Reset form when dialog opens with package data
+  // Initialize form when dialog opens with package data - only set once when package changes
   useEffect(() => {
-    if (open && pkg) {
+    if (pkg && open) {
       console.log('Inicializando EditPackageDialog con paquete:', pkg);
+      console.log('Customer ID:', pkg.customer_id);
+      console.log('Trip ID:', pkg.trip_id);
+      
+      // Set the IDs immediately when package is available
       setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(pkg.trip_id || '');
-    } else if (!open) {
-      // Reset when dialog closes
+    }
+  }, [pkg?.id, open]); // Only depend on package ID and open state
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
       setSelectedCustomerId('');
       setSelectedTripId('');
     }
-  }, [open, pkg]);
+  }, [open]);
 
   const handleSuccess = () => {
     onOpenChange(false);
@@ -69,14 +77,14 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
               readOnly={true}
-              key={`customer-${pkg.id}-${selectedCustomerId}`}
+              key={`customer-${pkg.customer_id}`}
             />
 
             <TripSelector
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
               readOnly={true}
-              key={`trip-${pkg.id}-${selectedTripId}`}
+              key={`trip-${pkg.trip_id}`}
             />
           </div>
 

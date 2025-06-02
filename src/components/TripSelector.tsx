@@ -12,7 +12,7 @@ interface TripSelectorProps {
 }
 
 export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly }: TripSelectorProps) {
-  // Fetch trips for the dropdown
+  // Fetch trips for the dropdown (only when not readOnly and not disabled)
   const { data: trips = [] } = useQuery({
     queryKey: ['trips-for-packages'],
     queryFn: async () => {
@@ -28,7 +28,7 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
     enabled: !disabled && !readOnly
   });
 
-  // Fetch specific trip data when we have a selectedTripId
+  // Fetch specific trip data when we have a selectedTripId (always enabled when we have an ID)
   const { data: selectedTrip, isLoading: tripLoading } = useQuery({
     queryKey: ['trip-details', selectedTripId],
     queryFn: async () => {
@@ -49,7 +49,7 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
       console.log('Viaje encontrado:', data);
       return data;
     },
-    enabled: !!selectedTripId
+    enabled: !!selectedTripId // Always enabled when we have an ID
   });
 
   if (disabled) {

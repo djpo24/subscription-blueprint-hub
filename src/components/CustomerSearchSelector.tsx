@@ -28,7 +28,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
   const [showResults, setShowResults] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  // Fetch customers for search
+  // Fetch customers for search (only when not readOnly)
   const { data: customers = [], refetch: refetchCustomers } = useQuery({
     queryKey: ['customers-search'],
     queryFn: async () => {
@@ -43,7 +43,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     enabled: !readOnly
   });
 
-  // Fetch specific customer when we have a selectedCustomerId
+  // Fetch specific customer when we have a selectedCustomerId (always enabled when we have an ID)
   const { data: selectedCustomer, isLoading: customerLoading } = useQuery({
     queryKey: ['customer-details', selectedCustomerId],
     queryFn: async () => {
@@ -64,21 +64,21 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
       console.log('Cliente encontrado:', data);
       return data;
     },
-    enabled: !!selectedCustomerId
+    enabled: !!selectedCustomerId // Always enabled when we have an ID
   });
 
-  // Update search term when customer is selected externally or when customers data loads
+  // Update search term when customer is found
   useEffect(() => {
     if (selectedCustomer && readOnly) {
-      console.log('Actualizando searchTerm con cliente seleccionado (readOnly):', selectedCustomer.name);
+      console.log('Actualizando searchTerm (readOnly):', selectedCustomer.name);
       setSearchTerm(selectedCustomer.name);
-    } else if (selectedCustomer && !readOnly && (!searchTerm || searchTerm !== selectedCustomer.name)) {
-      console.log('Actualizando searchTerm con cliente seleccionado (editable):', selectedCustomer.name);
+    } else if (selectedCustomer && !readOnly && searchTerm !== selectedCustomer.name) {
+      console.log('Actualizando searchTerm (editable):', selectedCustomer.name);
       setSearchTerm(selectedCustomer.name);
     }
   }, [selectedCustomer, readOnly]);
 
-  // Reset search term when selectedCustomerId is cleared
+  // Reset search term when selectedCustomerId is cleared (but not in readOnly mode)
   useEffect(() => {
     if (!selectedCustomerId && !readOnly) {
       setSearchTerm('');

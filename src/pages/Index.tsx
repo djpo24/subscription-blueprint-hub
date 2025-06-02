@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,10 +14,12 @@ import { TripDialog } from '@/components/TripDialog';
 import { PackagesByDateView } from '@/components/PackagesByDateView';
 import { ChatView } from '@/components/ChatView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NotificationBadge } from '@/components/ui/notification-badge';
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { usePackageStats } from '@/hooks/usePackageStats';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { TripsWithFlightsView } from '@/components/TripsWithFlightsView';
 import { DispatchesTable } from '@/components/DispatchesTable';
@@ -37,6 +38,7 @@ const Index = () => {
   const { data: trips = [], isLoading: tripsLoading, refetch: refetchTrips } = useTrips();
   const { data: customersCount = 0 } = useCustomersCount();
   const { data: packageStats } = usePackageStats();
+  const { unreadCount } = useUnreadMessages();
 
   // Filter packages based on search term - ensure we always return an array
   const filteredPackages = (packagesData.data || []).filter(pkg => 
@@ -109,7 +111,10 @@ const Index = () => {
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="trips">Viajes</TabsTrigger>
             <TabsTrigger value="dispatches">Despachos</TabsTrigger>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="chat" className="relative">
+              Chat
+              <NotificationBadge count={unreadCount} />
+            </TabsTrigger>
             <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
             <TabsTrigger value="settings">Configuración</TabsTrigger>
           </TabsList>

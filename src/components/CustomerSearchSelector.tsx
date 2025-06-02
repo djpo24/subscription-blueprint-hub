@@ -28,15 +28,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
   const [showResults, setShowResults] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  // Reset search term when selectedCustomerId is cleared
-  useEffect(() => {
-    if (!selectedCustomerId) {
-      setSearchTerm('');
-      setShowResults(false);
-    }
-  }, [selectedCustomerId]);
-
-  // Fetch customers for search
+  // Fetch customers for search (only when not readOnly)
   const { data: customers = [], refetch: refetchCustomers } = useQuery({
     queryKey: ['customers-search'],
     queryFn: async () => {
@@ -47,8 +39,41 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
       
       if (error) throw error;
       return data as Customer[];
-    }
+    },
+    enabled: !readOnly
   });
+
+  // Fetch specific customer when in readOnly mode or when we have a selectedCustomerId
+  const { data: selectedCustomer, isLoading: customerLoading } = useQuery({
+    queryKey: ['customer-details', selectedCustomerId],
+    queryFn: async () => {
+      if (!selectedCustomerId) return null;
+      
+      console.log('Buscando detalles del cliente:', selectedCustomerId);
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, email, phone, id_number')
+        .eq('id', selectedCustomerId)
+        .single();
+      
+      if (error) {
+        console.error('Error al buscar cliente:', error);
+        throw error;
+      }
+      
+      console.log('Cliente encontrado:', data);
+      return data;
+    },
+    enabled: !!selectedCustomerId
+  });
+
+  // Reset search term when selectedCustomerId is cleared
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setSearchTerm('');
+      setShowResults(false);
+    }
+  }, [selectedCustomerId]);
 
   // Filter customers based on search term
   const filteredCustomers = useMemo(() => {
@@ -63,9 +88,6 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     );
   }, [customers, searchTerm]);
 
-  // Get selected customer info
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer) => {
     onCustomerChange(customer.id);
@@ -75,7 +97,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
 
   // Handle search input change
   const handleSearchChange = (value: string) => {
-    if (readOnly) return; // No permitir cambios si es solo lectura
+    if (readOnly) return;
     
     setSearchTerm(value);
     setShowResults(value.trim().length > 0);
@@ -103,7 +125,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
       console.log('Actualizando searchTerm con cliente seleccionado:', selectedCustomer.name);
       setSearchTerm(selectedCustomer.name);
     }
-  }, [selectedCustomer, customers]);
+  }, [selectedCustomer]);
 
   const handleFocus = () => {
     if (!readOnly && searchTerm.trim()) {
@@ -118,6 +140,17 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
 
   // Display read-only version
   if (readOnly) {
+    if (customerLoading) {
+      return (
+        <div>
+          <Label htmlFor="customer">Cliente</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Cargando cliente...
+          </div>
+        </div>
+      );
+    }
+
     if (selectedCustomer) {
       return (
         <div>
@@ -131,12 +164,11 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
         </div>
       );
     } else {
-      // Show loading state or empty state in read-only mode
       return (
         <div>
           <Label htmlFor="customer">Cliente</Label>
           <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
-            Cargando cliente...
+            Cliente no encontrado
           </div>
         </div>
       );
@@ -158,34 +190,30 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
             onBlur={handleBlur}
           />
           
-          {!readOnly && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCustomerDialog(true)}
-              className="px-3"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCustomerDialog(true)}
+            className="px-3"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
         
         {/* Selected customer validation */}
-        {!readOnly && searchTerm && !selectedCustomerId && (
+        {searchTerm && !selectedCustomerId && (
           <div className="text-xs text-red-600 mt-1">
             Debe seleccionar un cliente de la lista
           </div>
         )}
       </div>
 
-      {!readOnly && (
-        <CustomerFormDialog
-          open={showCustomerDialog}
-          onOpenChange={setShowCustomerDialog}
-          onSuccess={handleCustomerCreated}
-        />
-      )}
+      <CustomerFormDialog
+        open={showCustomerDialog}
+        onOpenChange={setShowCustomerDialog}
+        onSuccess={handleCustomerCreated}
+      />
     </>
   );
 }

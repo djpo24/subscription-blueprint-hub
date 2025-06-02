@@ -12,7 +12,7 @@ interface TripSelectorProps {
 }
 
 export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly }: TripSelectorProps) {
-  // Fetch trips for the dropdown
+  // Fetch trips for the dropdown (only when not readOnly)
   const { data: trips = [] } = useQuery({
     queryKey: ['trips-for-packages'],
     queryFn: async () => {
@@ -29,7 +29,7 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
   });
 
   // Fetch specific trip data when in readOnly mode or when we have a selectedTripId
-  const { data: selectedTrip } = useQuery({
+  const { data: selectedTrip, isLoading: tripLoading } = useQuery({
     queryKey: ['trip-details', selectedTripId],
     queryFn: async () => {
       if (!selectedTripId) return null;
@@ -49,7 +49,7 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
       console.log('Viaje encontrado:', data);
       return data;
     },
-    enabled: !!selectedTripId && (readOnly || !trips.some(t => t.id === selectedTripId))
+    enabled: !!selectedTripId
   });
 
   if (disabled) {
@@ -58,6 +58,17 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
 
   // Display read-only version
   if (readOnly) {
+    if (tripLoading) {
+      return (
+        <div>
+          <Label htmlFor="trip">Viaje</Label>
+          <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
+            Cargando viaje...
+          </div>
+        </div>
+      );
+    }
+
     if (selectedTrip) {
       return (
         <div>
@@ -69,12 +80,12 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
         </div>
       );
     } else if (selectedTripId) {
-      // Show loading state when we have an ID but no data yet
+      // We have an ID but couldn't find the trip
       return (
         <div>
           <Label htmlFor="trip">Viaje</Label>
           <div className="h-10 w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed">
-            Cargando viaje...
+            Viaje no encontrado
           </div>
         </div>
       );

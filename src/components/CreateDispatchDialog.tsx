@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { useCreateDispatch } from '@/hooks/useDispatchRelations';
+import { useCreateDispatch } from '@/hooks/useCreateDispatch';
 import { DispatchDialogHeader } from './dispatch/DispatchDialogHeader';
 import { DispatchDateInfo } from './dispatch/DispatchDateInfo';
 import { DispatchPackageSelector } from './dispatch/DispatchPackageSelector';

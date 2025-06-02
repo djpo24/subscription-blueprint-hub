@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Package, Weight, Truck, DollarSign } from 'lucide-react';
 
@@ -60,6 +59,22 @@ export function PackageItem({ package: pkg, onClick }: PackageItemProps) {
     }
   };
 
+  const formatDescription = (description: string) => {
+    if (!description) return '';
+    
+    const items = description.split(',').map(item => item.trim());
+    
+    if (items.length <= 2) {
+      return items.join(', ');
+    }
+    
+    // Si hay más de 2 elementos, mostrar los primeros 2 + primeros 5 caracteres del tercero + "..."
+    const firstTwo = items.slice(0, 2).join(', ');
+    const thirdItemPreview = items[2].substring(0, 5) + '...';
+    
+    return `${firstTwo}, ${thirdItemPreview}`;
+  };
+
   const handleClick = () => {
     if (pkg.status !== 'delivered') {
       onClick(pkg);
@@ -85,11 +100,10 @@ export function PackageItem({ package: pkg, onClick }: PackageItemProps) {
       
       <div className="text-sm text-gray-600 mb-2">
         <div className="font-medium">{pkg.customers?.name || 'Cliente no encontrado'}</div>
-        <div>{pkg.customers?.email}</div>
       </div>
       
       <div className="text-sm text-gray-500 mb-3">
-        {pkg.description}
+        {formatDescription(pkg.description)}
       </div>
       
       <div className="flex flex-wrap gap-4 text-xs">

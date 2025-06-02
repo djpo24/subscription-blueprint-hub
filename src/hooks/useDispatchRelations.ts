@@ -47,6 +47,9 @@ export function useDispatchRelations(date?: Date) {
     queryKey: ['dispatch-relations', date ? formatDateForQuery(date) : 'all'],
     queryFn: async (): Promise<DispatchRelation[]> => {
       console.log('🔍 Fecha recibida en useDispatchRelations:', date);
+      console.log('🔍 Fecha original (getDate):', date ? date.getDate() : 'undefined');
+      console.log('🔍 Fecha original (getMonth):', date ? date.getMonth() + 1 : 'undefined');
+      console.log('🔍 Fecha original (getFullYear):', date ? date.getFullYear() : 'undefined');
       
       let query = supabase
         .from('dispatch_relations')
@@ -55,7 +58,7 @@ export function useDispatchRelations(date?: Date) {
 
       if (date) {
         const formattedDate = formatDateForQuery(date);
-        console.log('📅 Fecha formateada para consulta:', formattedDate);
+        console.log('📅 Fecha formateada para consulta (nueva función):', formattedDate);
         query = query.eq('dispatch_date', formattedDate);
       }
 
@@ -78,30 +81,26 @@ export function useDispatchRelations(date?: Date) {
   });
 }
 
-// Updated to get packages through batches instead of direct dispatch_packages relationship
 export function useDispatchPackages(dispatchId: string) {
   return useQuery({
     queryKey: ['dispatch-packages', dispatchId],
     queryFn: async (): Promise<PackageInDispatch[]> => {
-      // Get packages through the new batch system
       const { data, error } = await supabase
-        .from('dispatch_batches')
+        .from('dispatch_packages')
         .select(`
-          shipment_batches!inner (
-            packages (
-              id,
-              tracking_number,
-              origin,
-              destination,
-              status,
-              description,
-              weight,
-              freight,
-              amount_to_collect,
-              customers (
-                name,
-                email
-              )
+          packages (
+            id,
+            tracking_number,
+            origin,
+            destination,
+            status,
+            description,
+            weight,
+            freight,
+            amount_to_collect,
+            customers (
+              name,
+              email
             )
           )
         `)
@@ -109,21 +108,12 @@ export function useDispatchPackages(dispatchId: string) {
       
       if (error) throw error;
       
-      // Flatten the packages from all batches
-      const packages: PackageInDispatch[] = [];
-      data?.forEach(dispatchBatch => {
-        if (dispatchBatch.shipment_batches?.packages) {
-          packages.push(...(dispatchBatch.shipment_batches.packages as PackageInDispatch[]));
-        }
-      });
-      
-      return packages;
+      return data?.map(item => item.packages).filter(Boolean) || [];
     },
     enabled: !!dispatchId
   });
 }
 
-// Legacy create dispatch function - now creates batches automatically
 export function useCreateDispatch() {
   const queryClient = useQueryClient();
   
@@ -137,119 +127,30 @@ export function useCreateDispatch() {
       packageIds: string[]; 
       notes?: string;
     }) => {
-      // Get package information with trip details
+      // Obtener información de los paquetes seleccionados
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
-        .select(`
-          id,
-          trip_id,
-          destination,
-          weight,
-          freight,
-          amount_to_collect,
-          trips!inner (
-            id,
-            origin,
-            destination
-          )
-        `)
+        .select('weight, freight, amount_to_collect')
         .in('id', packageIds);
 
       if (packagesError) throw packagesError;
 
-      // Group packages by trip and destination to create batches
-      const tripDestinationGroups = new Map();
-      
-      packages.forEach(pkg => {
-        const key = `${pkg.trip_id}-${pkg.destination}`;
-        if (!tripDestinationGroups.has(key)) {
-          tripDestinationGroups.set(key, {
-            trip_id: pkg.trip_id,
-            destination: pkg.destination,
-            packages: []
-          });
-        }
-        tripDestinationGroups.get(key).packages.push(pkg);
-      });
-
-      // Create batches for each trip-destination combination
-      const batchIds: string[] = [];
-      
-      for (const [key, group] of tripDestinationGroups) {
-        // Get next batch number for this trip
-        const { data: existingBatches, error: batchError } = await supabase
-          .from('shipment_batches')
-          .select('batch_number')
-          .eq('trip_id', group.trip_id)
-          .order('batch_number', { ascending: false })
-          .limit(1);
-
-        if (batchError) throw batchError;
-
-        const nextBatchNumber = existingBatches && existingBatches.length > 0 
-          ? String(parseInt(existingBatches[0].batch_number) + 1).padStart(3, '0')
-          : '001';
-
-        // Generate batch label
-        const { data: labelData, error: labelError } = await supabase
-          .rpc('generate_batch_label', {
-            p_trip_id: group.trip_id,
-            p_batch_number: nextBatchNumber
-          });
-
-        if (labelError) throw labelError;
-
-        // Create batch
-        const { data: batch, error: createBatchError } = await supabase
-          .from('shipment_batches')
-          .insert({
-            trip_id: group.trip_id,
-            batch_number: nextBatchNumber,
-            batch_label: labelData,
-            destination: group.destination,
-            status: 'pending'
-          })
-          .select()
-          .single();
-
-        if (createBatchError) throw createBatchError;
-
-        // Assign packages to batch
-        const packageIdsForBatch = group.packages.map(p => p.id);
-        const { error: updateError } = await supabase
-          .from('packages')
-          .update({ batch_id: batch.id })
-          .in('id', packageIdsForBatch);
-
-        if (updateError) throw updateError;
-
-        batchIds.push(batch.id);
-      }
-
-      // Calculate totals from all created batches
-      const { data: batches, error: batchTotalsError } = await supabase
-        .from('shipment_batches')
-        .select('total_packages, total_weight, total_freight, total_amount_to_collect')
-        .in('id', batchIds);
-
-      if (batchTotalsError) throw batchTotalsError;
-
-      const totals = batches.reduce(
-        (acc, batch) => ({
-          packages: acc.packages + (batch.total_packages || 0),
-          weight: acc.weight + (batch.total_weight || 0),
-          freight: acc.freight + (batch.total_freight || 0),
-          amount_to_collect: acc.amount_to_collect + (batch.total_amount_to_collect || 0)
+      // Calcular totales
+      const totals = packages.reduce(
+        (acc, pkg) => ({
+          weight: acc.weight + (pkg.weight || 0),
+          freight: acc.freight + (pkg.freight || 0),
+          amount_to_collect: acc.amount_to_collect + (pkg.amount_to_collect || 0)
         }),
-        { packages: 0, weight: 0, freight: 0, amount_to_collect: 0 }
+        { weight: 0, freight: 0, amount_to_collect: 0 }
       );
 
-      // Create the dispatch
+      // Crear el despacho usando la nueva función de formateo
       const { data: dispatch, error: dispatchError } = await supabase
         .from('dispatch_relations')
         .insert({
           dispatch_date: formatDateForQuery(date),
-          total_packages: totals.packages,
+          total_packages: packageIds.length,
           total_weight: totals.weight,
           total_freight: totals.freight,
           total_amount_to_collect: totals.amount_to_collect,
@@ -260,31 +161,20 @@ export function useCreateDispatch() {
 
       if (dispatchError) throw dispatchError;
 
-      // Create dispatch-batch relationships
-      const dispatchBatches = batchIds.map(batch_id => ({
+      // Crear las relaciones paquete-despacho
+      const dispatchPackages = packageIds.map(packageId => ({
         dispatch_id: dispatch.id,
-        batch_id: batch_id
+        package_id: packageId
       }));
 
       const { error: relationError } = await supabase
-        .from('dispatch_batches')
-        .insert(dispatchBatches);
+        .from('dispatch_packages')
+        .insert(dispatchPackages);
 
       if (relationError) throw relationError;
 
-      // Update batch status to 'dispatched'
-      const { error: batchStatusError } = await supabase
-        .from('shipment_batches')
-        .update({ 
-          status: 'dispatched',
-          updated_at: new Date().toISOString()
-        })
-        .in('id', batchIds);
-
-      if (batchStatusError) throw batchStatusError;
-
-      // Update packages status to 'procesado'
-      const { error: packageUpdateError } = await supabase
+      // NUEVO: Actualizar el estado de las encomiendas a "procesado"
+      const { error: updateError } = await supabase
         .from('packages')
         .update({ 
           status: 'procesado',
@@ -292,11 +182,12 @@ export function useCreateDispatch() {
         })
         .in('id', packageIds);
 
-      if (packageUpdateError) {
-        console.error('Error updating package status:', packageUpdateError);
+      if (updateError) {
+        console.error('Error updating package status:', updateError);
+        // No lanzamos el error para no fallar todo el proceso
       }
 
-      // Create tracking events for each package
+      // Crear eventos de tracking para cada paquete
       const trackingEvents = packageIds.map(packageId => ({
         package_id: packageId,
         event_type: 'processed',
@@ -310,6 +201,7 @@ export function useCreateDispatch() {
 
       if (trackingError) {
         console.error('Error creating tracking events:', trackingError);
+        // No lanzamos el error para no fallar todo el proceso
       }
 
       return dispatch;
@@ -318,7 +210,6 @@ export function useCreateDispatch() {
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
-      queryClient.invalidateQueries({ queryKey: ['shipment-batches'] });
     }
   });
 }

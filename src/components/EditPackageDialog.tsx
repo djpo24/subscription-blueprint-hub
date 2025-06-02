@@ -68,14 +68,12 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             <CustomerSearchSelector
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
-              readOnly={true}
               key={`customer-${open}-${pkg.id}-${selectedCustomerId}`}
             />
 
             <TripSelector
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
-              readOnly={true}
               key={`trip-${open}-${pkg.id}-${selectedTripId}`}
             />
           </div>

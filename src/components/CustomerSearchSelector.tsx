@@ -28,7 +28,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
   const [showResults, setShowResults] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  // Fetch customers for search (only when not readOnly)
+  // Fetch customers for search
   const { data: customers = [], refetch: refetchCustomers } = useQuery({
     queryKey: ['customers-search'],
     queryFn: async () => {
@@ -43,7 +43,7 @@ export function CustomerSearchSelector({ selectedCustomerId, onCustomerChange, r
     enabled: !readOnly
   });
 
-  // Fetch specific customer when in readOnly mode or when we have a selectedCustomerId
+  // Fetch specific customer when we have a selectedCustomerId
   const { data: selectedCustomer, isLoading: customerLoading } = useQuery({
     queryKey: ['customer-details', selectedCustomerId],
     queryFn: async () => {

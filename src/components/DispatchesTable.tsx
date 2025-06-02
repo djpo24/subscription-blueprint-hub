@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -42,7 +41,7 @@ export function DispatchesTable({ selectedDate }: DispatchesTableProps) {
       case 'llegado':
         return 'Llegado';
       default:
-        return status;
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 

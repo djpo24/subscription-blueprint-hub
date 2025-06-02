@@ -56,6 +56,44 @@ export function DispatchDetailsDialog({
     }
   };
 
+  const getPackageStatusColor = (status: string) => {
+    switch (status) {
+      case 'recibido':
+        return 'bg-blue-50 text-blue-700';
+      case 'bodega':
+        return 'bg-gray-50 text-gray-700';
+      case 'procesado':
+        return 'bg-orange-50 text-orange-700';
+      case 'transito':
+        return 'bg-purple-50 text-purple-700';
+      case 'en_destino':
+        return 'bg-yellow-50 text-yellow-700';
+      case 'delivered':
+        return 'bg-green-50 text-green-700';
+      default:
+        return 'bg-gray-50 text-gray-700';
+    }
+  };
+
+  const getPackageStatusLabel = (status: string) => {
+    switch (status) {
+      case 'recibido':
+        return 'Recibido';
+      case 'bodega':
+        return 'Bodega';
+      case 'procesado':
+        return 'Procesado';
+      case 'transito':
+        return 'Tránsito';
+      case 'en_destino':
+        return 'En Destino';
+      case 'delivered':
+        return 'Entregado';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
@@ -190,14 +228,9 @@ export function DispatchDetailsDialog({
                           <TableCell>
                             <Badge 
                               variant="outline"
-                              className={`text-xs ${
-                                pkg.status === 'delivered' ? 'bg-green-50 text-green-700' :
-                                pkg.status === 'transito' ? 'bg-blue-50 text-blue-700' :
-                                pkg.status === 'procesado' ? 'bg-orange-50 text-orange-700' :
-                                'bg-gray-50 text-gray-700'
-                              }`}
+                              className={`text-xs ${getPackageStatusColor(pkg.status)}`}
                             >
-                              {pkg.status}
+                              {getPackageStatusLabel(pkg.status)}
                             </Badge>
                           </TableCell>
                           <TableCell>

@@ -135,18 +135,19 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                             </Badge>
                           </div>
                           
-                          {/* Cliente resaltado */}
-                          <div className="text-base font-bold text-blue-700 mb-2">
-                            {pkg.customers?.name || 'Cliente no especificado'}
-                          </div>
-                          
-                          {/* Mostrar conteo de items en lugar de la descripción completa */}
-                          {itemCount > 0 && (
-                            <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded flex items-center gap-1">
-                              <Package className="h-4 w-4" />
-                              <span className="font-medium">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+                          {/* Cliente y conteo de items en la misma línea */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-base font-bold text-blue-700">
+                              {pkg.customers?.name || 'Cliente no especificado'}
                             </div>
-                          )}
+                            
+                            {itemCount > 0 && (
+                              <div className="text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
+                                <Package className="h-4 w-4" />
+                                <span className="font-medium">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}

@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Truck, Package, Weight, DollarSign, User, MapPin, Send } from 'lucide-react';
-import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
+import { Truck, Package, Weight, DollarSign, User, MapPin, Send, AlertCircle } from 'lucide-react';
+import { useDispatchPackages } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
 
 interface DispatchDetailsDialogProps {
@@ -49,7 +49,10 @@ export function DispatchDetailsDialog({
 
   const handleMarkAsInTransit = () => {
     if (firstPackage && firstPackage.trip_id) {
+      console.log('🚀 Marcando viaje como en tránsito:', firstPackage.trip_id);
       markTripAsInTransit(firstPackage.trip_id);
+    } else {
+      console.error('❌ No se puede marcar como en tránsito: no hay trip_id');
     }
   };
 
@@ -73,6 +76,12 @@ export function DispatchDetailsDialog({
                 <Send className="h-3 w-3" />
                 {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
               </Button>
+            )}
+            {!canMarkAsInTransit && packages.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <AlertCircle className="h-4 w-4" />
+                No hay paquetes procesados para marcar en tránsito
+              </div>
             )}
           </div>
         </DialogHeader>

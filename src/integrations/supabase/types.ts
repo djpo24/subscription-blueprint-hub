@@ -45,6 +45,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_batches: {
+        Row: {
+          batch_id: string
+          created_at: string
+          dispatch_id: string
+          id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          dispatch_id: string
+          id?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          dispatch_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_batches_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "shipment_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_batches_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_relations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_packages: {
         Row: {
           created_at: string
@@ -426,6 +462,7 @@ export type Database = {
         Row: {
           actual_arrival: string | null
           amount_to_collect: number | null
+          batch_id: string | null
           created_at: string
           customer_id: string
           description: string
@@ -445,6 +482,7 @@ export type Database = {
         Insert: {
           actual_arrival?: string | null
           amount_to_collect?: number | null
+          batch_id?: string | null
           created_at?: string
           customer_id: string
           description: string
@@ -464,6 +502,7 @@ export type Database = {
         Update: {
           actual_arrival?: string | null
           amount_to_collect?: number | null
+          batch_id?: string | null
           created_at?: string
           customer_id?: string
           description?: string
@@ -482,6 +521,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "packages_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_batches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "packages_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -490,6 +536,59 @@ export type Database = {
           },
           {
             foreignKeyName: "packages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_batches: {
+        Row: {
+          batch_label: string
+          batch_number: string
+          created_at: string
+          destination: string
+          id: string
+          status: string
+          total_amount_to_collect: number | null
+          total_freight: number | null
+          total_packages: number
+          total_weight: number | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          batch_label: string
+          batch_number: string
+          created_at?: string
+          destination: string
+          id?: string
+          status?: string
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number
+          total_weight?: number | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          batch_label?: string
+          batch_number?: string
+          created_at?: string
+          destination?: string
+          id?: string
+          status?: string
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number
+          total_weight?: number | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_batches_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
@@ -573,8 +672,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_batch_label: {
+        Args: { p_trip_id: string; p_batch_number: string }
+        Returns: string
+      }
+      migrate_existing_dispatches: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       process_arrival_notifications: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_batch_totals: {
+        Args: { batch_id_param: string }
         Returns: undefined
       }
     }

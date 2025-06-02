@@ -34,11 +34,15 @@ export function ChatConversation({
   isLoading 
 }: ChatConversationProps) {
   const formatPhoneNumber = (phoneNumber: string) => {
+    if (!phoneNumber) return 'Sin teléfono';
     if (phoneNumber.startsWith('57')) {
       return `+${phoneNumber.slice(0, 2)} ${phoneNumber.slice(2, 5)} ${phoneNumber.slice(5, 8)} ${phoneNumber.slice(8)}`;
     }
     return `+${phoneNumber}`;
   };
+
+  const hasMessages = messages.length > 0;
+  const hasPhone = !!phone;
 
   return (
     <div className="h-full flex flex-col">
@@ -50,7 +54,7 @@ export function ChatConversation({
           </div>
           <div className="flex-1">
             <h3 className="font-semibold">
-              {customerName || 'Cliente Anónimo'}
+              {customerName || 'Cliente'}
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Phone className="h-3 w-3" />
@@ -69,9 +73,16 @@ export function ChatConversation({
       {/* Messages */}
       <ScrollArea className="flex-1 p-4 bg-gray-50">
         <div className="space-y-2">
-          {messages.length === 0 ? (
+          {!hasMessages ? (
             <div className="text-center text-gray-500 py-8">
-              <p>No hay mensajes en esta conversación</p>
+              {hasPhone ? (
+                <div>
+                  <p className="mb-2">Nueva conversación</p>
+                  <p className="text-sm">Escribe el primer mensaje para iniciar la conversación por WhatsApp</p>
+                </div>
+              ) : (
+                <p>No se encontró número de teléfono para este cliente</p>
+              )}
             </div>
           ) : (
             messages.map((message) => (
@@ -89,11 +100,13 @@ export function ChatConversation({
         </div>
       </ScrollArea>
 
-      {/* Input */}
-      <ChatInput
-        onSendMessage={onSendMessage}
-        isLoading={isLoading}
-      />
+      {/* Input - Solo mostrar si hay teléfono */}
+      {hasPhone && (
+        <ChatInput
+          onSendMessage={onSendMessage}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
 }

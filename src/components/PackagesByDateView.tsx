@@ -24,7 +24,21 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
 
   const handlePackageClick = (pkg: any) => {
-    setSelectedPackage(pkg);
+    // Ensure the package has the correct structure for the EditPackageDialog
+    const packageWithCorrectStructure = {
+      id: pkg.id,
+      tracking_number: pkg.tracking_number,
+      customer_id: pkg.customer_id,
+      trip_id: pkg.trip_id,
+      description: pkg.description,
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      status: pkg.status
+    };
+    
+    console.log('Package structure for edit dialog:', packageWithCorrectStructure);
+    setSelectedPackage(packageWithCorrectStructure);
     setEditPackageDialogOpen(true);
   };
 

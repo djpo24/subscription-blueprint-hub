@@ -3,27 +3,31 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
+interface PackageData {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  trip_id: string | null;
+  description: string;
+  weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
+  status: string;
+  origin: string;
+  destination: string;
+  customers: {
+    name: string;
+    email: string;
+  } | null;
+}
+
 interface TripWithPackages {
   id: string;
   origin: string;
   destination: string;
   flight_number: string | null;
   status: string;
-  packages: Array<{
-    id: string;
-    tracking_number: string;
-    origin: string;
-    destination: string;
-    status: string;
-    description: string;
-    weight: number | null;
-    freight: number | null;
-    amount_to_collect: number | null;
-    customers: {
-      name: string;
-      email: string;
-    } | null;
-  }>;
+  packages: PackageData[];
 }
 
 export function usePackagesByDate(date: Date) {
@@ -45,7 +49,7 @@ export function usePackagesByDate(date: Date) {
         return [];
       }
       
-      // Para cada viaje, obtenemos sus encomiendas
+      // Para cada viaje, obtenemos sus encomiendas con la estructura correcta
       const tripsWithPackages: TripWithPackages[] = [];
       
       for (const trip of trips) {
@@ -54,13 +58,15 @@ export function usePackagesByDate(date: Date) {
           .select(`
             id,
             tracking_number,
-            origin,
-            destination,
-            status,
+            customer_id,
+            trip_id,
             description,
             weight,
             freight,
             amount_to_collect,
+            status,
+            origin,
+            destination,
             customers (
               name,
               email

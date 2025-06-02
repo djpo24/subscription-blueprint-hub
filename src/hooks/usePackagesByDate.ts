@@ -16,6 +16,9 @@ interface TripWithPackages {
     destination: string;
     status: string;
     description: string;
+    weight: number | null;
+    freight: number | null;
+    amount_to_collect: number | null;
     customers: {
       name: string;
       email: string;
@@ -55,6 +58,9 @@ export function usePackagesByDate(date: Date) {
             destination,
             status,
             description,
+            weight,
+            freight,
+            amount_to_collect,
             customers (
               name,
               email

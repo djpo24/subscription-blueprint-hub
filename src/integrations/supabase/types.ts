@@ -45,6 +45,84 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_packages: {
+        Row: {
+          created_at: string
+          dispatch_id: string
+          id: string
+          package_id: string
+        }
+        Insert: {
+          created_at?: string
+          dispatch_id: string
+          id?: string
+          package_id: string
+        }
+        Update: {
+          created_at?: string
+          dispatch_id?: string
+          id?: string
+          package_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_packages_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_relations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dispatch_date: string
+          id: string
+          notes: string | null
+          status: string
+          total_amount_to_collect: number | null
+          total_freight: number | null
+          total_packages: number
+          total_weight: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dispatch_date: string
+          id?: string
+          notes?: string | null
+          status?: string
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number
+          total_weight?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dispatch_date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number
+          total_weight?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       flight_api_cache: {
         Row: {
           api_response: Json
@@ -347,6 +425,7 @@ export type Database = {
       packages: {
         Row: {
           actual_arrival: string | null
+          amount_to_collect: number | null
           created_at: string
           customer_id: string
           description: string
@@ -354,6 +433,7 @@ export type Database = {
           dimensions: string | null
           estimated_arrival: string | null
           flight_number: string | null
+          freight: number | null
           id: string
           origin: string
           status: string
@@ -364,6 +444,7 @@ export type Database = {
         }
         Insert: {
           actual_arrival?: string | null
+          amount_to_collect?: number | null
           created_at?: string
           customer_id: string
           description: string
@@ -371,6 +452,7 @@ export type Database = {
           dimensions?: string | null
           estimated_arrival?: string | null
           flight_number?: string | null
+          freight?: number | null
           id?: string
           origin: string
           status?: string
@@ -381,6 +463,7 @@ export type Database = {
         }
         Update: {
           actual_arrival?: string | null
+          amount_to_collect?: number | null
           created_at?: string
           customer_id?: string
           description?: string
@@ -388,6 +471,7 @@ export type Database = {
           dimensions?: string | null
           estimated_arrival?: string | null
           flight_number?: string | null
+          freight?: number | null
           id?: string
           origin?: string
           status?: string

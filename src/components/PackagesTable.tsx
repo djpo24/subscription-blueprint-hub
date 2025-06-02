@@ -18,6 +18,8 @@ interface Package {
   trip_id: string | null;
   customer_id: string;
   weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
   customers?: {
     name: string;
     email: string;
@@ -88,6 +90,9 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
+                  <TableHead>Peso</TableHead>
+                  <TableHead>Flete</TableHead>
+                  <TableHead>A Cobrar</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>

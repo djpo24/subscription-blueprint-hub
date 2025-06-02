@@ -14,7 +14,7 @@ interface IncomingMessage {
   customer_id: string | null;
   message_type: string;
   message_content: string | null;
-  timestamp: string;
+  message_timestamp: string;
   customers?: {
     name: string;
   } | null;
@@ -25,7 +25,14 @@ export function IncomingMessages() {
     queryKey: ['incoming-messages'],
     queryFn: async (): Promise<IncomingMessage[]> => {
       const { data, error } = await supabase
-        .rpc('get_incoming_messages_with_customers')
+        .from('incoming_messages')
+        .select(`
+          *,
+          customers (
+            name
+          )
+        `)
+        .order('timestamp', { ascending: false })
         .limit(50);
       
       if (error) {
@@ -33,7 +40,16 @@ export function IncomingMessages() {
         throw error;
       }
       
-      return data || [];
+      return (data || []).map(msg => ({
+        id: msg.id,
+        whatsapp_message_id: msg.whatsapp_message_id,
+        from_phone: msg.from_phone,
+        customer_id: msg.customer_id,
+        message_type: msg.message_type,
+        message_content: msg.message_content,
+        message_timestamp: msg.timestamp,
+        customers: msg.customers
+      }));
     },
     refetchInterval: 5000, // Refresh every 5 seconds
   });
@@ -120,7 +136,7 @@ export function IncomingMessages() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(message.timestamp), 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(message.message_timestamp), 'dd/MM/yyyy HH:mm')}
                   </TableCell>
                 </TableRow>
               ))}

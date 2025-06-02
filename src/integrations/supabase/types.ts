@@ -758,6 +758,31 @@ export type Database = {
         Args: { p_trip_id: string; p_batch_number: string }
         Returns: string
       }
+      get_incoming_messages_with_customers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          whatsapp_message_id: string
+          from_phone: string
+          customer_id: string
+          message_type: string
+          message_content: string
+          message_timestamp: string
+          customers: Json
+        }[]
+      }
+      get_message_delivery_status_with_details: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          notification_id: string
+          whatsapp_message_id: string
+          status: string
+          message_timestamp: string
+          recipient_phone: string
+          notification_log: Json
+        }[]
+      }
       migrate_existing_dispatches: {
         Args: Record<PropertyKey, never>
         Returns: undefined

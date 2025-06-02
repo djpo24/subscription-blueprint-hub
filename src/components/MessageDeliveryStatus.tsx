@@ -12,7 +12,7 @@ interface MessageDeliveryStatus {
   notification_id: string | null;
   whatsapp_message_id: string;
   status: string;
-  timestamp: string;
+  message_timestamp: string;
   recipient_phone: string;
   notification_log?: {
     message: string;
@@ -28,7 +28,18 @@ export function MessageDeliveryStatus() {
     queryKey: ['message-delivery-status'],
     queryFn: async (): Promise<MessageDeliveryStatus[]> => {
       const { data, error } = await supabase
-        .rpc('get_message_delivery_status_with_details')
+        .from('message_delivery_status')
+        .select(`
+          *,
+          notification_log (
+            message,
+            customers (
+              name,
+              phone
+            )
+          )
+        `)
+        .order('timestamp', { ascending: false })
         .limit(50);
       
       if (error) {
@@ -36,7 +47,15 @@ export function MessageDeliveryStatus() {
         throw error;
       }
       
-      return data || [];
+      return (data || []).map(status => ({
+        id: status.id,
+        notification_id: status.notification_id,
+        whatsapp_message_id: status.whatsapp_message_id,
+        status: status.status,
+        message_timestamp: status.timestamp,
+        recipient_phone: status.recipient_phone,
+        notification_log: status.notification_log
+      }));
     },
     refetchInterval: 10000, // Refresh every 10 seconds
   });
@@ -146,7 +165,7 @@ export function MessageDeliveryStatus() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(status.timestamp), 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(status.message_timestamp), 'dd/MM/yyyy HH:mm')}
                   </TableCell>
                 </TableRow>
               ))}

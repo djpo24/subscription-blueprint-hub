@@ -1,223 +1,29 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useToast } from '@/hooks/use-toast';
-import { useSentMessages } from '@/hooks/useSentMessages';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
-
-interface IncomingMessage {
-  id: string;
-  whatsapp_message_id: string;
-  from_phone: string;
-  customer_id: string | null;
-  message_type: string;
-  message_content: string | null;
-  message_timestamp: string;
-  customers?: {
-    name: string;
-  } | null;
-}
-
-interface ChatMessage {
-  id: string;
-  content: string;
-  timestamp: string;
-  type: 'incoming' | 'outgoing';
-  messageType?: string;
-  imageUrl?: string;
-}
+import { useChatData } from '@/hooks/useChatData';
+import { useChatMessages } from '@/hooks/useChatMessages';
 
 export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
-  const { toast } = useToast();
-  const { sendManualNotification, isManualSending } = useNotifications();
-  const { sentMessages, saveSentMessage } = useSentMessages();
+  const { chatList, conversationsByPhone, isLoading } = useChatData();
+  const { handleSendMessage, isManualSending } = useChatMessages();
 
-  const { data: incomingMessages = [], isLoading } = useQuery({
-    queryKey: ['chat-messages'],
-    queryFn: async (): Promise<IncomingMessage[]> => {
-      const { data, error } = await supabase
-        .from('incoming_messages')
-        .select(`
-          *,
-          customers (
-            name
-          )
-        `)
-        .order('timestamp', { ascending: false })
-        .limit(100);
-      
-      if (error) {
-        console.error('Error fetching chat messages:', error);
-        throw error;
-      }
-      
-      return (data || []).map(msg => ({
-        id: msg.id,
-        whatsapp_message_id: msg.whatsapp_message_id,
-        from_phone: msg.from_phone,
-        customer_id: msg.customer_id,
-        message_type: msg.message_type,
-        message_content: msg.message_content,
-        message_timestamp: msg.timestamp,
-        customers: msg.customers
-      }));
-    },
-    refetchInterval: 5000,
-  });
-
-  // Combinar mensajes entrantes y enviados por teléfono
-  const messagesByPhone = incomingMessages.reduce((acc, message) => {
-    const phone = message.from_phone;
-    if (!acc[phone]) {
-      acc[phone] = [];
-    }
-    acc[phone].push(message);
-    return acc;
-  }, {} as Record<string, IncomingMessage[]>);
-
-  // Crear conversaciones completas con mensajes enviados y recibidos
-  const conversationsByPhone = Object.keys(messagesByPhone).reduce((acc, phone) => {
-    const incoming = messagesByPhone[phone];
-    const outgoing = sentMessages.filter(msg => msg.phone === phone);
-    
-    const allMessages: ChatMessage[] = [
-      ...incoming.map(msg => ({
-        id: msg.id,
-        content: msg.message_content || '(Sin contenido de texto)',
-        timestamp: msg.message_timestamp,
-        type: 'incoming' as const,
-        messageType: msg.message_type
-      })),
-      ...outgoing.map(msg => ({
-        id: msg.id,
-        content: msg.message,
-        timestamp: msg.sent_at,
-        type: 'outgoing' as const,
-        imageUrl: msg.image_url
-      }))
-    ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    acc[phone] = {
-      messages: allMessages,
-      latestIncoming: incoming[0],
-      customerName: incoming[0]?.customers?.name,
-      customerId: incoming[0]?.customer_id
-    };
-
-    return acc;
-  }, {} as Record<string, {
-    messages: ChatMessage[];
-    latestIncoming: IncomingMessage;
-    customerName?: string;
-    customerId: string | null;
-  }>);
-
-  // Crear lista de chats para la columna izquierda
-  const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => ({
-    phone,
-    customerName: conversation.customerName,
-    lastMessage: conversation.messages[conversation.messages.length - 1]?.content || 'Sin mensajes',
-    lastMessageTime: conversation.latestIncoming.message_timestamp,
-    isRegistered: !!conversation.customerId,
-    unreadCount: 0 // Podrías implementar esto más tarde
-  })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
-
-  const handleSendMessage = async (message: string, image?: File) => {
+  const handleSendMessageWrapper = async (message: string, image?: File) => {
     if (!selectedPhone) return;
     
     const selectedConversation = conversationsByPhone[selectedPhone];
     if (!selectedConversation) return;
 
-    const { customerId } = selectedConversation;
-
-    try {
-      let imageUrl: string | undefined;
-
-      // Si hay una imagen seleccionada, subirla primero
-      if (image) {
-        const fileExt = image.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('chat-images')
-          .upload(fileName, image);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('chat-images')
-          .getPublicUrl(uploadData.path);
-        
-        imageUrl = publicUrl;
-      }
-
-      // Crear el mensaje final
-      const finalMessage = message || (imageUrl ? '📷 Imagen' : '');
-
-      if (!customerId) {
-        // Crear entrada de notificación sin customer ID
-        const { data: notificationData, error: logError } = await supabase
-          .from('notification_log')
-          .insert({
-            package_id: null,
-            customer_id: null,
-            notification_type: 'manual_reply',
-            message: finalMessage,
-            status: 'pending'
-          })
-          .select()
-          .single();
-
-        if (logError) throw logError;
-
-        // Enviar notificación WhatsApp
-        const response = await supabase.functions.invoke('send-whatsapp-notification', {
-          body: {
-            notificationId: notificationData.id,
-            phone: selectedPhone,
-            message: finalMessage,
-            imageUrl: imageUrl
-          }
-        });
-
-        if (response.error) throw response.error;
-      } else {
-        // Usar sendManualNotification para clientes registrados
-        await sendManualNotification({
-          customerId: customerId,
-          packageId: '',
-          message: finalMessage,
-          phone: selectedPhone
-        });
-      }
-
-      // Guardar mensaje enviado en nuestra tabla
-      saveSentMessage({
-        customerId: customerId,
-        phone: selectedPhone,
-        message: finalMessage,
-        imageUrl: imageUrl
-      });
-
-      toast({
-        title: "Mensaje enviado",
-        description: "Su respuesta ha sido enviada por WhatsApp",
-      });
-
-    } catch (error) {
-      console.error('Error sending reply:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje",
-        variant: "destructive"
-      });
-    }
+    await handleSendMessage(
+      selectedPhone,
+      selectedConversation.customerId,
+      message,
+      image
+    );
   };
 
   if (isLoading) {
@@ -261,7 +67,7 @@ export function ChatView() {
               customerId={conversationsByPhone[selectedPhone].customerId}
               messages={conversationsByPhone[selectedPhone].messages}
               isRegistered={!!conversationsByPhone[selectedPhone].customerId}
-              onSendMessage={handleSendMessage}
+              onSendMessage={handleSendMessageWrapper}
               isLoading={isManualSending}
             />
           ) : (

@@ -35,6 +35,39 @@ serve(async (req) => {
       }
 
       console.log('Created chat-images bucket:', data)
+
+      // Create RLS policies for public access
+      const { error: policyError } = await supabaseClient.rpc('exec', {
+        sql: `
+          -- Drop existing policies if they exist
+          DROP POLICY IF EXISTS "Anyone can upload chat images" ON storage.objects;
+          DROP POLICY IF EXISTS "Anyone can view chat images" ON storage.objects;
+          DROP POLICY IF EXISTS "Anyone can update chat images" ON storage.objects;
+          DROP POLICY IF EXISTS "Anyone can delete chat images" ON storage.objects;
+
+          -- Create permissive policies for chat images
+          CREATE POLICY "Anyone can upload chat images" ON storage.objects
+            FOR INSERT 
+            WITH CHECK (bucket_id = 'chat-images');
+
+          CREATE POLICY "Anyone can view chat images" ON storage.objects
+            FOR SELECT 
+            USING (bucket_id = 'chat-images');
+
+          CREATE POLICY "Anyone can update chat images" ON storage.objects
+            FOR UPDATE 
+            USING (bucket_id = 'chat-images');
+
+          CREATE POLICY "Anyone can delete chat images" ON storage.objects
+            FOR DELETE 
+            USING (bucket_id = 'chat-images');
+        `
+      })
+
+      if (policyError) {
+        console.error('Error creating RLS policies:', policyError)
+        // Don't throw here, bucket creation was successful
+      }
     }
 
     return new Response(

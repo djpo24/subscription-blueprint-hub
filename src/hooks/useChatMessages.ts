@@ -47,12 +47,28 @@ export function useChatMessages() {
         const fileExt = image.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         
+        console.log('Attempting to upload image:', fileName);
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('chat-images')
-          .upload(fileName, image);
+          .upload(fileName, image, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
+          console.error('Upload error details:', {
+            message: uploadError.message,
+            statusCode: uploadError.statusCode,
+            error: uploadError.error
+          });
+          
+          // Try to provide more specific error handling
+          if (uploadError.message?.includes('row-level security policy')) {
+            throw new Error('Error de permisos de almacenamiento. Por favor, contacte al administrador.');
+          }
+          
           throw uploadError;
         }
 
@@ -121,7 +137,9 @@ export function useChatMessages() {
       console.error('Error sending reply:', error);
       let errorMessage = "No se pudo enviar el mensaje";
       
-      if (error.message?.includes('Bucket not found')) {
+      if (error.message?.includes('row-level security policy')) {
+        errorMessage = "Error de permisos para subir imágenes. Intente nuevamente.";
+      } else if (error.message?.includes('Bucket not found')) {
         errorMessage = "Error de configuración de almacenamiento. Reintentando...";
         // Retry once after ensuring bucket exists
         try {

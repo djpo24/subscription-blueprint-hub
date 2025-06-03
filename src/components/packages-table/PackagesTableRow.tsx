@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { PackageActionsDropdown } from '../PackageActionsDropdown';
 import { PackageStatusBadge } from './PackageStatusBadge';
 import { PackageRouteDisplay } from './PackageRouteDisplay';
+import { formatPackageDescription } from '@/utils/descriptionFormatter';
 
 interface Package {
   id: string;
@@ -69,7 +70,7 @@ export function PackagesTableRow({
         <PackageStatusBadge status={pkg.status} />
       </TableCell>
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
-      <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
+      <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
       <TableCell>{formatCurrency(pkg.amount_to_collect)}</TableCell>
       <TableCell onClick={onActionsClick}>
         <PackageActionsDropdown 

@@ -43,10 +43,12 @@ export function DeliverPackageDialog({
   );
 
   const addPayment = () => {
+    // Predeterminar Florín (AWG) como moneda por defecto
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
     setPayments(prev => [...prev, {
-      methodId: '',
+      methodId: defaultMethod?.id || '',
       amount: '',
-      currency: 'COP',
+      currency: 'AWG',
       type: 'partial'
     }]);
   };
@@ -59,6 +61,14 @@ export function DeliverPackageDialog({
     setPayments(prev => prev.map((payment, i) => {
       if (i === index) {
         const updatedPayment = { ...payment, [field]: value };
+        
+        // Si se actualiza la moneda, buscar un método de pago apropiado
+        if (field === 'currency') {
+          const methodForCurrency = availablePaymentMethods.find(m => m.currency === value);
+          if (methodForCurrency) {
+            updatedPayment.methodId = methodForCurrency.id;
+          }
+        }
         
         // Si se actualiza el monto, recalcular el tipo automáticamente
         if (field === 'amount' && pkg) {
@@ -110,6 +120,12 @@ export function DeliverPackageDialog({
   }, 0);
 
   const remainingAmount = (pkg?.amount_to_collect || 0) - totalCollected;
+
+  // Función para obtener el símbolo de moneda
+  const getCurrencySymbol = (currency: string) => {
+    const method = availablePaymentMethods.find(m => m.currency === currency);
+    return method?.symbol || '$';
+  };
 
   if (!pkg) return null;
 
@@ -186,40 +202,18 @@ export function DeliverPackageDialog({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Moneda</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Button
-                          type="button"
-                          variant={payment.currency === 'COP' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            updatePayment(index, 'currency', 'COP');
-                            // Buscar método de pago en COP
-                            const copMethod = availablePaymentMethods.find(m => m.currency === 'COP');
-                            if (copMethod) {
-                              updatePayment(index, 'methodId', copMethod.id);
-                            }
-                          }}
-                        >
-                          Peso (COP)
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={payment.currency === 'AWG' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            updatePayment(index, 'currency', 'AWG');
-                            // Buscar método de pago en AWG
-                            const awgMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
-                            if (awgMethod) {
-                              updatePayment(index, 'methodId', awgMethod.id);
-                            }
-                          }}
-                        >
-                          Florín (AWG)
-                        </Button>
-                      </div>
+                      <Select
+                        value={payment.currency}
+                        onValueChange={(value) => updatePayment(index, 'currency', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar moneda" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AWG">Florín (AWG)</SelectItem>
+                          <SelectItem value="COP">Peso (COP)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div>
@@ -254,16 +248,23 @@ export function DeliverPackageDialog({
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Total a cobrar:</span>
-                      <span className="font-medium">${pkg.amount_to_collect?.toLocaleString('es-CO') || 0}</span>
+                      <span className="font-medium">
+                        {getCurrencySymbol('COP')}{pkg.amount_to_collect?.toLocaleString('es-CO') || 0} COP
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total recibido:</span>
-                      <span className="font-medium">${totalCollected.toLocaleString('es-CO')}</span>
+                      <span className="font-medium">
+                        {payments.length > 0 && payments[0].currency === 'AWG' 
+                          ? `${getCurrencySymbol('AWG')}${totalCollected.toLocaleString('es-CO')} AWG`
+                          : `${getCurrencySymbol('COP')}${totalCollected.toLocaleString('es-CO')} COP`
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                       <span>Pendiente:</span>
                       <span className={`font-medium ${remainingAmount <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                        ${remainingAmount.toLocaleString('es-CO')}
+                        {getCurrencySymbol('COP')}{remainingAmount.toLocaleString('es-CO')} COP
                       </span>
                     </div>
                   </div>

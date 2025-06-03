@@ -23,6 +23,7 @@ export interface PackageInDispatch {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency: string | null;
   trip_id: string | null;
   customers: {
     name: string;

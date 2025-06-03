@@ -417,6 +417,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "incoming_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
+            referencedColumns: ["id"]
+          },
         ]
       }
       message_delivery_status: {
@@ -500,6 +507,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notification_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notification_log_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
@@ -580,6 +594,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
             referencedColumns: ["id"]
           },
           {
@@ -815,6 +836,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "packages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "packages_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
@@ -884,6 +912,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sent_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
             referencedColumns: ["id"]
           },
         ]
@@ -1102,6 +1137,19 @@ export type Database = {
           total_collected: number | null
           total_packages: number | null
           total_pending: number | null
+        }
+        Relationships: []
+      }
+      customers_pending_collection: {
+        Row: {
+          customer_name: string | null
+          email: string | null
+          id: string | null
+          last_delivery_date: string | null
+          package_numbers: string | null
+          phone: string | null
+          total_packages: number | null
+          total_pending_amount: number | null
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
+import { CustomersPendingTable } from '@/components/finances/CustomersPendingTable';
 
 export function FinancesTab() {
   return (
@@ -81,17 +82,7 @@ export function FinancesTab() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumen Financiero</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <p>Panel de finanzas en desarrollo</p>
-              <p className="text-sm mt-2">Próximamente: reportes detallados, gráficos de tendencias y análisis financiero</p>
-            </div>
-          </CardContent>
-        </Card>
+        <CustomersPendingTable />
       </div>
     </TabsContent>
   );

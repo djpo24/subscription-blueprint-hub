@@ -4,7 +4,7 @@ import { User } from 'lucide-react';
 
 interface CustomerAvatarProps {
   customerName?: string;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -28,11 +28,12 @@ export function CustomerAvatar({
     return names[0][0].toUpperCase();
   };
 
-  console.log('CustomerAvatar rendering - Name:', customerName, 'Image URL:', profileImageUrl);
+  // Validar que profileImageUrl sea una string válida
+  const isValidImageUrl = profileImageUrl && typeof profileImageUrl === 'string' && profileImageUrl.trim() !== '';
 
   return (
     <Avatar className={sizeClasses[size]}>
-      {profileImageUrl && (
+      {isValidImageUrl && (
         <AvatarImage 
           src={profileImageUrl} 
           alt={customerName || 'Cliente'}
@@ -41,7 +42,6 @@ export function CustomerAvatar({
             console.log('Avatar image failed to load:', profileImageUrl);
             console.error('Image error:', e);
           }}
-          // Añadir crossOrigin para evitar problemas de CORS con imágenes de WhatsApp
           crossOrigin="anonymous"
         />
       )}

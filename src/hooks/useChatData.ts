@@ -60,12 +60,7 @@ export function useChatData() {
         customers: msg.customers
       }));
 
-      // Log profile images for debugging
-      processedData.forEach(msg => {
-        if (msg.customers?.profile_image_url) {
-          console.log('Chat message with profile image:', msg.from_phone, msg.customers.profile_image_url);
-        }
-      });
+      console.log('Processed chat messages:', processedData.length);
       
       return processedData;
     },
@@ -112,16 +107,15 @@ export function useChatData() {
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const latestMessage = incoming[0];
-    const profileImageUrl = latestMessage?.customers?.profile_image_url;
-    
-    console.log('Conversation profile image for', phone, ':', profileImageUrl);
+    // Normalizar el profile_image_url para evitar valores undefined problemáticos
+    const profileImageUrl = latestMessage?.customers?.profile_image_url || null;
 
     acc[phone] = {
       messages: allMessages,
       latestIncoming: latestMessage,
       customerName: latestMessage?.customers?.name,
       customerId: latestMessage?.customer_id,
-      profileImageUrl: profileImageUrl
+      profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : null
     };
 
     return acc;
@@ -130,7 +124,7 @@ export function useChatData() {
     latestIncoming: IncomingMessage;
     customerName?: string;
     customerId: string | null;
-    profileImageUrl?: string;
+    profileImageUrl?: string | null;
   }>);
 
   // Crear lista de chats para la columna izquierda
@@ -140,14 +134,11 @@ export function useChatData() {
     lastMessage: conversation.messages[conversation.messages.length - 1]?.content || 'Sin mensajes',
     lastMessageTime: conversation.latestIncoming.message_timestamp,
     isRegistered: !!conversation.customerId,
-    unreadCount: 0, // Podrías implementar esto más tarde
+    unreadCount: 0,
     profileImageUrl: conversation.profileImageUrl
   })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
-  console.log('Chat list with profile images:', chatList.map(chat => ({ 
-    phone: chat.phone, 
-    profileImageUrl: chat.profileImageUrl 
-  })));
+  console.log('Chat list processed:', chatList.length, 'conversations');
 
   return {
     chatList,

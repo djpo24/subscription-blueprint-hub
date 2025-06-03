@@ -36,9 +36,9 @@ export function useChatMessages() {
     message: string, 
     image?: File
   ) => {
+    console.log('handleSendMessage called with:', { selectedPhone, customerId, message, hasImage: !!image });
+    
     try {
-      console.log('Sending message:', { selectedPhone, customerId, message, hasImage: !!image });
-
       // Validar que tengamos al menos un mensaje o imagen
       if (!message.trim() && !image) {
         throw new Error('Debe proporcionar un mensaje o una imagen');
@@ -53,6 +53,7 @@ export function useChatMessages() {
 
       // Si hay una imagen seleccionada, subirla primero
       if (image) {
+        console.log('Processing image upload...');
         // Ensure the bucket exists before uploading
         await ensureChatStorageBucket();
 
@@ -83,6 +84,7 @@ export function useChatMessages() {
 
       // Crear el mensaje final
       const finalMessage = message.trim() || (imageUrl ? '📷 Imagen' : '');
+      console.log('Final message to send:', finalMessage);
 
       if (!customerId) {
         console.log('Sending to unregistered customer');
@@ -107,6 +109,7 @@ export function useChatMessages() {
         console.log('Notification log created:', notificationData.id);
 
         // Enviar notificación WhatsApp
+        console.log('Calling WhatsApp function...');
         const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
@@ -149,7 +152,7 @@ export function useChatMessages() {
       }
 
       // Guardar mensaje enviado en nuestra tabla
-      console.log('Saving sent message');
+      console.log('Saving sent message to database...');
       saveSentMessage({
         customerId: customerId,
         phone: selectedPhone,
@@ -157,6 +160,7 @@ export function useChatMessages() {
         imageUrl: imageUrl
       });
 
+      console.log('Message sent successfully!');
       toast({
         title: "Mensaje enviado",
         description: "Su respuesta ha sido enviada por WhatsApp",
@@ -196,6 +200,9 @@ export function useChatMessages() {
         description: errorMessage,
         variant: "destructive"
       });
+      
+      // Re-lanzar el error para que lo maneje el componente padre si es necesario
+      throw error;
     }
   };
 

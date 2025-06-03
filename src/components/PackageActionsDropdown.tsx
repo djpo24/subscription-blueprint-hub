@@ -12,6 +12,7 @@ import { ReschedulePackageDialog } from './ReschedulePackageDialog';
 import { EditPackageDialog } from './EditPackageDialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
 import { usePackageActions } from '@/hooks/usePackageActions';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 interface Package {
   id: string;
@@ -36,17 +37,22 @@ interface PackageActionsDropdownProps {
   package: Package;
   onUpdate: () => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
 }
 
 export function PackageActionsDropdown({ 
   package: pkg, 
   onUpdate, 
-  onOpenChat 
+  onOpenChat,
+  previewRole,
+  disableChat = false
 }: PackageActionsDropdownProps) {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLabelDialog, setShowLabelDialog] = useState(false);
   const { moveToWarehouse, isMovingToWarehouse } = usePackageActions();
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
 
   const handleMoveToWarehouse = async () => {
     await moveToWarehouse(pkg.id);
@@ -54,7 +60,7 @@ export function PackageActionsDropdown({
   };
 
   const handleOpenChat = () => {
-    if (onOpenChat) {
+    if (onOpenChat && !disableChat && userRole?.role === 'admin') {
       onOpenChat(pkg.customer_id, pkg.customers?.name);
     }
   };
@@ -62,6 +68,7 @@ export function PackageActionsDropdown({
   const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'bodega';
   const canMoveToWarehouse = pkg.status !== 'delivered' && pkg.status !== 'bodega';
   const canEdit = pkg.status !== 'delivered';
+  const canChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
   return (
     <>
@@ -73,10 +80,12 @@ export function PackageActionsDropdown({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleOpenChat}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Abrir chat
-          </DropdownMenuItem>
+          {canChat && (
+            <DropdownMenuItem onClick={handleOpenChat}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Abrir chat
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setShowLabelDialog(true)}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir etiqueta

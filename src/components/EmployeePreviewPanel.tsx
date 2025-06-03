@@ -5,8 +5,6 @@ import { MainTabs } from '@/components/MainTabs';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
-import { DebtorsTab } from '@/components/tabs/DebtorsTab';
-import { ChatTab } from '@/components/tabs/ChatTab';
 import { Tabs } from '@/components/ui/tabs';
 import { useIndexData } from '@/hooks/useIndexData';
 import { useIndexState } from '@/hooks/useIndexState';
@@ -95,12 +93,12 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
     );
   });
 
-  // Empleados tienen acceso completo a encomiendas pero no a gestión de usuarios
+  // Empleados tienen acceso completo a encomiendas pero no a gestión de usuarios, chat o deudores
   const employeePackageStats = packageStats;
   const employeePackages = packages;
   const employeeFilteredPackages = filteredPackages;
 
-  // Empleados pueden ver todos los viajes pero no gestionar usuarios
+  // Empleados pueden ver todos los viajes pero no gestionar usuarios, chat o deudores
   const employeeTrips = trips;
 
   if (showMobileDelivery) {
@@ -113,7 +111,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
         <Briefcase className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-800">
-            <strong>Vista Preview:</strong> Panel como Empleado - Acceso a operaciones diarias sin gestión de usuarios, notificaciones o configuración
+            <strong>Vista Preview:</strong> Panel como Empleado - Acceso a operaciones diarias sin gestión de usuarios, chat, deudores, notificaciones o configuración
           </span>
           <Button variant="outline" size="sm" onClick={onBack} className="ml-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -144,6 +142,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
             filteredPackages={employeeFilteredPackages}
             isLoading={isLoading}
             onUpdate={handlePackagesUpdate}
+            disableChat={true} // Deshabilitar chat para empleados
           />
           
           <TripsTab 
@@ -154,11 +153,10 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
             onCreateTrip={handleCreateTripFromCalendar}
             onViewPackagesByDate={handleViewPackagesByDate}
             onBack={handleBackToCalendar}
+            disableChat={true} // Deshabilitar chat para empleados
           />
           
           <DispatchesTab />
-          <DebtorsTab />
-          <ChatTab />
         </Tabs>
 
         <DialogsContainer
@@ -181,9 +179,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
                 <li>• Dashboard completo</li>
                 <li>• Gestión completa de encomiendas</li>
                 <li>• Gestión de viajes</li>
-                <li>• Chat con clientes</li>
                 <li>• Todos los despachos</li>
-                <li>• Todos los deudores</li>
                 <li>• Entrega móvil</li>
               </ul>
             </div>
@@ -191,6 +187,8 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
               <h4 className="font-medium text-red-700 mb-2">❌ No puede acceder a:</h4>
               <ul className="text-red-700 space-y-1">
                 <li>• Gestión de usuarios</li>
+                <li>• Chat con clientes</li>
+                <li>• Deudores</li>
                 <li>• Notificaciones</li>
                 <li>• Configuración del sistema</li>
                 <li>• Funciones administrativas</li>

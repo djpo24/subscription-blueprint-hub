@@ -2,6 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 interface Package {
   id: string;
@@ -22,9 +23,19 @@ interface PackageItemProps {
   package: Package;
   onClick: () => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
 }
 
-export function PackageItem({ package: pkg, onClick, onOpenChat }: PackageItemProps) {
+export function PackageItem({ 
+  package: pkg, 
+  onClick, 
+  onOpenChat,
+  previewRole,
+  disableChat = false
+}: PackageItemProps) {
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
+
   const formatCurrency = (value: number | null) => {
     if (!value) return 'N/A';
     return `$${value.toLocaleString('es-CO')}`;
@@ -47,10 +58,12 @@ export function PackageItem({ package: pkg, onClick, onOpenChat }: PackageItemPr
 
   const handleChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onOpenChat) {
+    if (onOpenChat && !disableChat && userRole?.role === 'admin') {
       onOpenChat(pkg.customer_id, pkg.customers?.name);
     }
   };
+
+  const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
   return (
     <div 
@@ -86,17 +99,19 @@ export function PackageItem({ package: pkg, onClick, onOpenChat }: PackageItemPr
           </div>
         </div>
         
-        <div className="ml-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleChatClick}
-            className="flex items-center gap-2"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Chat
-          </Button>
-        </div>
+        {canShowChat && (
+          <div className="ml-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleChatClick}
+              className="flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Chat
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

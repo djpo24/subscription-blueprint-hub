@@ -27,9 +27,15 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
   const showNotificationsTab = userRole?.role === 'admin';
   const showSettingsTab = userRole?.role === 'admin';
   
+  // Hide chat and debtors for employees and travelers (only admins can access)
+  const showChatTab = userRole?.role === 'admin';
+  const showDebtorsTab = userRole?.role === 'admin';
+  
   console.log('MainTabs: showUsersTab:', showUsersTab);
   console.log('MainTabs: showNotificationsTab:', showNotificationsTab);
   console.log('MainTabs: showSettingsTab:', showSettingsTab);
+  console.log('MainTabs: showChatTab:', showChatTab);
+  console.log('MainTabs: showDebtorsTab:', showDebtorsTab);
 
   if (isLoading) {
     console.log('MainTabs: Still loading user role...');
@@ -42,9 +48,22 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
     console.error('MainTabs: Error loading user role:', error);
   }
 
+  // Calculate grid columns dynamically based on visible tabs
+  const visibleTabsCount = [
+    true, // dashboard
+    true, // trips
+    true, // dispatches
+    showDebtorsTab,
+    showChatTab,
+    showNotificationsTab,
+    showUsersTab,
+    showSettingsTab,
+    true // developer (always visible)
+  ].filter(Boolean).length;
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-9 gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto">
+      <TabsList className={`grid w-full gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto`} style={{ gridTemplateColumns: `repeat(${visibleTabsCount}, minmax(0, 1fr))` }}>
         <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Home" : "Dashboard"}
         </TabsTrigger>
@@ -54,17 +73,21 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
         <TabsTrigger value="dispatches" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Desp." : "Despachos"}
         </TabsTrigger>
-        <TabsTrigger value="debtors" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Deudas" : "Deudores"}
-        </TabsTrigger>
-        <TabsTrigger value="chat" className="text-xs sm:text-sm px-1 sm:px-3 py-2 relative min-w-0 flex-shrink-0">
-          {isMobile ? "Chat" : "Chat"}
-          {unreadCount > 0 && (
-            <Badge variant="destructive" className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 text-xs absolute -top-1 -right-1 sm:relative sm:top-auto sm:right-auto">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </TabsTrigger>
+        {showDebtorsTab && (
+          <TabsTrigger value="debtors" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Deudas" : "Deudores"}
+          </TabsTrigger>
+        )}
+        {showChatTab && (
+          <TabsTrigger value="chat" className="text-xs sm:text-sm px-1 sm:px-3 py-2 relative min-w-0 flex-shrink-0">
+            {isMobile ? "Chat" : "Chat"}
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 text-xs absolute -top-1 -right-1 sm:relative sm:top-auto sm:right-auto">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+        )}
         {showNotificationsTab && (
           <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
             {isMobile ? "Notif." : "Notificaciones"}

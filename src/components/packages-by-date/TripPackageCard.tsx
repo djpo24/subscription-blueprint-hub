@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Package, Weight, DollarSign, MessageSquare } from 'lucide-react';
 import { PackageItem } from './PackageItem';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 interface Package {
   id: string;
@@ -33,14 +34,20 @@ interface TripPackageCardProps {
   onAddPackage: (tripId: string) => void;
   onPackageClick: (pkg: Package) => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
 }
 
 export function TripPackageCard({ 
   trip, 
   onAddPackage, 
   onPackageClick,
-  onOpenChat 
+  onOpenChat,
+  previewRole,
+  disableChat = false
 }: TripPackageCardProps) {
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
+
   const totals = trip.packages.reduce(
     (acc, pkg) => ({
       weight: acc.weight + (pkg.weight || 0),
@@ -53,6 +60,8 @@ export function TripPackageCard({
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('es-CO')}`;
   };
+
+  const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
   return (
     <Card>
@@ -126,7 +135,9 @@ export function TripPackageCard({
                 key={pkg.id}
                 package={pkg}
                 onClick={() => onPackageClick(pkg)}
-                onOpenChat={onOpenChat}
+                onOpenChat={canShowChat ? onOpenChat : undefined}
+                previewRole={previewRole}
+                disableChat={disableChat}
               />
             ))}
           </div>

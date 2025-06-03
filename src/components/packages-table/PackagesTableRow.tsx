@@ -30,6 +30,8 @@ interface PackagesTableRowProps {
   onActionsClick: (e: React.MouseEvent) => void;
   onUpdate: () => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
 }
 
 export function PackagesTableRow({ 
@@ -37,7 +39,9 @@ export function PackagesTableRow({
   onRowClick, 
   onActionsClick, 
   onUpdate,
-  onOpenChat
+  onOpenChat,
+  previewRole,
+  disableChat = false
 }: PackagesTableRowProps) {
   const formatCurrency = (value: number | null) => {
     if (!value) return 'N/A';
@@ -75,6 +79,8 @@ export function PackagesTableRow({
           package={pkg} 
           onUpdate={onUpdate}
           onOpenChat={onOpenChat}
+          previewRole={previewRole}
+          disableChat={disableChat}
         />
       </TableCell>
     </TableRow>

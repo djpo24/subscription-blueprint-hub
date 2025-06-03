@@ -113,6 +113,7 @@ export function PackagesTable({
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>A Cobrar</TableHead>
+                  <TableHead>Chat</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -127,6 +128,7 @@ export function PackagesTable({
                     onOpenChat={handleOpenChat}
                     previewRole={previewRole}
                     disableChat={disableChat}
+                    showChatInSeparateColumn={true}
                   />
                 ))}
               </TableBody>

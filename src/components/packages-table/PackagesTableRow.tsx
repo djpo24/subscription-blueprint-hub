@@ -1,9 +1,13 @@
+
 import { TableCell, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { PackageActionsDropdown } from '../PackageActionsDropdown';
 import { PackageStatusBadge } from './PackageStatusBadge';
 import { PackageRouteDisplay } from './PackageRouteDisplay';
 import { formatPackageDescription } from '@/utils/descriptionFormatter';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 interface Package {
   id: string;
@@ -32,6 +36,7 @@ interface PackagesTableRowProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
+  showChatInSeparateColumn?: boolean;
 }
 
 export function PackagesTableRow({ 
@@ -41,12 +46,24 @@ export function PackagesTableRow({
   onUpdate,
   onOpenChat,
   previewRole,
-  disableChat = false
+  disableChat = false,
+  showChatInSeparateColumn = false
 }: PackagesTableRowProps) {
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
+  
   const formatCurrency = (value: number | null) => {
     if (!value) return 'N/A';
     return `$${value.toLocaleString('es-CO')}`;
   };
+
+  const handleChatClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenChat && !disableChat && userRole?.role === 'admin') {
+      onOpenChat(pkg.customer_id, pkg.customers?.name);
+    }
+  };
+
+  const canChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
   return (
     <TableRow 
@@ -72,13 +89,31 @@ export function PackagesTableRow({
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
       <TableCell>{formatCurrency(pkg.amount_to_collect)}</TableCell>
+      
+      {showChatInSeparateColumn && (
+        <TableCell onClick={onActionsClick}>
+          {canChat ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleChatClick}
+              className="h-8 w-8 p-0"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+          ) : (
+            <div className="h-8 w-8" />
+          )}
+        </TableCell>
+      )}
+      
       <TableCell onClick={onActionsClick}>
         <PackageActionsDropdown 
           package={pkg} 
           onUpdate={onUpdate}
-          onOpenChat={onOpenChat}
+          onOpenChat={showChatInSeparateColumn ? undefined : onOpenChat}
           previewRole={previewRole}
-          disableChat={disableChat}
+          disableChat={showChatInSeparateColumn ? true : disableChat}
         />
       </TableCell>
     </TableRow>

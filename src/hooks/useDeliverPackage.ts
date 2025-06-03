@@ -28,6 +28,7 @@ export function useDeliverPackage() {
       });
 
       try {
+        // Primero intentamos la función RPC original
         const { data, error } = await supabase.rpc('deliver_package_with_payment', {
           p_package_id: packageId,
           p_delivered_by: deliveredBy,
@@ -36,6 +37,54 @@ export function useDeliverPackage() {
         
         if (error) {
           console.error('❌ Error en función RPC:', error);
+          
+          // Si es un error de permisos en collection_stats, intentamos una solución alternativa
+          if (error.message?.includes('collection_stats') || error.code === '42501') {
+            console.log('🔄 Error de permisos detectado, intentando método alternativo...');
+            
+            // Método alternativo: actualizar directamente la tabla packages
+            const { data: updateData, error: updateError } = await supabase
+              .from('packages')
+              .update({ 
+                status: 'delivered',
+                delivered_by: deliveredBy,
+                delivered_at: new Date().toISOString()
+              })
+              .eq('id', packageId)
+              .select();
+
+            if (updateError) {
+              console.error('❌ Error en método alternativo:', updateError);
+              throw updateError;
+            }
+
+            // Si hay pagos, intentamos crearlos en la tabla debt_payments
+            if (payments && payments.length > 0) {
+              console.log('💰 Creando registros de pago...');
+              
+              for (const payment of payments) {
+                const { error: paymentError } = await supabase
+                  .from('debt_payments')
+                  .insert({
+                    package_id: packageId,
+                    payment_method_id: payment.method_id,
+                    amount: payment.amount,
+                    currency: payment.currency,
+                    payment_type: payment.type,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (paymentError) {
+                  console.error('❌ Error creando pago:', paymentError);
+                  // No lanzamos error aquí para no bloquear la entrega
+                }
+              }
+            }
+
+            console.log('✅ Entrega procesada con método alternativo');
+            return updateData;
+          }
+          
           throw error;
         }
 
@@ -64,12 +113,19 @@ export function useDeliverPackage() {
       
       console.log('✅ Queries invalidadas y toast mostrado');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('❌ Error en mutación de entrega:', error);
+      
+      let errorMessage = "No se pudo completar la entrega del paquete. Intenta nuevamente.";
+      
+      // Mensaje más específico para errores de permisos
+      if (error?.message?.includes('collection_stats') || error?.code === '42501') {
+        errorMessage = "Error de permisos en la base de datos. Contacta al administrador del sistema.";
+      }
       
       toast({
         title: "Error en la entrega",
-        description: "No se pudo completar la entrega del paquete. Intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

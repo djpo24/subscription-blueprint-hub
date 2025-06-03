@@ -1095,11 +1095,7 @@ export type Database = {
         Row: {
           delivered_packages: number | null
           overdue_30_days: number | null
-          overdue_60_days: number | null
-          paid_packages: number | null
-          pending_delivery: number | null
           pending_payment: number | null
-          total_amount_to_collect: number | null
           total_collected: number | null
           total_packages: number | null
           total_pending: number | null
@@ -1128,33 +1124,34 @@ export type Database = {
         Returns: string
       }
       get_collection_packages: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_status_filter?: string
-          p_payment_status_filter?: string
-          p_traveler_filter?: string
-          p_overdue_days?: number
-        }
+        Args:
+          | { p_limit?: number; p_offset?: number }
+          | {
+              p_limit?: number
+              p_offset?: number
+              p_status_filter?: string
+              p_payment_status_filter?: string
+              p_traveler_filter?: string
+              p_overdue_days?: number
+            }
         Returns: {
           package_id: string
           tracking_number: string
           customer_name: string
           customer_phone: string
           destination: string
-          origin: string
           traveler_name: string
-          package_status: string
           amount_to_collect: number
-          freight: number
-          delivered_at: string
-          debt_id: string
+          pending_amount: number
+          paid_amount: number
           debt_status: string
           debt_type: string
           debt_start_date: string
-          pending_amount: number
-          paid_amount: number
           debt_days: number
+          package_status: string
+          freight: number
+          debt_id: string
+          delivery_date: string
           created_at: string
         }[]
       }

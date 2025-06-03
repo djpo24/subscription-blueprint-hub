@@ -15,33 +15,29 @@ export function DebtorsList({ debts }: DebtorsListProps) {
   console.log('🏠 DebtorsList received debts:', debts);
   console.log('📊 Total debts count:', debts.length);
 
-  // Cambio en el filtro: incluir también paquetes con monto a cobrar aunque no tengan debt_status
+  // Improved filtering logic - the database function now handles most of the filtering
+  // We only need to exclude explicitly paid debts
   const filteredDebts = debts.filter(debt => {
-    // Si tiene amount_to_collect > 0, siempre incluirlo
-    if (debt.amount_to_collect > 0) {
-      // Solo excluir si está explícitamente marcado como 'paid'
-      return debt.debt_status !== 'paid';
+    // The database function already filters for relevant debts
+    // Only exclude if explicitly marked as 'paid'
+    const shouldInclude = debt.debt_status !== 'paid' && debt.pending_amount > 0;
+    
+    if (!shouldInclude) {
+      console.log(`🚫 Excluding debt ${debt.tracking_number}: status=${debt.debt_status}, pending=${debt.pending_amount}`);
     }
-    // Si no tiene amount_to_collect, excluir
-    return false;
+    
+    return shouldInclude;
   });
   
-  console.log('🔍 Filtered debts (after new filtering logic):', filteredDebts);
+  console.log('🔍 Filtered debts (after client-side filtering):', filteredDebts);
   console.log('📊 Filtered debts count:', filteredDebts.length);
 
-  // Agregar logging detallado de los filtros
-  console.log('🔍 Filter analysis:');
-  debts.forEach((debt, index) => {
-    if (index < 10) { // Log first 10 for debugging
-      const shouldInclude = debt.amount_to_collect > 0 && debt.debt_status !== 'paid';
-      console.log(`  ${index + 1}. ${debt.tracking_number}:`, {
-        amount_to_collect: debt.amount_to_collect,
-        debt_status: debt.debt_status,
-        should_include: shouldInclude,
-        reason: shouldInclude ? 'INCLUDED' : `EXCLUDED - ${debt.amount_to_collect <= 0 ? 'No amount' : 'Paid status'}`
-      });
-    }
-  });
+  // Enhanced logging for verification
+  const deliveredDebts = filteredDebts.filter(debt => debt.package_status === 'delivered');
+  const undeliveredDebts = filteredDebts.filter(debt => debt.package_status !== 'delivered');
+  
+  console.log('📦 Delivered packages with debt:', deliveredDebts.length);
+  console.log('📦 Undelivered packages with debt:', undeliveredDebts.length);
 
   const sortedDebts = [...filteredDebts]
     .sort((a, b) => {
@@ -52,7 +48,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           comparison = new Date(a.debt_start_date || 0).getTime() - new Date(b.debt_start_date || 0).getTime();
           break;
         case 'amount':
-          comparison = Number(a.pending_amount || a.amount_to_collect || 0) - Number(b.pending_amount || b.amount_to_collect || 0);
+          comparison = Number(a.pending_amount || 0) - Number(b.pending_amount || 0);
           break;
         case 'days':
           comparison = (a.debt_days || 0) - (b.debt_days || 0);
@@ -62,7 +58,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-  console.log('🔄 Sorted debts:', sortedDebts);
+  console.log('🔄 Sorted debts:', sortedDebts.length);
 
   const formatCurrency = (value: number | string) => {
     return `$${Number(value || 0).toLocaleString('es-CO')}`;
@@ -136,7 +132,15 @@ export function DebtorsList({ debts }: DebtorsListProps) {
               <strong>No se encontraron deudas activas.</strong>
             </p>
             <p className="text-yellow-600 text-xs mt-1">
-              Las deudas se generan automáticamente cuando los paquetes llegan a destino y tienen monto a cobrar.
+              Las deudas se generan automáticamente cuando los paquetes tienen monto a cobrar pendiente.
+            </p>
+          </div>
+        )}
+        {sortedDebts.length > 0 && (
+          <div className="mt-2 text-sm text-gray-600">
+            <p>
+              Mostrando {deliveredDebts.length} paquetes entregados sin pago completo 
+              y {undeliveredDebts.length} paquetes pendientes de entrega
             </p>
           </div>
         )}

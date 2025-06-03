@@ -48,14 +48,15 @@ export function RolePreviewSelector() {
     {
       role: 'traveler' as const,
       title: 'Viajero',
-      description: 'Acceso a viajes, despachos y deudores asignados',
+      description: 'Puede crear paquetes y viajes, acceso a sus asignaciones',
       icon: Truck,
       color: 'bg-green-500',
       features: [
+        'Crear nuevos paquetes',
+        'Crear nuevos viajes',
         'Ver viajes asignados',
         'Ver despachos relacionados',
         'Ver deudores relacionados',
-        'Ver paquetes de sus viajes',
         'Chat básico',
         'Sin acceso a notificaciones, usuarios o configuración'
       ]

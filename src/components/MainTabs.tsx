@@ -2,21 +2,23 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 interface MainTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   unreadCount?: number;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
-export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsProps) {
+export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole }: MainTabsProps) {
   const isMobile = useIsMobile();
-  const { data: userRole, isLoading, error } = useCurrentUserRole();
+  const { data: userRole, isLoading, error } = useCurrentUserRoleWithPreview(previewRole);
   
   console.log('MainTabs: userRole data:', userRole);
   console.log('MainTabs: isLoading:', isLoading);
   console.log('MainTabs: error:', error);
+  console.log('MainTabs: previewRole:', previewRole);
   
   // Show Users tab only for admins
   const showUsersTab = userRole?.role === 'admin';

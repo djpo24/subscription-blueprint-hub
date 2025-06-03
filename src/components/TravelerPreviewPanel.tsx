@@ -105,13 +105,16 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
   const travelerPackages = packages.slice(0, 3); // Solo mostrar algunos paquetes
   const travelerFilteredPackages = filteredPackages.slice(0, 3);
 
+  // Filtrar viajes solo para los asignados al viajero actual
+  const travelerTrips = trips.filter(trip => trip.traveler_id === 'current-traveler-id');
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Alert className="mb-4 border-blue-200 bg-blue-50">
         <Eye className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-800">
-            <strong>Vista Preview:</strong> Panel como Viajero - Acceso a viajes, despachos y deudores
+            <strong>Vista Preview:</strong> Panel como Viajero - Puede crear paquetes y viajes, acceso a sus viajes asignados
           </span>
           <Button variant="outline" size="sm" onClick={onBack} className="ml-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -127,28 +130,29 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
           activeTab={activeTab} 
           onTabChange={setActiveTab}
           unreadCount={unreadCount}
+          previewRole="traveler"
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-8">
           <DashboardTab
             packageStats={travelerPackageStats}
             customersCount={Math.floor(customersCount / 3)}
-            onNewPackage={() => {}} // Deshabilitado para viajeros
-            onNewTrip={() => {}} // Deshabilitado para viajeros
+            onNewPackage={handleNewPackage} // Habilitado para viajeros
+            onNewTrip={() => handleCreateTripFromCalendar(new Date())} // Habilitado para viajeros
             onViewNotifications={() => {}} // No disponible para viajeros
             onMobileDelivery={() => {}} // Deshabilitado para viajeros
             packages={travelerPackages}
             filteredPackages={travelerFilteredPackages}
             isLoading={isLoading}
-            onUpdate={() => {}} // Solo lectura para viajeros
+            onUpdate={handlePackagesUpdate}
           />
           
           <TripsTab 
             viewingPackagesByDate={viewingPackagesByDate}
-            trips={trips.filter(trip => trip.traveler_id === 'current-traveler-id')} // Solo viajes asignados
+            trips={travelerTrips} // Solo viajes asignados
             tripsLoading={tripsLoading}
-            onAddPackage={() => {}} // Deshabilitado para viajeros
-            onCreateTrip={() => {}} // Deshabilitado para viajeros
+            onAddPackage={handleAddPackageToTrip} // Habilitado para viajeros
+            onCreateTrip={handleCreateTripFromCalendar} // Habilitado para viajeros
             onViewPackagesByDate={handleViewPackagesByDate}
             onBack={handleBackToCalendar}
           />
@@ -158,6 +162,17 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
           <ChatTab />
         </Tabs>
 
+        <DialogsContainer
+          packageDialogOpen={packageDialogOpen}
+          setPackageDialogOpen={setPackageDialogOpen}
+          onPackageSuccess={handlePackageSuccess}
+          selectedTripId={selectedTripId}
+          tripDialogOpen={tripDialogOpen}
+          onTripDialogChange={handleTripDialogClose}
+          onTripSuccess={handleTripSuccess}
+          selectedDate={selectedDate}
+        />
+
         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <h3 className="font-semibold text-yellow-800 mb-2">Permisos del Rol Viajero:</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -165,6 +180,8 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
               <h4 className="font-medium text-green-700 mb-2">✅ Puede acceder a:</h4>
               <ul className="text-green-700 space-y-1">
                 <li>• Dashboard (vista limitada)</li>
+                <li>• Crear nuevos paquetes</li>
+                <li>• Crear nuevos viajes</li>
                 <li>• Viajes (solo los asignados)</li>
                 <li>• Despachos (solo los relacionados)</li>
                 <li>• Deudores (solo los relacionados)</li>
@@ -177,7 +194,7 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
                 <li>• Notificaciones</li>
                 <li>• Gestión de usuarios</li>
                 <li>• Configuración del sistema</li>
-                <li>• Crear nuevos paquetes o viajes</li>
+                <li>• Entrega móvil</li>
                 <li>• Funciones administrativas</li>
               </ul>
             </div>

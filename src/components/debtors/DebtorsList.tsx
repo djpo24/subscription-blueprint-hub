@@ -60,8 +60,20 @@ export function DebtorsList({ debts }: DebtorsListProps) {
 
   console.log('🔄 Sorted debts:', sortedDebts.length);
 
-  const formatCurrency = (value: number | string) => {
-    return `$${Number(value || 0).toLocaleString('es-CO')}`;
+  const formatCurrency = (value: number | string, currency: string = 'COP') => {
+    const symbol = currency === 'AWG' ? 'ƒ' : '$';
+    return `${symbol}${Number(value || 0).toLocaleString('es-CO')}`;
+  };
+
+  const getCurrencyLabel = (currency: string) => {
+    switch (currency) {
+      case 'AWG':
+        return 'AWG';
+      case 'COP':
+        return 'COP';
+      default:
+        return currency || 'COP';
+    }
   };
 
   const getDebtTypeLabel = (debtType: string) => {
@@ -152,6 +164,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           sortOrder={sortOrder}
           onSort={handleSort}
           formatCurrency={formatCurrency}
+          getCurrencyLabel={getCurrencyLabel}
           getDebtTypeLabel={getDebtTypeLabel}
           getDebtTypeColor={getDebtTypeColor}
           getStatusLabel={getStatusLabel}
@@ -164,6 +177,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           sortOrder={sortOrder}
           onSort={handleSort}
           formatCurrency={formatCurrency}
+          getCurrencyLabel={getCurrencyLabel}
           getDebtTypeLabel={getDebtTypeLabel}
           getDebtTypeColor={getDebtTypeColor}
           getStatusLabel={getStatusLabel}

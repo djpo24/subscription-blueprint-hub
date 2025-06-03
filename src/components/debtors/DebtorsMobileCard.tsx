@@ -1,14 +1,12 @@
 
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { DollarSign, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Calendar, Clock, MapPin, User, Phone, Package } from 'lucide-react';
 
 interface DebtorsMobileCardProps {
   debt: any;
-  formatCurrency: (value: number | string) => string;
+  formatCurrency: (value: number | string, currency?: string) => string;
+  getCurrencyLabel: (currency: string) => string;
   getDebtTypeLabel: (debtType: string) => string;
   getDebtTypeColor: (debtType: string) => string;
   getStatusLabel: (status: string) => string;
@@ -18,81 +16,78 @@ interface DebtorsMobileCardProps {
 export function DebtorsMobileCard({ 
   debt, 
   formatCurrency, 
+  getCurrencyLabel,
   getDebtTypeLabel, 
   getDebtTypeColor, 
   getStatusLabel, 
   getStatusColor 
 }: DebtorsMobileCardProps) {
   return (
-    <Card key={debt.debt_id || debt.package_id} className="p-4">
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm truncate">{debt.tracking_number}</h3>
-            <p className="text-sm text-gray-600 truncate">{debt.customer_name}</p>
-            <p className="text-xs text-gray-500">{debt.customer_phone}</p>
+    <Card className="border-l-4 border-l-orange-500">
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="font-mono text-sm font-medium">{debt.tracking_number}</div>
+              <div className="text-lg font-semibold text-red-600">
+                {formatCurrency(debt.pending_amount, debt.currency)}
+              </div>
+              <div className="text-xs text-gray-500">
+                {getCurrencyLabel(debt.currency)}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className={`text-lg font-bold ${debt.debt_days > 30 ? 'text-red-600' : debt.debt_days > 15 ? 'text-orange-600' : 'text-gray-900'}`}>
+                {debt.debt_days} días
+              </div>
+              <div className="text-xs text-gray-500">de mora</div>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-1 ml-2">
-            <Badge className={`${getDebtTypeColor(debt.debt_type)} text-xs`}>
+
+          {/* Customer Info */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-gray-400" />
+              <span className="font-medium">{debt.customer_name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="h-4 w-4 text-gray-400" />
+              <span>{debt.customer_phone}</span>
+            </div>
+          </div>
+
+          {/* Location and Traveler */}
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <span>{debt.destination}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-gray-400" />
+              <span>{debt.traveler_name}</span>
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className={getDebtTypeColor(debt.debt_type)}>
               {getDebtTypeLabel(debt.debt_type)}
             </Badge>
-            <Badge className={`${getStatusColor(debt.debt_status)} text-xs`}>
+            <Badge variant="outline" className={getStatusColor(debt.debt_status)}>
               {getStatusLabel(debt.debt_status)}
             </Badge>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p className="text-gray-500 text-xs">Destino</p>
-            <p className="font-medium text-sm truncate">{debt.destination}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">Viajero</p>
-            <p className="font-medium text-sm truncate">{debt.traveler_name}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">Días de deuda</p>
-            <p className={`font-medium text-sm ${
-              debt.debt_days > 30 ? 'text-red-600' : 
-              debt.debt_days > 15 ? 'text-orange-600' : 'text-gray-900'
-            }`}>
-              {debt.debt_days || 0}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">Fecha deuda</p>
-            <p className="font-medium text-sm">
-              {debt.debt_start_date ? 
-                format(new Date(debt.debt_start_date), 'dd/MM/yy', { locale: es }) 
-                : 'N/A'
-              }
-            </p>
+          {/* Date */}
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Calendar className="h-4 w-4" />
+            <span>
+              Inicio: {debt.debt_start_date ? new Date(debt.debt_start_date).toLocaleDateString('es-CO') : 'N/A'}
+            </span>
           </div>
         </div>
-
-        <div className="border-t pt-3 space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 text-sm">Pendiente:</span>
-            <span className="font-bold text-red-600">{formatCurrency(debt.pending_amount)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 text-sm">Pagado:</span>
-            <span className="font-medium text-green-600">{formatCurrency(debt.paid_amount)}</span>
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1 text-xs">
-            <DollarSign className="mr-1 h-3 w-3" />
-            Pagar
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs">
-            <Calendar className="mr-1 h-3 w-3" />
-            Historial
-          </Button>
-        </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }

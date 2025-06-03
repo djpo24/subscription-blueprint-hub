@@ -7,7 +7,8 @@ interface DebtorsListMobileProps {
   sortBy: 'date' | 'amount' | 'days';
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'date' | 'amount' | 'days') => void;
-  formatCurrency: (value: number | string) => string;
+  formatCurrency: (value: number | string, currency?: string) => string;
+  getCurrencyLabel: (currency: string) => string;
   getDebtTypeLabel: (debtType: string) => string;
   getDebtTypeColor: (debtType: string) => string;
   getStatusLabel: (status: string) => string;
@@ -20,6 +21,7 @@ export function DebtorsListMobile({
   sortOrder, 
   onSort, 
   formatCurrency, 
+  getCurrencyLabel,
   getDebtTypeLabel, 
   getDebtTypeColor, 
   getStatusLabel, 
@@ -34,6 +36,7 @@ export function DebtorsListMobile({
           key={debt.debt_id || debt.package_id}
           debt={debt}
           formatCurrency={formatCurrency}
+          getCurrencyLabel={getCurrencyLabel}
           getDebtTypeLabel={getDebtTypeLabel}
           getDebtTypeColor={getDebtTypeColor}
           getStatusLabel={getStatusLabel}

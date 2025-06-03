@@ -90,7 +90,7 @@
   }
 
   body {
-    @apply bg-white text-black font-sans;
+    @apply bg-white text-black;
     font-family: 'UberMove', 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
@@ -113,6 +113,7 @@
 }
 
 @layer components {
+  /* Estilo principal de Uber - Negro y blanco */
   .uber-header {
     @apply bg-black text-white shadow-none border-0;
   }
@@ -126,14 +127,53 @@
   }
 
   .uber-input {
-    @apply bg-gray-100 border-0 rounded-lg px-4 py-4 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:ring-offset-0 shadow-none;
+    @apply bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:ring-offset-0 shadow-none transition-all duration-200;
   }
 
   .uber-card {
-    @apply bg-white rounded-2xl border-0 shadow-sm;
+    @apply bg-white rounded-2xl border border-gray-200 shadow-sm;
   }
 
   .uber-dialog {
     @apply bg-white rounded-2xl border-0 shadow-xl;
+  }
+
+  /* Aplicar estilo Uber a todos los botones por defecto */
+  .btn-default {
+    @apply uber-button-primary;
+  }
+
+  .btn-secondary {
+    @apply uber-button-secondary;
+  }
+
+  /* Aplicar estilo Uber a inputs */
+  .input-default {
+    @apply uber-input;
+  }
+
+  /* Aplicar estilo Uber a cards */
+  .card-default {
+    @apply uber-card;
+  }
+
+  /* Override para asegurar que el estilo Uber prevalezca */
+  button:not([class*="variant"]) {
+    @apply uber-button-primary;
+  }
+
+  input[type="text"]:not([class*="uber"]),
+  input[type="email"]:not([class*="uber"]),
+  textarea:not([class*="uber"]) {
+    @apply bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:border-black;
+  }
+
+  /* Estilo para badges y elementos pequeños */
+  .uber-badge {
+    @apply bg-black text-white px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .uber-badge-secondary {
+    @apply bg-gray-100 text-black px-3 py-1 rounded-full text-xs font-medium;
   }
 }

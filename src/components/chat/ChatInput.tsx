@@ -68,14 +68,14 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
     <div className={`border-t border-gray-200 ${isMobile ? 'p-3' : 'p-4'} bg-white`}>
       {/* Preview de imagen seleccionada */}
       {selectedImage && (
-        <div className="mb-3 p-2 bg-gray-50 rounded-md flex items-center gap-2">
-          <span className="text-sm text-gray-600">📎 {selectedImage.name}</span>
+        <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+          <span className="text-sm text-gray-700 font-medium">📎 {selectedImage.name}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={handleImageRemove}
-            className="h-6 w-6 p-0"
+            className="h-8 w-8 p-0 hover:bg-gray-200"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -84,7 +84,7 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
 
       {/* Cargador de imágenes */}
       {showImageUpload && (
-        <div className="mb-3">
+        <div className="mb-3 p-3 bg-gray-50 rounded-lg">
           <ImageUpload
             onImageSelect={handleImageSelect}
             selectedImage={selectedImage}
@@ -93,16 +93,16 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
         </div>
       )}
       
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-3">
         <Button
           type="button"
-          variant="ghost"
-          size={isMobile ? "sm" : "sm"}
+          variant="secondary"
+          size={isMobile ? "sm" : "default"}
           onClick={() => setShowImageUpload(!showImageUpload)}
-          className="flex-shrink-0"
+          className="flex-shrink-0 uber-button-secondary"
           disabled={isSending}
         >
-          <Paperclip className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4'}`} />
+          <Paperclip className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
         </Button>
         
         <Textarea
@@ -111,26 +111,26 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          className={`min-h-[40px] max-h-32 resize-none flex-1 ${isMobile ? 'text-sm' : ''}`}
+          className={`min-h-[48px] max-h-32 resize-none flex-1 uber-input ${isMobile ? 'text-sm' : ''}`}
           disabled={disabled || isSending}
         />
         
         <Button
           onClick={handleSend}
           disabled={isSubmitDisabled}
-          size={isMobile ? "sm" : "sm"}
-          className="flex-shrink-0"
+          size={isMobile ? "sm" : "default"}
+          className="flex-shrink-0 uber-button-primary"
         >
           {isSending ? (
-            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
           ) : (
-            <Send className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4'}`} />
+            <Send className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
           )}
         </Button>
       </div>
       
       {isSending && (
-        <div className="mt-2 text-xs text-gray-500 text-center">
+        <div className="mt-3 text-sm text-gray-600 text-center font-medium">
           Enviando mensaje...
         </div>
       )}

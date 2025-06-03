@@ -69,7 +69,7 @@ export function DashboardTab({
         filteredPackages={filteredPackages}
         isLoading={isLoading}
         onUpdate={onUpdate}
-        disableChat={disableChat}
+        disableChat={false}
         previewRole={previewRole}
       />
     </TabsContent>

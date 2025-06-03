@@ -11,6 +11,7 @@ export function useQRScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanningAbortController = useRef<AbortController | null>(null);
 
   const initCamera = async () => {
     try {
@@ -129,16 +130,33 @@ export function useQRScanner() {
         await startVideoStream(selectedCamera.deviceId);
       }
 
+      // Create abort controller for this scanning session
+      const abortController = new AbortController();
+      scanningAbortController.current = abortController;
+
       const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
 
       // Start scanning from the video element
-      const result = await codeReader.decodeOnceFromVideoDevice(selectedCamera.deviceId, videoRef.current);
-      
-      if (result) {
-        console.log('QR Code scanned:', result.getText());
-        onQRCodeScanned(result.getText());
-        stopScanning();
+      try {
+        const result = await codeReader.decodeOnceFromVideoDevice(selectedCamera.deviceId, videoRef.current);
+        
+        // Check if scanning was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
+        
+        if (result) {
+          console.log('QR Code scanned:', result.getText());
+          onQRCodeScanned(result.getText());
+          stopScanning();
+        }
+      } catch (scanError) {
+        // Check if scanning was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
+        throw scanError;
       }
     } catch (err) {
       console.error('Error scanning QR code:', err);
@@ -150,15 +168,14 @@ export function useQRScanner() {
   const stopScanning = () => {
     console.log('Stopping scanning...');
     
-    // Stop the code reader
-    if (codeReaderRef.current) {
-      try {
-        codeReaderRef.current.reset();
-      } catch (err) {
-        console.error('Error resetting code reader:', err);
-      }
-      codeReaderRef.current = null;
+    // Abort any ongoing scanning
+    if (scanningAbortController.current) {
+      scanningAbortController.current.abort();
+      scanningAbortController.current = null;
     }
+    
+    // Clear the code reader reference
+    codeReaderRef.current = null;
     
     setIsScanning(false);
   };

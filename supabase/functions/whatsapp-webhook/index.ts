@@ -139,29 +139,44 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     contactName
   })
 
-  // Try to find existing customer by WhatsApp number
-  const { data: existingCustomer, error: findError } = await supabaseClient
+  // Try to find existing customer by WhatsApp number with more flexible matching
+  const { data: existingCustomers, error: findError } = await supabaseClient
     .from('customers')
     .select('*')
     .or(`phone.ilike.%${wa_id}%,whatsapp_number.ilike.%${wa_id}%`)
-    .limit(1)
-    .maybeSingle()
 
   if (findError) {
     console.error('Error finding customer:', findError)
     return
   }
 
-  if (existingCustomer) {
+  // Find the best match for the phone number
+  let bestMatch = null
+  if (existingCustomers && existingCustomers.length > 0) {
+    bestMatch = existingCustomers.find(customer => {
+      const customerPhone = (customer.whatsapp_number || customer.phone || '').replace(/[\s\-\(\)+]/g, '')
+      const waIdClean = wa_id.replace(/[\s\-\(\)+]/g, '')
+      return customerPhone === waIdClean || customerPhone.endsWith(waIdClean) || waIdClean.endsWith(customerPhone)
+    }) || existingCustomers[0]
+  }
+
+  if (bestMatch) {
     // Update existing customer with profile image
     const updateData: any = {}
     
-    if (profileImageUrl && profileImageUrl !== existingCustomer.profile_image_url) {
+    // Always update profile image if provided, even if it's different
+    if (profileImageUrl) {
       updateData.profile_image_url = profileImageUrl
+      console.log('Updating profile image URL for existing customer:', profileImageUrl)
+    }
+    
+    // Update WhatsApp number if not set
+    if (!bestMatch.whatsapp_number && wa_id) {
+      updateData.whatsapp_number = wa_id
     }
     
     // Only update name if customer doesn't have one or WhatsApp provides a different one
-    if (contactName && (!existingCustomer.name || existingCustomer.name === 'Cliente')) {
+    if (contactName && (!bestMatch.name || bestMatch.name === 'Cliente' || bestMatch.name === '.')) {
       updateData.name = contactName
     }
 
@@ -169,7 +184,7 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
       const { error: updateError } = await supabaseClient
         .from('customers')
         .update(updateData)
-        .eq('id', existingCustomer.id)
+        .eq('id', bestMatch.id)
 
       if (updateError) {
         console.error('Error updating customer profile:', updateError)
@@ -179,20 +194,24 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     }
   } else {
     // Create new customer if they don't exist
+    const newCustomerData = {
+      name: contactName || 'Cliente WhatsApp',
+      phone: wa_id,
+      whatsapp_number: wa_id,
+      email: `${wa_id}@whatsapp.placeholder`,
+      profile_image_url: profileImageUrl
+    }
+
+    console.log('Creating new customer with profile:', newCustomerData)
+
     const { error: createError } = await supabaseClient
       .from('customers')
-      .insert({
-        name: contactName || 'Cliente',
-        phone: wa_id,
-        whatsapp_number: wa_id,
-        email: `${wa_id}@whatsapp.placeholder`,
-        profile_image_url: profileImageUrl
-      })
+      .insert(newCustomerData)
 
     if (createError) {
       console.error('Error creating customer from contact:', createError)
     } else {
-      console.log('New customer created from WhatsApp contact')
+      console.log('New customer created from WhatsApp contact with profile image')
     }
   }
 }
@@ -267,17 +286,25 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     text: text?.body
   })
 
-  // Try to find customer by phone number
-  const { data: customer, error: customerError } = await supabaseClient
+  // Try to find customer by phone number with more flexible matching
+  const { data: existingCustomers, error: customerError } = await supabaseClient
     .from('customers')
     .select('*')
     .or(`phone.ilike.%${from}%,whatsapp_number.ilike.%${from}%`)
-    .limit(1)
-    .maybeSingle()
 
   if (customerError && customerError.code !== 'PGRST116') {
     console.error('Error finding customer:', customerError)
     return
+  }
+
+  // Find the best match for the phone number
+  let customer = null
+  if (existingCustomers && existingCustomers.length > 0) {
+    customer = existingCustomers.find(c => {
+      const customerPhone = (c.whatsapp_number || c.phone || '').replace(/[\s\-\(\)+]/g, '')
+      const fromClean = from.replace(/[\s\-\(\)+]/g, '')
+      return customerPhone === fromClean || customerPhone.endsWith(fromClean) || fromClean.endsWith(customerPhone)
+    }) || existingCustomers[0]
   }
 
   // Store the incoming message

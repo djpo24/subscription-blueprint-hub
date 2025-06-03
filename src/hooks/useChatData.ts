@@ -49,7 +49,7 @@ export function useChatData() {
         throw error;
       }
       
-      return (data || []).map(msg => ({
+      const processedData = (data || []).map(msg => ({
         id: msg.id,
         whatsapp_message_id: msg.whatsapp_message_id,
         from_phone: msg.from_phone,
@@ -59,6 +59,15 @@ export function useChatData() {
         message_timestamp: msg.timestamp,
         customers: msg.customers
       }));
+
+      // Log profile images for debugging
+      processedData.forEach(msg => {
+        if (msg.customers?.profile_image_url) {
+          console.log('Chat message with profile image:', msg.from_phone, msg.customers.profile_image_url);
+        }
+      });
+      
+      return processedData;
     },
     refetchInterval: 5000,
   });
@@ -102,12 +111,17 @@ export function useChatData() {
       }))
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
+    const latestMessage = incoming[0];
+    const profileImageUrl = latestMessage?.customers?.profile_image_url;
+    
+    console.log('Conversation profile image for', phone, ':', profileImageUrl);
+
     acc[phone] = {
       messages: allMessages,
-      latestIncoming: incoming[0],
-      customerName: incoming[0]?.customers?.name,
-      customerId: incoming[0]?.customer_id,
-      profileImageUrl: incoming[0]?.customers?.profile_image_url
+      latestIncoming: latestMessage,
+      customerName: latestMessage?.customers?.name,
+      customerId: latestMessage?.customer_id,
+      profileImageUrl: profileImageUrl
     };
 
     return acc;
@@ -129,6 +143,11 @@ export function useChatData() {
     unreadCount: 0, // Podrías implementar esto más tarde
     profileImageUrl: conversation.profileImageUrl
   })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+
+  console.log('Chat list with profile images:', chatList.map(chat => ({ 
+    phone: chat.phone, 
+    profileImageUrl: chat.profileImageUrl 
+  })));
 
   return {
     chatList,

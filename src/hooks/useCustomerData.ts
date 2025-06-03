@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,7 +12,7 @@ interface Customer {
 }
 
 export function useCustomerData(customerId: string | null) {
-  const { data: customer, isLoading } = useQuery({
+  const { data: customer, isLoading, refetch } = useQuery({
     queryKey: ['customer', customerId],
     queryFn: async (): Promise<Customer | null> => {
       if (!customerId) return null;
@@ -30,7 +31,7 @@ export function useCustomerData(customerId: string | null) {
       }
       
       console.log('Customer data fetched:', data);
-      console.log('Profile image URL:', data?.profile_image_url);
+      console.log('Profile image URL from customer data:', data?.profile_image_url);
       
       // Después de obtener el cliente, vincular mensajes existentes si es necesario
       if (data) {
@@ -40,6 +41,8 @@ export function useCustomerData(customerId: string | null) {
       return data;
     },
     enabled: !!customerId,
+    // Refetch more frequently to catch profile updates
+    refetchInterval: 30000,
   });
 
   const linkExistingMessages = async (customerData: Customer) => {
@@ -91,6 +94,7 @@ export function useCustomerData(customerId: string | null) {
   return {
     customer,
     isLoading,
+    refetch,
     getPhoneNumber: () => customer?.whatsapp_number || customer?.phone || null
   };
 }

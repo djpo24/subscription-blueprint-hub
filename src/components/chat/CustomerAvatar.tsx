@@ -28,7 +28,7 @@ export function CustomerAvatar({
     return names[0][0].toUpperCase();
   };
 
-  console.log('CustomerAvatar - Name:', customerName, 'Image URL:', profileImageUrl);
+  console.log('CustomerAvatar rendering - Name:', customerName, 'Image URL:', profileImageUrl);
 
   return (
     <Avatar className={sizeClasses[size]}>
@@ -36,8 +36,13 @@ export function CustomerAvatar({
         <AvatarImage 
           src={profileImageUrl} 
           alt={customerName || 'Cliente'}
-          onLoad={() => console.log('Avatar image loaded successfully')}
-          onError={() => console.log('Avatar image failed to load')}
+          onLoad={() => console.log('Avatar image loaded successfully:', profileImageUrl)}
+          onError={(e) => {
+            console.log('Avatar image failed to load:', profileImageUrl);
+            console.error('Image error:', e);
+          }}
+          // Añadir crossOrigin para evitar problemas de CORS con imágenes de WhatsApp
+          crossOrigin="anonymous"
         />
       )}
       <AvatarFallback className="bg-blue-100 text-blue-600">

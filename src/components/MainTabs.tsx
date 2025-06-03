@@ -2,6 +2,7 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
 
 interface MainTabsProps {
   activeTab: string;
@@ -11,10 +12,24 @@ interface MainTabsProps {
 
 export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsProps) {
   const isMobile = useIsMobile();
+  const { role, isLoading } = useCurrentUserRole();
+  
+  // Show Users tab only for admins
+  const showUsersTab = role === 'admin';
+  
+  // Calculate grid columns based on number of tabs
+  const totalTabs = showUsersTab ? 8 : 7;
+  const gridCols = isMobile ? 'grid-cols-4' : `grid-cols-${totalTabs}`;
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-10 bg-gray-200 animate-pulse rounded-md"></div>
+    );
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:grid-cols-7 gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto">
+      <TabsList className={`grid w-full ${gridCols} gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto`}>
         <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Home" : "Dashboard"}
         </TabsTrigger>
@@ -38,6 +53,11 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
         <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Notif." : "Notificaciones"}
         </TabsTrigger>
+        {showUsersTab && (
+          <TabsTrigger value="users" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Users" : "Usuarios"}
+          </TabsTrigger>
+        )}
         <TabsTrigger value="settings" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Config" : "Configuración"}
         </TabsTrigger>

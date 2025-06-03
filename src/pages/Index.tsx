@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
@@ -8,6 +7,7 @@ import { DispatchesTab } from '@/components/tabs/DispatchesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
+import { UsersTab } from '@/components/tabs/UsersTab';
 import { Tabs } from '@/components/ui/tabs';
 import { useIndexData } from '@/hooks/useIndexData';
 import { useIndexState } from '@/hooks/useIndexState';
@@ -133,6 +133,7 @@ export default function Index() {
           <DebtorsTab />
           <ChatTab />
           <NotificationsTab />
+          <UsersTab />
           <SettingsTab />
         </Tabs>
 

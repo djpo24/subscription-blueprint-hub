@@ -1,4 +1,3 @@
-
 import { TableCell, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { PackageActionsDropdown } from '../PackageActionsDropdown';
@@ -71,8 +70,6 @@ export function PackagesTableRow({
       </TableCell>
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{pkg.description}</TableCell>
-      <TableCell>{pkg.weight ? `${pkg.weight} kg` : 'N/A'}</TableCell>
-      <TableCell>{formatCurrency(pkg.freight)}</TableCell>
       <TableCell>{formatCurrency(pkg.amount_to_collect)}</TableCell>
       <TableCell onClick={onActionsClick}>
         <PackageActionsDropdown 

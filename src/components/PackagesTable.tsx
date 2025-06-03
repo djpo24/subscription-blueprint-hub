@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -112,8 +111,6 @@ export function PackagesTable({
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
-                  <TableHead>Peso</TableHead>
-                  <TableHead>Flete</TableHead>
                   <TableHead>A Cobrar</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>

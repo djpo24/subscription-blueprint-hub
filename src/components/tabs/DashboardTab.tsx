@@ -26,6 +26,8 @@ interface DashboardTabProps {
   filteredPackages: any[];
   isLoading: boolean;
   onUpdate: (id: string, updates: any) => void;
+  disableChat?: boolean;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
 export function DashboardTab({
@@ -38,7 +40,9 @@ export function DashboardTab({
   packages,
   filteredPackages,
   isLoading,
-  onUpdate
+  onUpdate,
+  disableChat = false,
+  previewRole
 }: DashboardTabProps) {
   return (
     <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
@@ -65,6 +69,8 @@ export function DashboardTab({
         filteredPackages={filteredPackages}
         isLoading={isLoading}
         onUpdate={onUpdate}
+        disableChat={disableChat}
+        previewRole={previewRole}
       />
     </TabsContent>
   );

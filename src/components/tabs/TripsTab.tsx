@@ -12,6 +12,8 @@ interface TripsTabProps {
   onCreateTrip: (date: Date) => void;
   onViewPackagesByDate: (date: Date) => void;
   onBack: () => void;
+  disableChat?: boolean;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
 export function TripsTab({
@@ -22,6 +24,8 @@ export function TripsTab({
   onCreateTrip,
   onViewPackagesByDate,
   onBack,
+  disableChat = false,
+  previewRole
 }: TripsTabProps) {
   return (
     <TabsContent value="trips" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
@@ -30,6 +34,8 @@ export function TripsTab({
           selectedDate={viewingPackagesByDate}
           onBack={onBack}
           onAddPackage={onAddPackage}
+          disableChat={disableChat}
+          previewRole={previewRole}
         />
       ) : (
         <>

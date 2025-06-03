@@ -142,7 +142,8 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
             filteredPackages={employeeFilteredPackages}
             isLoading={isLoading}
             onUpdate={handlePackagesUpdate}
-            disableChat={true} // Deshabilitar chat para empleados
+            disableChat={true}
+            previewRole="employee"
           />
           
           <TripsTab 
@@ -153,7 +154,8 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
             onCreateTrip={handleCreateTripFromCalendar}
             onViewPackagesByDate={handleViewPackagesByDate}
             onBack={handleBackToCalendar}
-            disableChat={true} // Deshabilitar chat para empleados
+            disableChat={true}
+            previewRole="employee"
           />
           
           <DispatchesTab />

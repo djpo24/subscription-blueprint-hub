@@ -12,15 +12,25 @@ interface MainTabsProps {
 
 export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsProps) {
   const isMobile = useIsMobile();
-  const { data: userRole, isLoading } = useCurrentUserRole();
+  const { data: userRole, isLoading, error } = useCurrentUserRole();
+  
+  console.log('MainTabs: userRole data:', userRole);
+  console.log('MainTabs: isLoading:', isLoading);
+  console.log('MainTabs: error:', error);
   
   // Show Users tab only for admins
   const showUsersTab = userRole?.role === 'admin';
+  console.log('MainTabs: showUsersTab:', showUsersTab);
 
   if (isLoading) {
+    console.log('MainTabs: Still loading user role...');
     return (
       <div className="w-full h-10 bg-gray-200 animate-pulse rounded-md"></div>
     );
+  }
+
+  if (error) {
+    console.error('MainTabs: Error loading user role:', error);
   }
 
   return (

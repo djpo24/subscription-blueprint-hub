@@ -10,10 +10,11 @@ export function useCurrentUserRole() {
     queryKey: ['current-user-role', user?.id],
     queryFn: async () => {
       if (!user) {
+        console.log('useCurrentUserRole: No user found');
         return null;
       }
 
-      console.log('Fetching user role for user:', user.id);
+      console.log('useCurrentUserRole: Fetching user role for user:', user.id);
 
       const { data, error } = await supabase
         .from('user_profiles')
@@ -22,15 +23,15 @@ export function useCurrentUserRole() {
         .single();
 
       if (error) {
-        console.error('Error fetching user role:', error);
+        console.error('useCurrentUserRole: Error fetching user role:', error);
         throw error;
       }
       
-      console.log('User role data:', data);
+      console.log('useCurrentUserRole: User role data received:', data);
       return data;
     },
     enabled: !!user,
-    retry: false,
+    retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

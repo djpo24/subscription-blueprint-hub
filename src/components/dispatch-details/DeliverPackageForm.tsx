@@ -40,30 +40,50 @@ export function DeliverPackageForm({
   const deliveredBy = user?.email || 'Usuario no identificado';
 
   const handleSubmit = async () => {
+    console.log('🔄 Iniciando proceso de entrega...');
+    console.log('📦 Paquete:', pkg);
+    console.log('👤 Usuario:', user);
+    console.log('💰 Pagos:', payments);
+
     if (!user) {
+      console.error('❌ Usuario no autenticado');
       alert('No se puede procesar la entrega: usuario no autenticado');
       return;
     }
 
     try {
       const validPayments = getValidPayments();
+      console.log('✅ Pagos válidos:', validPayments);
 
-      await deliverPackage.mutateAsync({
+      const deliveryData = {
         packageId: pkg.id,
         deliveredBy: deliveredBy,
         payments: validPayments.length > 0 ? validPayments : undefined
-      });
+      };
 
+      console.log('📤 Enviando datos de entrega:', deliveryData);
+
+      await deliverPackage.mutateAsync(deliveryData);
+
+      console.log('✅ Entrega completada, reseteando formulario...');
+      
       // Reset form
       setNotes('');
       resetPayments();
-      onSuccess();
+      
+      // Llamar onSuccess después de un breve delay para permitir que las queries se actualicen
+      setTimeout(() => {
+        console.log('🏁 Cerrando diálogo...');
+        onSuccess();
+      }, 500);
+
     } catch (error) {
-      console.error('Error delivering package:', error);
+      console.error('❌ Error completo en handleSubmit:', error);
     }
   };
 
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    console.log('💳 Actualizando pago:', { index, field, value });
     updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
   };
 
@@ -76,6 +96,13 @@ export function DeliverPackageForm({
   }, 0);
 
   const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
+
+  console.log('💰 Estado de pagos:', {
+    requiresPayment,
+    totalCollected,
+    remainingAmount,
+    amountToCollect: pkg.amount_to_collect
+  });
 
   return (
     <div className="space-y-4">

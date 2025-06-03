@@ -37,29 +37,46 @@ export function MobileDeliveryForm({
   const deliveredBy = user?.email || 'Usuario no identificado';
 
   const handleSubmit = async () => {
+    console.log('🔄 [MobileDeliveryForm] Iniciando proceso de entrega...');
+    console.log('📦 [MobileDeliveryForm] Paquete:', pkg);
+    console.log('👤 [MobileDeliveryForm] Usuario:', user);
+    console.log('💰 [MobileDeliveryForm] Pagos:', payments);
+
     if (!user) {
+      console.error('❌ [MobileDeliveryForm] Usuario no autenticado');
       alert('No se puede procesar la entrega: usuario no autenticado');
       return;
     }
 
     try {
       const validPayments = getValidPayments();
+      console.log('✅ [MobileDeliveryForm] Pagos válidos:', validPayments);
 
-      await deliverPackage.mutateAsync({
+      const deliveryData = {
         packageId: pkg.id,
         deliveredBy: deliveredBy,
         payments: validPayments.length > 0 ? validPayments : undefined
-      });
+      };
 
-      alert('¡Paquete entregado exitosamente!');
-      onDeliveryComplete();
+      console.log('📤 [MobileDeliveryForm] Enviando datos de entrega:', deliveryData);
+
+      await deliverPackage.mutateAsync(deliveryData);
+
+      console.log('✅ [MobileDeliveryForm] Entrega completada exitosamente');
+      
+      // Llamar onDeliveryComplete después de un breve delay para permitir que las queries se actualicen
+      setTimeout(() => {
+        console.log('🏁 [MobileDeliveryForm] Cerrando vista...');
+        onDeliveryComplete();
+      }, 500);
+
     } catch (error) {
-      console.error('Error delivering package:', error);
-      alert('Error al entregar el paquete. Intenta nuevamente.');
+      console.error('❌ [MobileDeliveryForm] Error completo en handleSubmit:', error);
     }
   };
 
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    console.log('💳 [MobileDeliveryForm] Actualizando pago:', { index, field, value });
     updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
   };
 

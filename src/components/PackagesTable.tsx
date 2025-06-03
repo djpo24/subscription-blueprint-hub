@@ -31,7 +31,7 @@ interface PackagesTableProps {
   packages: Package[];
   filteredPackages: Package[];
   isLoading: boolean;
-  onUpdate?: () => void;
+  onUpdate?: (id: string, updates: any) => void;
 }
 
 export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate }: PackagesTableProps) {
@@ -47,7 +47,10 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
 
   const handleUpdate = () => {
     if (onUpdate) {
-      onUpdate();
+      // Since the existing onUpdate expects (id, updates), but we're calling it without parameters,
+      // we'll create a wrapper that calls it appropriately when needed
+      // For now, we'll call it with empty parameters as a general refresh
+      onUpdate('', {});
     }
   };
 

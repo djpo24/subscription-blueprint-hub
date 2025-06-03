@@ -42,6 +42,20 @@ export function useDeliverPackage() {
           if (error.message?.includes('collection_stats') || error.code === '42501') {
             console.log('🔄 Error de permisos detectado, intentando método alternativo...');
             
+            // Primero obtenemos la información del paquete
+            const { data: packageData, error: packageError } = await supabase
+              .from('packages')
+              .select('amount_to_collect, currency')
+              .eq('id', packageId)
+              .single();
+
+            if (packageError) {
+              console.error('❌ Error obteniendo datos del paquete:', packageError);
+              throw packageError;
+            }
+
+            console.log('📦 Datos del paquete:', packageData);
+
             // Método alternativo: actualizar directamente la tabla packages
             const { data: updateData, error: updateError } = await supabase
               .from('packages')
@@ -58,6 +72,11 @@ export function useDeliverPackage() {
               throw updateError;
             }
 
+            // Calcular total cobrado de los pagos
+            const totalCollected = payments ? payments.reduce((sum, p) => sum + p.amount, 0) : 0;
+            console.log('💰 Total cobrado:', totalCollected);
+            console.log('💰 Monto a cobrar del paquete:', packageData.amount_to_collect);
+
             // Si hay pagos, creamos un registro de entrega y luego los pagos
             if (payments && payments.length > 0) {
               console.log('💰 Creando registro de entrega y pagos...');
@@ -69,7 +88,7 @@ export function useDeliverPackage() {
                   package_id: packageId,
                   delivered_by: deliveredBy,
                   delivery_date: new Date().toISOString(),
-                  total_amount_collected: payments.reduce((sum, p) => sum + p.amount, 0),
+                  total_amount_collected: totalCollected,
                   delivery_status: 'delivered'
                 })
                 .select()
@@ -96,6 +115,35 @@ export function useDeliverPackage() {
                     // No lanzamos error aquí para no bloquear la entrega
                   }
                 }
+              }
+            }
+
+            // CRUCIAL: Si el paquete tiene monto a cobrar, crear registro de deuda SIEMPRE
+            if (packageData.amount_to_collect && packageData.amount_to_collect > 0) {
+              console.log('💸 Creando registro de deuda para paquete con monto a cobrar...');
+              
+              const pendingAmount = (packageData.amount_to_collect || 0) - totalCollected;
+              
+              const { error: debtError } = await supabase
+                .from('package_debts')
+                .insert({
+                  package_id: packageId,
+                  total_amount: packageData.amount_to_collect,
+                  pending_amount: pendingAmount,
+                  paid_amount: totalCollected,
+                  debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
+                  debt_start_date: new Date().toISOString().split('T')[0], // Solo la fecha
+                  delivery_date: new Date().toISOString(),
+                  status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
+                          totalCollected > 0 ? 'partial' : 'pending'
+                })
+                .select();
+
+              if (debtError) {
+                console.error('❌ Error creando registro de deuda:', debtError);
+                // No lanzamos error aquí para no bloquear la entrega
+              } else {
+                console.log('✅ Registro de deuda creado exitosamente');
               }
             }
 

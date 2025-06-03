@@ -6,30 +6,31 @@ export function useDebtData() {
   return useQuery({
     queryKey: ['debt-data'],
     queryFn: async () => {
-      console.log('🔍 Fetching debt data - checking for ALL pending debts...');
+      console.log('🔍 Fetching debt data - using simplified approach...');
       
-      // Primero, vamos a verificar todos los paquetes con deudas registradas
-      const { data: allDebts, error: allDebtsError } = await supabase
+      // First, get all package debts with their related package and customer info
+      const { data: packageDebts, error: debtsError } = await supabase
         .from('package_debts')
         .select(`
           *,
-          packages!inner(
+          packages!inner (
+            id,
             tracking_number,
             customer_id,
             destination,
             freight,
             amount_to_collect,
-            status as package_status,
+            status,
             trip_id,
             delivered_at,
             currency,
-            customers!inner(
+            customers!inner (
               name,
               phone
             ),
-            trips(
+            trips (
               traveler_id,
-              travelers(
+              travelers (
                 first_name,
                 last_name
               )
@@ -38,26 +39,25 @@ export function useDebtData() {
         `)
         .neq('status', 'paid');
 
-      if (allDebtsError) {
-        console.error('❌ Error fetching all debts:', allDebtsError);
-        throw allDebtsError;
+      if (debtsError) {
+        console.error('❌ Error fetching package debts:', debtsError);
+        throw debtsError;
       }
 
-      console.log('💰 All registered debts (not paid):', allDebts);
-      console.log('📊 Total debt records found:', allDebts?.length || 0);
+      console.log('💰 Package debts found:', packageDebts);
 
-      // Ahora verificar paquetes entregados que deberían tener deuda pero no la tienen registrada
+      // Also get delivered packages without debt records that have amount_to_collect > 0
       const { data: deliveredPackages, error: packagesError } = await supabase
         .from('packages')
         .select(`
           *,
-          customers!inner(
+          customers!inner (
             name,
             phone
           ),
-          trips(
+          trips (
             traveler_id,
-            travelers(
+            travelers (
               first_name,
               last_name
             )
@@ -73,12 +73,12 @@ export function useDebtData() {
 
       console.log('📦 Delivered packages with amount_to_collect > 0:', deliveredPackages);
 
-      // Procesar y combinar los datos
+      // Process the data
       const processedDebts = [];
 
-      // Agregar deudas registradas
-      if (allDebts) {
-        for (const debt of allDebts) {
+      // Add registered debts
+      if (packageDebts) {
+        for (const debt of packageDebts) {
           const pkg = debt.packages;
           const travelerName = pkg.trips?.travelers 
             ? `${pkg.trips.travelers.first_name} ${pkg.trips.travelers.last_name}`
@@ -102,7 +102,7 @@ export function useDebtData() {
             debt_type: debt.debt_type,
             debt_start_date: debt.debt_start_date,
             debt_days: debtDays,
-            package_status: pkg.package_status,
+            package_status: pkg.status,
             freight: pkg.freight,
             debt_id: debt.id,
             delivery_date: debt.delivery_date,
@@ -112,9 +112,9 @@ export function useDebtData() {
         }
       }
 
-      // Verificar paquetes entregados sin registro de deuda
+      // Check for delivered packages without debt records
       if (deliveredPackages) {
-        const registeredPackageIds = new Set(allDebts?.map(d => d.package_id) || []);
+        const registeredPackageIds = new Set(packageDebts?.map(d => d.package_id) || []);
         
         for (const pkg of deliveredPackages) {
           if (!registeredPackageIds.has(pkg.id)) {
@@ -154,19 +154,6 @@ export function useDebtData() {
 
       console.log('✅ Final processed debts:', processedDebts);
       console.log('📊 Total debts to display:', processedDebts.length);
-
-      // Log específico para Iliana Miranda
-      const ilianaDebt = processedDebts.find(debt => 
-        debt.customer_name?.toLowerCase().includes('iliana') || 
-        debt.customer_name?.toLowerCase().includes('miranda')
-      );
-      
-      if (ilianaDebt) {
-        console.log('👤 Found Iliana Miranda debt:', ilianaDebt);
-      } else {
-        console.log('❌ Iliana Miranda not found in debts list');
-        console.log('🔍 All customer names:', processedDebts.map(d => d.customer_name));
-      }
 
       // Fetch collection statistics
       const { data: stats, error: statsError } = await supabase

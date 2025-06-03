@@ -11,12 +11,10 @@ export function useChatMessages() {
 
   const ensureChatStorageBucket = async () => {
     try {
-      // Check if bucket exists
       const { data: buckets } = await supabase.storage.listBuckets();
       const chatBucketExists = buckets?.some(bucket => bucket.name === 'chat-images');
       
       if (!chatBucketExists) {
-        // Try to create the bucket using the edge function
         const { error } = await supabase.functions.invoke('create-chat-storage');
         if (error) {
           console.error('Error creating chat storage bucket:', error);
@@ -36,31 +34,41 @@ export function useChatMessages() {
     message: string, 
     image?: File
   ) => {
-    console.log('handleSendMessage called with:', { selectedPhone, customerId, message, hasImage: !!image });
+    console.log('🚀 Starting message send process:', { selectedPhone, customerId, message: message.substring(0, 50) + '...', hasImage: !!image });
     
     try {
-      // Validar que tengamos al menos un mensaje o imagen
+      // Validaciones básicas
       if (!message.trim() && !image) {
-        throw new Error('Debe proporcionar un mensaje o una imagen');
+        toast({
+          title: "Error",
+          description: "Debe escribir un mensaje o adjuntar una imagen",
+          variant: "destructive"
+        });
+        return;
       }
 
-      // Validar el número de teléfono
-      if (!selectedPhone || selectedPhone.trim() === '') {
-        throw new Error('Número de teléfono requerido');
+      if (!selectedPhone) {
+        toast({
+          title: "Error", 
+          description: "No se ha seleccionado un número de teléfono",
+          variant: "destructive"
+        });
+        return;
       }
+
+      // Limpiar el número de teléfono
+      const cleanPhone = selectedPhone.replace(/[\s\-\(\)\+]/g, '');
+      console.log('📞 Phone cleaned:', { original: selectedPhone, cleaned: cleanPhone });
 
       let imageUrl: string | undefined;
 
-      // Si hay una imagen seleccionada, subirla primero
+      // Subir imagen si existe
       if (image) {
-        console.log('Processing image upload...');
-        // Ensure the bucket exists before uploading
+        console.log('📸 Uploading image...');
         await ensureChatStorageBucket();
 
         const fileExt = image.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        
-        console.log('Attempting to upload image:', fileName);
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('chat-images')
@@ -70,7 +78,7 @@ export function useChatMessages() {
           });
 
         if (uploadError) {
-          console.error('Error uploading image:', uploadError);
+          console.error('❌ Image upload failed:', uploadError);
           throw new Error('Error al subir la imagen: ' + uploadError.message);
         }
 
@@ -79,16 +87,40 @@ export function useChatMessages() {
           .getPublicUrl(uploadData.path);
         
         imageUrl = publicUrl;
-        console.log('Image uploaded successfully:', imageUrl);
+        console.log('✅ Image uploaded successfully:', imageUrl);
       }
 
-      // Crear el mensaje final
       const finalMessage = message.trim() || (imageUrl ? '📷 Imagen' : '');
-      console.log('Final message to send:', finalMessage);
+      console.log('💬 Final message prepared:', finalMessage);
 
-      if (!customerId) {
-        console.log('Sending to unregistered customer');
-        // Crear entrada de notificación sin customer ID
+      // Guardar mensaje enviado ANTES de enviar (para evitar pérdida)
+      console.log('💾 Saving sent message to database...');
+      await saveSentMessage({
+        customerId: customerId,
+        phone: selectedPhone,
+        message: finalMessage,
+        imageUrl: imageUrl
+      });
+      console.log('✅ Message saved to database');
+
+      // Enviar mensaje por WhatsApp
+      console.log('📱 Sending WhatsApp message...');
+      
+      if (customerId) {
+        // Cliente registrado - usar sendManualNotification
+        console.log('👤 Sending to registered customer');
+        await sendManualNotification({
+          customerId: customerId,
+          packageId: '',
+          message: finalMessage,
+          phone: selectedPhone,
+          imageUrl: imageUrl
+        });
+      } else {
+        // Cliente no registrado - envío directo
+        console.log('👤 Sending to unregistered customer');
+        
+        // Crear entrada de notificación
         const { data: notificationData, error: logError } = await supabase
           .from('notification_log')
           .insert({
@@ -102,14 +134,11 @@ export function useChatMessages() {
           .single();
 
         if (logError) {
-          console.error('Error creating notification log:', logError);
-          throw new Error('Error al crear registro de notificación: ' + logError.message);
+          console.error('❌ Error creating notification log:', logError);
+          throw new Error('Error al crear registro de notificación');
         }
 
-        console.log('Notification log created:', notificationData.id);
-
-        // Enviar notificación WhatsApp
-        console.log('Calling WhatsApp function...');
+        // Enviar a WhatsApp
         const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
@@ -120,9 +149,8 @@ export function useChatMessages() {
         });
 
         if (functionError) {
-          console.error('Function error:', functionError);
+          console.error('❌ WhatsApp function error:', functionError);
           
-          // Detectar si es un error de token expirado
           if (functionError.message && functionError.message.includes('Session has expired')) {
             throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
           }
@@ -130,9 +158,8 @@ export function useChatMessages() {
           throw new Error('Error al enviar mensaje por WhatsApp: ' + functionError.message);
         }
 
-        // Verificar si la respuesta indica un error de token
         if (responseData && responseData.error) {
-          console.error('WhatsApp API error:', responseData.error);
+          console.error('❌ WhatsApp API error:', responseData.error);
           if (responseData.error.includes('Session has expired') || 
               responseData.error.includes('access token') ||
               responseData.error.includes('token')) {
@@ -141,36 +168,17 @@ export function useChatMessages() {
           throw new Error('Error de WhatsApp: ' + responseData.error);
         }
 
-        console.log('WhatsApp notification sent successfully:', responseData);
-      } else {
-        console.log('Sending to registered customer:', customerId);
-        // Usar sendManualNotification para clientes registrados
-        await sendManualNotification({
-          customerId: customerId,
-          packageId: '',
-          message: finalMessage,
-          phone: selectedPhone,
-          imageUrl: imageUrl
-        });
+        console.log('✅ WhatsApp message sent successfully');
       }
 
-      // Guardar mensaje enviado en nuestra tabla
-      console.log('Saving sent message to database...');
-      await saveSentMessage({
-        customerId: customerId,
-        phone: selectedPhone,
-        message: finalMessage,
-        imageUrl: imageUrl
-      });
-
-      console.log('Message sent successfully!');
+      console.log('🎉 Message sent successfully!');
       toast({
-        title: "Mensaje enviado",
-        description: "Su respuesta ha sido enviada por WhatsApp",
+        title: "¡Mensaje enviado!",
+        description: "Su mensaje ha sido enviado por WhatsApp correctamente",
       });
 
     } catch (error) {
-      console.error('Error sending reply:', error);
+      console.error('❌ Error in message send process:', error);
       
       let errorMessage = "No se pudo enviar el mensaje";
       
@@ -178,33 +186,20 @@ export function useChatMessages() {
         if (error.message.includes('Token de WhatsApp expirado')) {
           errorMessage = error.message;
         } else if (error.message.includes('row-level security policy')) {
-          errorMessage = "Error de permisos para subir imágenes. Intente nuevamente.";
+          errorMessage = "Error de permisos. Intente nuevamente.";
         } else if (error.message.includes('Bucket not found')) {
-          errorMessage = "Error de configuración de almacenamiento. Reintentando...";
-          // Retry once after ensuring bucket exists
-          try {
-            await ensureChatStorageBucket();
-            toast({
-              title: "Reintentando",
-              description: "Configuración de almacenamiento reparada. Intente enviar nuevamente.",
-            });
-            return;
-          } catch (retryError) {
-            console.error('Error in retry:', retryError);
-            errorMessage = "Error persistente de configuración de almacenamiento";
-          }
+          errorMessage = "Error de configuración de almacenamiento.";
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Error",
+        title: "Error al enviar mensaje",
         description: errorMessage,
         variant: "destructive"
       });
       
-      // Re-lanzar el error para que lo maneje el componente padre si es necesario
       throw error;
     }
   };

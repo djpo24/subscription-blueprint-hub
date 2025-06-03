@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Truck } from 'lucide-react';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
 import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { useAuth } from '@/hooks/useAuth';
 import { PackageInfo } from './PackageInfo';
 import { DeliveryFormFields } from './DeliveryFormFields';
 import { PaymentSection } from './PaymentSection';
@@ -20,8 +21,8 @@ export function DeliverPackageForm({
   onSuccess, 
   onCancel 
 }: DeliverPackageFormProps) {
-  const [deliveredBy, setDeliveredBy] = useState('');
   const [notes, setNotes] = useState('');
+  const { user } = useAuth();
   
   const deliverPackage = useDeliverPackage();
   const {
@@ -34,22 +35,27 @@ export function DeliverPackageForm({
     getValidPayments
   } = usePaymentManagement();
 
+  // Obtener el nombre del usuario logueado
+  const deliveredBy = user?.email || 'Usuario no identificado';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!deliveredBy.trim()) return;
+    if (!user) {
+      alert('No se puede procesar la entrega: usuario no autenticado');
+      return;
+    }
 
     try {
       const validPayments = getValidPayments();
 
       await deliverPackage.mutateAsync({
         packageId: pkg.id,
-        deliveredBy: deliveredBy.trim(),
+        deliveredBy: deliveredBy,
         payments: validPayments.length > 0 ? validPayments : undefined
       });
 
       // Reset form
-      setDeliveredBy('');
       setNotes('');
       resetPayments();
       onSuccess();
@@ -67,21 +73,13 @@ export function DeliverPackageForm({
       {/* Package Info */}
       <PackageInfo package={pkg} />
 
-      {/* Delivery Info - Solo campo "Entregado por" */}
+      {/* Delivery Info - Mostrar información del usuario logueado */}
       <div className="space-y-4">
-        <div>
-          <label htmlFor="deliveredBy" className="block text-sm font-medium text-gray-700 mb-1">
-            Entregado por *
-          </label>
-          <input
-            id="deliveredBy"
-            type="text"
-            value={deliveredBy}
-            onChange={(e) => setDeliveredBy(e.target.value)}
-            placeholder="Nombre de quien entrega"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Información de Entrega</h3>
+          <div className="text-sm text-blue-800">
+            <span className="font-medium">Entregado por:</span> {deliveredBy}
+          </div>
         </div>
       </div>
 
@@ -95,12 +93,13 @@ export function DeliverPackageForm({
         getCurrencySymbol={getCurrencySymbol}
       />
 
-      {/* Notes Section - Ahora debajo de pagos */}
+      {/* Notes Section - Solo notas, sin campo de entregado por */}
       <DeliveryFormFields
         deliveredBy=""
         setDeliveredBy={() => {}}
         notes={notes}
         setNotes={setNotes}
+        hideDeliveredBy={true}
       />
 
       {/* Actions */}
@@ -110,7 +109,7 @@ export function DeliverPackageForm({
         </Button>
         <Button 
           type="submit" 
-          disabled={!deliveredBy.trim() || deliverPackage.isPending}
+          disabled={!user || deliverPackage.isPending}
         >
           <Truck className="h-4 w-4 mr-2" />
           {deliverPackage.isPending ? 'Entregando...' : 'Confirmar Entrega'}

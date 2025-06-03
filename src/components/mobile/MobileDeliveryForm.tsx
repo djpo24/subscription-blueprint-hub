@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
 import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { useAuth } from '@/hooks/useAuth';
 import { MobilePackageInfo } from './MobilePackageInfo';
 import { MobilePaymentSection } from './MobilePaymentSection';
 import { MobileDeliveryFormFields } from './MobileDeliveryFormFields';
@@ -19,8 +20,8 @@ export function MobileDeliveryForm({
   onDeliveryComplete, 
   onCancel 
 }: MobileDeliveryFormProps) {
-  const [deliveredBy, setDeliveredBy] = useState('');
   const [notes, setNotes] = useState('');
+  const { user } = useAuth();
   
   const deliverPackage = useDeliverPackage();
   const {
@@ -32,11 +33,14 @@ export function MobileDeliveryForm({
     getValidPayments
   } = usePaymentManagement(pkg.currency);
 
+  // Obtener el nombre del usuario logueado
+  const deliveredBy = user?.email || 'Usuario no identificado';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!deliveredBy.trim()) {
-      alert('Por favor ingresa el nombre de quien entrega');
+    if (!user) {
+      alert('No se puede procesar la entrega: usuario no autenticado');
       return;
     }
 
@@ -45,7 +49,7 @@ export function MobileDeliveryForm({
 
       await deliverPackage.mutateAsync({
         packageId: pkg.id,
-        deliveredBy: deliveredBy.trim(),
+        deliveredBy: deliveredBy,
         payments: validPayments.length > 0 ? validPayments : undefined
       });
 
@@ -70,6 +74,14 @@ export function MobileDeliveryForm({
       {/* Package Info */}
       <MobilePackageInfo package={pkg} />
 
+      {/* Delivery Info - Mostrar información del usuario logueado */}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <h3 className="text-sm font-medium text-blue-900 mb-2">Información de Entrega</h3>
+        <div className="text-sm text-blue-800">
+          <span className="font-medium">Entregado por:</span> {deliveredBy}
+        </div>
+      </div>
+
       {/* Payment Section */}
       <MobilePaymentSection
         package={pkg}
@@ -80,14 +92,15 @@ export function MobileDeliveryForm({
         getCurrencySymbol={getCurrencySymbol}
       />
 
-      {/* Delivery Form */}
+      {/* Delivery Form - Solo notas */}
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
           <MobileDeliveryFormFields
-            deliveredBy={deliveredBy}
-            setDeliveredBy={setDeliveredBy}
+            deliveredBy=""
+            setDeliveredBy={() => {}}
             notes={notes}
             setNotes={setNotes}
+            hideDeliveredBy={true}
           />
 
           <MobileDeliveryActions

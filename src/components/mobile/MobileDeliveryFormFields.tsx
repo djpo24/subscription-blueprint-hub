@@ -12,13 +12,15 @@ interface MobileDeliveryFormFieldsProps {
   setDeliveredBy: (value: string) => void;
   notes: string;
   setNotes: (value: string) => void;
+  hideDeliveredBy?: boolean;
 }
 
 export function MobileDeliveryFormFields({
   deliveredBy,
   setDeliveredBy,
   notes,
-  setNotes
+  setNotes,
+  hideDeliveredBy = false
 }: MobileDeliveryFormFieldsProps) {
   const [showNotes, setShowNotes] = useState(false);
 
@@ -28,18 +30,20 @@ export function MobileDeliveryFormFields({
         <CardTitle>Confirmar Entrega</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Delivered By */}
-        <div>
-          <Label htmlFor="deliveredBy">Entregado por *</Label>
-          <Input
-            id="deliveredBy"
-            value={deliveredBy}
-            onChange={(e) => setDeliveredBy(e.target.value)}
-            placeholder="Nombre de quien entrega"
-            required
-            className="mt-1"
-          />
-        </div>
+        {/* Delivered By - Solo mostrar si no está oculto */}
+        {!hideDeliveredBy && (
+          <div>
+            <Label htmlFor="deliveredBy">Entregado por *</Label>
+            <Input
+              id="deliveredBy"
+              value={deliveredBy}
+              onChange={(e) => setDeliveredBy(e.target.value)}
+              placeholder="Nombre de quien entrega"
+              required
+              className="mt-1"
+            />
+          </div>
+        )}
 
         {/* Notes Section */}
         <div>

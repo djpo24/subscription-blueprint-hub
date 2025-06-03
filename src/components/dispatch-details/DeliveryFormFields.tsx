@@ -11,31 +11,35 @@ interface DeliveryFormFieldsProps {
   setDeliveredBy: (value: string) => void;
   notes: string;
   setNotes: (value: string) => void;
+  hideDeliveredBy?: boolean;
 }
 
 export function DeliveryFormFields({ 
   deliveredBy, 
   setDeliveredBy, 
   notes, 
-  setNotes 
+  setNotes,
+  hideDeliveredBy = false
 }: DeliveryFormFieldsProps) {
   const [showNotes, setShowNotes] = useState(false);
 
   return (
     <>
-      {/* Delivery Info */}
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="deliveredBy">Entregado por *</Label>
-          <Input
-            id="deliveredBy"
-            value={deliveredBy}
-            onChange={(e) => setDeliveredBy(e.target.value)}
-            placeholder="Nombre de quien entrega"
-            required
-          />
+      {/* Delivery Info - Solo mostrar si no está oculto */}
+      {!hideDeliveredBy && (
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="deliveredBy">Entregado por *</Label>
+            <Input
+              id="deliveredBy"
+              value={deliveredBy}
+              onChange={(e) => setDeliveredBy(e.target.value)}
+              placeholder="Nombre de quien entrega"
+              required
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notes Section */}
       <div>

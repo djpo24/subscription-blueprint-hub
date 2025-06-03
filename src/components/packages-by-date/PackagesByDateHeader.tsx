@@ -4,6 +4,7 @@ import { CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArrowLeft, Calendar, Truck } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PackagesByDateHeaderProps {
   selectedDate: Date;
@@ -22,6 +23,8 @@ export function PackagesByDateHeader({
   onBack,
   onCreateDispatch
 }: PackagesByDateHeaderProps) {
+  const isMobile = useIsMobile();
+
   const formatDate = (date: Date) => {
     return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
   };
@@ -32,13 +35,13 @@ export function PackagesByDateHeader({
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
           <Calendar className="h-5 w-5" />
-          Encomiendas del {formatDate(selectedDate)}
+          <span className={isMobile ? 'text-sm' : ''}>Encomiendas del {formatDate(selectedDate)}</span>
         </CardTitle>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+      <div className={`${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
+        <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600`}>
           {totalPackages} encomienda{totalPackages !== 1 ? 's' : ''} en {totalTrips} viaje{totalTrips !== 1 ? 's' : ''}
           {dispatchCount > 0 && (
             <span className="ml-2 text-blue-600">
@@ -49,7 +52,8 @@ export function PackagesByDateHeader({
         {totalPackages > 0 && (
           <Button
             onClick={onCreateDispatch}
-            className="flex items-center gap-2"
+            className={`${isMobile ? 'w-full' : ''} flex items-center gap-2`}
+            size={isMobile ? "sm" : "default"}
           >
             <Truck className="h-4 w-4" />
             Crear Despacho

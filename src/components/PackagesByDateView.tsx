@@ -10,6 +10,7 @@ import { PackagesByDateHeader } from './packages-by-date/PackagesByDateHeader';
 import { PackagesByDateSummary } from './packages-by-date/PackagesByDateSummary';
 import { TripPackageCard } from './packages-by-date/TripPackageCard';
 import { EmptyTripsState } from './packages-by-date/EmptyTripsState';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -26,6 +27,7 @@ export function PackagesByDateView({
   disableChat = false,
   previewRole
 }: PackagesByDateViewProps) {
+  const isMobile = useIsMobile();
   const [showCreateDispatch, setShowCreateDispatch] = useState(false);
   const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
@@ -73,7 +75,7 @@ export function PackagesByDateView({
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
           <PackagesByDateHeader
             selectedDate={selectedDate}
             totalPackages={0}
@@ -83,7 +85,7 @@ export function PackagesByDateView({
             onCreateDispatch={() => {}}
           />
         </CardHeader>
-        <CardContent>
+        <CardContent className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
           <div className="text-center py-8 text-gray-500">
             Cargando encomiendas del día...
           </div>
@@ -108,7 +110,7 @@ export function PackagesByDateView({
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
           <PackagesByDateHeader
             selectedDate={selectedDate}
             totalPackages={totalPackages}
@@ -125,7 +127,7 @@ export function PackagesByDateView({
             totalAmountToCollect={grandTotals.amount_to_collect}
           />
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className={`${isMobile ? 'px-3 pb-3 space-y-4' : 'px-6 pb-4 space-y-6'}`}>
           {packagesByTrip.length === 0 ? (
             <EmptyTripsState selectedDate={selectedDate} />
           ) : (

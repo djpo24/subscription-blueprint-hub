@@ -35,7 +35,7 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto">
+      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-9 gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto">
         <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Home" : "Dashboard"}
         </TabsTrigger>
@@ -66,6 +66,9 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
         )}
         <TabsTrigger value="settings" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Config" : "Configuración"}
+        </TabsTrigger>
+        <TabsTrigger value="developer" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0 bg-purple-100 text-purple-800">
+          {isMobile ? "Dev" : "Preview"}
         </TabsTrigger>
       </TabsList>
     </Tabs>

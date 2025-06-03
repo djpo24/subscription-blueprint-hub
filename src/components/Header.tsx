@@ -31,12 +31,12 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="uber-header">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Sistema de Encomiendas
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
+              Envíos Ojitos
             </h1>
           </div>
           
@@ -48,17 +48,17 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
                 placeholder="Buscar encomiendas..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 hidden sm:block">
+            <span className="text-sm text-gray-300 hidden sm:block">
               {user?.email}
             </span>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={handleSignOut}
               className="flex items-center gap-2"

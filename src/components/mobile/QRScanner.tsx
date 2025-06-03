@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +16,7 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
   const [isScanning, setIsScanning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const initCamera = async () => {
@@ -70,14 +70,14 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
   };
 
   const stopScanning = () => {
-    if (codeReaderRef.current) {
-      try {
-        codeReaderRef.current.reset();
-      } catch (err) {
-        console.error('Error stopping scanner:', err);
-      }
-      codeReaderRef.current = null;
+    // Stop the video stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
+    
+    // Clear the code reader
+    codeReaderRef.current = null;
     setIsScanning(false);
   };
 

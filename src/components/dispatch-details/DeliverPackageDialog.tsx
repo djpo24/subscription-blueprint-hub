@@ -1,15 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Package, Truck, Plus, Trash2 } from 'lucide-react';
+import { Package, Truck, Plus } from 'lucide-react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
+import { PaymentEntry } from './PaymentEntry';
+import { PaymentSummary } from './PaymentSummary';
+import { PackageInfo } from './PackageInfo';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface DeliverPackageDialogProps {
@@ -18,7 +19,7 @@ interface DeliverPackageDialogProps {
   package: PackageInDispatch | null;
 }
 
-interface PaymentEntry {
+interface PaymentEntryData {
   methodId: string;
   amount: string;
   currency: string;
@@ -31,7 +32,7 @@ export function DeliverPackageDialog({
   package: pkg 
 }: DeliverPackageDialogProps) {
   const [deliveredBy, setDeliveredBy] = useState('');
-  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [payments, setPayments] = useState<PaymentEntryData[]>([]);
   const [notes, setNotes] = useState('');
   
   const { data: paymentMethods = [] } = usePaymentMethods();
@@ -57,7 +58,7 @@ export function DeliverPackageDialog({
     setPayments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updatePayment = (index: number, field: keyof PaymentEntry, value: string) => {
+  const updatePayment = (index: number, field: keyof PaymentEntryData, value: string) => {
     setPayments(prev => prev.map((payment, i) => {
       if (i === index) {
         const updatedPayment = { ...payment, [field]: value };
@@ -114,13 +115,6 @@ export function DeliverPackageDialog({
     }
   };
 
-  const totalCollected = payments.reduce((sum, payment) => {
-    const amount = parseFloat(payment.amount) || 0;
-    return sum + amount;
-  }, 0);
-
-  const remainingAmount = (pkg?.amount_to_collect || 0) - totalCollected;
-
   // Función para obtener el símbolo de moneda
   const getCurrencySymbol = (currency: string) => {
     const method = availablePaymentMethods.find(m => m.currency === currency);
@@ -141,24 +135,7 @@ export function DeliverPackageDialog({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Package Info */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Cliente:</span> {pkg.customers?.name || 'N/A'}
-                </div>
-                <div>
-                  <span className="font-medium">Destino:</span> {pkg.destination}
-                </div>
-                <div>
-                  <span className="font-medium">Monto a cobrar:</span> ${pkg.amount_to_collect?.toLocaleString('es-CO') || 0}
-                </div>
-                <div>
-                  <span className="font-medium">Descripción:</span> {pkg.description}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PackageInfo package={pkg} />
 
           {/* Delivery Info */}
           <div className="space-y-4">
@@ -185,92 +162,21 @@ export function DeliverPackageDialog({
             </div>
 
             {payments.map((payment, index) => (
-              <Card key={index}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium">Pago #{index + 1}</span>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => removePayment(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Moneda</Label>
-                      <Select
-                        value={payment.currency}
-                        onValueChange={(value) => updatePayment(index, 'currency', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar moneda" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AWG">Florín (AWG)</SelectItem>
-                          <SelectItem value="COP">Peso (COP)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label>Monto</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={payment.amount}
-                        onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Mostrar automáticamente el tipo calculado */}
-                  {payment.amount && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      Tipo de pago: <span className="font-medium">
-                        {payment.type === 'full' ? 'Completo' : 'Parcial'}
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <PaymentEntry
+                key={index}
+                payment={payment}
+                index={index}
+                onUpdate={updatePayment}
+                onRemove={removePayment}
+              />
             ))}
 
             {/* Payment Summary */}
-            {payments.length > 0 && (
-              <Card className="bg-blue-50">
-                <CardContent className="p-4">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Total a cobrar:</span>
-                      <span className="font-medium">
-                        {getCurrencySymbol('COP')}{pkg.amount_to_collect?.toLocaleString('es-CO') || 0} COP
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Total recibido:</span>
-                      <span className="font-medium">
-                        {payments.length > 0 && payments[0].currency === 'AWG' 
-                          ? `${getCurrencySymbol('AWG')}${totalCollected.toLocaleString('es-CO')} AWG`
-                          : `${getCurrencySymbol('COP')}${totalCollected.toLocaleString('es-CO')} COP`
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span>Pendiente:</span>
-                      <span className={`font-medium ${remainingAmount <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                        {getCurrencySymbol('COP')}{remainingAmount.toLocaleString('es-CO')} COP
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <PaymentSummary
+              payments={payments}
+              packageAmountToCollect={pkg.amount_to_collect || 0}
+              getCurrencySymbol={getCurrencySymbol}
+            />
           </div>
 
           {/* Notes */}

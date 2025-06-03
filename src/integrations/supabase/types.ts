@@ -48,6 +48,54 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          delivery_id: string
+          id: string
+          notes: string | null
+          payment_method_id: string
+          payment_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          delivery_id: string
+          id?: string
+          notes?: string | null
+          payment_method_id: string
+          payment_type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          delivery_id?: string
+          id?: string
+          notes?: string | null
+          payment_method_id?: string
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_payments_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "package_deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_batches: {
         Row: {
           batch_id: string
@@ -593,6 +641,50 @@ export type Database = {
           },
         ]
       }
+      package_deliveries: {
+        Row: {
+          created_at: string
+          delivered_by: string
+          delivery_date: string
+          delivery_status: string
+          id: string
+          notes: string | null
+          package_id: string
+          total_amount_collected: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_by: string
+          delivery_date?: string
+          delivery_status?: string
+          id?: string
+          notes?: string | null
+          package_id: string
+          total_amount_collected?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_by?: string
+          delivery_date?: string
+          delivery_status?: string
+          id?: string
+          notes?: string | null
+          package_id?: string
+          total_amount_collected?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_deliveries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_payments: {
         Row: {
           amount: number
@@ -640,6 +732,7 @@ export type Database = {
           amount_to_collect: number | null
           batch_id: string | null
           created_at: string
+          currency: string | null
           customer_id: string
           delivered_at: string | null
           delivered_by: string | null
@@ -662,6 +755,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
+          currency?: string | null
           customer_id: string
           delivered_at?: string | null
           delivered_by?: string | null
@@ -684,6 +778,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
+          currency?: string | null
           customer_id?: string
           delivered_at?: string | null
           delivered_by?: string | null
@@ -724,6 +819,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_methods: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          name: string
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          currency: string
+          id?: string
+          name: string
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          name?: string
+          symbol?: string
+        }
+        Relationships: []
       }
       sent_messages: {
         Row: {
@@ -952,12 +1071,14 @@ export type Database = {
         Returns: number
       }
       deliver_package_with_payment: {
-        Args: {
-          p_package_id: string
-          p_delivered_by: string
-          p_payment_amount?: number
-          p_payment_method?: string
-        }
+        Args:
+          | {
+              p_package_id: string
+              p_delivered_by: string
+              p_payment_amount?: number
+              p_payment_method?: string
+            }
+          | { p_package_id: string; p_delivered_by: string; p_payments?: Json }
         Returns: undefined
       }
       generate_batch_label: {

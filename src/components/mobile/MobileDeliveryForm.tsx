@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Check, X, ChevronDown, ChevronUp, Plus, DollarSign } from 'lucide-react';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
+import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { PaymentEntry } from '../dispatch-details/PaymentEntry';
+import { PaymentSummary } from '../dispatch-details/PaymentSummary';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface MobileDeliveryFormProps {
@@ -23,8 +26,21 @@ export function MobileDeliveryForm({
   const [deliveredBy, setDeliveredBy] = useState('');
   const [notes, setNotes] = useState('');
   const [showNotes, setShowNotes] = useState(false);
+  const [showPayments, setShowPayments] = useState(false);
   
   const deliverPackage = useDeliverPackage();
+  const {
+    payments,
+    addPayment,
+    updatePayment,
+    removePayment,
+    resetPayments,
+    getCurrencySymbol,
+    getValidPayments
+  } = usePaymentManagement();
+
+  // Determinar si el paquete requiere cobro
+  const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +51,12 @@ export function MobileDeliveryForm({
     }
 
     try {
+      const validPayments = getValidPayments();
+
       await deliverPackage.mutateAsync({
         packageId: pkg.id,
         deliveredBy: deliveredBy.trim(),
-        // For mobile delivery, we'll deliver without payment for now
-        // This can be enhanced later to include payment options
+        payments: validPayments.length > 0 ? validPayments : undefined
       });
 
       alert('¡Paquete entregado exitosamente!');
@@ -49,6 +66,18 @@ export function MobileDeliveryForm({
       alert('Error al entregar el paquete. Intenta nuevamente.');
     }
   };
+
+  const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
+  };
+
+  // Calcular totales de pago
+  const totalCollected = payments.reduce((sum, payment) => {
+    const amount = parseFloat(payment.amount) || 0;
+    return sum + amount;
+  }, 0);
+
+  const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
 
   return (
     <div className="space-y-4">
@@ -74,17 +103,95 @@ export function MobileDeliveryForm({
               <span className="font-medium text-gray-600">Descripción:</span>
               <span className="text-right">{pkg.description}</span>
             </div>
-            {pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
+            {requiresPayment && (
               <div className="flex justify-between border-t pt-2">
                 <span className="font-medium text-gray-600">Monto a cobrar:</span>
                 <span className="font-bold text-green-600">
-                  ${pkg.amount_to_collect.toLocaleString('es-CO')}
+                  ${pkg.amount_to_collect?.toLocaleString('es-CO')} COP
                 </span>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Section - Solo si requiere cobro */}
+      {requiresPayment && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <DollarSign className="h-5 w-5" />
+                Cobro Requerido
+              </CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPayments(!showPayments)}
+              >
+                {showPayments ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-3">
+              <p className="text-sm text-green-700">
+                <strong>Total a cobrar:</strong> ${pkg.amount_to_collect?.toLocaleString('es-CO')} COP
+              </p>
+              {showPayments && totalCollected > 0 && (
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-green-700">
+                    <strong>Recibido:</strong> ${totalCollected.toLocaleString('es-CO')} 
+                    {payments.length > 0 && payments[0].currency === 'AWG' ? ' AWG' : ' COP'}
+                  </p>
+                  <p className={`${remainingAmount <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    <strong>Pendiente:</strong> ${remainingAmount.toLocaleString('es-CO')} COP
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {showPayments && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-green-800">Registrar pagos</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addPayment}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Agregar pago
+                  </Button>
+                </div>
+
+                {payments.map((payment, index) => (
+                  <PaymentEntry
+                    key={index}
+                    payment={payment}
+                    index={index}
+                    onUpdate={handlePaymentUpdate}
+                    onRemove={removePayment}
+                    canRemove={payments.length > 1}
+                  />
+                ))}
+
+                <PaymentSummary
+                  payments={payments}
+                  packageAmountToCollect={pkg.amount_to_collect || 0}
+                  getCurrencySymbol={getCurrencySymbol}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delivery Form */}
       <Card>
@@ -138,14 +245,14 @@ export function MobileDeliveryForm({
               )}
             </div>
 
-            {/* Amount to Collect Warning */}
-            {pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
+            {/* Payment Warning for uncollected amounts */}
+            {requiresPayment && remainingAmount > 0 && (
               <Card className="border-orange-200 bg-orange-50">
                 <CardContent className="p-3">
                   <p className="text-sm text-orange-700">
-                    <strong>Importante:</strong> Este paquete tiene un monto a cobrar de{' '}
-                    <strong>${pkg.amount_to_collect.toLocaleString('es-CO')}</strong>.
-                    Asegúrate de cobrarlo antes de confirmar la entrega.
+                    <strong>Atención:</strong> Queda un saldo pendiente de{' '}
+                    <strong>${remainingAmount.toLocaleString('es-CO')} COP</strong>.
+                    {!showPayments && ' Puedes registrar los pagos arriba.'}
                   </p>
                 </CardContent>
               </Card>

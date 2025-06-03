@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +39,7 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
           weight: 2.5,
           freight: 50000,
           amount_to_collect: 100000,
+          currency: 'AWG', // Add currency property
           trip_id: 'trip-123',
           customers: {
             name: packageData.customer || 'Cliente Test',

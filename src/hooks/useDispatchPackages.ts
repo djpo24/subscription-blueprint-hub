@@ -20,6 +20,7 @@ export function useDispatchPackages(dispatchId: string) {
             weight,
             freight,
             amount_to_collect,
+            currency,
             trip_id,
             customers (
               name,

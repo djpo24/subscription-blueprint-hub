@@ -32,7 +32,6 @@ export function DeliverPackageDialog({
   package: pkg 
 }: DeliverPackageDialogProps) {
   const [deliveredBy, setDeliveredBy] = useState('');
-  const [payments, setPayments] = useState<PaymentEntryData[]>([]);
   const [notes, setNotes] = useState('');
   
   const { data: paymentMethods = [] } = usePaymentMethods();
@@ -42,6 +41,15 @@ export function DeliverPackageDialog({
   const availablePaymentMethods = paymentMethods.filter(method => 
     method.currency === 'AWG' || method.currency === 'COP'
   );
+
+  // Inicializar con una entrada de pago por defecto (Florín)
+  const defaultMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
+  const [payments, setPayments] = useState<PaymentEntryData[]>([{
+    methodId: defaultMethod?.id || '',
+    amount: '',
+    currency: 'AWG',
+    type: 'partial'
+  }]);
 
   const addPayment = () => {
     // Predeterminar Florín (AWG) como moneda por defecto
@@ -55,7 +63,10 @@ export function DeliverPackageDialog({
   };
 
   const removePayment = (index: number) => {
-    setPayments(prev => prev.filter((_, i) => i !== index));
+    // No permitir eliminar si solo hay una entrada
+    if (payments.length > 1) {
+      setPayments(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const updatePayment = (index: number, field: keyof PaymentEntryData, value: string) => {
@@ -105,9 +116,14 @@ export function DeliverPackageDialog({
         payments: validPayments.length > 0 ? validPayments : undefined
       });
 
-      // Reset form
+      // Reset form manteniendo una entrada de pago por defecto
       setDeliveredBy('');
-      setPayments([]);
+      setPayments([{
+        methodId: defaultMethod?.id || '',
+        amount: '',
+        currency: 'AWG',
+        type: 'partial'
+      }]);
       setNotes('');
       onOpenChange(false);
     } catch (error) {
@@ -157,7 +173,7 @@ export function DeliverPackageDialog({
               <Label>Pagos recibidos</Label>
               <Button type="button" variant="outline" size="sm" onClick={addPayment}>
                 <Plus className="h-4 w-4 mr-1" />
-                Agregar pago
+                Agregar otro pago
               </Button>
             </div>
 
@@ -168,6 +184,7 @@ export function DeliverPackageDialog({
                 index={index}
                 onUpdate={updatePayment}
                 onRemove={removePayment}
+                canRemove={payments.length > 1}
               />
             ))}
 

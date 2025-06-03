@@ -18,22 +18,25 @@ interface PaymentEntryProps {
   index: number;
   onUpdate: (index: number, field: keyof PaymentEntryData, value: string) => void;
   onRemove: (index: number) => void;
+  canRemove?: boolean;
 }
 
-export function PaymentEntry({ payment, index, onUpdate, onRemove }: PaymentEntryProps) {
+export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove = true }: PaymentEntryProps) {
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="font-medium">Pago #{index + 1}</span>
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onRemove(index)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canRemove && (
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm"
+              onClick={() => onRemove(index)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
         <div className="grid grid-cols-2 gap-3">

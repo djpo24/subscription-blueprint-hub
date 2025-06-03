@@ -5,12 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Users, Briefcase, Truck } from 'lucide-react';
 import { TravelerPreviewPanel } from './TravelerPreviewPanel';
+import { EmployeePreviewPanel } from './EmployeePreviewPanel';
 
 export function RolePreviewSelector() {
   const [selectedPreview, setSelectedPreview] = useState<'admin' | 'employee' | 'traveler' | null>(null);
 
   if (selectedPreview === 'traveler') {
     return <TravelerPreviewPanel onBack={() => setSelectedPreview(null)} />;
+  }
+
+  if (selectedPreview === 'employee') {
+    return <EmployeePreviewPanel onBack={() => setSelectedPreview(null)} />;
   }
 
   const roles = [
@@ -83,6 +88,7 @@ export function RolePreviewSelector() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {roles.map((roleInfo) => {
               const Icon = roleInfo.icon;
+              const isImplemented = roleInfo.role === 'traveler' || roleInfo.role === 'employee';
               return (
                 <Card key={roleInfo.role} className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardContent className="p-6">
@@ -118,10 +124,10 @@ export function RolePreviewSelector() {
                       variant="outline" 
                       className="w-full"
                       onClick={() => setSelectedPreview(roleInfo.role)}
-                      disabled={roleInfo.role !== 'traveler'} // Solo traveler implementado por ahora
+                      disabled={!isImplemented}
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      {roleInfo.role === 'traveler' ? 'Ver Preview' : 'Próximamente'}
+                      {isImplemented ? 'Ver Preview' : 'Próximamente'}
                     </Button>
                   </CardContent>
                 </Card>

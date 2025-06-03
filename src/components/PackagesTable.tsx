@@ -32,9 +32,18 @@ interface PackagesTableProps {
   filteredPackages: Package[];
   isLoading: boolean;
   onUpdate?: (id: string, updates: any) => void;
+  disableChat?: boolean;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
-export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate }: PackagesTableProps) {
+export function PackagesTable({ 
+  packages, 
+  filteredPackages, 
+  isLoading, 
+  onUpdate,
+  disableChat = false,
+  previewRole
+}: PackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showMultipleLabelsDialog, setShowMultipleLabelsDialog] = useState(false);
@@ -118,6 +127,8 @@ export function PackagesTable({ packages, filteredPackages, isLoading, onUpdate 
                     onActionsClick={handleActionsClick}
                     onUpdate={handleUpdate}
                     onOpenChat={handleOpenChat}
+                    previewRole={previewRole}
+                    disableChat={disableChat}
                   />
                 ))}
               </TableBody>

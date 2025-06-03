@@ -15,9 +15,17 @@ interface PackagesByDateViewProps {
   selectedDate: Date;
   onBack: () => void;
   onAddPackage: (tripId: string) => void;
+  disableChat?: boolean;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
-export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: PackagesByDateViewProps) {
+export function PackagesByDateView({ 
+  selectedDate, 
+  onBack, 
+  onAddPackage,
+  disableChat = false,
+  previewRole
+}: PackagesByDateViewProps) {
   const [showCreateDispatch, setShowCreateDispatch] = useState(false);
   const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
@@ -128,6 +136,8 @@ export function PackagesByDateView({ selectedDate, onBack, onAddPackage }: Packa
                 onAddPackage={onAddPackage}
                 onPackageClick={handlePackageClick}
                 onOpenChat={handleOpenChat}
+                disableChat={disableChat}
+                previewRole={previewRole}
               />
             ))
           )}

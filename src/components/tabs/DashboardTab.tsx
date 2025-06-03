@@ -136,6 +136,7 @@ export function DashboardTab({
         <CardContent>
           <PackagesTable 
             packages={filteredPackages} 
+            filteredPackages={filteredPackages}
             isLoading={isLoading}
             onUpdate={onUpdate}
           />

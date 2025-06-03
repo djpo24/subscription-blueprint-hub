@@ -1,7 +1,10 @@
 
+import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DeliveryFormFieldsProps {
   deliveredBy: string;
@@ -16,6 +19,8 @@ export function DeliveryFormFields({
   notes, 
   setNotes 
 }: DeliveryFormFieldsProps) {
+  const [showNotes, setShowNotes] = useState(false);
+
   return (
     <>
       {/* Delivery Info */}
@@ -32,16 +37,40 @@ export function DeliveryFormFields({
         </div>
       </div>
 
-      {/* Notes */}
+      {/* Notes Section */}
       <div>
-        <Label htmlFor="notes">Notas (opcional)</Label>
-        <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Observaciones adicionales"
-          rows={3}
-        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowNotes(!showNotes)}
+          className="mb-2"
+        >
+          {showNotes ? (
+            <>
+              <ChevronUp className="h-4 w-4 mr-2" />
+              Ocultar notas
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4 mr-2" />
+              Agregar notas (opcional)
+            </>
+          )}
+        </Button>
+        
+        {showNotes && (
+          <div>
+            <Label htmlFor="notes">Notas</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Observaciones adicionales"
+              rows={3}
+            />
+          </div>
+        )}
       </div>
     </>
   );

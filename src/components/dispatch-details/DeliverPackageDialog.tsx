@@ -150,13 +150,23 @@ export function DeliverPackageDialog({
           {/* Package Info */}
           <PackageInfo package={pkg} />
 
-          {/* Delivery Form Fields */}
-          <DeliveryFormFields
-            deliveredBy={deliveredBy}
-            setDeliveredBy={setDeliveredBy}
-            notes={notes}
-            setNotes={setNotes}
-          />
+          {/* Delivery Info - Solo campo "Entregado por" */}
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="deliveredBy" className="block text-sm font-medium text-gray-700 mb-1">
+                Entregado por *
+              </label>
+              <input
+                id="deliveredBy"
+                type="text"
+                value={deliveredBy}
+                onChange={(e) => setDeliveredBy(e.target.value)}
+                placeholder="Nombre de quien entrega"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
 
           {/* Payment Section */}
           <PaymentSection
@@ -166,6 +176,14 @@ export function DeliverPackageDialog({
             onRemovePayment={removePayment}
             packageAmountToCollect={pkg.amount_to_collect || 0}
             getCurrencySymbol={getCurrencySymbol}
+          />
+
+          {/* Notes Section - Ahora debajo de pagos */}
+          <DeliveryFormFields
+            deliveredBy=""
+            setDeliveredBy={() => {}}
+            notes={notes}
+            setNotes={setNotes}
           />
 
           {/* Actions */}

@@ -61,7 +61,8 @@ export function DashboardTab({
       </div>
 
       <PackagesTable
-        packages={filteredPackages}
+        packages={packages}
+        filteredPackages={filteredPackages}
         isLoading={isLoading}
         onUpdate={onUpdate}
       />

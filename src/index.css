@@ -113,17 +113,17 @@
 }
 
 @layer components {
-  /* Estilo principal de Uber - Negro y blanco */
+  /* Estilos principales de Uber - Negro y blanco con hover corregido */
   .uber-header {
     @apply bg-black text-white shadow-none border-0;
   }
   
   .uber-button-primary {
-    @apply bg-black text-white hover:bg-gray-900 rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   .uber-button-secondary {
-    @apply bg-gray-100 text-black hover:bg-gray-200 rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   .uber-input {
@@ -138,13 +138,13 @@
     @apply bg-white rounded-2xl border-0 shadow-xl;
   }
 
-  /* Aplicar estilo Uber a todos los botones por defecto */
+  /* Estilos de botones mejorados para evitar conflictos */
   .btn-default {
-    @apply uber-button-primary;
+    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   .btn-secondary {
-    @apply uber-button-secondary;
+    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
   }
 
   /* Aplicar estilo Uber a inputs */
@@ -157,14 +157,10 @@
     @apply uber-card;
   }
 
-  /* Override para asegurar que el estilo Uber prevalezca */
-  button:not([class*="variant"]) {
-    @apply uber-button-primary;
-  }
-
-  input[type="text"]:not([class*="uber"]),
-  input[type="email"]:not([class*="uber"]),
-  textarea:not([class*="uber"]) {
+  /* Estilos específicos para inputs que no interfieran con botones */
+  input[type="text"]:not([class*="uber"]):not(button),
+  input[type="email"]:not([class*="uber"]):not(button),
+  textarea:not([class*="uber"]):not(button) {
     @apply bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:border-black;
   }
 

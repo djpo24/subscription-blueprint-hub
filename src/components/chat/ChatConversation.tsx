@@ -7,7 +7,7 @@ import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
 import { TokenExpirationAlert } from '@/components/TokenExpirationAlert';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ChatMessage {
   id: string;
@@ -41,6 +41,8 @@ export function ChatConversation({
 }: ChatConversationProps) {
   const isMobile = useIsMobile();
   const [showTokenAlert, setShowTokenAlert] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return 'Sin teléfono';
@@ -49,6 +51,26 @@ export function ChatConversation({
     }
     return `+${phoneNumber}`;
   };
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages]);
+
+  // Initial scroll to bottom when component mounts
+  useEffect(() => {
+    if (messagesEndRef.current && messages.length > 0) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  }, []);
 
   const handleSendMessage = async (message: string, image?: File) => {
     try {
@@ -104,41 +126,52 @@ export function ChatConversation({
       )}
 
       {/* Messages */}
-      <ScrollArea className={`flex-1 ${isMobile ? 'p-3' : 'p-4'} bg-gray-50`}>
-        <div className="space-y-2">
-          {!hasMessages ? (
-            <div className="text-center text-gray-500 py-8">
-              {hasPhone ? (
-                <div>
-                  <p className="mb-2">Nueva conversación</p>
-                  <p className="text-sm">Escribe el primer mensaje para iniciar la conversación por WhatsApp</p>
-                </div>
-              ) : (
-                <p>No se encontró número de teléfono para este cliente</p>
-              )}
-            </div>
-          ) : (
-            messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                id={message.id}
-                content={message.content}
-                timestamp={message.timestamp}
-                type={message.type}
-                messageType={message.messageType}
-                imageUrl={message.imageUrl}
-              />
-            ))
-          )}
-        </div>
-      </ScrollArea>
+      <div className="flex-1 min-h-0">
+        <ScrollArea 
+          ref={scrollAreaRef}
+          className="h-full"
+        >
+          <div className={`${isMobile ? 'p-3' : 'p-4'} bg-gray-50 min-h-full flex flex-col justify-end`}>
+            {!hasMessages ? (
+              <div className="text-center text-gray-500 py-8">
+                {hasPhone ? (
+                  <div>
+                    <p className="mb-2">Nueva conversación</p>
+                    <p className="text-sm">Escribe el primer mensaje para iniciar la conversación por WhatsApp</p>
+                  </div>
+                ) : (
+                  <p>No se encontró número de teléfono para este cliente</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    id={message.id}
+                    content={message.content}
+                    timestamp={message.timestamp}
+                    type={message.type}
+                    messageType={message.messageType}
+                    imageUrl={message.imageUrl}
+                  />
+                ))}
+                {/* Elemento invisible para el auto-scroll */}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
       {/* Input - Solo mostrar si hay teléfono */}
       {hasPhone && (
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-        />
+        <div className="border-t border-gray-200">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+          />
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,5 @@
 
 import { Button } from '@/components/ui/button';
-import { DialogTitle } from '@/components/ui/dialog';
 import { Truck, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface DispatchDetailsHeaderProps {
@@ -24,10 +23,10 @@ export function DispatchDetailsHeader({
 }: DispatchDetailsHeaderProps) {
   return (
     <div className="flex items-center justify-between">
-      <DialogTitle className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <Truck className="h-5 w-5" />
-        Detalles del Despacho
-      </DialogTitle>
+        <h2 className="text-lg font-semibold">Detalles del Despacho</h2>
+      </div>
       <div className="flex items-center gap-2">
         {canMarkAsInTransit && (
           <Button 

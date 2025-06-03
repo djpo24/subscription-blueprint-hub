@@ -103,7 +103,7 @@ export function useChatMessages() {
 
         if (logError) {
           console.error('Error creating notification log:', logError);
-          throw new Error('Error al crear registro de notificación');
+          throw new Error('Error al crear registro de notificación: ' + logError.message);
         }
 
         console.log('Notification log created:', notificationData.id);
@@ -131,8 +131,11 @@ export function useChatMessages() {
         }
 
         // Verificar si la respuesta indica un error de token
-        if (responseData && !responseData.success && responseData.error) {
-          if (responseData.error.includes('Session has expired') || responseData.error.includes('access token')) {
+        if (responseData && responseData.error) {
+          console.error('WhatsApp API error:', responseData.error);
+          if (responseData.error.includes('Session has expired') || 
+              responseData.error.includes('access token') ||
+              responseData.error.includes('token')) {
             throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
           }
           throw new Error('Error de WhatsApp: ' + responseData.error);
@@ -153,7 +156,7 @@ export function useChatMessages() {
 
       // Guardar mensaje enviado en nuestra tabla
       console.log('Saving sent message to database...');
-      saveSentMessage({
+      await saveSentMessage({
         customerId: customerId,
         phone: selectedPhone,
         message: finalMessage,

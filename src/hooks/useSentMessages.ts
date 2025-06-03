@@ -20,6 +20,7 @@ export function useSentMessages() {
   const { data: sentMessages = [], isLoading } = useQuery({
     queryKey: ['sent-messages'],
     queryFn: async (): Promise<SentMessage[]> => {
+      console.log('Fetching sent messages...');
       // Use type assertion since sent_messages table exists but types aren't updated yet
       const { data, error } = await (supabase as any)
         .from('sent_messages')
@@ -32,6 +33,7 @@ export function useSentMessages() {
         throw error;
       }
       
+      console.log('Sent messages fetched:', data?.length || 0);
       return data || [];
     },
     refetchInterval: 5000,
@@ -49,6 +51,8 @@ export function useSentMessages() {
       message: string;
       imageUrl?: string;
     }) => {
+      console.log('Saving sent message:', { customerId, phone, message, imageUrl });
+      
       const { data, error } = await (supabase as any)
         .from('sent_messages')
         .insert({
@@ -61,11 +65,18 @@ export function useSentMessages() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving sent message:', error);
+        throw error;
+      }
+      
+      console.log('Sent message saved successfully:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('Invalidating sent messages query...');
       queryClient.invalidateQueries({ queryKey: ['sent-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
     },
     onError: (error: any) => {
       console.error('Error saving sent message:', error);
@@ -80,7 +91,7 @@ export function useSentMessages() {
   return {
     sentMessages,
     isLoading,
-    saveSentMessage: saveSentMessageMutation.mutate,
+    saveSentMessage: saveSentMessageMutation.mutateAsync,
     isSaving: saveSentMessageMutation.isPending,
   };
 }

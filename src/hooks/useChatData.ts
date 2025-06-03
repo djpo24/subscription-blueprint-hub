@@ -32,6 +32,7 @@ export function useChatData() {
   const { data: incomingMessages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-messages'],
     queryFn: async (): Promise<IncomingMessage[]> => {
+      console.log('Fetching incoming messages...');
       const { data, error } = await supabase
         .from('incoming_messages')
         .select(`
@@ -60,7 +61,7 @@ export function useChatData() {
         customers: msg.customers
       }));
 
-      console.log('Processed chat messages:', processedData.length);
+      console.log('Processed incoming messages:', processedData.length);
       
       return processedData;
     },
@@ -127,12 +128,43 @@ export function useChatData() {
     profileImageUrl?: string | null;
   }>);
 
+  // Incluir conversaciones de mensajes solo salientes (números a los que hemos enviado pero no hemos recibido respuesta)
+  sentMessages.forEach(sentMsg => {
+    const phone = sentMsg.phone;
+    const normalizedPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+    
+    // Verificar si ya existe una conversación para este teléfono
+    const existingConversation = Object.keys(conversationsByPhone).find(existingPhone => {
+      const normalizedExisting = existingPhone.replace(/[\s\-\(\)\+]/g, '');
+      return normalizedExisting === normalizedPhone || 
+             normalizedExisting.endsWith(normalizedPhone) || 
+             normalizedPhone.endsWith(normalizedExisting);
+    });
+    
+    if (!existingConversation) {
+      // Crear nueva conversación solo con mensajes salientes
+      conversationsByPhone[phone] = {
+        messages: [{
+          id: sentMsg.id,
+          content: sentMsg.message,
+          timestamp: sentMsg.sent_at,
+          type: 'outgoing' as const,
+          imageUrl: sentMsg.image_url
+        }],
+        latestIncoming: null as any, // No hay mensaje entrante
+        customerName: undefined,
+        customerId: sentMsg.customer_id,
+        profileImageUrl: null
+      };
+    }
+  });
+
   // Crear lista de chats para la columna izquierda
   const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => ({
     phone,
     customerName: conversation.customerName,
     lastMessage: conversation.messages[conversation.messages.length - 1]?.content || 'Sin mensajes',
-    lastMessageTime: conversation.latestIncoming.message_timestamp,
+    lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
     isRegistered: !!conversation.customerId,
     unreadCount: 0,
     profileImageUrl: conversation.profileImageUrl

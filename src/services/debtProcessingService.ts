@@ -1,4 +1,3 @@
-
 import { DebtRecord, TravelerStat, DebtDataResult, CollectionStats } from '@/types/debt';
 
 export const processRegisteredDebts = (packageDebts: any[]): DebtRecord[] => {
@@ -55,14 +54,27 @@ export const processUnregisteredDebts = (deliveredPackages: any[], registeredPac
 
   for (const pkg of deliveredPackages) {
     if (!registeredPackageIds.has(pkg.id)) {
-      console.log(`⚠️ Found delivered package without debt record: ${pkg.tracking_number}`);
+      console.log(`⚠️ Found package without debt record: ${pkg.tracking_number}, status: ${pkg.status}`);
       
       const travelerName = pkg.trips?.travelers 
         ? `${pkg.trips.travelers.first_name} ${pkg.trips.travelers.last_name}`
         : 'Sin asignar';
 
-      const deliveryDate = new Date(pkg.delivered_at);
-      const debtDays = Math.max(0, Math.floor((new Date().getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24)));
+      // Determinar el tipo de deuda basado en el estado del paquete
+      let debtType = 'uncollected';
+      let debtStartDate = pkg.delivered_at || pkg.created_at;
+      
+      if (pkg.status === 'delivered') {
+        debtType = 'unpaid'; // Paquete entregado sin pago
+        debtStartDate = pkg.delivered_at;
+        console.log(`📦 Package ${pkg.tracking_number} is delivered, marking as 'unpaid'`);
+      } else {
+        debtType = 'uncollected'; // Paquete no recogido
+        console.log(`📦 Package ${pkg.tracking_number} is not delivered, marking as 'uncollected'`);
+      }
+
+      const startDate = new Date(debtStartDate);
+      const debtDays = Math.max(0, Math.floor((new Date().getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
 
       const record: DebtRecord = {
         package_id: pkg.id,
@@ -75,13 +87,13 @@ export const processUnregisteredDebts = (deliveredPackages: any[], registeredPac
         pending_amount: Number(pkg.amount_to_collect || 0),
         paid_amount: 0,
         debt_status: 'pending',
-        debt_type: 'unpaid',
-        debt_start_date: pkg.delivered_at ? pkg.delivered_at.split('T')[0] : '',
+        debt_type: debtType,
+        debt_start_date: debtStartDate ? debtStartDate.split('T')[0] : '',
         debt_days: debtDays,
         package_status: pkg.status,
         freight: Number(pkg.freight || 0),
         debt_id: null,
-        delivery_date: pkg.delivered_at || '',
+        delivery_date: pkg.status === 'delivered' ? (pkg.delivered_at || '') : '',
         created_at: pkg.created_at || '',
         currency: pkg.currency || 'COP'
       };

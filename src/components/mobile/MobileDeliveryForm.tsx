@@ -1,119 +1,105 @@
+
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle } from 'lucide-react';
-import { MobilePackageInfo } from './MobilePackageInfo';
-import { MobileDeliveryFormFields } from './MobileDeliveryFormFields';
-import { MobilePaymentSection } from './MobilePaymentSection';
-import { MobileDeliveryActions } from './MobileDeliveryActions';
-import { ChatDialog } from '@/components/chat/ChatDialog';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
 import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { MobilePackageInfo } from './MobilePackageInfo';
+import { MobilePaymentSection } from './MobilePaymentSection';
+import { MobileDeliveryFormFields } from './MobileDeliveryFormFields';
+import { MobileDeliveryActions } from './MobileDeliveryActions';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface MobileDeliveryFormProps {
   package: PackageInDispatch;
-  onSuccess: () => void;
+  onDeliveryComplete: () => void;
   onCancel: () => void;
-  previewRole?: 'admin' | 'employee' | 'traveler';
-  disableChat?: boolean;
 }
 
 export function MobileDeliveryForm({ 
   package: pkg, 
-  onSuccess, 
-  onCancel,
-  previewRole,
-  disableChat = false
+  onDeliveryComplete, 
+  onCancel 
 }: MobileDeliveryFormProps) {
-  const [showChatDialog, setShowChatDialog] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
-
+  const [deliveredBy, setDeliveredBy] = useState('');
+  const [notes, setNotes] = useState('');
+  
+  const deliverPackage = useDeliverPackage();
   const {
-    deliveryForm,
-    setDeliveryForm,
-    paymentData,
-    updatePaymentField,
-    addPaymentEntry,
-    removePaymentEntry,
+    payments,
+    addPayment,
+    updatePayment,
+    removePayment,
     getCurrencySymbol,
-    isDelivering,
-    handleDeliver
-  } = useDeliverPackage(pkg, onSuccess);
-
-  const { validateForm } = usePaymentManagement();
-
-  const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
+    getValidPayments
+  } = usePaymentManagement(pkg.currency);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (requiresPayment) {
-      const validation = validateForm(paymentData.payments, pkg.amount_to_collect || 0);
-      if (!validation.isValid) {
-        console.error('Validation errors:', validation.errors);
-        return;
-      }
+    if (!deliveredBy.trim()) {
+      alert('Por favor ingresa el nombre de quien entrega');
+      return;
     }
 
-    await handleDeliver(deliveryForm, paymentData.payments);
+    try {
+      const validPayments = getValidPayments();
+
+      await deliverPackage.mutateAsync({
+        packageId: pkg.id,
+        deliveredBy: deliveredBy.trim(),
+        payments: validPayments.length > 0 ? validPayments : undefined
+      });
+
+      alert('¡Paquete entregado exitosamente!');
+      onDeliveryComplete();
+    } catch (error) {
+      console.error('Error delivering package:', error);
+      alert('Error al entregar el paquete. Intenta nuevamente.');
+    }
   };
 
-  const handleOpenChat = (customerId: string, customerName?: string) => {
-    setSelectedCustomerId(customerId);
-    setSelectedCustomerName(customerName);
-    setShowChatDialog(true);
+  const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
+  };
+
+  const handleFormSubmit = () => {
+    handleSubmit({} as React.FormEvent);
   };
 
   return (
-    <>
-      <div className="max-w-md mx-auto p-4 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700">
-              <CheckCircle className="h-5 w-5" />
-              Entregar Encomienda
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <MobilePackageInfo package={pkg} />
-              
-              <MobileDeliveryFormFields
-                deliveryForm={deliveryForm}
-                onUpdateForm={setDeliveryForm}
-              />
-              
-              {requiresPayment && (
-                <MobilePaymentSection
-                  package={pkg}
-                  payments={paymentData.payments}
-                  onAddPayment={addPaymentEntry}
-                  onUpdatePayment={updatePaymentField}
-                  onRemovePayment={removePaymentEntry}
-                  getCurrencySymbol={getCurrencySymbol}
-                  onOpenChat={handleOpenChat}
-                  previewRole={previewRole}
-                  disableChat={disableChat}
-                />
-              )}
-              
-              <MobileDeliveryActions
-                onCancel={onCancel}
-                isDelivering={isDelivering}
-              />
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-4">
+      {/* Package Info */}
+      <MobilePackageInfo package={pkg} />
 
-      <ChatDialog
-        open={showChatDialog}
-        onOpenChange={setShowChatDialog}
-        customerId={selectedCustomerId}
-        customerName={selectedCustomerName}
+      {/* Payment Section */}
+      <MobilePaymentSection
+        package={pkg}
+        payments={payments}
+        onAddPayment={addPayment}
+        onUpdatePayment={handlePaymentUpdate}
+        onRemovePayment={removePayment}
+        getCurrencySymbol={getCurrencySymbol}
       />
-    </>
+
+      {/* Delivery Form */}
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          <MobileDeliveryFormFields
+            deliveredBy={deliveredBy}
+            setDeliveredBy={setDeliveredBy}
+            notes={notes}
+            setNotes={setNotes}
+          />
+
+          <MobileDeliveryActions
+            package={pkg}
+            payments={payments}
+            deliveredBy={deliveredBy}
+            isPending={deliverPackage.isPending}
+            onCancel={onCancel}
+            onSubmit={handleFormSubmit}
+          />
+        </div>
+      </form>
+    </div>
   );
 }

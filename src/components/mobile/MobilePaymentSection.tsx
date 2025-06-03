@@ -1,11 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { DollarSign, MessageSquare } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { PaymentEntry } from '../dispatch-details/PaymentEntry';
 import { PaymentSummary } from '../dispatch-details/PaymentSummary';
-import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import type { PackageInDispatch } from '@/types/dispatch';
 import type { PaymentEntryData } from '@/types/payment';
 
@@ -16,21 +14,14 @@ interface MobilePaymentSectionProps {
   onUpdatePayment: (index: number, field: string, value: string) => void;
   onRemovePayment: (index: number) => void;
   getCurrencySymbol: (currency: string) => string;
-  onOpenChat?: (customerId: string, customerName?: string) => void;
-  previewRole?: 'admin' | 'employee' | 'traveler';
-  disableChat?: boolean;
 }
 
 export function MobilePaymentSection({
   package: pkg,
   payments,
   onUpdatePayment,
-  getCurrencySymbol,
-  onOpenChat,
-  previewRole,
-  disableChat = false
+  getCurrencySymbol
 }: MobilePaymentSectionProps) {
-  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
   
   if (!requiresPayment) return null;
@@ -48,40 +39,16 @@ export function MobilePaymentSection({
   const packageAmountInPaymentCurrency = pkg.amount_to_collect || 0;
   const remainingAmount = packageAmountInPaymentCurrency - totalCollected;
 
-  const handleChatClick = () => {
-    if (onOpenChat && !disableChat && userRole?.role === 'admin') {
-      onOpenChat(pkg.customer_id, pkg.customers?.name);
-    }
-  };
-
-  const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
-
   return (
     <Card className="border-green-200 bg-green-50">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-green-800">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Cobro Requerido
-          </div>
-          {canShowChat && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleChatClick}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </Button>
-          )}
+        <CardTitle className="flex items-center gap-2 text-green-800">
+          <DollarSign className="h-5 w-5" />
+          Cobro Requerido
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="mb-3">
-          <p className="text-sm text-green-700">
-            <strong>Cliente:</strong> {pkg.customers?.name || 'N/A'}
-          </p>
           <p className="text-sm text-green-700">
             <strong>Total a cobrar:</strong> ${pkg.amount_to_collect?.toLocaleString('es-CO')} {pkg.currency || 'COP'}
           </p>

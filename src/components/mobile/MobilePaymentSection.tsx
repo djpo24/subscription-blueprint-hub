@@ -32,7 +32,12 @@ export function MobilePaymentSection({
     return sum + amount;
   }, 0);
 
-  const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
+  // Obtener la moneda del pago (si hay pagos registrados)
+  const paymentCurrency = payments.length > 0 && payments[0].currency ? payments[0].currency : pkg.currency || 'COP';
+  
+  // Convertir el monto del paquete a la moneda del pago si es necesario
+  const packageAmountInPaymentCurrency = pkg.amount_to_collect || 0;
+  const remainingAmount = packageAmountInPaymentCurrency - totalCollected;
 
   return (
     <Card className="border-green-200 bg-green-50">
@@ -50,11 +55,10 @@ export function MobilePaymentSection({
           {totalCollected > 0 && (
             <div className="mt-2 space-y-1 text-sm">
               <p className="text-green-700">
-                <strong>Recibido:</strong> ${totalCollected.toLocaleString('es-CO')} 
-                {payments.length > 0 && payments[0].currency === 'AWG' ? ' AWG' : ` ${pkg.currency || 'COP'}`}
+                <strong>Recibido:</strong> ${totalCollected.toLocaleString('es-CO')} {paymentCurrency}
               </p>
               <p className={`${remainingAmount <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                <strong>Pendiente:</strong> ${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}
+                <strong>Pendiente:</strong> ${remainingAmount.toLocaleString('es-CO')} {paymentCurrency}
               </p>
             </div>
           )}

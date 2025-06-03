@@ -38,7 +38,7 @@ export function RolePreviewSelector() {
     {
       role: 'employee' as const,
       title: 'Empleado',
-      description: 'Acceso a operaciones diarias sin gestión de usuarios',
+      description: 'Acceso a operaciones diarias sin gestión de usuarios, notificaciones o configuración',
       icon: Briefcase,
       color: 'bg-blue-500',
       features: [
@@ -47,9 +47,8 @@ export function RolePreviewSelector() {
         'Chat con clientes',
         'Despachos',
         'Deudores',
-        'Notificaciones',
-        'Configuración básica',
-        'Entrega móvil'
+        'Entrega móvil',
+        'Sin acceso a notificaciones, usuarios o configuración'
       ]
     },
     {

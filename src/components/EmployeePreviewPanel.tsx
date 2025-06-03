@@ -7,8 +7,6 @@ import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
 import { DebtorsTab } from '@/components/tabs/DebtorsTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
-import { NotificationsTab } from '@/components/tabs/NotificationsTab';
-import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { Tabs } from '@/components/ui/tabs';
 import { useIndexData } from '@/hooks/useIndexData';
 import { useIndexState } from '@/hooks/useIndexState';
@@ -62,7 +60,6 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
     handlePackageSuccess,
     handleTripSuccess,
     handleTripDialogClose,
-    handleViewNotifications,
     handlePackagesUpdate,
     handleBackToCalendar,
   } = useIndexHandlers({
@@ -116,7 +113,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
         <Briefcase className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-800">
-            <strong>Vista Preview:</strong> Panel como Empleado - Acceso a operaciones diarias sin gestión de usuarios
+            <strong>Vista Preview:</strong> Panel como Empleado - Acceso a operaciones diarias sin gestión de usuarios, notificaciones o configuración
           </span>
           <Button variant="outline" size="sm" onClick={onBack} className="ml-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -139,10 +136,10 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           <DashboardTab
             packageStats={employeePackageStats}
             customersCount={customersCount}
-            onNewPackage={handleNewPackage} // Habilitado para empleados
-            onNewTrip={() => handleCreateTripFromCalendar(new Date())} // Habilitado para empleados
-            onViewNotifications={handleViewNotifications} // Habilitado para empleados
-            onMobileDelivery={handleMobileDelivery} // Habilitado para empleados
+            onNewPackage={handleNewPackage}
+            onNewTrip={() => handleCreateTripFromCalendar(new Date())}
+            onViewNotifications={() => {}} // Deshabilitado para empleados
+            onMobileDelivery={handleMobileDelivery}
             packages={employeePackages}
             filteredPackages={employeeFilteredPackages}
             isLoading={isLoading}
@@ -151,10 +148,10 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           
           <TripsTab 
             viewingPackagesByDate={viewingPackagesByDate}
-            trips={employeeTrips} // Acceso completo a viajes
+            trips={employeeTrips}
             tripsLoading={tripsLoading}
-            onAddPackage={handleAddPackageToTrip} // Habilitado para empleados
-            onCreateTrip={handleCreateTripFromCalendar} // Habilitado para empleados
+            onAddPackage={handleAddPackageToTrip}
+            onCreateTrip={handleCreateTripFromCalendar}
             onViewPackagesByDate={handleViewPackagesByDate}
             onBack={handleBackToCalendar}
           />
@@ -162,8 +159,6 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           <DispatchesTab />
           <DebtorsTab />
           <ChatTab />
-          <NotificationsTab />
-          <SettingsTab />
         </Tabs>
 
         <DialogsContainer
@@ -189,8 +184,6 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
                 <li>• Chat con clientes</li>
                 <li>• Todos los despachos</li>
                 <li>• Todos los deudores</li>
-                <li>• Notificaciones</li>
-                <li>• Configuración básica</li>
                 <li>• Entrega móvil</li>
               </ul>
             </div>
@@ -198,9 +191,9 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
               <h4 className="font-medium text-red-700 mb-2">❌ No puede acceder a:</h4>
               <ul className="text-red-700 space-y-1">
                 <li>• Gestión de usuarios</li>
-                <li>• Configuración avanzada del sistema</li>
+                <li>• Notificaciones</li>
+                <li>• Configuración del sistema</li>
                 <li>• Funciones administrativas</li>
-                <li>• Panel de usuarios</li>
               </ul>
             </div>
           </div>

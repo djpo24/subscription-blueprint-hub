@@ -23,9 +23,9 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
   // Show Users tab only for admins
   const showUsersTab = userRole?.role === 'admin';
   
-  // Hide notifications, users, and settings for travelers
-  const showNotificationsTab = userRole?.role !== 'traveler';
-  const showSettingsTab = userRole?.role !== 'traveler';
+  // Hide notifications and settings for travelers and employees
+  const showNotificationsTab = userRole?.role === 'admin';
+  const showSettingsTab = userRole?.role === 'admin';
   
   console.log('MainTabs: showUsersTab:', showUsersTab);
   console.log('MainTabs: showNotificationsTab:', showNotificationsTab);

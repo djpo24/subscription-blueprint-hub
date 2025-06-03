@@ -14,6 +14,8 @@ export function useQRScanner() {
 
   const initCamera = async () => {
     try {
+      console.log('Initializing camera...');
+      
       // Check if camera is available and get camera list
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       stream.getTracks().forEach(track => track.stop()); // Stop the test stream
@@ -22,10 +24,18 @@ export function useQRScanner() {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       
+      console.log('Available cameras:', videoDevices.map(d => ({ label: d.label, deviceId: d.deviceId })));
+      
       // Sort cameras to prioritize rear camera (environment facing)
       const sortedCameras = videoDevices.sort((a, b) => {
-        const aIsRear = a.label.toLowerCase().includes('back') || a.label.toLowerCase().includes('rear') || a.label.toLowerCase().includes('environment');
-        const bIsRear = b.label.toLowerCase().includes('back') || b.label.toLowerCase().includes('rear') || b.label.toLowerCase().includes('environment');
+        const aIsRear = a.label.toLowerCase().includes('back') || 
+                       a.label.toLowerCase().includes('rear') || 
+                       a.label.toLowerCase().includes('environment') ||
+                       a.label.toLowerCase().includes('trasera');
+        const bIsRear = b.label.toLowerCase().includes('back') || 
+                       b.label.toLowerCase().includes('rear') || 
+                       b.label.toLowerCase().includes('environment') ||
+                       b.label.toLowerCase().includes('trasera');
         
         if (aIsRear && !bIsRear) return -1;
         if (!aIsRear && bIsRear) return 1;
@@ -35,6 +45,8 @@ export function useQRScanner() {
       setAvailableCameras(sortedCameras);
       setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
       setHasPermission(true);
+      
+      console.log('Camera initialized. Default camera:', sortedCameras[0]?.label || 'Unknown');
     } catch (err) {
       console.error('Camera permission denied:', err);
       setHasPermission(false);
@@ -42,33 +54,89 @@ export function useQRScanner() {
     }
   };
 
-  const switchCamera = () => {
+  const startVideoStream = async (deviceId: string) => {
+    try {
+      console.log('Starting video stream with device:', deviceId);
+      
+      // Stop existing stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+
+      // Start new stream with selected camera
+      const constraints = {
+        video: {
+          deviceId: { exact: deviceId },
+          facingMode: 'environment' // Try to use rear camera
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        console.log('Video stream started successfully');
+      }
+
+      return stream;
+    } catch (err) {
+      console.error('Error starting video stream:', err);
+      throw err;
+    }
+  };
+
+  const switchCamera = async () => {
     if (availableCameras.length > 1) {
+      console.log('Switching camera...');
+      
+      // Stop current scanning
       stopScanning();
-      setCurrentCameraIndex((prev) => (prev + 1) % availableCameras.length);
+      
+      // Switch to next camera
+      const newIndex = (currentCameraIndex + 1) % availableCameras.length;
+      setCurrentCameraIndex(newIndex);
+      
+      console.log('Switched to camera:', availableCameras[newIndex]?.label || `Camera ${newIndex + 1}`);
+      
+      // Start video stream with new camera
+      try {
+        await startVideoStream(availableCameras[newIndex].deviceId);
+      } catch (err) {
+        console.error('Error switching camera:', err);
+        setError('Error al cambiar de cámara');
+      }
     }
   };
 
   const startScanning = async (onQRCodeScanned: (qrData: string) => void) => {
-    if (!videoRef.current || availableCameras.length === 0) return;
+    if (!videoRef.current || availableCameras.length === 0) {
+      console.error('Video element or cameras not available');
+      return;
+    }
 
     try {
       setIsScanning(true);
       setError(null);
       
+      const selectedCamera = availableCameras[currentCameraIndex];
+      console.log('Starting scan with camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+
+      // Start video stream if not already started
+      if (!streamRef.current) {
+        await startVideoStream(selectedCamera.deviceId);
+      }
+
       const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
 
-      // Use the selected camera
-      const selectedCamera = availableCameras[currentCameraIndex];
-      const selectedDeviceId = selectedCamera.deviceId;
-
-      console.log('Using camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
-
-      // Start decoding from video element with the selected camera
-      const result = await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, videoRef.current);
+      // Start scanning from the video element
+      const result = await codeReader.decodeOnceFromVideoDevice(selectedCamera.deviceId, videoRef.current);
       
       if (result) {
+        console.log('QR Code scanned:', result.getText());
         onQRCodeScanned(result.getText());
         stopScanning();
       }
@@ -80,23 +148,56 @@ export function useQRScanner() {
   };
 
   const stopScanning = () => {
-    // Stop the video stream
+    console.log('Stopping scanning...');
+    
+    // Stop the code reader
+    if (codeReaderRef.current) {
+      try {
+        codeReaderRef.current.reset();
+      } catch (err) {
+        console.error('Error resetting code reader:', err);
+      }
+      codeReaderRef.current = null;
+    }
+    
+    setIsScanning(false);
+  };
+
+  const cleanup = () => {
+    console.log('Cleaning up camera resources...');
+    
+    // Stop scanning
+    stopScanning();
+    
+    // Stop video stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
-    // Clear the code reader
-    codeReaderRef.current = null;
-    setIsScanning(false);
+
+    // Clear video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   };
 
   useEffect(() => {
     initCamera();
-    return () => {
-      stopScanning();
-    };
+    return cleanup;
   }, []);
+
+  // Start video stream when camera changes
+  useEffect(() => {
+    if (availableCameras.length > 0 && hasPermission) {
+      const selectedCamera = availableCameras[currentCameraIndex];
+      if (selectedCamera) {
+        startVideoStream(selectedCamera.deviceId).catch(err => {
+          console.error('Error starting video stream on camera change:', err);
+          setError('Error al inicializar la cámara');
+        });
+      }
+    }
+  }, [currentCameraIndex, availableCameras, hasPermission]);
 
   return {
     hasPermission,

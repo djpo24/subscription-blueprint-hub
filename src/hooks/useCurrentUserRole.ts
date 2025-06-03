@@ -1,13 +1,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useCurrentUserRole() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['current-user-role'],
+    queryKey: ['current-user-role', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -22,6 +23,7 @@ export function useCurrentUserRole() {
       
       return data;
     },
+    enabled: !!user,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

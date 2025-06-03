@@ -59,7 +59,7 @@ export function MobileDeliveryActions({
           Cancelar
         </Button>
         <Button
-          type="submit"
+          type="button"
           disabled={!deliveredBy.trim() || isPending}
           className="w-full"
           onClick={onSubmit}

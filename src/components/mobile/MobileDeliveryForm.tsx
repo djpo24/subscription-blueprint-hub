@@ -36,9 +36,7 @@ export function MobileDeliveryForm({
   // Obtener el nombre del usuario logueado
   const deliveredBy = user?.email || 'Usuario no identificado';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!user) {
       alert('No se puede procesar la entrega: usuario no autenticado');
       return;
@@ -65,10 +63,6 @@ export function MobileDeliveryForm({
     updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
   };
 
-  const handleFormSubmit = () => {
-    handleSubmit({} as React.FormEvent);
-  };
-
   return (
     <div className="space-y-4">
       {/* Package Info */}
@@ -93,26 +87,24 @@ export function MobileDeliveryForm({
       />
 
       {/* Delivery Form - Solo notas */}
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <MobileDeliveryFormFields
-            deliveredBy=""
-            setDeliveredBy={() => {}}
-            notes={notes}
-            setNotes={setNotes}
-            hideDeliveredBy={true}
-          />
+      <div className="space-y-4">
+        <MobileDeliveryFormFields
+          deliveredBy=""
+          setDeliveredBy={() => {}}
+          notes={notes}
+          setNotes={setNotes}
+          hideDeliveredBy={true}
+        />
 
-          <MobileDeliveryActions
-            package={pkg}
-            payments={payments}
-            deliveredBy={deliveredBy}
-            isPending={deliverPackage.isPending}
-            onCancel={onCancel}
-            onSubmit={handleFormSubmit}
-          />
-        </div>
-      </form>
+        <MobileDeliveryActions
+          package={pkg}
+          payments={payments}
+          deliveredBy={deliveredBy}
+          isPending={deliverPackage.isPending}
+          onCancel={onCancel}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 }

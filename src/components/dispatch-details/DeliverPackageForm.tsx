@@ -39,9 +39,7 @@ export function DeliverPackageForm({
   // Obtener el nombre del usuario logueado
   const deliveredBy = user?.email || 'Usuario no identificado';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!user) {
       alert('No se puede procesar la entrega: usuario no autenticado');
       return;
@@ -67,10 +65,6 @@ export function DeliverPackageForm({
 
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
     updatePayment(index, field as any, value, pkg.amount_to_collect || 0);
-  };
-
-  const handleFormSubmit = () => {
-    handleSubmit({} as React.FormEvent);
   };
 
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
@@ -107,52 +101,50 @@ export function DeliverPackageForm({
       />
 
       {/* Delivery Form - Solo notas */}
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <MobileDeliveryFormFields
-            deliveredBy=""
-            setDeliveredBy={() => {}}
-            notes={notes}
-            setNotes={setNotes}
-            hideDeliveredBy={true}
-          />
+      <div className="space-y-4">
+        <MobileDeliveryFormFields
+          deliveredBy=""
+          setDeliveredBy={() => {}}
+          notes={notes}
+          setNotes={setNotes}
+          hideDeliveredBy={true}
+        />
 
-          {/* Payment Warning for uncollected amounts */}
-          {requiresPayment && remainingAmount > 0 && (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="p-3">
-                <p className="text-sm text-orange-700">
-                  <strong>Atención:</strong> Queda un saldo pendiente de{' '}
-                  <strong>${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}</strong>.
-                  Puedes registrar los pagos arriba.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Payment Warning for uncollected amounts */}
+        {requiresPayment && remainingAmount > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-3">
+              <p className="text-sm text-orange-700">
+                <strong>Atención:</strong> Queda un saldo pendiente de{' '}
+                <strong>${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}</strong>.
+                Puedes registrar los pagos arriba.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="w-full"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={!deliveredBy.trim() || deliverPackage.isPending}
-              className="w-full"
-              onClick={handleFormSubmit}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              {deliverPackage.isPending ? 'Entregando...' : 'Confirmar'}
-            </Button>
-          </div>
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-full"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={!deliveredBy.trim() || deliverPackage.isPending}
+            className="w-full"
+            onClick={handleSubmit}
+          >
+            <Check className="h-4 w-4 mr-2" />
+            {deliverPackage.isPending ? 'Entregando...' : 'Confirmar'}
+          </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

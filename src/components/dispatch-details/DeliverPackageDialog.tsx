@@ -2,15 +2,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Package, Truck, Plus } from 'lucide-react';
+import { Package, Truck } from 'lucide-react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useDeliverPackage } from '@/hooks/useDeliverPackage';
-import { PaymentEntry } from './PaymentEntry';
-import { PaymentSummary } from './PaymentSummary';
 import { PackageInfo } from './PackageInfo';
+import { DeliveryFormFields } from './DeliveryFormFields';
+import { PaymentSection } from './PaymentSection';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface DeliverPackageDialogProps {
@@ -153,60 +150,23 @@ export function DeliverPackageDialog({
           {/* Package Info */}
           <PackageInfo package={pkg} />
 
-          {/* Delivery Info */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="deliveredBy">Entregado por *</Label>
-              <Input
-                id="deliveredBy"
-                value={deliveredBy}
-                onChange={(e) => setDeliveredBy(e.target.value)}
-                placeholder="Nombre de quien entrega"
-                required
-              />
-            </div>
-          </div>
+          {/* Delivery Form Fields */}
+          <DeliveryFormFields
+            deliveredBy={deliveredBy}
+            setDeliveredBy={setDeliveredBy}
+            notes={notes}
+            setNotes={setNotes}
+          />
 
-          {/* Payments */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Pagos recibidos</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addPayment}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar otro pago
-              </Button>
-            </div>
-
-            {payments.map((payment, index) => (
-              <PaymentEntry
-                key={index}
-                payment={payment}
-                index={index}
-                onUpdate={updatePayment}
-                onRemove={removePayment}
-                canRemove={payments.length > 1}
-              />
-            ))}
-
-            {/* Payment Summary */}
-            <PaymentSummary
-              payments={payments}
-              packageAmountToCollect={pkg.amount_to_collect || 0}
-              getCurrencySymbol={getCurrencySymbol}
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <Label htmlFor="notes">Notas (opcional)</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Observaciones adicionales"
-              rows={3}
-            />
-          </div>
+          {/* Payment Section */}
+          <PaymentSection
+            payments={payments}
+            onAddPayment={addPayment}
+            onUpdatePayment={updatePayment}
+            onRemovePayment={removePayment}
+            packageAmountToCollect={pkg.amount_to_collect || 0}
+            getCurrencySymbol={getCurrencySymbol}
+          />
 
           {/* Actions */}
           <div className="flex justify-end gap-2">

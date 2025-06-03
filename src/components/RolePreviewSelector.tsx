@@ -25,6 +25,7 @@ export function RolePreviewSelector() {
         'Gestión completa de encomiendas',
         'Configuración del sistema',
         'Reportes y estadísticas',
+        'Notificaciones',
         'Gestión de viajeros'
       ]
     },
@@ -39,21 +40,24 @@ export function RolePreviewSelector() {
         'Gestión de viajes',
         'Chat con clientes',
         'Despachos',
-        'Notificaciones'
+        'Deudores',
+        'Notificaciones',
+        'Configuración básica'
       ]
     },
     {
       role: 'traveler' as const,
       title: 'Viajero',
-      description: 'Acceso limitado solo a viajes asignados',
+      description: 'Acceso a viajes, despachos y deudores asignados',
       icon: Truck,
       color: 'bg-green-500',
       features: [
         'Ver viajes asignados',
+        'Ver despachos relacionados',
+        'Ver deudores relacionados',
         'Ver paquetes de sus viajes',
-        'Chat limitado',
-        'Notificaciones personales',
-        'Solo lectura'
+        'Chat básico',
+        'Sin acceso a notificaciones, usuarios o configuración'
       ]
     }
   ];

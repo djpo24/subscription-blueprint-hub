@@ -20,7 +20,14 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
   
   // Show Users tab only for admins
   const showUsersTab = userRole?.role === 'admin';
+  
+  // Hide notifications, users, and settings for travelers
+  const showNotificationsTab = userRole?.role !== 'traveler';
+  const showSettingsTab = userRole?.role !== 'traveler';
+  
   console.log('MainTabs: showUsersTab:', showUsersTab);
+  console.log('MainTabs: showNotificationsTab:', showNotificationsTab);
+  console.log('MainTabs: showSettingsTab:', showSettingsTab);
 
   if (isLoading) {
     console.log('MainTabs: Still loading user role...');
@@ -56,17 +63,21 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
             </Badge>
           )}
         </TabsTrigger>
-        <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Notif." : "Notificaciones"}
-        </TabsTrigger>
+        {showNotificationsTab && (
+          <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Notif." : "Notificaciones"}
+          </TabsTrigger>
+        )}
         {showUsersTab && (
           <TabsTrigger value="users" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
             {isMobile ? "Users" : "Usuarios"}
           </TabsTrigger>
         )}
-        <TabsTrigger value="settings" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Config" : "Configuración"}
-        </TabsTrigger>
+        {showSettingsTab && (
+          <TabsTrigger value="settings" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Config" : "Configuración"}
+          </TabsTrigger>
+        )}
         <TabsTrigger value="developer" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0 bg-purple-100 text-purple-800">
           {isMobile ? "Dev" : "Preview"}
         </TabsTrigger>

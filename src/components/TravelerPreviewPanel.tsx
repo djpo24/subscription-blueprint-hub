@@ -4,9 +4,9 @@ import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
+import { DispatchesTab } from '@/components/tabs/DispatchesTab';
+import { DebtorsTab } from '@/components/tabs/DebtorsTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
-import { NotificationsTab } from '@/components/tabs/NotificationsTab';
-import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { Tabs } from '@/components/ui/tabs';
 import { useIndexData } from '@/hooks/useIndexData';
 import { useIndexState } from '@/hooks/useIndexState';
@@ -111,7 +111,7 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
         <Eye className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-800">
-            <strong>Vista Preview:</strong> Panel como Viajero - Acceso limitado solo a viajes asignados
+            <strong>Vista Preview:</strong> Panel como Viajero - Acceso a viajes, despachos y deudores
           </span>
           <Button variant="outline" size="sm" onClick={onBack} className="ml-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -135,7 +135,7 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
             customersCount={Math.floor(customersCount / 3)}
             onNewPackage={() => {}} // Deshabilitado para viajeros
             onNewTrip={() => {}} // Deshabilitado para viajeros
-            onViewNotifications={handleViewNotifications}
+            onViewNotifications={() => {}} // No disponible para viajeros
             onMobileDelivery={() => {}} // Deshabilitado para viajeros
             packages={travelerPackages}
             filteredPackages={travelerFilteredPackages}
@@ -153,22 +153,35 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
             onBack={handleBackToCalendar}
           />
           
+          <DispatchesTab />
+          <DebtorsTab />
           <ChatTab />
-          <NotificationsTab />
-          <SettingsTab />
         </Tabs>
 
         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h3 className="font-semibold text-yellow-800 mb-2">Limitaciones del Rol Viajero:</h3>
-          <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• Solo puede ver viajes asignados a él</li>
-            <li>• No puede crear nuevos paquetes o viajes</li>
-            <li>• No puede acceder al panel de usuarios</li>
-            <li>• No puede acceder al panel de despachos</li>
-            <li>• No puede acceder al panel de deudores</li>
-            <li>• Solo puede ver estadísticas de sus propios viajes</li>
-            <li>• Acceso de solo lectura a la mayoría de funciones</li>
-          </ul>
+          <h3 className="font-semibold text-yellow-800 mb-2">Permisos del Rol Viajero:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium text-green-700 mb-2">✅ Puede acceder a:</h4>
+              <ul className="text-green-700 space-y-1">
+                <li>• Dashboard (vista limitada)</li>
+                <li>• Viajes (solo los asignados)</li>
+                <li>• Despachos (solo los relacionados)</li>
+                <li>• Deudores (solo los relacionados)</li>
+                <li>• Chat (funcionalidad básica)</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-red-700 mb-2">❌ No puede acceder a:</h4>
+              <ul className="text-red-700 space-y-1">
+                <li>• Notificaciones</li>
+                <li>• Gestión de usuarios</li>
+                <li>• Configuración del sistema</li>
+                <li>• Crear nuevos paquetes o viajes</li>
+                <li>• Funciones administrativas</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </main>
     </div>

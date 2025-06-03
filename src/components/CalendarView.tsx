@@ -45,16 +45,16 @@ export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip, onV
   if (isLoading) {
     return (
       <Card className="uber-card">
-        <CardHeader>
+        <CardHeader className="px-3 sm:px-6">
           <CalendarHeader
             currentDate={currentDate}
             onPreviousMonth={goToPreviousMonth}
             onNextMonth={goToNextMonth}
           />
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           <div className="flex justify-center py-8">
-            <div className="text-gray-500">Cargando...</div>
+            <div className="text-gray-500 text-sm">Cargando...</div>
           </div>
         </CardContent>
       </Card>
@@ -63,14 +63,14 @@ export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip, onV
 
   return (
     <Card className="uber-card">
-      <CardHeader>
+      <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-6">
         <CalendarHeader
           currentDate={currentDate}
           onPreviousMonth={goToPreviousMonth}
           onNextMonth={goToNextMonth}
         />
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
         <CalendarGrid
           calendarDays={calendarDays}
           currentDate={currentDate}

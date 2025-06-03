@@ -12,10 +12,10 @@ interface MainTabsProps {
 
 export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsProps) {
   const isMobile = useIsMobile();
-  const { role, isLoading } = useCurrentUserRole();
+  const { data: userRole, isLoading } = useCurrentUserRole();
   
   // Show Users tab only for admins
-  const showUsersTab = role === 'admin';
+  const showUsersTab = userRole?.role === 'admin';
   
   // Calculate grid columns based on number of tabs
   const totalTabs = showUsersTab ? 8 : 7;

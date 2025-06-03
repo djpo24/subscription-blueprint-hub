@@ -6,7 +6,7 @@ export function useDebtData() {
   return useQuery({
     queryKey: ['debt-data'],
     queryFn: async () => {
-      console.log('🔍 Fetching debt data...');
+      console.log('🔍 Fetching debt data with improved detection...');
       
       // Fetch collection packages using the updated database function
       const { data: debts, error: debtsError } = await supabase.rpc('get_collection_packages', {
@@ -19,10 +19,10 @@ export function useDebtData() {
         throw debtsError;
       }
 
-      console.log('📦 Raw debts data:', debts);
-      console.log('📊 Total records:', debts?.length || 0);
+      console.log('📦 Raw debts data from database function:', debts);
+      console.log('📊 Total records from database:', debts?.length || 0);
 
-      // Log debt statuses - now with improved detection
+      // Enhanced logging for verification
       if (debts && debts.length > 0) {
         const statusCount = debts.reduce((acc: Record<string, number>, debt: any) => {
           const status = debt.debt_status || 'no_status';
@@ -31,7 +31,6 @@ export function useDebtData() {
         }, {});
         console.log('📈 Debt status breakdown:', statusCount);
 
-        // Log debt types
         const typeCount = debts.reduce((acc: Record<string, number>, debt: any) => {
           const type = debt.debt_type || 'no_type';
           acc[type] = (acc[type] || 0) + 1;
@@ -39,37 +38,24 @@ export function useDebtData() {
         }, {});
         console.log('📋 Debt type breakdown:', typeCount);
 
-        // Log detailed debt records for debugging
-        console.log('🔍 Detailed debt records:');
-        debts.forEach((debt: any, index: number) => {
-          if (index < 5) { // Log first 5 for debugging
-            console.log(`  ${index + 1}. Package ${debt.package_id}:`, {
-              tracking_number: debt.tracking_number,
-              customer_name: debt.customer_name,
-              amount_to_collect: debt.amount_to_collect,
-              pending_amount: debt.pending_amount,
-              debt_status: debt.debt_status,
-              debt_type: debt.debt_type,
-              package_status: debt.package_status,
-              debt_days: debt.debt_days,
-              debt_start_date: debt.debt_start_date
-            });
-          }
-        });
-
-        // Log packages that should now be detected as debtors
+        // Log delivered packages with debt (which should now be properly detected)
         const deliveredWithDebt = debts.filter((debt: any) => 
           debt.package_status === 'delivered' && debt.pending_amount > 0
         );
-        console.log('✅ Delivered packages with debt detected:', deliveredWithDebt.length);
+        console.log('✅ Delivered packages with outstanding debt:', deliveredWithDebt.length);
+        
         if (deliveredWithDebt.length > 0) {
-          console.log('   Examples:', deliveredWithDebt.slice(0, 3).map(d => ({
-            tracking: d.tracking_number,
-            pending: d.pending_amount,
-            status: d.debt_status,
-            type: d.debt_type
-          })));
+          console.log('   First few examples:');
+          deliveredWithDebt.slice(0, 3).forEach((debt: any, index: number) => {
+            console.log(`   ${index + 1}. ${debt.tracking_number}: pending=${debt.pending_amount} ${debt.currency}, type=${debt.debt_type}, status=${debt.debt_status}`);
+          });
         }
+
+        // Log packages that have pending collections but haven't been delivered
+        const undeliveredWithDebt = debts.filter((debt: any) => 
+          debt.package_status !== 'delivered' && debt.pending_amount > 0
+        );
+        console.log('📋 Undelivered packages with debt:', undeliveredWithDebt.length);
       }
 
       // Fetch collection statistics using the updated view
@@ -79,12 +65,12 @@ export function useDebtData() {
         .single();
 
       if (statsError) {
-        console.error('❌ Error fetching stats:', statsError);
-        // Don't throw error for stats, use empty object as fallback
-        console.log('ℹ️ Using empty stats as fallback');
+        console.error('❌ Error fetching collection stats:', statsError);
+        // Use empty stats as fallback
+        console.log('ℹ️ Using empty stats as fallback due to error');
       }
 
-      console.log('📊 Collection stats:', stats);
+      console.log('📊 Collection stats from view:', stats);
 
       // Process traveler statistics with improved logic
       const travelerSummary = debts.reduce((acc: Record<string, any>, debt: any) => {
@@ -134,8 +120,11 @@ export function useDebtData() {
         }
       };
 
-      console.log('✅ Final processed data:', result);
-      console.log('📈 Total debts in result:', result.debts.length);
+      console.log('✅ Final processed debt data:', {
+        totalDebts: result.debts.length,
+        travelerStatsCount: result.travelerStats.length,
+        hasCollectionStats: !!stats
+      });
       
       return result;
     }

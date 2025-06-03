@@ -15,11 +15,9 @@ export function DebtorsList({ debts }: DebtorsListProps) {
   console.log('🏠 DebtorsList received debts:', debts);
   console.log('📊 Total debts count:', debts.length);
 
-  // Improved filtering logic - the database function now handles most of the filtering
-  // We only need to exclude explicitly paid debts
+  // With the new database triggers and functions, we now get properly filtered data
+  // Only exclude explicitly paid debts as a safety check
   const filteredDebts = debts.filter(debt => {
-    // The database function already filters for relevant debts
-    // Only exclude if explicitly marked as 'paid'
     const shouldInclude = debt.debt_status !== 'paid' && debt.pending_amount > 0;
     
     if (!shouldInclude) {
@@ -139,12 +137,12 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           <span className="sm:hidden">Deudores ({sortedDebts.length})</span>
         </CardTitle>
         {sortedDebts.length === 0 && (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm">
-              <strong>No se encontraron deudas activas.</strong>
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 text-sm">
+              <strong>¡Excelente! No hay deudas activas.</strong>
             </p>
-            <p className="text-yellow-600 text-xs mt-1">
-              Las deudas se generan automáticamente cuando los paquetes tienen monto a cobrar pendiente.
+            <p className="text-green-600 text-xs mt-1">
+              Todos los pagos están al día. Las deudas se generan automáticamente cuando los paquetes tienen montos pendientes de cobro.
             </p>
           </div>
         )}

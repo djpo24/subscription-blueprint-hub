@@ -1,6 +1,14 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface DebtorsListTableProps {
@@ -34,15 +42,15 @@ export function DebtorsListTable({
   };
 
   return (
-    <div className="hidden lg:block overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left p-3 font-medium">Seguimiento</th>
-            <th className="text-left p-3 font-medium">Cliente</th>
-            <th className="text-left p-3 font-medium">Destino</th>
-            <th className="text-left p-3 font-medium">Viajero</th>
-            <th className="text-left p-3 font-medium">
+    <div className="hidden lg:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Seguimiento</TableHead>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Destino</TableHead>
+            <TableHead>Viajero</TableHead>
+            <TableHead>
               <Button
                 variant="ghost"
                 size="sm"
@@ -51,10 +59,10 @@ export function DebtorsListTable({
               >
                 Monto Pendiente {getSortIcon('amount')}
               </Button>
-            </th>
-            <th className="text-left p-3 font-medium">Tipo</th>
-            <th className="text-left p-3 font-medium">Estado</th>
-            <th className="text-left p-3 font-medium">
+            </TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>
               <Button
                 variant="ghost"
                 size="sm"
@@ -63,8 +71,8 @@ export function DebtorsListTable({
               >
                 Días Mora {getSortIcon('days')}
               </Button>
-            </th>
-            <th className="text-left p-3 font-medium">
+            </TableHead>
+            <TableHead>
               <Button
                 variant="ghost"
                 size="sm"
@@ -73,57 +81,57 @@ export function DebtorsListTable({
               >
                 Fecha Inicio {getSortIcon('date')}
               </Button>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {sortedDebts.map((debt) => (
-            <tr key={debt.debt_id || debt.package_id} className="border-b hover:bg-gray-50">
-              <td className="p-3">
+            <TableRow key={debt.debt_id || debt.package_id}>
+              <TableCell>
                 <div className="font-mono text-sm">{debt.tracking_number}</div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className="font-medium">{debt.customer_name}</div>
                 <div className="text-sm text-gray-500">{debt.customer_phone}</div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className="text-sm">{debt.destination}</div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className="text-sm">{debt.traveler_name}</div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className="font-medium">
                   {formatCurrency(debt.pending_amount, debt.currency)}
                 </div>
                 <div className="text-xs text-gray-500">
                   {getCurrencyLabel(debt.currency)}
                 </div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <Badge variant="outline" className={getDebtTypeColor(debt.debt_type)}>
                   {getDebtTypeLabel(debt.debt_type)}
                 </Badge>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <Badge variant="outline" className={getStatusColor(debt.debt_status)}>
                   {getStatusLabel(debt.debt_status)}
                 </Badge>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className={`font-medium ${debt.debt_days > 30 ? 'text-red-600' : debt.debt_days > 15 ? 'text-orange-600' : 'text-gray-900'}`}>
                   {debt.debt_days} días
                 </div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 <div className="text-sm">
                   {debt.debt_start_date ? new Date(debt.debt_start_date).toLocaleDateString('es-CO') : 'N/A'}
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

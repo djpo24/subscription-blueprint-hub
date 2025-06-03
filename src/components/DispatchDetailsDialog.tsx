@@ -5,6 +5,7 @@ import { useTripActions } from '@/hooks/useTripActions';
 import { DispatchDetailsHeader } from './dispatch-details/DispatchDetailsHeader';
 import { DispatchSummaryCards } from './dispatch-details/DispatchSummaryCards';
 import { DispatchPackagesTable } from './dispatch-details/DispatchPackagesTable';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ export function DispatchDetailsDialog({
 }: DispatchDetailsDialogProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { data: dispatches = [] } = useDispatchRelations();
+  const isMobile = useIsMobile();
   const { 
     markTripAsInTransit, 
     isMarkingAsInTransit,
@@ -63,8 +65,8 @@ export function DispatchDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className={`${isMobile ? 'max-w-[95vw] max-h-[90vh] p-3' : 'max-w-6xl max-h-[80vh]'} overflow-y-auto`}>
+        <DialogHeader className={isMobile ? 'pb-2' : ''}>
           <DispatchDetailsHeader
             canMarkAsInTransit={canMarkAsInTransit}
             canMarkAsArrived={canMarkAsArrived}
@@ -81,7 +83,7 @@ export function DispatchDetailsDialog({
             Cargando detalles del despacho...
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className={`space-y-4 ${isMobile ? 'space-y-3' : 'space-y-6'}`}>
             <DispatchSummaryCards
               packageCount={packages.length}
               totalWeight={totals.weight}

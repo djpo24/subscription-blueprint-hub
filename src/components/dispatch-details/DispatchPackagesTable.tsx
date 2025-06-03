@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Package, Truck, MapPin, User, Weight, DollarSign } from 'lucide-react';
 import type { PackageInDispatch } from '@/types/dispatch';
 import { DeliverPackageDialog } from './DeliverPackageDialog';
+import { DispatchPackagesMobile } from './DispatchPackagesMobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchPackagesTableProps {
   packages: PackageInDispatch[];
@@ -14,6 +16,7 @@ interface DispatchPackagesTableProps {
 export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<PackageInDispatch | null>(null);
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const isMobile = useIsMobile();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -65,6 +68,24 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
     );
   }
 
+  // Show mobile view on mobile devices
+  if (isMobile) {
+    return (
+      <>
+        <DispatchPackagesMobile 
+          packages={packages} 
+          onDeliverPackage={handleDeliverPackage}
+        />
+        <DeliverPackageDialog
+          open={showDeliveryDialog}
+          onOpenChange={setShowDeliveryDialog}
+          package={selectedPackage}
+        />
+      </>
+    );
+  }
+
+  // Desktop table view
   return (
     <>
       <div className="rounded-lg border">

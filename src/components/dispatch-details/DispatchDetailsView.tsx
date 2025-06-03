@@ -4,6 +4,7 @@ import { useTripActions } from '@/hooks/useTripActions';
 import { DispatchDetailsHeader } from './DispatchDetailsHeader';
 import { DispatchSummaryCards } from './DispatchSummaryCards';
 import { DispatchPackagesTable } from './DispatchPackagesTable';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsViewProps {
   dispatchId: string | null;
@@ -12,6 +13,7 @@ interface DispatchDetailsViewProps {
 export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { data: dispatches = [] } = useDispatchRelations();
+  const isMobile = useIsMobile();
   const { 
     markTripAsInTransit, 
     isMarkingAsInTransit,
@@ -69,7 +71,7 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-4 ${isMobile ? 'px-2' : 'space-y-6'}`}>
       <DispatchDetailsHeader
         canMarkAsInTransit={canMarkAsInTransit}
         canMarkAsArrived={canMarkAsArrived}

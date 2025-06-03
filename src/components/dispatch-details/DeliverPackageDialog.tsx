@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,11 @@ export function DeliverPackageDialog({
   const { data: paymentMethods = [] } = usePaymentMethods();
   const deliverPackage = useDeliverPackage();
 
+  // Filtrar métodos de pago solo para Florín y Peso
+  const availablePaymentMethods = paymentMethods.filter(method => 
+    method.currency === 'AWG' || method.currency === 'COP'
+  );
+
   const addPayment = () => {
     setPayments(prev => [...prev, {
       methodId: '',
@@ -51,9 +56,21 @@ export function DeliverPackageDialog({
   };
 
   const updatePayment = (index: number, field: keyof PaymentEntry, value: string) => {
-    setPayments(prev => prev.map((payment, i) => 
-      i === index ? { ...payment, [field]: value } : payment
-    ));
+    setPayments(prev => prev.map((payment, i) => {
+      if (i === index) {
+        const updatedPayment = { ...payment, [field]: value };
+        
+        // Si se actualiza el monto, recalcular el tipo automáticamente
+        if (field === 'amount' && pkg) {
+          const amount = parseFloat(value) || 0;
+          const packageAmount = pkg.amount_to_collect || 0;
+          updatedPayment.type = amount >= packageAmount ? 'full' : 'partial';
+        }
+        
+        return updatedPayment;
+      }
+      return payment;
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,30 +183,43 @@ export function DeliverPackageDialog({
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Método de pago</Label>
-                      <Select 
-                        value={payment.methodId} 
-                        onValueChange={(value) => {
-                          updatePayment(index, 'methodId', value);
-                          const method = paymentMethods.find(m => m.id === value);
-                          if (method) {
-                            updatePayment(index, 'currency', method.currency);
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {paymentMethods.map(method => (
-                            <SelectItem key={method.id} value={method.id}>
-                              {method.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Moneda</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Button
+                          type="button"
+                          variant={payment.currency === 'COP' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            updatePayment(index, 'currency', 'COP');
+                            // Buscar método de pago en COP
+                            const copMethod = availablePaymentMethods.find(m => m.currency === 'COP');
+                            if (copMethod) {
+                              updatePayment(index, 'methodId', copMethod.id);
+                            }
+                          }}
+                        >
+                          Peso (COP)
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={payment.currency === 'AWG' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            updatePayment(index, 'currency', 'AWG');
+                            // Buscar método de pago en AWG
+                            const awgMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
+                            if (awgMethod) {
+                              updatePayment(index, 'methodId', awgMethod.id);
+                            }
+                          }}
+                        >
+                          Florín (AWG)
+                        </Button>
+                      </div>
                     </div>
                     
                     <div>
@@ -203,23 +233,16 @@ export function DeliverPackageDialog({
                         placeholder="0.00"
                       />
                     </div>
-                    
-                    <div>
-                      <Label>Tipo</Label>
-                      <Select 
-                        value={payment.type} 
-                        onValueChange={(value: 'full' | 'partial') => updatePayment(index, 'type', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="full">Completo</SelectItem>
-                          <SelectItem value="partial">Parcial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
+
+                  {/* Mostrar automáticamente el tipo calculado */}
+                  {payment.amount && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      Tipo de pago: <span className="font-medium">
+                        {payment.type === 'full' ? 'Completo' : 'Parcial'}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

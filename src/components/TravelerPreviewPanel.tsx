@@ -15,12 +15,15 @@ import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MobileDeliveryView } from '@/components/mobile/MobileDeliveryView';
 
 interface TravelerPreviewPanelProps {
   onBack: () => void;
 }
 
 export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
+  const [showMobileDelivery, setShowMobileDelivery] = useState(false);
+
   const {
     packagesData,
     trips,
@@ -73,6 +76,10 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
     setActiveTab,
   });
 
+  const handleMobileDelivery = () => {
+    setShowMobileDelivery(true);
+  };
+
   useEffect(() => {
     refetchUnreadMessages();
   }, []);
@@ -108,13 +115,17 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
   // Filtrar viajes solo para los asignados al viajero actual
   const travelerTrips = trips.filter(trip => trip.traveler_id === 'current-traveler-id');
 
+  if (showMobileDelivery) {
+    return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Alert className="mb-4 border-blue-200 bg-blue-50">
         <Eye className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-800">
-            <strong>Vista Preview:</strong> Panel como Viajero - Puede crear paquetes y viajes, acceso a sus viajes asignados
+            <strong>Vista Preview:</strong> Panel como Viajero - Puede crear paquetes y viajes, acceso a sus viajes asignados y entrega móvil
           </span>
           <Button variant="outline" size="sm" onClick={onBack} className="ml-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -140,7 +151,7 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
             onNewPackage={handleNewPackage} // Habilitado para viajeros
             onNewTrip={() => handleCreateTripFromCalendar(new Date())} // Habilitado para viajeros
             onViewNotifications={() => {}} // No disponible para viajeros
-            onMobileDelivery={() => {}} // Deshabilitado para viajeros
+            onMobileDelivery={handleMobileDelivery} // Habilitado para viajeros
             packages={travelerPackages}
             filteredPackages={travelerFilteredPackages}
             isLoading={isLoading}
@@ -186,6 +197,7 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
                 <li>• Despachos (solo los relacionados)</li>
                 <li>• Deudores (solo los relacionados)</li>
                 <li>• Chat (funcionalidad básica)</li>
+                <li>• Entrega móvil</li>
               </ul>
             </div>
             <div>
@@ -194,7 +206,6 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
                 <li>• Notificaciones</li>
                 <li>• Gestión de usuarios</li>
                 <li>• Configuración del sistema</li>
-                <li>• Entrega móvil</li>
                 <li>• Funciones administrativas</li>
               </ul>
             </div>

@@ -26,7 +26,8 @@ export function RolePreviewSelector() {
         'Configuración del sistema',
         'Reportes y estadísticas',
         'Notificaciones',
-        'Gestión de viajeros'
+        'Gestión de viajeros',
+        'Entrega móvil'
       ]
     },
     {
@@ -42,13 +43,14 @@ export function RolePreviewSelector() {
         'Despachos',
         'Deudores',
         'Notificaciones',
-        'Configuración básica'
+        'Configuración básica',
+        'Entrega móvil'
       ]
     },
     {
       role: 'traveler' as const,
       title: 'Viajero',
-      description: 'Puede crear paquetes y viajes, acceso a sus asignaciones',
+      description: 'Puede crear paquetes y viajes, acceso a sus asignaciones y entrega móvil',
       icon: Truck,
       color: 'bg-green-500',
       features: [
@@ -58,6 +60,7 @@ export function RolePreviewSelector() {
         'Ver despachos relacionados',
         'Ver deudores relacionados',
         'Chat básico',
+        'Entrega móvil',
         'Sin acceso a notificaciones, usuarios o configuración'
       ]
     }

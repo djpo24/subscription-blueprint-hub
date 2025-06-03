@@ -2,11 +2,16 @@
 import { DebtRecord, TravelerStat, DebtDataResult, CollectionStats } from '@/types/debt';
 
 export const processRegisteredDebts = (packageDebts: any[]): DebtRecord[] => {
-  if (!packageDebts) return [];
+  if (!packageDebts || packageDebts.length === 0) {
+    console.log('📦 No registered package debts to process');
+    return [];
+  }
+
+  console.log('🔄 Processing registered debts:', packageDebts.length);
 
   return packageDebts.map(debt => {
     const pkg = debt.packages;
-    const travelerName = pkg.trips?.travelers 
+    const travelerName = pkg?.trips?.travelers 
       ? `${pkg.trips.travelers.first_name} ${pkg.trips.travelers.last_name}`
       : 'Sin asignar';
 
@@ -14,32 +19,37 @@ export const processRegisteredDebts = (packageDebts: any[]): DebtRecord[] => {
       ? Math.max(0, Math.floor((new Date().getTime() - new Date(debt.debt_start_date).getTime()) / (1000 * 60 * 60 * 24)))
       : 0;
 
-    return {
-      package_id: pkg.id,
-      tracking_number: pkg.tracking_number,
-      customer_name: pkg.customers.name,
-      customer_phone: pkg.customers.phone,
-      destination: pkg.destination,
+    const record: DebtRecord = {
+      package_id: pkg?.id || '',
+      tracking_number: pkg?.tracking_number || '',
+      customer_name: pkg?.customers?.name || '',
+      customer_phone: pkg?.customers?.phone || '',
+      destination: pkg?.destination || '',
       traveler_name: travelerName,
-      amount_to_collect: pkg.amount_to_collect,
-      pending_amount: debt.pending_amount,
-      paid_amount: debt.paid_amount,
-      debt_status: debt.status,
-      debt_type: debt.debt_type,
-      debt_start_date: debt.debt_start_date,
+      amount_to_collect: Number(pkg?.amount_to_collect || 0),
+      pending_amount: Number(debt.pending_amount || 0),
+      paid_amount: Number(debt.paid_amount || 0),
+      debt_status: debt.status || 'pending',
+      debt_type: debt.debt_type || 'unpaid',
+      debt_start_date: debt.debt_start_date || '',
       debt_days: debtDays,
-      package_status: pkg.status,
-      freight: pkg.freight,
-      debt_id: debt.id,
-      delivery_date: debt.delivery_date,
-      created_at: debt.created_at,
-      currency: debt.currency || pkg.currency || 'COP'
+      package_status: pkg?.status || '',
+      freight: Number(pkg?.freight || 0),
+      debt_id: debt.id || null,
+      delivery_date: debt.delivery_date || '',
+      created_at: debt.created_at || '',
+      currency: debt.currency || pkg?.currency || 'COP'
     };
+
+    return record;
   });
 };
 
 export const processUnregisteredDebts = (deliveredPackages: any[], registeredPackageIds: Set<string>): DebtRecord[] => {
-  if (!deliveredPackages) return [];
+  if (!deliveredPackages || deliveredPackages.length === 0) {
+    console.log('📦 No delivered packages to check for unregistered debts');
+    return [];
+  }
 
   const unregisteredDebts: DebtRecord[] = [];
 
@@ -54,34 +64,44 @@ export const processUnregisteredDebts = (deliveredPackages: any[], registeredPac
       const deliveryDate = new Date(pkg.delivered_at);
       const debtDays = Math.max(0, Math.floor((new Date().getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24)));
 
-      unregisteredDebts.push({
+      const record: DebtRecord = {
         package_id: pkg.id,
         tracking_number: pkg.tracking_number,
-        customer_name: pkg.customers.name,
-        customer_phone: pkg.customers.phone,
+        customer_name: pkg.customers?.name || '',
+        customer_phone: pkg.customers?.phone || '',
         destination: pkg.destination,
         traveler_name: travelerName,
-        amount_to_collect: pkg.amount_to_collect,
-        pending_amount: pkg.amount_to_collect,
+        amount_to_collect: Number(pkg.amount_to_collect || 0),
+        pending_amount: Number(pkg.amount_to_collect || 0),
         paid_amount: 0,
         debt_status: 'pending',
         debt_type: 'unpaid',
-        debt_start_date: pkg.delivered_at.split('T')[0],
+        debt_start_date: pkg.delivered_at ? pkg.delivered_at.split('T')[0] : '',
         debt_days: debtDays,
         package_status: pkg.status,
-        freight: pkg.freight,
+        freight: Number(pkg.freight || 0),
         debt_id: null,
-        delivery_date: pkg.delivered_at,
-        created_at: pkg.created_at,
+        delivery_date: pkg.delivered_at || '',
+        created_at: pkg.created_at || '',
         currency: pkg.currency || 'COP'
-      });
+      };
+
+      unregisteredDebts.push(record);
     }
   }
 
+  console.log('⚠️ Processed unregistered debts:', unregisteredDebts.length);
   return unregisteredDebts;
 };
 
 export const processTravelerStats = (debts: DebtRecord[]): TravelerStat[] => {
+  if (!debts || debts.length === 0) {
+    console.log('👥 No debts to process for traveler stats');
+    return [];
+  }
+
+  console.log('👥 Processing traveler stats for', debts.length, 'debts');
+
   const travelerSummary = debts.reduce((acc: Record<string, any>, debt: DebtRecord) => {
     const travelerId = debt.traveler_name || 'Sin asignar';
     
@@ -116,7 +136,9 @@ export const processTravelerStats = (debts: DebtRecord[]): TravelerStat[] => {
     return acc;
   }, {});
 
-  return Object.values(travelerSummary);
+  const stats = Object.values(travelerSummary) as TravelerStat[];
+  console.log('👥 Generated traveler stats for', stats.length, 'travelers');
+  return stats;
 };
 
 export const buildDebtDataResult = (
@@ -124,16 +146,28 @@ export const buildDebtDataResult = (
   travelerStats: TravelerStat[], 
   collectionStats: any
 ): DebtDataResult => {
-  return {
+  console.log('🏗️ Building final debt data result');
+  
+  const defaultStats: CollectionStats = {
+    total_pending: 0,
+    total_collected: 0,
+    pending_payment: 0,
+    overdue_30_days: 0,
+    total_packages: 0,
+    delivered_packages: 0
+  };
+
+  const result: DebtDataResult = {
     debts,
     travelerStats,
-    collectionStats: collectionStats || {
-      total_pending: 0,
-      total_collected: 0,
-      pending_payment: 0,
-      overdue_30_days: 0,
-      total_packages: 0,
-      delivered_packages: 0
-    }
+    collectionStats: collectionStats || defaultStats
   };
+
+  console.log('🏗️ Final result built with:', {
+    debts: result.debts.length,
+    travelers: result.travelerStats.length,
+    hasStats: !!collectionStats
+  });
+
+  return result;
 };

@@ -39,8 +39,8 @@ export const fetchPackageDebts = async () => {
     throw debtsError;
   }
 
-  console.log('💰 Package debts found:', packageDebts);
-  return packageDebts;
+  console.log('💰 Package debts found:', packageDebts?.length || 0);
+  return packageDebts || [];
 };
 
 export const fetchDeliveredPackagesWithoutDebts = async () => {
@@ -70,11 +70,13 @@ export const fetchDeliveredPackagesWithoutDebts = async () => {
     throw packagesError;
   }
 
-  console.log('📦 Delivered packages with amount_to_collect > 0:', deliveredPackages);
-  return deliveredPackages;
+  console.log('📦 Delivered packages with amount_to_collect > 0:', deliveredPackages?.length || 0);
+  return deliveredPackages || [];
 };
 
 export const fetchCollectionStats = async () => {
+  console.log('📈 Fetching collection stats...');
+  
   const { data: stats, error: statsError } = await supabase
     .from('collection_stats')
     .select('*')
@@ -82,7 +84,10 @@ export const fetchCollectionStats = async () => {
 
   if (statsError) {
     console.error('❌ Error fetching collection stats:', statsError);
+    // Don't throw here, return null instead to allow the app to continue
+    return null;
   }
 
+  console.log('📈 Collection stats fetched successfully');
   return stats;
 };

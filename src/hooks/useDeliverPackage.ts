@@ -58,25 +58,43 @@ export function useDeliverPackage() {
               throw updateError;
             }
 
-            // Si hay pagos, intentamos crearlos en la tabla debt_payments
+            // Si hay pagos, creamos un registro de entrega y luego los pagos
             if (payments && payments.length > 0) {
-              console.log('💰 Creando registros de pago...');
+              console.log('💰 Creando registro de entrega y pagos...');
               
-              for (const payment of payments) {
-                const { error: paymentError } = await supabase
-                  .from('debt_payments')
-                  .insert({
-                    package_id: packageId,
-                    payment_method_id: payment.method_id,
-                    amount: payment.amount,
-                    currency: payment.currency,
-                    payment_type: payment.type,
-                    created_at: new Date().toISOString()
-                  });
+              // Crear registro de entrega primero
+              const { data: deliveryData, error: deliveryError } = await supabase
+                .from('package_deliveries')
+                .insert({
+                  package_id: packageId,
+                  delivered_by: deliveredBy,
+                  delivery_date: new Date().toISOString(),
+                  total_amount_collected: payments.reduce((sum, p) => sum + p.amount, 0),
+                  delivery_status: 'delivered'
+                })
+                .select()
+                .single();
 
-                if (paymentError) {
-                  console.error('❌ Error creando pago:', paymentError);
-                  // No lanzamos error aquí para no bloquear la entrega
+              if (deliveryError) {
+                console.error('❌ Error creando registro de entrega:', deliveryError);
+                // No lanzamos error aquí para no bloquear la entrega del paquete
+              } else {
+                // Crear registros de pago
+                for (const payment of payments) {
+                  const { error: paymentError } = await supabase
+                    .from('delivery_payments')
+                    .insert({
+                      delivery_id: deliveryData.id,
+                      payment_method_id: payment.method_id,
+                      amount: payment.amount,
+                      currency: payment.currency,
+                      payment_type: payment.type
+                    });
+
+                  if (paymentError) {
+                    console.error('❌ Error creando pago:', paymentError);
+                    // No lanzamos error aquí para no bloquear la entrega
+                  }
                 }
               }
             }

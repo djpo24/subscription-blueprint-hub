@@ -14,8 +14,11 @@ import { useIndexState } from '@/hooks/useIndexState';
 import { useIndexHandlers } from '@/hooks/useIndexHandlers';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
 import { DebtorsTab } from '@/components/tabs/DebtorsTab';
+import { MobileDeliveryView } from '@/components/mobile/MobileDeliveryView';
 
 export default function Index() {
+  const [showMobileDelivery, setShowMobileDelivery] = useState(false);
+
   const {
     packagesData,
     trips,
@@ -68,6 +71,10 @@ export default function Index() {
     setActiveTab,
   });
 
+  const handleMobileDelivery = () => {
+    setShowMobileDelivery(true);
+  };
+
   useEffect(() => {
     refetchUnreadMessages();
   }, []);
@@ -83,6 +90,10 @@ export default function Index() {
       pkg.customers?.name.toLowerCase().includes(searchTermLower)
     );
   });
+
+  if (showMobileDelivery) {
+    return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -102,6 +113,7 @@ export default function Index() {
             onNewPackage={handleNewPackage}
             onNewTrip={() => handleCreateTripFromCalendar(new Date())}
             onViewNotifications={handleViewNotifications}
+            onMobileDelivery={handleMobileDelivery}
             packages={packages}
             filteredPackages={filteredPackages}
             isLoading={isLoading}

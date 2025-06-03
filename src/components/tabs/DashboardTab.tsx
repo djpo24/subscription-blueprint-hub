@@ -1,3 +1,4 @@
+
 import { TabsContent } from '@/components/ui/tabs';
 import { StatsGrid } from '@/components/StatsGrid';
 import { QuickActions } from '@/components/QuickActions';
@@ -6,14 +7,21 @@ import { TestQRCode } from '@/components/TestQRCode';
 
 interface DashboardTabProps {
   packageStats: {
-    totalPackages: number;
-    packagesInTransit: number;
-    packagesDelivered: number;
+    total: number;
+    recibido: number;
+    bodega: number;
+    procesado: number;
+    transito: number;
+    en_destino: number;
+    delivered: number;
+    pending: number;
+    inTransit: number;
   };
   customersCount: number;
   onNewPackage: () => void;
   onNewTrip: () => void;
   onViewNotifications: () => void;
+  onMobileDelivery: () => void;
   packages: any[];
   filteredPackages: any[];
   isLoading: boolean;
@@ -26,6 +34,7 @@ export function DashboardTab({
   onNewPackage,
   onNewTrip,
   onViewNotifications,
+  onMobileDelivery,
   packages,
   filteredPackages,
   isLoading,
@@ -42,7 +51,7 @@ export function DashboardTab({
         onNewPackage={onNewPackage}
         onNewTrip={onNewTrip}
         onViewNotifications={onViewNotifications}
-        packages={packages}
+        onMobileDelivery={onMobileDelivery}
       />
 
       {/* QR Code de prueba */}

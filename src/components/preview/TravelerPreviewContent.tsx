@@ -3,7 +3,7 @@ import { MainTabs } from '@/components/MainTabs';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
-import { DebtorsTab } from '@/components/tabs/DebtorsTab';
+import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { Tabs } from '@/components/ui/tabs';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
@@ -101,7 +101,7 @@ export function TravelerPreviewContent({
         />
         
         <DispatchesTab />
-        <DebtorsTab />
+        <FinancesTab />
         <ChatTab />
       </Tabs>
 

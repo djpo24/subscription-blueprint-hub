@@ -27,15 +27,15 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
   const showNotificationsTab = userRole?.role === 'admin';
   const showSettingsTab = userRole?.role === 'admin';
   
-  // Hide chat and debtors for employees and travelers (only admins can access)
+  // Hide chat and finances for employees and travelers (only admins can access)
   const showChatTab = userRole?.role === 'admin';
-  const showDebtorsTab = userRole?.role === 'admin';
+  const showFinancesTab = userRole?.role === 'admin';
   
   console.log('MainTabs: showUsersTab:', showUsersTab);
   console.log('MainTabs: showNotificationsTab:', showNotificationsTab);
   console.log('MainTabs: showSettingsTab:', showSettingsTab);
   console.log('MainTabs: showChatTab:', showChatTab);
-  console.log('MainTabs: showDebtorsTab:', showDebtorsTab);
+  console.log('MainTabs: showFinancesTab:', showFinancesTab);
 
   if (isLoading) {
     console.log('MainTabs: Still loading user role...');
@@ -53,7 +53,7 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
     true, // dashboard
     true, // trips
     true, // dispatches
-    showDebtorsTab,
+    showFinancesTab,
     showChatTab,
     showNotificationsTab,
     showUsersTab,
@@ -73,9 +73,9 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
         <TabsTrigger value="dispatches" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Desp." : "Despachos"}
         </TabsTrigger>
-        {showDebtorsTab && (
-          <TabsTrigger value="debtors" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Deudas" : "Deudores"}
+        {showFinancesTab && (
+          <TabsTrigger value="finances" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Finanzas" : "Finanzas"}
           </TabsTrigger>
         )}
         {showChatTab && (

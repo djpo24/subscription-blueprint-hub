@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
@@ -9,12 +10,12 @@ import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { UsersTab } from '@/components/tabs/UsersTab';
 import { DeveloperTab } from '@/components/tabs/DeveloperTab';
+import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { Tabs } from '@/components/ui/tabs';
 import { useIndexData } from '@/hooks/useIndexData';
 import { useIndexState } from '@/hooks/useIndexState';
 import { useIndexHandlers } from '@/hooks/useIndexHandlers';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
-import { DebtorsTab } from '@/components/tabs/DebtorsTab';
 import { MobileDeliveryView } from '@/components/mobile/MobileDeliveryView';
 
 export default function Index() {
@@ -131,7 +132,7 @@ export default function Index() {
             onBack={handleBackToCalendar}
           />
           <DispatchesTab />
-          <DebtorsTab />
+          <FinancesTab />
           <ChatTab />
           <NotificationsTab />
           <UsersTab />

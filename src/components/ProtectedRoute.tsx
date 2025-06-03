@@ -11,6 +11,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   console.log('ProtectedRoute - user:', user, 'loading:', loading);
 
+  // Si está cargando, mostrar spinner
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -22,10 +23,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // Si no hay usuario autenticado, no renderizar nada (App.tsx se encarga de la redirección)
   if (!user) {
-    console.log('ProtectedRoute - No user, should redirect to auth');
-    return null; // El App.tsx se encargará de la redirección
+    console.log('ProtectedRoute - No user, App should handle redirect');
+    return null;
   }
 
+  // Usuario autenticado, mostrar contenido
   return <>{children}</>;
 }

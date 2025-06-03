@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, SwitchCamera } from 'lucide-react';
 import { BrowserQRCodeReader } from '@zxing/browser';
 
 interface QRScannerProps {
@@ -14,6 +15,8 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -21,9 +24,26 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
   useEffect(() => {
     const initCamera = async () => {
       try {
-        // Check if camera is available
+        // Check if camera is available and get camera list
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+        
+        // Get available video devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        // Sort cameras to prioritize rear camera (environment facing)
+        const sortedCameras = videoDevices.sort((a, b) => {
+          const aIsRear = a.label.toLowerCase().includes('back') || a.label.toLowerCase().includes('rear') || a.label.toLowerCase().includes('environment');
+          const bIsRear = b.label.toLowerCase().includes('back') || b.label.toLowerCase().includes('rear') || b.label.toLowerCase().includes('environment');
+          
+          if (aIsRear && !bIsRear) return -1;
+          if (!aIsRear && bIsRear) return 1;
+          return 0;
+        });
+        
+        setAvailableCameras(sortedCameras);
+        setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
         setHasPermission(true);
       } catch (err) {
         console.error('Camera permission denied:', err);
@@ -35,8 +55,15 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
     initCamera();
   }, []);
 
+  const switchCamera = () => {
+    if (availableCameras.length > 1) {
+      stopScanning();
+      setCurrentCameraIndex((prev) => (prev + 1) % availableCameras.length);
+    }
+  };
+
   const startScanning = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || availableCameras.length === 0) return;
 
     try {
       setIsScanning(true);
@@ -45,17 +72,13 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
       const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
 
-      // Get available video input devices
-      const videoInputDevices = await BrowserQRCodeReader.listVideoInputDevices();
-      
-      if (videoInputDevices.length === 0) {
-        throw new Error('No se encontraron cámaras disponibles');
-      }
+      // Use the selected camera
+      const selectedCamera = availableCameras[currentCameraIndex];
+      const selectedDeviceId = selectedCamera.deviceId;
 
-      // Use the first available camera (usually back camera on mobile)
-      const selectedDeviceId = videoInputDevices[0].deviceId;
+      console.log('Using camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
 
-      // Start decoding from video element
+      // Start decoding from video element with the selected camera
       const result = await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, videoRef.current);
       
       if (result) {
@@ -150,7 +173,32 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
                 </div>
               </div>
             )}
+
+            {/* Camera switch button */}
+            {availableCameras.length > 1 && (
+              <div className="absolute top-4 right-4">
+                <Button
+                  onClick={switchCamera}
+                  disabled={isScanning}
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full bg-white/80 hover:bg-white/90"
+                >
+                  <SwitchCamera className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
+
+          {/* Camera info */}
+          {availableCameras.length > 0 && (
+            <div className="mt-2 text-center">
+              <p className="text-xs text-gray-500">
+                Cámara: {availableCameras[currentCameraIndex]?.label || `Cámara ${currentCameraIndex + 1}`}
+                {availableCameras.length > 1 && ` (${currentCameraIndex + 1}/${availableCameras.length})`}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -183,6 +231,9 @@ export function QRScanner({ onQRCodeScanned, onCancel, isLoading = false }: QRSc
             <li>• Mantén el dispositivo estable</li>
             <li>• Asegúrate de que haya buena iluminación</li>
             <li>• El código QR debe estar completamente visible</li>
+            {availableCameras.length > 1 && (
+              <li>• Usa el botón de cambio para alternar entre cámaras</li>
+            )}
           </ul>
         </CardContent>
       </Card>

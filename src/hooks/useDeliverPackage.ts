@@ -124,27 +124,64 @@ export function useDeliverPackage() {
               
               const pendingAmount = (packageData.amount_to_collect || 0) - totalCollected;
               
-              const { error: debtError } = await supabase
+              // Verificar si ya existe un registro de deuda
+              const { data: existingDebt, error: checkError } = await supabase
                 .from('package_debts')
-                .insert({
-                  package_id: packageId,
-                  total_amount: packageData.amount_to_collect,
-                  pending_amount: pendingAmount,
-                  paid_amount: totalCollected,
-                  debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
-                  debt_start_date: new Date().toISOString().split('T')[0], // Solo la fecha
-                  delivery_date: new Date().toISOString(),
-                  status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
-                          totalCollected > 0 ? 'partial' : 'pending'
-                })
-                .select();
+                .select('id')
+                .eq('package_id', packageId)
+                .single();
 
-              if (debtError) {
-                console.error('❌ Error creando registro de deuda:', debtError);
-                // No lanzamos error aquí para no bloquear la entrega
-              } else {
-                console.log('✅ Registro de deuda creado exitosamente');
+              if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+                console.error('❌ Error verificando deuda existente:', checkError);
               }
+
+              if (existingDebt) {
+                console.log('📝 Actualizando registro de deuda existente...');
+                // Actualizar registro existente
+                const { error: debtError } = await supabase
+                  .from('package_debts')
+                  .update({
+                    total_amount: packageData.amount_to_collect,
+                    pending_amount: pendingAmount,
+                    paid_amount: totalCollected,
+                    debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
+                    delivery_date: new Date().toISOString(),
+                    status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
+                            totalCollected > 0 ? 'partial' : 'pending',
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('package_id', packageId);
+
+                if (debtError) {
+                  console.error('❌ Error actualizando registro de deuda:', debtError);
+                } else {
+                  console.log('✅ Registro de deuda actualizado exitosamente');
+                }
+              } else {
+                console.log('📝 Creando nuevo registro de deuda...');
+                // Crear nuevo registro
+                const { error: debtError } = await supabase
+                  .from('package_debts')
+                  .insert({
+                    package_id: packageId,
+                    total_amount: packageData.amount_to_collect,
+                    pending_amount: pendingAmount,
+                    paid_amount: totalCollected,
+                    debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
+                    debt_start_date: new Date().toISOString().split('T')[0], // Solo la fecha
+                    delivery_date: new Date().toISOString(),
+                    status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
+                            totalCollected > 0 ? 'partial' : 'pending'
+                  });
+
+                if (debtError) {
+                  console.error('❌ Error creando registro de deuda:', debtError);
+                } else {
+                  console.log('✅ Registro de deuda creado exitosamente');
+                }
+              }
+            } else {
+              console.log('ℹ️ Paquete sin monto a cobrar, no se crea registro de deuda');
             }
 
             console.log('✅ Entrega procesada con método alternativo');

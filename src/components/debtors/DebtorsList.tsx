@@ -15,10 +15,33 @@ export function DebtorsList({ debts }: DebtorsListProps) {
   console.log('🏠 DebtorsList received debts:', debts);
   console.log('📊 Total debts count:', debts.length);
 
-  const filteredDebts = debts.filter(debt => debt.debt_status !== 'no_debt' && debt.debt_status !== 'paid');
+  // Cambio en el filtro: incluir también paquetes con monto a cobrar aunque no tengan debt_status
+  const filteredDebts = debts.filter(debt => {
+    // Si tiene amount_to_collect > 0, siempre incluirlo
+    if (debt.amount_to_collect > 0) {
+      // Solo excluir si está explícitamente marcado como 'paid'
+      return debt.debt_status !== 'paid';
+    }
+    // Si no tiene amount_to_collect, excluir
+    return false;
+  });
   
-  console.log('🔍 Filtered debts (after removing no_debt and paid):', filteredDebts);
+  console.log('🔍 Filtered debts (after new filtering logic):', filteredDebts);
   console.log('📊 Filtered debts count:', filteredDebts.length);
+
+  // Agregar logging detallado de los filtros
+  console.log('🔍 Filter analysis:');
+  debts.forEach((debt, index) => {
+    if (index < 10) { // Log first 10 for debugging
+      const shouldInclude = debt.amount_to_collect > 0 && debt.debt_status !== 'paid';
+      console.log(`  ${index + 1}. ${debt.tracking_number}:`, {
+        amount_to_collect: debt.amount_to_collect,
+        debt_status: debt.debt_status,
+        should_include: shouldInclude,
+        reason: shouldInclude ? 'INCLUDED' : `EXCLUDED - ${debt.amount_to_collect <= 0 ? 'No amount' : 'Paid status'}`
+      });
+    }
+  });
 
   const sortedDebts = [...filteredDebts]
     .sort((a, b) => {
@@ -29,7 +52,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           comparison = new Date(a.debt_start_date || 0).getTime() - new Date(b.debt_start_date || 0).getTime();
           break;
         case 'amount':
-          comparison = Number(a.pending_amount || 0) - Number(b.pending_amount || 0);
+          comparison = Number(a.pending_amount || a.amount_to_collect || 0) - Number(b.pending_amount || b.amount_to_collect || 0);
           break;
         case 'days':
           comparison = (a.debt_days || 0) - (b.debt_days || 0);
@@ -87,7 +110,7 @@ export function DebtorsList({ debts }: DebtorsListProps) {
       case 'pending':
         return 'Pendiente';
       default:
-        return status || 'N/A';
+        return status || 'Pendiente';
     }
   };
 

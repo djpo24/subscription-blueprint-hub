@@ -30,6 +30,31 @@ export function useDebtData() {
           return acc;
         }, {});
         console.log('📈 Debt status breakdown:', statusCount);
+
+        // Log individual debt records for debugging
+        console.log('🔍 Detailed debt records:');
+        debts.forEach((debt: any, index: number) => {
+          if (index < 5) { // Log first 5 for debugging
+            console.log(`  ${index + 1}. Package ${debt.package_id}:`, {
+              tracking_number: debt.tracking_number,
+              customer_name: debt.customer_name,
+              amount_to_collect: debt.amount_to_collect,
+              pending_amount: debt.pending_amount,
+              debt_status: debt.debt_status,
+              debt_type: debt.debt_type,
+              package_status: debt.package_status
+            });
+          }
+        });
+
+        // Log packages with amount to collect but no debt status
+        const packagesWithAmountNoDeb = debts.filter((debt: any) => 
+          debt.amount_to_collect > 0 && (!debt.debt_status || debt.debt_status === 'no_debt')
+        );
+        console.log('⚠️ Packages with amount to collect but no debt status:', packagesWithAmountNoDeb.length);
+        if (packagesWithAmountNoDeb.length > 0) {
+          console.log('   Examples:', packagesWithAmountNoDeb.slice(0, 3));
+        }
       }
 
       // Fetch collection statistics

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import type { PaymentEntryData } from '@/types/payment';
@@ -24,31 +23,26 @@ export function usePaymentManagement(packageCurrency?: string) {
   const defaultMethod = availablePaymentMethods.find(m => m.currency === defaultCurrency) ||
                        availablePaymentMethods.find(m => m.currency === 'AWG');
 
-  // Initialize with default payment entry using package currency
+  // Initialize with single payment entry using package currency
   const [payments, setPayments] = useState<PaymentEntryData[]>([
     createDefaultPayment(defaultMethod)
   ]);
 
+  // Simplified functions for single payment
   const addPayment = () => {
-    // When adding new payments, use the same currency as the package
-    const methodForCurrency = availablePaymentMethods.find(m => m.currency === defaultCurrency) ||
-                             availablePaymentMethods.find(m => m.currency === 'AWG');
-    setPayments(prev => [...prev, createDefaultPayment(methodForCurrency)]);
+    // No longer needed - keeping for compatibility
   };
 
   const removePayment = (index: number) => {
-    if (payments.length > 1) {
-      setPayments(prev => prev.filter((_, i) => i !== index));
-    }
+    // No longer needed - keeping for compatibility
   };
 
   const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
-    setPayments(prev => prev.map((payment, i) => {
-      if (i === index) {
-        return updatePaymentEntry(payment, field, value, availablePaymentMethods, packageAmount);
-      }
-      return payment;
-    }));
+    if (index === 0) {
+      setPayments(prev => [
+        updatePaymentEntry(prev[0], field, value, availablePaymentMethods, packageAmount)
+      ]);
+    }
   };
 
   const resetPayments = () => {

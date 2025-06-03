@@ -1,77 +1,22 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const fetchPackageDebts = async () => {
-  console.log('🔍 Fetching package debts...');
+export const fetchAllDebts = async () => {
+  console.log('🔍 Fetching all debts using database function...');
   
-  const { data: packageDebts, error: debtsError } = await supabase
-    .from('package_debts')
-    .select(`
-      *,
-      packages!inner (
-        id,
-        tracking_number,
-        customer_id,
-        destination,
-        freight,
-        amount_to_collect,
-        status,
-        trip_id,
-        delivered_at,
-        currency,
-        customers!inner (
-          name,
-          phone
-        ),
-        trips (
-          traveler_id,
-          travelers (
-            first_name,
-            last_name
-          )
-        )
-      )
-    `)
-    .neq('status', 'paid');
+  const { data: debts, error } = await supabase
+    .rpc('get_collection_packages', {
+      p_limit: 1000,
+      p_offset: 0
+    });
 
-  if (debtsError) {
-    console.error('❌ Error fetching package debts:', debtsError);
-    throw debtsError;
+  if (error) {
+    console.error('❌ Error fetching debts:', error);
+    throw error;
   }
 
-  console.log('💰 Package debts found:', packageDebts?.length || 0);
-  return packageDebts || [];
-};
-
-export const fetchDeliveredPackagesWithoutDebts = async () => {
-  console.log('📦 Fetching delivered packages without debt records...');
-  
-  const { data: deliveredPackages, error: packagesError } = await supabase
-    .from('packages')
-    .select(`
-      *,
-      customers!inner (
-        name,
-        phone
-      ),
-      trips (
-        traveler_id,
-        travelers (
-          first_name,
-          last_name
-        )
-      )
-    `)
-    .eq('status', 'delivered')
-    .gt('amount_to_collect', 0);
-
-  if (packagesError) {
-    console.error('❌ Error fetching delivered packages:', packagesError);
-    throw packagesError;
-  }
-
-  console.log('📦 Delivered packages with amount_to_collect > 0:', deliveredPackages?.length || 0);
-  return deliveredPackages || [];
+  console.log('💰 Debts found from database function:', debts?.length || 0);
+  return debts || [];
 };
 
 export const fetchCollectionStats = async () => {

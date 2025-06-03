@@ -1,9 +1,8 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchPackageDebts, fetchDeliveredPackagesWithoutDebts, fetchCollectionStats } from '@/services/debtDataService';
+import { fetchAllDebts, fetchCollectionStats } from '@/services/debtDataService';
 import { 
-  processRegisteredDebts, 
-  processUnregisteredDebts, 
+  processDebtsFromDatabase, 
   processTravelerStats, 
   buildDebtDataResult 
 } from '@/services/debtProcessingService';
@@ -12,41 +11,36 @@ export function useDebtData() {
   return useQuery({
     queryKey: ['debt-data'],
     queryFn: async () => {
-      console.log('🔍 Fetching debt data - using refactored approach...');
+      console.log('🔍 Fetching debt data using database function...');
       
       try {
-        // Fetch package debts and delivered packages concurrently
-        const [packageDebts, deliveredPackages] = await Promise.all([
-          fetchPackageDebts(),
-          fetchDeliveredPackagesWithoutDebts()
+        // Fetch debts using the database function that handles all logic correctly
+        const [dbDebts, stats] = await Promise.all([
+          fetchAllDebts(),
+          fetchCollectionStats()
         ]);
 
-        console.log('📦 Raw package debts:', packageDebts?.length || 0);
-        console.log('📦 Raw delivered packages:', deliveredPackages?.length || 0);
+        console.log('📦 Raw debts from database:', dbDebts?.length || 0);
 
-        // Process registered debts
-        const registeredDebts = processRegisteredDebts(packageDebts);
-        console.log('✅ Processed registered debts:', registeredDebts.length);
+        // Process the debts from database
+        const processedDebts = processDebtsFromDatabase(dbDebts);
+        console.log('✅ Processed debts from database:', processedDebts.length);
 
-        // Check for delivered packages without debt records
-        const registeredPackageIds = new Set(packageDebts?.map(d => d.package_id) || []);
-        const unregisteredDebts = processUnregisteredDebts(deliveredPackages, registeredPackageIds);
-        console.log('⚠️ Processed unregistered debts:', unregisteredDebts.length);
-
-        // Combine all debts
-        const allDebts = [...registeredDebts, ...unregisteredDebts];
-        console.log('📊 Total combined debts:', allDebts.length);
-
-        // Fetch collection statistics
-        const stats = await fetchCollectionStats();
-        console.log('📈 Collection stats fetched:', !!stats);
+        // Log debt types for verification
+        const unpaidDebts = processedDebts.filter(d => d.debt_type === 'unpaid');
+        const uncollectedDebts = processedDebts.filter(d => d.debt_type === 'uncollected');
+        console.log('📊 Debt type breakdown:', {
+          unpaid: unpaidDebts.length,
+          uncollected: uncollectedDebts.length,
+          total: processedDebts.length
+        });
 
         // Process traveler statistics
-        const travelerStats = processTravelerStats(allDebts);
+        const travelerStats = processTravelerStats(processedDebts);
         console.log('👥 Traveler stats processed:', travelerStats.length);
 
         // Build final result
-        const result = buildDebtDataResult(allDebts, travelerStats, stats);
+        const result = buildDebtDataResult(processedDebts, travelerStats, stats);
 
         console.log('🎯 Final result summary:', {
           totalDebts: result.debts.length,

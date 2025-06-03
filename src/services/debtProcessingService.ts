@@ -1,109 +1,40 @@
+
 import { DebtRecord, TravelerStat, DebtDataResult, CollectionStats } from '@/types/debt';
 
-export const processRegisteredDebts = (packageDebts: any[]): DebtRecord[] => {
-  if (!packageDebts || packageDebts.length === 0) {
-    console.log('📦 No registered package debts to process');
+export const processDebtsFromDatabase = (dbDebts: any[]): DebtRecord[] => {
+  if (!dbDebts || dbDebts.length === 0) {
+    console.log('📦 No debts to process from database');
     return [];
   }
 
-  console.log('🔄 Processing registered debts:', packageDebts.length);
+  console.log('🔄 Processing debts from database:', dbDebts.length);
 
-  return packageDebts.map(debt => {
-    const pkg = debt.packages;
-    const travelerName = pkg?.trips?.travelers 
-      ? `${pkg.trips.travelers.first_name} ${pkg.trips.travelers.last_name}`
-      : 'Sin asignar';
-
-    const debtDays = debt.debt_start_date 
-      ? Math.max(0, Math.floor((new Date().getTime() - new Date(debt.debt_start_date).getTime()) / (1000 * 60 * 60 * 24)))
-      : 0;
-
+  return dbDebts.map(debt => {
     const record: DebtRecord = {
-      package_id: pkg?.id || '',
-      tracking_number: pkg?.tracking_number || '',
-      customer_name: pkg?.customers?.name || '',
-      customer_phone: pkg?.customers?.phone || '',
-      destination: pkg?.destination || '',
-      traveler_name: travelerName,
-      amount_to_collect: Number(pkg?.amount_to_collect || 0),
+      package_id: debt.package_id,
+      tracking_number: debt.tracking_number,
+      customer_name: debt.customer_name || '',
+      customer_phone: debt.customer_phone || '',
+      destination: debt.destination || '',
+      traveler_name: debt.traveler_name || 'Sin asignar',
+      amount_to_collect: Number(debt.amount_to_collect || 0),
       pending_amount: Number(debt.pending_amount || 0),
       paid_amount: Number(debt.paid_amount || 0),
-      debt_status: debt.status || 'pending',
-      debt_type: debt.debt_type || 'unpaid',
+      debt_status: debt.debt_status || 'pending',
+      debt_type: debt.debt_type || 'uncollected',
       debt_start_date: debt.debt_start_date || '',
-      debt_days: debtDays,
-      package_status: pkg?.status || '',
-      freight: Number(pkg?.freight || 0),
-      debt_id: debt.id || null,
+      debt_days: Number(debt.debt_days || 0),
+      package_status: debt.package_status || '',
+      freight: Number(debt.freight || 0),
+      debt_id: debt.debt_id || null,
       delivery_date: debt.delivery_date || '',
       created_at: debt.created_at || '',
-      currency: debt.currency || pkg?.currency || 'COP'
+      currency: debt.currency || 'COP'
     };
 
+    console.log(`📦 Processed debt for ${debt.tracking_number}: type=${record.debt_type}, status=${record.package_status}, days=${record.debt_days}`);
     return record;
   });
-};
-
-export const processUnregisteredDebts = (deliveredPackages: any[], registeredPackageIds: Set<string>): DebtRecord[] => {
-  if (!deliveredPackages || deliveredPackages.length === 0) {
-    console.log('📦 No delivered packages to check for unregistered debts');
-    return [];
-  }
-
-  const unregisteredDebts: DebtRecord[] = [];
-
-  for (const pkg of deliveredPackages) {
-    if (!registeredPackageIds.has(pkg.id)) {
-      console.log(`⚠️ Found package without debt record: ${pkg.tracking_number}, status: ${pkg.status}`);
-      
-      const travelerName = pkg.trips?.travelers 
-        ? `${pkg.trips.travelers.first_name} ${pkg.trips.travelers.last_name}`
-        : 'Sin asignar';
-
-      // Determinar el tipo de deuda basado en el estado del paquete
-      let debtType = 'uncollected';
-      let debtStartDate = pkg.delivered_at || pkg.created_at;
-      
-      if (pkg.status === 'delivered') {
-        debtType = 'unpaid'; // Paquete entregado sin pago
-        debtStartDate = pkg.delivered_at;
-        console.log(`📦 Package ${pkg.tracking_number} is delivered, marking as 'unpaid'`);
-      } else {
-        debtType = 'uncollected'; // Paquete no recogido
-        console.log(`📦 Package ${pkg.tracking_number} is not delivered, marking as 'uncollected'`);
-      }
-
-      const startDate = new Date(debtStartDate);
-      const debtDays = Math.max(0, Math.floor((new Date().getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-
-      const record: DebtRecord = {
-        package_id: pkg.id,
-        tracking_number: pkg.tracking_number,
-        customer_name: pkg.customers?.name || '',
-        customer_phone: pkg.customers?.phone || '',
-        destination: pkg.destination,
-        traveler_name: travelerName,
-        amount_to_collect: Number(pkg.amount_to_collect || 0),
-        pending_amount: Number(pkg.amount_to_collect || 0),
-        paid_amount: 0,
-        debt_status: 'pending',
-        debt_type: debtType,
-        debt_start_date: debtStartDate ? debtStartDate.split('T')[0] : '',
-        debt_days: debtDays,
-        package_status: pkg.status,
-        freight: Number(pkg.freight || 0),
-        debt_id: null,
-        delivery_date: pkg.status === 'delivered' ? (pkg.delivered_at || '') : '',
-        created_at: pkg.created_at || '',
-        currency: pkg.currency || 'COP'
-      };
-
-      unregisteredDebts.push(record);
-    }
-  }
-
-  console.log('⚠️ Processed unregistered debts:', unregisteredDebts.length);
-  return unregisteredDebts;
 };
 
 export const processTravelerStats = (debts: DebtRecord[]): TravelerStat[] => {

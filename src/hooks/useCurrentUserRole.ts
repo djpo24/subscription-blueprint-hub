@@ -10,8 +10,10 @@ export function useCurrentUserRole() {
     queryKey: ['current-user-role', user?.id],
     queryFn: async () => {
       if (!user) {
-        throw new Error('User not authenticated');
+        return null;
       }
+
+      console.log('Fetching user role for user:', user.id);
 
       const { data, error } = await supabase
         .from('user_profiles')
@@ -19,8 +21,12 @@ export function useCurrentUserRole() {
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user role:', error);
+        throw error;
+      }
       
+      console.log('User role data:', data);
       return data;
     },
     enabled: !!user,

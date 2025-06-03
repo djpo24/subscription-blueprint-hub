@@ -16,10 +16,6 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
   
   // Show Users tab only for admins
   const showUsersTab = userRole?.role === 'admin';
-  
-  // Calculate grid columns based on number of tabs
-  const totalTabs = showUsersTab ? 8 : 7;
-  const gridCols = isMobile ? 'grid-cols-4' : `grid-cols-${totalTabs}`;
 
   if (isLoading) {
     return (
@@ -29,7 +25,7 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0 }: MainTabsPr
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className={`grid w-full ${gridCols} gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto`}>
+      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto">
         <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
           {isMobile ? "Home" : "Dashboard"}
         </TabsTrigger>

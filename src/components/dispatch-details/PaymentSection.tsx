@@ -19,6 +19,7 @@ interface PaymentSectionProps {
   onRemovePayment: (index: number) => void;
   packageAmountToCollect: number;
   getCurrencySymbol: (currency: string) => string;
+  packageCurrency?: string; // Add package currency prop
 }
 
 export function PaymentSection({
@@ -27,10 +28,17 @@ export function PaymentSection({
   onUpdatePayment,
   onRemovePayment,
   packageAmountToCollect,
-  getCurrencySymbol
+  getCurrencySymbol,
+  packageCurrency
 }: PaymentSectionProps) {
   return (
     <div className="space-y-4">
+      {packageCurrency && (
+        <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+          <strong>Moneda de la encomienda:</strong> {packageCurrency === 'AWG' ? 'Florín (AWG)' : 'Peso (COP)'}
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <Label>Pagos recibidos</Label>
         <Button type="button" variant="outline" size="sm" onClick={onAddPayment}>

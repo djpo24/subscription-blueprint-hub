@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +36,7 @@ export function MobileDeliveryForm({
     resetPayments,
     getCurrencySymbol,
     getValidPayments
-  } = usePaymentManagement();
+  } = usePaymentManagement(pkg.currency); // Pass package currency to hook
 
   // Determinar si el paquete requiere cobro
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
@@ -104,12 +103,22 @@ export function MobileDeliveryForm({
               <span className="text-right">{pkg.description}</span>
             </div>
             {requiresPayment && (
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-medium text-gray-600">Monto a cobrar:</span>
-                <span className="font-bold text-green-600">
-                  ${pkg.amount_to_collect?.toLocaleString('es-CO')} COP
-                </span>
-              </div>
+              <>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium text-gray-600">Monto a cobrar:</span>
+                  <span className="font-bold text-green-600">
+                    ${pkg.amount_to_collect?.toLocaleString('es-CO')} {pkg.currency || 'COP'}
+                  </span>
+                </div>
+                {pkg.currency && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Moneda:</span>
+                    <span className="text-sm bg-blue-100 px-2 py-1 rounded">
+                      {pkg.currency === 'AWG' ? 'Florín (AWG)' : 'Peso (COP)'}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </CardContent>
@@ -141,16 +150,16 @@ export function MobileDeliveryForm({
           <CardContent>
             <div className="mb-3">
               <p className="text-sm text-green-700">
-                <strong>Total a cobrar:</strong> ${pkg.amount_to_collect?.toLocaleString('es-CO')} COP
+                <strong>Total a cobrar:</strong> ${pkg.amount_to_collect?.toLocaleString('es-CO')} {pkg.currency || 'COP'}
               </p>
               {showPayments && totalCollected > 0 && (
                 <div className="mt-2 space-y-1 text-sm">
                   <p className="text-green-700">
                     <strong>Recibido:</strong> ${totalCollected.toLocaleString('es-CO')} 
-                    {payments.length > 0 && payments[0].currency === 'AWG' ? ' AWG' : ' COP'}
+                    {payments.length > 0 && payments[0].currency === 'AWG' ? ' AWG' : ` ${pkg.currency || 'COP'}`}
                   </p>
                   <p className={`${remainingAmount <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                    <strong>Pendiente:</strong> ${remainingAmount.toLocaleString('es-CO')} COP
+                    <strong>Pendiente:</strong> ${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}
                   </p>
                 </div>
               )}
@@ -251,7 +260,7 @@ export function MobileDeliveryForm({
                 <CardContent className="p-3">
                   <p className="text-sm text-orange-700">
                     <strong>Atención:</strong> Queda un saldo pendiente de{' '}
-                    <strong>${remainingAmount.toLocaleString('es-CO')} COP</strong>.
+                    <strong>${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}</strong>.
                     {!showPayments && ' Puedes registrar los pagos arriba.'}
                   </p>
                 </CardContent>

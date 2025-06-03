@@ -10,21 +10,30 @@ import {
   updatePaymentEntry
 } from '@/utils/paymentUtils';
 
-export function usePaymentManagement() {
+export function usePaymentManagement(packageCurrency?: string) {
   const { data: paymentMethods = [] } = usePaymentMethods();
   
   // Filter payment methods for only Florín and Peso
   const availablePaymentMethods = filterAvailablePaymentMethods(paymentMethods);
 
-  // Initialize with default payment entry (Florín)
-  const defaultMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
+  // Use package currency as default, fallback to AWG if not specified
+  const defaultCurrency = packageCurrency && ['AWG', 'COP'].includes(packageCurrency) 
+    ? packageCurrency 
+    : 'AWG';
+  
+  const defaultMethod = availablePaymentMethods.find(m => m.currency === defaultCurrency) ||
+                       availablePaymentMethods.find(m => m.currency === 'AWG');
+
+  // Initialize with default payment entry using package currency
   const [payments, setPayments] = useState<PaymentEntryData[]>([
     createDefaultPayment(defaultMethod)
   ]);
 
   const addPayment = () => {
-    const defaultMethod = availablePaymentMethods.find(m => m.currency === 'AWG');
-    setPayments(prev => [...prev, createDefaultPayment(defaultMethod)]);
+    // When adding new payments, use the same currency as the package
+    const methodForCurrency = availablePaymentMethods.find(m => m.currency === defaultCurrency) ||
+                             availablePaymentMethods.find(m => m.currency === 'AWG');
+    setPayments(prev => [...prev, createDefaultPayment(methodForCurrency)]);
   };
 
   const removePayment = (index: number) => {

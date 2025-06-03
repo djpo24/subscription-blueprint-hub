@@ -12,8 +12,15 @@ export function DebtorsList({ debts }: DebtorsListProps) {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'days'>('days');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const sortedDebts = [...debts]
-    .filter(debt => debt.debt_status !== 'no_debt' && debt.debt_status !== 'paid')
+  console.log('🏠 DebtorsList received debts:', debts);
+  console.log('📊 Total debts count:', debts.length);
+
+  const filteredDebts = debts.filter(debt => debt.debt_status !== 'no_debt' && debt.debt_status !== 'paid');
+  
+  console.log('🔍 Filtered debts (after removing no_debt and paid):', filteredDebts);
+  console.log('📊 Filtered debts count:', filteredDebts.length);
+
+  const sortedDebts = [...filteredDebts]
     .sort((a, b) => {
       let comparison = 0;
       
@@ -31,6 +38,8 @@ export function DebtorsList({ debts }: DebtorsListProps) {
       
       return sortOrder === 'asc' ? comparison : -comparison;
     });
+
+  console.log('🔄 Sorted debts:', sortedDebts);
 
   const formatCurrency = (value: number | string) => {
     return `$${Number(value || 0).toLocaleString('es-CO')}`;
@@ -98,6 +107,16 @@ export function DebtorsList({ debts }: DebtorsListProps) {
           <span className="hidden sm:inline">Lista de Deudores ({sortedDebts.length} deudas activas)</span>
           <span className="sm:hidden">Deudores ({sortedDebts.length})</span>
         </CardTitle>
+        {sortedDebts.length === 0 && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              <strong>No se encontraron deudas activas.</strong>
+            </p>
+            <p className="text-yellow-600 text-xs mt-1">
+              Las deudas se generan automáticamente cuando los paquetes llegan a destino y tienen monto a cobrar.
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="px-0 sm:px-6">
         <DebtorsListTable

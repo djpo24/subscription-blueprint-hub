@@ -6,13 +6,31 @@ export function useDebtData() {
   return useQuery({
     queryKey: ['debt-data'],
     queryFn: async () => {
+      console.log('🔍 Fetching debt data...');
+      
       // Fetch collection packages using the new database function
       const { data: debts, error: debtsError } = await supabase.rpc('get_collection_packages', {
         p_limit: 1000,
         p_offset: 0
       });
 
-      if (debtsError) throw debtsError;
+      if (debtsError) {
+        console.error('❌ Error fetching debts:', debtsError);
+        throw debtsError;
+      }
+
+      console.log('📦 Raw debts data:', debts);
+      console.log('📊 Total records:', debts?.length || 0);
+
+      // Log debt statuses
+      if (debts && debts.length > 0) {
+        const statusCount = debts.reduce((acc: Record<string, number>, debt: any) => {
+          const status = debt.debt_status || 'no_status';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+        console.log('📈 Debt status breakdown:', statusCount);
+      }
 
       // Fetch collection statistics
       const { data: stats, error: statsError } = await supabase
@@ -20,7 +38,12 @@ export function useDebtData() {
         .select('*')
         .single();
 
-      if (statsError) throw statsError;
+      if (statsError) {
+        console.error('❌ Error fetching stats:', statsError);
+        throw statsError;
+      }
+
+      console.log('📊 Collection stats:', stats);
 
       // Process traveler statistics
       const travelerSummary = debts.reduce((acc: Record<string, any>, debt: any) => {
@@ -57,11 +80,15 @@ export function useDebtData() {
         return acc;
       }, {});
 
-      return {
+      const result = {
         debts: debts || [],
         travelerStats: Object.values(travelerSummary),
         collectionStats: stats || {}
       };
+
+      console.log('✅ Final processed data:', result);
+      
+      return result;
     }
   });
 }

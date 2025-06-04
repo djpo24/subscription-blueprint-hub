@@ -69,10 +69,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // CRITICAL FIX: Ensure currency is exactly 'AWG' or 'COP'
-      let packageCurrency = 'COP'; // Default
-      if (pkg.currency === 'AWG') {
-        packageCurrency = 'AWG';
+      // FIXED: Ensure currency is properly validated and set
+      let packageCurrency = 'COP'; // Default fallback
+      if (pkg.currency === 'AWG' || pkg.currency === 'COP') {
+        packageCurrency = pkg.currency;
       }
       
       console.log('✅ [useEditPackageForm] Divisa procesada:', {
@@ -94,7 +94,7 @@ export function useEditPackageForm(pkg: Package | null) {
       console.log('📋 [useEditPackageForm] Form data final:', newFormData);
       setFormData(newFormData);
     }
-  }, [pkg?.id]);
+  }, [pkg?.id, pkg?.currency]); // Added pkg?.currency to dependencies
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');

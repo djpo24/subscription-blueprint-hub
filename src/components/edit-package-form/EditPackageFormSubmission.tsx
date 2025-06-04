@@ -85,8 +85,10 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // CRITICAL FIX: Strict currency validation and assignment
-      const currencyToSave = formData.currency === 'AWG' ? 'AWG' : 'COP';
+      // CRITICAL FIX: Validate and ensure currency is correct
+      const currencyToSave = (formData.currency === 'AWG' || formData.currency === 'COP') 
+        ? formData.currency 
+        : 'COP';
 
       console.log('📤 [EditPackageFormSubmission] DATOS FINALES PARA GUARDAR:', {
         packageId: pkg.id,

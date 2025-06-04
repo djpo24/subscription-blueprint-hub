@@ -43,7 +43,14 @@ export function AmountToCollectSection({
       nueva: newCurrency,
       tipo: typeof newCurrency
     });
-    onCurrencyChange(newCurrency);
+    
+    // Validate currency before setting
+    if (newCurrency === 'COP' || newCurrency === 'AWG') {
+      onCurrencyChange(newCurrency);
+    } else {
+      console.warn('⚠️ [AmountToCollectSection] Divisa inválida, usando COP como fallback');
+      onCurrencyChange('COP');
+    }
     setIsCurrencyEditable(false);
   };
 
@@ -51,8 +58,8 @@ export function AmountToCollectSection({
     setIsCurrencyEditable(true);
   };
 
-  // Ensure currency is valid, default to COP if invalid
-  const displayCurrency = currency === 'AWG' ? 'AWG' : 'COP';
+  // Ensure currency is valid for display
+  const displayCurrency = (currency === 'AWG' || currency === 'COP') ? currency : 'COP';
   
   console.log('🎯 [AmountToCollectSection] Divisa a mostrar:', {
     original: currency,

@@ -62,6 +62,9 @@ export function RecordPaymentContent({
   console.log('📊 [RecordPaymentContent] Total collected:', totalCollected);
   console.log('📊 [RecordPaymentContent] Remaining amount:', remainingAmount);
 
+  // Verificar si hay al menos un pago válido
+  const hasValidPayments = payments.some(p => p.methodId && p.amount && parseFloat(p.amount) > 0);
+
   return (
     <div className="space-y-4">
       {/* Package Info - usando el componente móvil */}
@@ -89,7 +92,7 @@ export function RecordPaymentContent({
       {/* Action Buttons */}
       <RecordPaymentActions
         isLoading={isLoading}
-        hasPayments={payments.length > 0}
+        hasPayments={hasValidPayments} // Usar hasValidPayments en lugar de payments.length > 0
         onCancel={onCancel}
         onSubmit={onSubmit}
       />

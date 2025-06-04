@@ -40,8 +40,8 @@ export function AmountToCollectSection({
     onCurrencyChange(newCurrency);
   };
 
-  // Asegurar que currency siempre sea un string válido
-  const safeCurrency = currency || 'COP';
+  // Asegurar que currency siempre sea un string válido y esté en el conjunto permitido
+  const safeCurrency = currency && ['COP', 'AWG'].includes(currency) ? currency : 'COP';
   
   console.log('🔍 [AmountToCollectSection] Rendering with safe currency:', safeCurrency);
 

@@ -66,11 +66,15 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // SOLUCION: Manejar correctamente undefined/null currency
+      // Manejar la moneda con mayor robustez
       let packageCurrency = 'COP'; // Default seguro
       
-      if (pkg.currency && typeof pkg.currency === 'string' && pkg.currency.trim() !== '') {
-        packageCurrency = pkg.currency;
+      if (pkg.currency) {
+        // Limpiar y validar la moneda
+        const cleanCurrency = pkg.currency.toString().trim().toUpperCase();
+        if (['COP', 'AWG'].includes(cleanCurrency)) {
+          packageCurrency = cleanCurrency;
+        }
       }
       
       console.log('💱 [useEditPackageForm] Final currency after processing:', packageCurrency);
@@ -89,7 +93,7 @@ export function useEditPackageForm(pkg: Package | null) {
       console.log('✅ [useEditPackageForm] Final form data with currency:', newFormData.currency);
       setFormData(newFormData);
     }
-  }, [pkg?.id]);
+  }, [pkg?.id, pkg?.currency]); // Agregar pkg?.currency como dependencia
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');

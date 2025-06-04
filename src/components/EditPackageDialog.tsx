@@ -63,7 +63,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  console.log('🎯 [EditPackageDialog] Renderizando con moneda:', pkg.currency);
+  const displayCurrency = pkg.currency && ['COP', 'AWG'].includes(pkg.currency) ? pkg.currency : 'COP';
+
+  console.log('🎯 [EditPackageDialog] Renderizando con moneda:', displayCurrency);
   console.log('🎯 [EditPackageDialog] Paquete completo:', {
     id: pkg.id,
     tracking_number: pkg.tracking_number,
@@ -78,11 +80,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
           <DialogTitle>Editar Encomienda</DialogTitle>
           <DialogDescription>
             Modificar la información de la encomienda {pkg.tracking_number}.
-            {pkg.currency && (
-              <span className="block text-sm text-blue-600 mt-1">
-                Moneda en BD: {pkg.currency}
-              </span>
-            )}
+            <span className="block text-sm text-blue-600 mt-1">
+              Moneda original: {displayCurrency}
+            </span>
           </DialogDescription>
         </DialogHeader>
         

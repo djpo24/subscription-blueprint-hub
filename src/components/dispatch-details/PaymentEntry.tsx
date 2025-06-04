@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Minus } from 'lucide-react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
+import { mapCurrencyForDB } from '@/utils/paymentUtils';
 import type { PaymentEntryData } from '@/types/payment';
 
 interface PaymentEntryProps {
@@ -18,9 +19,9 @@ interface PaymentEntryProps {
 export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
   const { data: paymentMethods = [] } = usePaymentMethods();
   
-  // Filter payment methods for only Florín and Peso
+  // Filter payment methods for only Florín (ANG) and Peso (COP)
   const availablePaymentMethods = paymentMethods.filter(method => 
-    method.currency === 'AWG' || method.currency === 'COP'
+    method.currency === 'ANG' || method.currency === 'COP'
   );
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,6 +41,8 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
     return formatNumber(payment.amount);
   };
 
+  // Buscar método usando la currency mapeada para BD
+  const searchCurrency = mapCurrencyForDB(payment.currency);
   const selectedMethod = availablePaymentMethods.find(m => m.id === payment.methodId);
   const currencySymbol = selectedMethod?.symbol || '$';
 
@@ -55,11 +58,8 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {['AWG', 'COP'].map((currency) => (
-              <SelectItem key={currency} value={currency}>
-                {currency}
-              </SelectItem>
-            ))}
+            <SelectItem value="AWG">AWG</SelectItem>
+            <SelectItem value="COP">COP</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -71,11 +71,11 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
           onValueChange={(value) => onUpdate(index, 'methodId', value)}
         >
           <SelectTrigger className="h-10">
-            <SelectValue />
+            <SelectValue placeholder="Método" />
           </SelectTrigger>
           <SelectContent>
             {availablePaymentMethods
-              .filter(method => method.currency === payment.currency)
+              .filter(method => method.currency === searchCurrency)
               .map((method) => (
                 <SelectItem key={method.id} value={method.id}>
                   {method.name}

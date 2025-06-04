@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
+import { useEffect } from 'react';
 
 interface AmountToCollectSectionProps {
   currency: string;
@@ -19,9 +20,12 @@ export function AmountToCollectSection({
   onCurrencyChange,
   onAmountChange
 }: AmountToCollectSectionProps) {
-  console.log('💱 [AmountToCollectSection] Current currency:', currency);
-  console.log('💰 [AmountToCollectSection] Current amount:', amountToCollect);
-  console.log('💰 [AmountToCollectSection] Current formatted amount:', amountToCollectFormatted);
+  
+  useEffect(() => {
+    console.log('💱 [AmountToCollectSection] Component mounted/updated with currency:', currency);
+    console.log('💰 [AmountToCollectSection] Amount:', amountToCollect);
+    console.log('💰 [AmountToCollectSection] Formatted amount:', amountToCollectFormatted);
+  }, [currency, amountToCollect, amountToCollectFormatted]);
 
   const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -32,9 +36,11 @@ export function AmountToCollectSection({
   };
 
   const handleCurrencyChange = (newCurrency: string) => {
-    console.log('💱 [AmountToCollectSection] Currency changing from', currency, 'to', newCurrency);
+    console.log('💱 [AmountToCollectSection] Currency change from', currency, 'to', newCurrency);
     onCurrencyChange(newCurrency);
   };
+
+  console.log('🔍 [AmountToCollectSection] Rendering with currency:', currency);
 
   return (
     <div className="space-y-4">
@@ -43,7 +49,11 @@ export function AmountToCollectSection({
       </Label>
       
       <div className="flex gap-3">
-        <Select value={currency} onValueChange={handleCurrencyChange}>
+        <Select 
+          value={currency} 
+          onValueChange={handleCurrencyChange}
+          key={`currency-${currency}`} // Force re-render when currency changes
+        >
           <SelectTrigger className="w-28">
             <SelectValue placeholder="Divisa" />
           </SelectTrigger>
@@ -63,10 +73,11 @@ export function AmountToCollectSection({
       </div>
 
       {/* Debug info - visible in development */}
-      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-        <div>Divisa seleccionada: <strong>{currency}</strong></div>
-        <div>Monto: <strong>{amountToCollect || '0'}</strong></div>
-        <div>Monto formateado: <strong>{amountToCollectFormatted || '0'}</strong></div>
+      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
+        <div>🎯 <strong>Divisa activa:</strong> {currency}</div>
+        <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
+        <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>
+        <div>🕒 <strong>Timestamp:</strong> {new Date().toLocaleTimeString()}</div>
       </div>
     </div>
   );

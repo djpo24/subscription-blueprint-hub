@@ -10,7 +10,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string; // Add currency to the Package interface
+  currency?: string;
   status: string;
 }
 
@@ -65,31 +65,42 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // Use the package currency from database, fallback to COP if not available
-      const packageCurrency = pkg.currency || 'COP';
+      // CRÍTICO: Usar la moneda del paquete primero, luego AWG como fallback
+      const packageCurrency = pkg.currency || 'AWG';
       console.log('💱 [useEditPackageForm] Setting currency to:', packageCurrency);
+      console.log('💱 [useEditPackageForm] Raw package data:', {
+        id: pkg.id,
+        currency: pkg.currency,
+        amount_to_collect: pkg.amount_to_collect
+      });
 
-      setFormData({
+      const newFormData = {
         description: optionalDescription,
         weight: pkg.weight?.toString() || '',
         freight: pkg.freight?.toString() || '',
         freightFormatted: pkg.freight ? `$${pkg.freight.toLocaleString()}` : '',
         amountToCollect: pkg.amount_to_collect?.toString() || '',
         amountToCollectFormatted: pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString()}` : '',
-        currency: packageCurrency, // Use the actual currency from the package
+        currency: packageCurrency,
         details: details
-      });
+      };
 
-      console.log('✅ [useEditPackageForm] Form data initialized with currency:', packageCurrency);
+      console.log('✅ [useEditPackageForm] Setting form data:', newFormData);
+      setFormData(newFormData);
     }
-  }, [pkg]);
+  }, [pkg?.id, pkg?.currency]); // Asegurar que se ejecute cuando cambie la moneda
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
   };
 
   const updateFormData = (updates: Partial<EditPackageFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    console.log('🔄 [useEditPackageForm] Updating form data:', updates);
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      console.log('🔄 [useEditPackageForm] New form data:', newData);
+      return newData;
+    });
   };
 
   return {

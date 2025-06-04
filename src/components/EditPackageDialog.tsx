@@ -15,6 +15,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency?: string; // Add currency to interface
   status: string;
 }
 
@@ -32,9 +33,10 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   // Initialize form when dialog opens with package data - only set once when package changes
   useEffect(() => {
     if (pkg && open) {
-      console.log('Inicializando EditPackageDialog con paquete:', pkg);
-      console.log('Customer ID:', pkg.customer_id);
-      console.log('Trip ID:', pkg.trip_id);
+      console.log('🔍 [EditPackageDialog] Inicializando con paquete:', pkg);
+      console.log('💱 [EditPackageDialog] Package currency:', pkg.currency);
+      console.log('📊 [EditPackageDialog] Customer ID:', pkg.customer_id);
+      console.log('📊 [EditPackageDialog] Trip ID:', pkg.trip_id);
       
       // Set the IDs immediately when package is available
       setSelectedCustomerId(pkg.customer_id || '');
@@ -61,6 +63,8 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
+  console.log('🎯 [EditPackageDialog] Rendering with package currency:', pkg.currency);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
@@ -68,6 +72,11 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
           <DialogTitle>Editar Encomienda</DialogTitle>
           <DialogDescription>
             Modificar la información de la encomienda {pkg.tracking_number}.
+            {pkg.currency && (
+              <span className="block text-sm text-blue-600 mt-1">
+                Moneda actual: {pkg.currency}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         

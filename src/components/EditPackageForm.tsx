@@ -16,6 +16,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency?: string; // Add currency to interface
   status: string;
 }
 
@@ -44,6 +45,9 @@ export function EditPackageForm({
     onSuccess
   });
 
+  console.log('🔍 [EditPackageForm] Current form currency:', formData.currency);
+  console.log('🔍 [EditPackageForm] Package currency:', pkg.currency);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <ProductDetailsInput
@@ -67,9 +71,10 @@ export function EditPackageForm({
         currency={formData.currency}
         amountToCollect={formData.amountToCollect}
         amountToCollectFormatted={formData.amountToCollectFormatted}
-        onCurrencyChange={(currency) =>
-          updateFormData({ currency })
-        }
+        onCurrencyChange={(currency) => {
+          console.log('💱 [EditPackageForm] Currency change requested:', currency);
+          updateFormData({ currency });
+        }}
         onAmountChange={(amountToCollect, amountToCollectFormatted) =>
           updateFormData({ amountToCollect, amountToCollectFormatted })
         }

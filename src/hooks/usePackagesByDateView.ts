@@ -9,6 +9,7 @@ export function usePackagesByDateView(selectedDate: Date) {
   const { data: tripsData = [], isLoading } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
@@ -35,8 +36,15 @@ export function usePackagesByDateView(selectedDate: Date) {
     }))
   }));
 
-  const handlePackageClick = (pkg: any) => {
+  const handlePackageClick = (pkg: any, tripId: string) => {
+    console.log('🎯 [usePackagesByDateView] Package clicked with trip ID:', {
+      packageId: pkg.id,
+      tripId: tripId,
+      packageTripId: pkg.trip_id
+    });
+    
     setSelectedPackage(pkg);
+    setSelectedTripId(tripId);
     setEditDialogOpen(true);
   };
 
@@ -49,6 +57,7 @@ export function usePackagesByDateView(selectedDate: Date) {
   const handlePackageEditSuccess = () => {
     setEditDialogOpen(false);
     setSelectedPackage(null);
+    setSelectedTripId('');
     
     // Invalidar las consultas para actualizar la vista
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
@@ -79,6 +88,7 @@ export function usePackagesByDateView(selectedDate: Date) {
     dispatches,
     isLoading,
     selectedPackage,
+    selectedTripId,
     editDialogOpen,
     setEditDialogOpen,
     chatDialogOpen,

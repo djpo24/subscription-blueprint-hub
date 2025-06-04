@@ -24,30 +24,34 @@ interface EditPackageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   package: Package | null;
+  tripId?: string;
   onSuccess: () => void;
 }
 
-export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess }: EditPackageDialogProps) {
+export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, onSuccess }: EditPackageDialogProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedTripId, setSelectedTripId] = useState('');
 
   // Initialize form when dialog opens with package data
   useEffect(() => {
     if (pkg && open) {
-      console.log('🚀 [EditPackageDialog] Initializing dialog with package:', {
-        id: pkg.id,
+      console.log('🚀 [EditPackageDialog] Initializing dialog with package and trip:', {
+        packageId: pkg.id,
         tracking_number: pkg.tracking_number,
         customer_id: pkg.customer_id,
-        trip_id: pkg.trip_id,
+        package_trip_id: pkg.trip_id,
+        passed_trip_id: tripId,
         currency: pkg.currency,
         amount_to_collect: pkg.amount_to_collect
       });
       
-      // Asegurar que los IDs se establezcan correctamente
+      // Use the passed tripId or fallback to package's trip_id
+      const finalTripId = tripId || pkg.trip_id || '';
+      
       setSelectedCustomerId(pkg.customer_id || '');
-      setSelectedTripId(pkg.trip_id || '');
+      setSelectedTripId(finalTripId);
     }
-  }, [pkg, open]);
+  }, [pkg, tripId, open]);
 
   // Reset when dialog closes
   useEffect(() => {
@@ -74,7 +78,8 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
     original: pkg.currency,
     display: currencyDisplay,
     customer_id: pkg.customer_id,
-    selectedCustomerId: selectedCustomerId
+    selectedCustomerId: selectedCustomerId,
+    selectedTripId: selectedTripId
   });
 
   return (
@@ -96,6 +101,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
               <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs ml-2">
                 Cliente ID: {selectedCustomerId || 'No asignado'}
               </span>
+              <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs ml-2">
+                Viaje ID: {selectedTripId || 'No asignado'}
+              </span>
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -113,7 +121,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
               readOnly={true}
-              key={`trip-${pkg.trip_id}-${selectedTripId}`}
+              key={`trip-${selectedTripId}`}
             />
           </div>
 

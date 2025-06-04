@@ -1,4 +1,3 @@
-
 import { Card } from '@/components/ui/card';
 import { TripPackageCardHeader } from './TripPackageCardHeader';
 import { TripPackageCardSummary } from './TripPackageCardSummary';
@@ -36,7 +35,7 @@ interface Trip {
 interface TripPackageCardProps {
   trip: Trip;
   onAddPackage: (tripId: string) => void;
-  onPackageClick: (pkg: Package) => void;
+  onPackageClick: (pkg: Package, tripId: string) => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
@@ -90,7 +89,8 @@ export function TripPackageCard({
   };
 
   const handlePackageClick = (pkg: Package) => {
-    onPackageClick(pkg);
+    // Pass the trip ID along with the package
+    onPackageClick(pkg, trip.id);
     
     // Invalidar después de la edición de paquetes
     setTimeout(() => {

@@ -42,6 +42,7 @@ export function PackagesByDateView({
     dispatches,
     isLoading,
     selectedPackage,
+    selectedTripId,
     editDialogOpen,
     setEditDialogOpen,
     chatDialogOpen,
@@ -102,6 +103,7 @@ export function PackagesByDateView({
         editDialogOpen={editDialogOpen}
         setEditDialogOpen={setEditDialogOpen}
         selectedPackage={selectedPackage}
+        selectedTripId={selectedTripId}
         onPackageEditSuccess={handlePackageEditSuccess}
         chatDialogOpen={chatDialogOpen}
         setChatDialogOpen={setChatDialogOpen}

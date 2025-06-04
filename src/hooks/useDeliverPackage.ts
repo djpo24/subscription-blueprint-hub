@@ -28,11 +28,11 @@ export function useDeliverPackage() {
       });
 
       try {
-        // Primero intentamos la función RPC original
+        // Primero intentamos la función RPC original - CAMBIO: enviar array directo, no JSON string
         const { data, error } = await supabase.rpc('deliver_package_with_payment', {
           p_package_id: packageId,
           p_delivered_by: deliveredBy,
-          p_payments: payments ? JSON.stringify(payments) : null
+          p_payments: payments || [] // Enviar array vacío en lugar de null, y NO JSON.stringify
         });
         
         if (error) {
@@ -221,8 +221,10 @@ export function useDeliverPackage() {
       
       let errorMessage = "No se pudo completar la entrega del paquete. Intenta nuevamente.";
       
-      // Mensaje más específico para errores de permisos
-      if (error?.message?.includes('collection_stats') || error?.code === '42501') {
+      // Mensaje más específico para errores de base de datos
+      if (error?.code === '22023') {
+        errorMessage = "Error de formato de datos. El paquete se intentará entregar de manera alternativa.";
+      } else if (error?.message?.includes('collection_stats') || error?.code === '42501') {
         errorMessage = "Error de permisos en la base de datos. Contacta al administrador del sistema.";
       }
       

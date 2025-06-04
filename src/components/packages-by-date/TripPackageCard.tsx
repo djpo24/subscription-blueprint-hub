@@ -1,7 +1,6 @@
 
 import { Card } from '@/components/ui/card';
 import { TripPackageCardHeader } from './TripPackageCardHeader';
-import { TripPackageCardSummary } from './TripPackageCardSummary';
 import { TripPackageCardContent } from './TripPackageCardContent';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { useQueryClient } from '@tanstack/react-query';
@@ -41,6 +40,7 @@ interface TripPackageCardProps {
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
   tripDate?: Date;
+  showSummary?: boolean;
 }
 
 export function TripPackageCard({ 
@@ -50,29 +50,11 @@ export function TripPackageCard({
   onOpenChat,
   previewRole,
   disableChat = false,
-  tripDate
+  tripDate,
+  showSummary = true
 }: TripPackageCardProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const queryClient = useQueryClient();
-
-  // Calcular totales separando el flete (siempre COP) de los montos a cobrar (por moneda)
-  const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
-  const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0); // Siempre COP
-  
-  // Agrupar solo los montos a cobrar por moneda
-  const amountToCollectByCurrency = trip.packages.reduce(
-    (acc, pkg) => {
-      if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
-        const currency = pkg.currency || 'COP';
-        if (!acc[currency]) {
-          acc[currency] = 0;
-        }
-        acc[currency] += pkg.amount_to_collect;
-      }
-      return acc;
-    },
-    {} as Record<Currency, number>
-  );
 
   const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
@@ -114,15 +96,6 @@ export function TripPackageCard({
         trip={trip}
         onAddPackage={handleAddPackage}
       />
-      
-      <div className="px-4 sm:px-6">
-        <TripPackageCardSummary 
-          packageCount={trip.packages.length}
-          totalWeight={totalWeight}
-          totalFreight={totalFreight}
-          amountToCollectByCurrency={amountToCollectByCurrency}
-        />
-      </div>
       
       <TripPackageCardContent
         packages={trip.packages}

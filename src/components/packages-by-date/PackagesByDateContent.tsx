@@ -1,8 +1,8 @@
 
 import { PackagesByDateHeader } from './PackagesByDateHeader';
-import { PackagesByDateSummary } from './PackagesByDateSummary';
 import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
+import { TripPackageCardSummary } from './TripPackageCardSummary';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -94,29 +94,52 @@ export function PackagesByDateContent({
       {trips.length === 0 ? (
         <EmptyTripsState selectedDate={selectedDate} />
       ) : (
-        <>
-          <PackagesByDateSummary 
-            totalPackages={totalPackages}
-            totalWeight={totalWeight}
-            totalFreight={totalFreight}
-            totalAmountToCollect={totalAmountToCollect}
-          />
+        <div className="space-y-4 sm:space-y-6">
+          {trips.map((trip) => {
+            // Calcular totales para este viaje específico
+            const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
+            const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0);
+            
+            // Agrupar solo los montos a cobrar por moneda
+            const amountToCollectByCurrency = trip.packages.reduce(
+              (acc, pkg) => {
+                if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
+                  const currency = pkg.currency || 'COP';
+                  if (!acc[currency]) {
+                    acc[currency] = 0;
+                  }
+                  acc[currency] += pkg.amount_to_collect;
+                }
+                return acc;
+              },
+              {} as Record<Currency, number>
+            );
 
-          <div className="space-y-4 sm:space-y-6">
-            {trips.map((trip) => (
-              <TripPackageCard
-                key={trip.id}
-                trip={trip}
-                onAddPackage={handleAddPackageWithRefresh}
-                onPackageClick={onPackageClick}
-                onOpenChat={onOpenChat}
-                previewRole={previewRole}
-                disableChat={disableChat}
-                tripDate={selectedDate}
-              />
-            ))}
-          </div>
-        </>
+            return (
+              <div key={trip.id} className="space-y-4">
+                {/* Cajas de resumen fuera del contenedor del viaje */}
+                <TripPackageCardSummary 
+                  packageCount={trip.packages.length}
+                  totalWeight={totalWeight}
+                  totalFreight={totalFreight}
+                  amountToCollectByCurrency={amountToCollectByCurrency}
+                />
+                
+                {/* Contenedor del viaje */}
+                <TripPackageCard
+                  trip={trip}
+                  onAddPackage={handleAddPackageWithRefresh}
+                  onPackageClick={onPackageClick}
+                  onOpenChat={onOpenChat}
+                  previewRole={previewRole}
+                  disableChat={disableChat}
+                  tripDate={selectedDate}
+                  showSummary={false}
+                />
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

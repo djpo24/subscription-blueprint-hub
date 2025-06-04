@@ -8,6 +8,9 @@ import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPre
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/utils/currencyFormatter';
+
+type Currency = 'COP' | 'AWG';
 
 interface Package {
   id: string;
@@ -17,6 +20,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency: Currency;
   status: string;
   customers?: {
     name: string;
@@ -55,18 +59,20 @@ export function TripPackageCard({
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
-  const totals = trip.packages.reduce(
-    (acc, pkg) => ({
-      weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0),
-      amount_to_collect: acc.amount_to_collect + (pkg.amount_to_collect || 0)
-    }),
-    { weight: 0, freight: 0, amount_to_collect: 0 }
+  // Agrupar totales por moneda
+  const totalsByCurrency = trip.packages.reduce(
+    (acc, pkg) => {
+      const currency = pkg.currency || 'COP';
+      if (!acc[currency]) {
+        acc[currency] = { weight: 0, freight: 0, amount_to_collect: 0 };
+      }
+      acc[currency].weight += pkg.weight || 0;
+      acc[currency].freight += pkg.freight || 0;
+      acc[currency].amount_to_collect += pkg.amount_to_collect || 0;
+      return acc;
+    },
+    {} as Record<Currency, { weight: number; freight: number; amount_to_collect: number }>
   );
-
-  const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('es-CO')}`;
-  };
 
   const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
@@ -146,7 +152,9 @@ export function TripPackageCard({
           <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-purple-50 rounded-lg`}>
             <Weight className="h-4 w-4 text-purple-600" />
             <div>
-              <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-purple-800`}>{totals.weight} kg</div>
+              <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-purple-800`}>
+                {Object.values(totalsByCurrency).reduce((acc, curr) => acc + curr.weight, 0)} kg
+              </div>
               <div className="text-xs text-purple-600">Peso</div>
             </div>
           </div>
@@ -154,7 +162,13 @@ export function TripPackageCard({
           <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-orange-50 rounded-lg`}>
             <DollarSign className="h-4 w-4 text-orange-600" />
             <div>
-              <div className={`${isMobile ? 'text-xs' : 'text-lg'} font-bold text-orange-800`}>{formatCurrency(totals.freight)}</div>
+              <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-orange-800`}>
+                {Object.entries(totalsByCurrency).map(([currency, totals]) => (
+                  <div key={currency}>
+                    {formatCurrency(totals.freight, currency as Currency)}
+                  </div>
+                ))}
+              </div>
               <div className="text-xs text-orange-600">Flete</div>
             </div>
           </div>
@@ -162,7 +176,13 @@ export function TripPackageCard({
           <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-green-50 rounded-lg`}>
             <DollarSign className="h-4 w-4 text-green-600" />
             <div>
-              <div className={`${isMobile ? 'text-xs' : 'text-lg'} font-bold text-green-800`}>{formatCurrency(totals.amount_to_collect)}</div>
+              <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
+                {Object.entries(totalsByCurrency).map(([currency, totals]) => (
+                  <div key={currency}>
+                    {formatCurrency(totals.amount_to_collect, currency as Currency)}
+                  </div>
+                ))}
+              </div>
               <div className="text-xs text-green-600">A Cobrar</div>
             </div>
           </div>

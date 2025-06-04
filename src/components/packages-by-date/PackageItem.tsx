@@ -3,6 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
+import { formatCurrency } from '@/utils/currencyFormatter';
+
+type Currency = 'COP' | 'AWG';
 
 interface Package {
   id: string;
@@ -12,6 +15,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency: Currency;
   status: string;
   customers?: {
     name: string;
@@ -35,11 +39,6 @@ export function PackageItem({
   disableChat = false
 }: PackageItemProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
-
-  const formatCurrency = (value: number | null) => {
-    if (!value) return 'N/A';
-    return `$${value.toLocaleString('es-CO')}`;
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,10 +86,13 @@ export function PackageItem({
               <span className="font-medium">Peso:</span> {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
             </div>
             <div>
-              <span className="font-medium">Flete:</span> {formatCurrency(pkg.freight)}
+              <span className="font-medium">Flete:</span> {formatCurrency(pkg.freight, pkg.currency || 'COP')}
             </div>
             <div>
-              <span className="font-medium">A Cobrar:</span> {formatCurrency(pkg.amount_to_collect)}
+              <span className="font-medium">A Cobrar:</span> {formatCurrency(pkg.amount_to_collect, pkg.currency || 'COP')}
+            </div>
+            <div>
+              <span className="font-medium">Moneda:</span> {pkg.currency || 'COP'}
             </div>
           </div>
           

@@ -195,7 +195,7 @@ export function TripPopover({
                       </div>
                       
                       <div className="text-sm text-gray-600 mb-1">
-                        Cliente: {pkg.customers && typeof pkg.customers === 'object' && 'name' in pkg.customers ? pkg.customers.name : 'N/A'}
+                        Cliente: {pkg.customers?.name ?? 'N/A'}
                       </div>
                       
                       <div className="text-xs text-gray-500 mb-2">

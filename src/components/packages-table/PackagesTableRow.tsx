@@ -1,12 +1,14 @@
 
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { PackageActionsDropdown } from '../PackageActionsDropdown';
 import { PackageStatusBadge } from './PackageStatusBadge';
 import { PackageRouteDisplay } from './PackageRouteDisplay';
 import { formatPackageDescription } from '@/utils/descriptionFormatter';
+import { getCurrencySymbol, getCurrencyLabel } from '@/utils/currencyFormatter';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 type Currency = 'COP' | 'AWG';
@@ -56,7 +58,8 @@ export function PackagesTableRow({
   
   const formatCurrency = (value: number | null, currency: Currency) => {
     if (!value) return 'N/A';
-    return `$${value.toLocaleString('es-CO')} ${currency}`;
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${value.toLocaleString('es-CO')} ${currency}`;
   };
 
   const handleChatClick = (e: React.MouseEvent) => {
@@ -92,6 +95,11 @@ export function PackagesTableRow({
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
       <TableCell>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</TableCell>
+      <TableCell onClick={onActionsClick}>
+        <Badge variant="outline" className="font-medium text-xs">
+          {pkg.currency}
+        </Badge>
+      </TableCell>
       
       {showChatInSeparateColumn && (
         <TableCell onClick={onActionsClick}>

@@ -6,7 +6,10 @@ import { EditPackageDialog } from './EditPackageDialog';
 import { MultipleLabelsDialog } from './MultipleLabelsDialog';
 import { PackagesTableHeader } from './packages-table/PackagesTableHeader';
 import { PackagesTableRow } from './packages-table/PackagesTableRow';
+import { PackageTableDetails } from './packages-table/PackageTableDetails';
 import { ChatDialog } from './chat/ChatDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search } from 'lucide-react';
 
 type Currency = 'COP' | 'AWG';
 
@@ -53,15 +56,20 @@ export function PackagesTable({
   const [showChatDialog, setShowChatDialog] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Ensure filteredPackages is always an array
   const safeFilteredPackages = filteredPackages || [];
+  
+  // Search for specific tracking number if provided
+  const searchedPackages = searchQuery 
+    ? safeFilteredPackages.filter(pkg => 
+        pkg.tracking_number.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : safeFilteredPackages;
 
   const handleUpdate = () => {
     if (onUpdate) {
-      // Since the existing onUpdate expects (id, updates), but we're calling it without parameters,
-      // we'll create a wrapper that calls it appropriately when needed
-      // For now, we'll call it with empty parameters as a general refresh
       onUpdate('', {});
     }
   };
@@ -93,14 +101,51 @@ export function PackagesTable({
     setShowChatDialog(true);
   };
 
+  // Show specific package details if searching for tracking number
+  const specificPackage = searchQuery && searchedPackages.length === 1 ? searchedPackages[0] : null;
+
   return (
     <>
       <Card>
         <PackagesTableHeader 
-          packagesCount={safeFilteredPackages.length}
+          packagesCount={searchedPackages.length}
           onPrintMultiple={handlePrintMultiple}
         />
         <CardContent>
+          {/* Search input for tracking numbers */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Buscar por número de tracking (ej: EO-2025-3424)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Show specific package details if found */}
+          {specificPackage && (
+            <div className="mb-6">
+              <Alert>
+                <AlertDescription>
+                  Encomienda encontrada: {specificPackage.tracking_number}
+                </AlertDescription>
+              </Alert>
+              <div className="mt-4">
+                <PackageTableDetails
+                  trackingNumber={specificPackage.tracking_number}
+                  amountToCollect={specificPackage.amount_to_collect}
+                  currency={specificPackage.currency}
+                  freight={specificPackage.freight}
+                  weight={specificPackage.weight}
+                />
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="text-gray-500">Cargando...</div>
@@ -116,12 +161,13 @@ export function PackagesTable({
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>A Cobrar</TableHead>
+                  <TableHead>Moneda</TableHead>
                   <TableHead>Chat</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {safeFilteredPackages.map((pkg) => (
+                {searchedPackages.map((pkg) => (
                   <PackagesTableRow
                     key={pkg.id}
                     package={pkg}
@@ -150,7 +196,7 @@ export function PackagesTable({
       <MultipleLabelsDialog
         open={showMultipleLabelsDialog}
         onOpenChange={setShowMultipleLabelsDialog}
-        packages={safeFilteredPackages}
+        packages={searchedPackages}
       />
 
       <ChatDialog

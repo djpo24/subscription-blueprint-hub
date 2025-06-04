@@ -14,6 +14,8 @@ import { PackageLabelDialog } from './PackageLabelDialog';
 import { usePackageActions } from '@/hooks/usePackageActions';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
+type Currency = 'COP' | 'AWG';
+
 interface Package {
   id: string;
   tracking_number: string;
@@ -24,7 +26,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency: string;
+  currency: Currency;
   origin: string;
   destination: string;
   created_at: string;

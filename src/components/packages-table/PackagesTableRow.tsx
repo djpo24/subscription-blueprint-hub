@@ -9,6 +9,8 @@ import { PackageRouteDisplay } from './PackageRouteDisplay';
 import { formatPackageDescription } from '@/utils/descriptionFormatter';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
+type Currency = 'COP' | 'AWG';
+
 interface Package {
   id: string;
   tracking_number: string;
@@ -22,7 +24,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency: string;
+  currency: Currency;
   customers?: {
     name: string;
     email: string;
@@ -52,9 +54,9 @@ export function PackagesTableRow({
 }: PackagesTableRowProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   
-  const formatCurrency = (value: number | null) => {
+  const formatCurrency = (value: number | null, currency: Currency) => {
     if (!value) return 'N/A';
-    return `$${value.toLocaleString('es-CO')}`;
+    return `$${value.toLocaleString('es-CO')} ${currency}`;
   };
 
   const handleChatClick = (e: React.MouseEvent) => {
@@ -89,7 +91,7 @@ export function PackagesTableRow({
       </TableCell>
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
-      <TableCell>{formatCurrency(pkg.amount_to_collect)}</TableCell>
+      <TableCell>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</TableCell>
       
       {showChatInSeparateColumn && (
         <TableCell onClick={onActionsClick}>

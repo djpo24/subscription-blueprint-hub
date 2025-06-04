@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CustomerSearchSelector } from './CustomerSearchSelector';
 import { TripSelector } from './TripSelector';
-import { EditPackageForm } from './EditPackageForm';
+import { EditPackageFormNew } from './EditPackageFormNew';
+
+type Currency = 'COP' | 'AWG';
 
 interface Package {
   id: string;
@@ -14,7 +16,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency: string;
+  currency: Currency;
   status: string;
 }
 
@@ -32,7 +34,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   // Initialize form when dialog opens with package data
   useEffect(() => {
     if (pkg && open) {
-      console.log('🚀 [EditPackageDialog] Inicializando diálogo con paquete:', {
+      console.log('🚀 [EditPackageDialog] Initializing dialog with package:', {
         id: pkg.id,
         tracking_number: pkg.tracking_number,
         currency: pkg.currency,
@@ -64,8 +66,8 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   if (!pkg) return null;
 
   // Display currency with validation
-  const currencyDisplay = pkg.currency === 'AWG' ? 'AWG' : 'COP';
-  console.log('🎯 [EditPackageDialog] Divisa del paquete para mostrar:', {
+  const currencyDisplay: Currency = (pkg.currency === 'AWG' || pkg.currency === 'COP') ? pkg.currency : 'COP';
+  console.log('🎯 [EditPackageDialog] Package currency for display:', {
     original: pkg.currency,
     display: currencyDisplay
   });
@@ -107,7 +109,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             />
           </div>
 
-          <EditPackageForm
+          <EditPackageFormNew
             package={pkg}
             customerId={selectedCustomerId}
             tripId={selectedTripId}

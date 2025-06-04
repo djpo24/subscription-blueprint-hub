@@ -54,20 +54,6 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "customer_payments_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customer_payments_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
         ]
       }
       customers: {
@@ -218,13 +204,6 @@ export type Database = {
             columns: ["dispatch_id"]
             isOneToOne: false
             referencedRelation: "dispatch_relations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dispatch_packages_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
             referencedColumns: ["id"]
           },
         ]
@@ -478,13 +457,6 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "incoming_messages_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
-            referencedColumns: ["id"]
-          },
         ]
       }
       message_delivery_status: {
@@ -567,20 +539,6 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notification_log_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_log_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
         ]
       }
       notification_settings: {
@@ -657,26 +615,12 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notifications_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
         ]
       }
       package_debts: {
         Row: {
           created_at: string
-          currency: string
+          currency: Database["public"]["Enums"]["currency_type"]
           debt_start_date: string | null
           debt_type: string
           delivery_date: string | null
@@ -690,7 +634,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          currency?: string
+          currency?: Database["public"]["Enums"]["currency_type"]
           debt_start_date?: string | null
           debt_type?: string
           delivery_date?: string | null
@@ -704,7 +648,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          currency?: string
+          currency?: Database["public"]["Enums"]["currency_type"]
           debt_start_date?: string | null
           debt_type?: string
           delivery_date?: string | null
@@ -716,15 +660,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "package_debts_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: true
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       package_deliveries: {
         Row: {
@@ -760,15 +696,7 @@ export type Database = {
           total_amount_collected?: number | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "package_deliveries_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       package_payments: {
         Row: {
@@ -801,15 +729,7 @@ export type Database = {
           payment_method?: string
           payment_type?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "package_payments_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       packages: {
         Row: {
@@ -817,7 +737,7 @@ export type Database = {
           amount_to_collect: number | null
           batch_id: string | null
           created_at: string
-          currency: string
+          currency: Database["public"]["Enums"]["currency_type"]
           customer_id: string
           delivered_at: string | null
           delivered_by: string | null
@@ -840,7 +760,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
-          currency?: string
+          currency?: Database["public"]["Enums"]["currency_type"]
           customer_id: string
           delivered_at?: string | null
           delivered_by?: string | null
@@ -863,7 +783,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
-          currency?: string
+          currency?: Database["public"]["Enums"]["currency_type"]
           customer_id?: string
           delivered_at?: string | null
           delivered_by?: string | null
@@ -881,36 +801,7 @@ export type Database = {
           updated_at?: string
           weight?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "packages_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "shipment_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "packages_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "packages_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "packages_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       payment_methods: {
         Row: {
@@ -973,13 +864,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sent_messages_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers_pending_collection"
             referencedColumns: ["id"]
           },
         ]
@@ -1065,15 +949,7 @@ export type Database = {
           package_id?: string
           timestamp?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracking_events_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       travelers: {
         Row: {
@@ -1190,31 +1066,7 @@ export type Database = {
       }
     }
     Views: {
-      collection_stats: {
-        Row: {
-          delivered_packages: number | null
-          overdue_30_days: number | null
-          pending_payment: number | null
-          total_collected: number | null
-          total_packages: number | null
-          total_pending: number | null
-        }
-        Relationships: []
-      }
-      customers_pending_collection: {
-        Row: {
-          customer_name: string | null
-          email: string | null
-          id: string | null
-          last_delivery_date: string | null
-          package_numbers: string | null
-          package_statuses: string | null
-          phone: string | null
-          total_packages: number | null
-          total_pending_amount: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_customer_pending_amount: {
@@ -1345,6 +1197,7 @@ export type Database = {
       }
     }
     Enums: {
+      currency_type: "COP" | "AWG"
       user_role: "admin" | "employee" | "traveler"
     }
     CompositeTypes: {
@@ -1461,6 +1314,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      currency_type: ["COP", "AWG"],
       user_role: ["admin", "employee", "traveler"],
     },
   },

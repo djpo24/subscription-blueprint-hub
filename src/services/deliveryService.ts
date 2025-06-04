@@ -16,29 +16,63 @@ interface DeliverPackageParams {
 
 export class DeliveryService {
   static async deliverPackage({ packageId, deliveredBy, payments }: DeliverPackageParams) {
-    console.log('🚀 Iniciando entrega de paquete:', {
+    console.log('🚀 [DeliveryService] Iniciando entrega de paquete:', {
       packageId,
       deliveredBy,
-      payments
+      payments,
+      paymentsCount: payments?.length || 0
     });
 
     try {
-      // Primero intentamos la función RPC original - CAMBIO: enviar array como JSON
+      // Validar parámetros de entrada
+      if (!packageId) {
+        throw new Error('packageId es requerido');
+      }
+      if (!deliveredBy) {
+        throw new Error('deliveredBy es requerido');
+      }
+
+      console.log('✅ [DeliveryService] Parámetros validados correctamente');
+
+      // Preparar los pagos - convertir a formato esperado por la función RPC
+      const paymentsForRpc = payments && payments.length > 0 ? payments.map(p => ({
+        method_id: p.method_id,
+        amount: p.amount,
+        currency: p.currency,
+        type: p.type
+      })) : null;
+
+      console.log('💰 [DeliveryService] Pagos preparados para RPC:', paymentsForRpc);
+
+      // Llamar a la función RPC
       const { data, error } = await supabase.rpc('deliver_package_with_payment', {
         p_package_id: packageId,
         p_delivered_by: deliveredBy,
-        p_payments: (payments || []) as any // Cast as any para evitar el error de tipos
+        p_payments: paymentsForRpc
       });
       
       if (error) {
-        console.error('❌ Error en función RPC:', error);
+        console.error('❌ [DeliveryService] Error en función RPC:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
-      console.log('✅ Respuesta exitosa de RPC:', data);
+      console.log('✅ [DeliveryService] Respuesta exitosa de RPC:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error completo en entrega:', error);
+      console.error('❌ [DeliveryService] Error completo en entrega:', {
+        error,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorStack: error?.stack
+      });
       throw error;
     }
   }

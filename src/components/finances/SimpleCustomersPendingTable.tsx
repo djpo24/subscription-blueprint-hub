@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Users, Phone } from 'lucide-react';
+import { DollarSign, Users, Phone, AlertCircle, RefreshCw } from 'lucide-react';
 import { useCustomersPendingCollection } from '@/hooks/useCustomersPendingCollection';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
@@ -37,6 +38,11 @@ export function SimpleCustomersPendingTable() {
     setSelectedCustomer(null);
   };
 
+  const handleRetry = () => {
+    console.log('🔄 Reintentando cargar datos...');
+    refetch();
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -48,6 +54,7 @@ export function SimpleCustomersPendingTable() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
             <p className="text-gray-500">Cargando clientes con pagos pendientes...</p>
           </div>
         </CardContent>
@@ -65,9 +72,20 @@ export function SimpleCustomersPendingTable() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-red-500">
-            <p>Error al cargar datos de clientes</p>
-            <p className="text-sm text-gray-500 mt-2">{error.message}</p>
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 font-medium mb-2">Error al cargar datos de clientes</p>
+            <p className="text-sm text-gray-600 mb-4">
+              {error instanceof Error ? error.message : 'Error desconocido'}
+            </p>
+            <Button 
+              onClick={handleRetry}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reintentar
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -81,6 +99,11 @@ export function SimpleCustomersPendingTable() {
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Clientes con Pagos Pendientes
+            {customers && customers.length > 0 && (
+              <span className="text-sm font-normal text-gray-500">
+                ({customers.length})
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -91,9 +114,9 @@ export function SimpleCustomersPendingTable() {
             </div>
           ) : (
             <div className="space-y-4">
-              {customers.map((customer) => (
+              {customers.map((customer, index) => (
                 <div
-                  key={`${customer.package_id}-${customer.customer_name}`}
+                  key={`${customer.package_id}-${customer.customer_name}-${index}`}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex-1 space-y-1">

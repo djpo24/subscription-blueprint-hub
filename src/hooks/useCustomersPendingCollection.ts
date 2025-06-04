@@ -11,6 +11,7 @@ interface CustomerPendingCollection {
   total_pending_amount: number;
   last_delivery_date: string;
   package_numbers: string;
+  package_statuses?: string;
 }
 
 export function useCustomersPendingCollection() {
@@ -21,7 +22,8 @@ export function useCustomersPendingCollection() {
       
       const { data, error } = await supabase
         .from('customers_pending_collection')
-        .select('*');
+        .select('*')
+        .order('last_delivery_date', { ascending: false });
       
       if (error) {
         console.error('Error fetching customers pending collection:', error);

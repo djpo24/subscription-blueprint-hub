@@ -9,6 +9,67 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          id: string
+          notes: string | null
+          package_id: string
+          payment_date: string
+          payment_method: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          package_id: string
+          payment_date?: string
+          payment_method?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          package_id?: string
+          payment_date?: string
+          payment_method?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_pending_collection"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -1147,6 +1208,7 @@ export type Database = {
           id: string | null
           last_delivery_date: string | null
           package_numbers: string | null
+          package_statuses: string | null
           phone: string | null
           total_packages: number | null
           total_pending_amount: number | null
@@ -1155,6 +1217,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_customer_pending_amount: {
+        Args: { customer_uuid: string }
+        Returns: number
+      }
       calculate_debt_days: {
         Args: { debt_start_date: string }
         Returns: number

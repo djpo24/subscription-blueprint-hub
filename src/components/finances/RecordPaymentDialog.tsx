@@ -3,16 +3,15 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
+import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { MobilePackageInfo } from '@/components/mobile/MobilePackageInfo';
+import { MobilePaymentSection } from '@/components/mobile/MobilePaymentSection';
+import { MobileDeliveryFormFields } from '@/components/mobile/MobileDeliveryFormFields';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -33,52 +32,57 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
-  const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
-  const [currency, setCurrency] = useState('COP');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  // Crear un objeto package ficticio para reutilizar los componentes móviles
+  const mockPackage = customer ? {
+    id: 'payment-mock',
+    tracking_number: customer.package_numbers,
+    destination: 'Múltiples destinos',
+    description: 'Pago de encomiendas pendientes',
+    amount_to_collect: customer.total_pending_amount,
+    currency: 'COP',
+    customers: {
+      name: customer.customer_name
+    }
+  } : null;
+
+  const {
+    payments,
+    addPayment,
+    updatePayment,
+    removePayment,
+    resetPayments,
+    getCurrencySymbol,
+    getValidPayments
+  } = usePaymentManagement('COP');
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setAmount('');
       setNotes('');
+      resetPayments();
+      // Agregar un pago inicial
+      addPayment();
     }
-  }, [isOpen]);
+  }, [isOpen, resetPayments, addPayment]);
 
-  const formatDisplayNumber = (value: string): string => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, '');
-    if (!numbers) return '';
-    
-    // Add thousands separators (periods)
-    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    console.log('💳 Actualizando pago:', { index, field, value });
+    updatePayment(index, field as any, value, customer?.total_pending_amount || 0);
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    const formattedValue = formatDisplayNumber(inputValue);
-    setAmount(formattedValue);
-  };
+  const handleSubmit = async () => {
+    if (!customer) return;
 
-  const getNumericAmount = (): number => {
-    // Remove periods to get the raw number for calculations
-    const rawValue = amount.replace(/\./g, '');
-    return parseFloat(rawValue) || 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customer || !amount) return;
-
-    const numericAmount = getNumericAmount();
-    if (!numericAmount || numericAmount <= 0) {
+    const validPayments = getValidPayments();
+    if (validPayments.length === 0) {
       toast({
         title: 'Error',
-        description: 'Por favor ingresa un monto válido',
+        description: 'Por favor ingresa al menos un pago válido',
         variant: 'destructive',
       });
       return;
@@ -101,29 +105,36 @@ export function RecordPaymentDialog({
         throw new Error('No se encontraron paquetes para este cliente');
       }
 
-      const { error } = await supabase
-        .from('customer_payments')
-        .insert({
-          customer_id: customer.id,
-          package_id: packages[0].id,
-          amount: numericAmount,
-          payment_method: paymentMethod,
-          currency,
-          notes: notes || null,
-          created_by: 'Usuario actual' // TODO: Replace with actual user
-        });
+      // Registrar cada pago
+      for (const payment of validPayments) {
+        const { error } = await supabase
+          .from('customer_payments')
+          .insert({
+            customer_id: customer.id,
+            package_id: packages[0].id,
+            amount: parseFloat(payment.amount) || 0,
+            payment_method: payment.methodId === 'efectivo' ? 'efectivo' : 
+                           payment.methodId === 'transferencia' ? 'transferencia' :
+                           payment.methodId === 'tarjeta' ? 'tarjeta' : 'otro',
+            currency: payment.currency,
+            notes: notes || null,
+            created_by: 'Usuario actual' // TODO: Replace with actual user
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
+
+      const totalAmount = validPayments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
 
       toast({
-        title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${amount} para ${customer.customer_name}`,
+        title: 'Pagos registrados',
+        description: `Se registraron pagos por un total de ${payment.currency} ${totalAmount.toLocaleString('es-CO')} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setAmount('');
       setNotes('');
+      resetPayments();
     } catch (error) {
       console.error('Error recording payment:', error);
       toast({
@@ -136,164 +147,76 @@ export function RecordPaymentDialog({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Calcular totales de pago
+  const totalCollected = payments.reduce((sum, payment) => {
+    const amount = parseFloat(payment.amount) || 0;
+    return sum + amount;
+  }, 0);
 
-  // Calculate remaining amount dynamically
-  const enteredAmount = getNumericAmount();
-  const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
+  const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - totalCollected);
 
-  if (!customer) return null;
+  if (!customer || !mockPackage) return null;
 
   const PaymentContent = () => (
     <div className="space-y-4">
-      {/* Customer Info Card - Exact style from MobilePackageInfo */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <User className="h-5 w-5" />
-            Información del Cliente
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-blue-900">{customer.customer_name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-blue-600" />
-            <span className="text-blue-800">{customer.phone}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-blue-600" />
-            <span className="text-blue-800 font-mono text-sm">{customer.package_numbers}</span>
-          </div>
-          <div className="pt-2">
-            <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-              Total: {formatCurrency(customer.total_pending_amount)}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Package Info - usando el componente móvil */}
+      <MobilePackageInfo package={mockPackage as any} />
 
-      {/* Payment Form - Exact style from MobilePaymentSection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Registrar Pago
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Monto *</Label>
-                <Input
-                  id="amount"
-                  type="text"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  placeholder="0"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">Moneda</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="COP">COP (Pesos)</SelectItem>
-                    <SelectItem value="AWG">AWG (Florín)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      {/* Payment Section - usando el componente móvil */}
+      <MobilePaymentSection
+        package={mockPackage as any}
+        payments={payments}
+        onAddPayment={addPayment}
+        onUpdatePayment={handlePaymentUpdate}
+        onRemovePayment={removePayment}
+        getCurrencySymbol={getCurrencySymbol}
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">Método de Pago</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="efectivo">Efectivo</SelectItem>
-                  <SelectItem value="transferencia">Transferencia</SelectItem>
-                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                  <SelectItem value="otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Delivery Form - Solo notas, omitiendo "entregado por" */}
+      <div className="space-y-4">
+        <MobileDeliveryFormFields
+          deliveredBy=""
+          setDeliveredBy={() => {}}
+          notes={notes}
+          setNotes={setNotes}
+          hideDeliveredBy={true}
+        />
 
-            {/* Dynamic Payment Summary - Same style as MobileDeliveryActions */}
-            {enteredAmount > 0 && (
-              <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-3">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Total a cobrar:</span>
-                      <span className="font-medium text-green-900">
-                        {formatCurrency(customer.total_pending_amount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Monto ingresado:</span>
-                      <span className="font-medium text-green-900">
-                        {formatCurrency(enteredAmount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t border-green-300 pt-2">
-                      <span className="font-medium text-green-800">Pendiente:</span>
-                      <span className={`font-bold ${remainingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                        {formatCurrency(remainingAmount)}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        {/* Payment Warning for uncollected amounts */}
+        {remainingAmount > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-3">
+              <p className="text-sm text-orange-700">
+                <strong>Atención:</strong> Queda un saldo pendiente de{' '}
+                <strong>${remainingAmount.toLocaleString('es-CO')} COP</strong>.
+                Puedes registrar más pagos arriba.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notas (opcional)</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notas adicionales sobre el pago..."
-                rows={3}
-              />
-            </div>
-
-            {/* Action Buttons - Exact style from MobileDeliveryActions */}
-            <div className="grid grid-cols-2 gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                className="w-full"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading || !amount}
-                className="w-full"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                {isLoading ? 'Registrando...' : 'Registrar Pago'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Action Buttons - exactamente como en el móvil */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="w-full"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={isLoading || payments.length === 0}
+            className="w-full"
+            onClick={handleSubmit}
+          >
+            <Check className="h-4 w-4 mr-2" />
+            {isLoading ? 'Registrando...' : 'Registrar Pago'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 
@@ -303,7 +226,6 @@ export function RecordPaymentDialog({
         <SheetContent className="w-full max-w-[95vw] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
               Registrar Pago
             </SheetTitle>
           </SheetHeader>
@@ -320,7 +242,6 @@ export function RecordPaymentDialog({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
             Registrar Pago
           </DialogTitle>
         </DialogHeader>

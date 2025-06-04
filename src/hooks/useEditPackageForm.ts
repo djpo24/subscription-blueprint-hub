@@ -33,14 +33,15 @@ export function useEditPackageForm(pkg: Package | null) {
     freightFormatted: '',
     amountToCollect: '',
     amountToCollectFormatted: '',
-    currency: 'COP', // Default inicial pero se actualizará con el paquete
+    currency: 'COP',
     details: ['']
   });
 
   useEffect(() => {
     if (pkg) {
       console.log('🔄 [useEditPackageForm] Initializing with package:', pkg);
-      console.log('💱 [useEditPackageForm] Package currency from DB:', pkg.currency);
+      console.log('💱 [useEditPackageForm] Raw package currency value:', pkg.currency);
+      console.log('💱 [useEditPackageForm] Currency type:', typeof pkg.currency);
       
       // Parse existing description to extract details and optional description
       const description = pkg.description || '';
@@ -65,11 +66,14 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // CRÍTICO: Usar la moneda EXACTA del paquete, sin fallbacks
-      // Si no hay moneda en el paquete, usar COP como default pero esto no debería pasar
-      const packageCurrency = pkg.currency || 'COP';
-      console.log('💱 [useEditPackageForm] Using EXACT currency from package:', packageCurrency);
-      console.log('💱 [useEditPackageForm] No fallbacks applied - using database value as-is');
+      // SOLUCION: Manejar correctamente undefined/null currency
+      let packageCurrency = 'COP'; // Default seguro
+      
+      if (pkg.currency && typeof pkg.currency === 'string' && pkg.currency.trim() !== '') {
+        packageCurrency = pkg.currency;
+      }
+      
+      console.log('💱 [useEditPackageForm] Final currency after processing:', packageCurrency);
 
       const newFormData = {
         description: optionalDescription,
@@ -85,7 +89,7 @@ export function useEditPackageForm(pkg: Package | null) {
       console.log('✅ [useEditPackageForm] Final form data with currency:', newFormData.currency);
       setFormData(newFormData);
     }
-  }, [pkg?.id]); // Solo dependemos del ID del paquete para evitar re-renders innecesarios
+  }, [pkg?.id]);
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');

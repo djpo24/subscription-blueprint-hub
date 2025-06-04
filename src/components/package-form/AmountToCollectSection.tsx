@@ -40,8 +40,10 @@ export function AmountToCollectSection({
     onCurrencyChange(newCurrency);
   };
 
-  console.log('🔍 [AmountToCollectSection] Rendering with currency:', currency);
-  console.log('🔍 [AmountToCollectSection] Select value will be:', currency);
+  // Asegurar que currency siempre sea un string válido
+  const safeCurrency = currency || 'COP';
+  
+  console.log('🔍 [AmountToCollectSection] Rendering with safe currency:', safeCurrency);
 
   return (
     <div className="space-y-4">
@@ -51,7 +53,7 @@ export function AmountToCollectSection({
       
       <div className="flex gap-3">
         <Select 
-          value={currency} 
+          value={safeCurrency} 
           onValueChange={handleCurrencyChange}
         >
           <SelectTrigger className="w-28">
@@ -72,12 +74,11 @@ export function AmountToCollectSection({
         />
       </div>
 
-      {/* Debug info - visible in development */}
+      {/* Debug info simplificado */}
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-        <div>🎯 <strong>Divisa desde DB:</strong> {currency}</div>
+        <div>🎯 <strong>Divisa actual:</strong> {safeCurrency}</div>
         <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
         <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>
-        <div>🕒 <strong>Timestamp:</strong> {new Date().toLocaleTimeString()}</div>
       </div>
     </div>
   );

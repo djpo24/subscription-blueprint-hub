@@ -33,7 +33,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   // Initialize form when dialog opens with package data
   useEffect(() => {
     if (pkg && open) {
-      console.log('🚀 [EditPackageDialog] Initializing dialog with package:', {
+      console.log('🚀 [EditPackageDialog] Inicializando diálogo con paquete:', {
         id: pkg.id,
         tracking_number: pkg.tracking_number,
         currency: pkg.currency,
@@ -64,14 +64,10 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  // IMPROVED: Better currency display in dialog header
-  const currencyDisplay = (() => {
-    if (!pkg.currency) return 'Sin especificar';
-    if (['COP', 'AWG'].includes(pkg.currency)) return pkg.currency;
-    return `${pkg.currency} (no estándar)`;
-  })();
+  // Mostrar información de la divisa
+  const currencyDisplay = pkg.currency || 'No especificada';
 
-  console.log('🎯 [EditPackageDialog] Rendering with package currency:', pkg.currency);
+  console.log('🎯 [EditPackageDialog] Renderizando con divisa del paquete:', pkg.currency);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,7 +78,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             Modificar la información de la encomienda {pkg.tracking_number}.
             <div className="mt-2 text-sm">
               <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                Moneda: {currencyDisplay}
+                Divisa: {currencyDisplay}
               </span>
               {pkg.amount_to_collect && (
                 <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs ml-2">

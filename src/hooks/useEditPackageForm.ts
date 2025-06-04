@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 interface Package {
@@ -38,8 +39,8 @@ export function useEditPackageForm(pkg: Package | null) {
 
   useEffect(() => {
     if (pkg) {
-      console.log('🔄 [useEditPackageForm] Initializing with package:', pkg);
-      console.log('💱 [useEditPackageForm] Package currency from DB:', pkg.currency);
+      console.log('🔄 [useEditPackageForm] Inicializando con paquete:', pkg);
+      console.log('💱 [useEditPackageForm] Divisa del paquete desde BD:', pkg.currency);
       
       // Parse existing description to extract details and optional description
       const description = pkg.description || '';
@@ -64,20 +65,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // IMPROVED: More robust currency handling
-      let packageCurrency = 'COP'; // Default fallback
+      // Usar directamente la divisa del paquete, o COP por defecto
+      const packageCurrency = pkg.currency || 'COP';
       
-      if (pkg.currency) {
-        // If package has a currency, validate it's in our allowed list
-        if (['COP', 'AWG'].includes(pkg.currency)) {
-          packageCurrency = pkg.currency;
-        } else {
-          // If currency exists but isn't in our list, log warning but keep it
-          console.warn('⚠️ [useEditPackageForm] Unknown currency from DB:', pkg.currency, 'defaulting to COP');
-        }
-      }
-
-      console.log('✅ [useEditPackageForm] Final currency to use:', packageCurrency);
+      console.log('✅ [useEditPackageForm] Divisa a usar:', packageCurrency);
 
       const newFormData = {
         description: optionalDescription,
@@ -90,20 +81,20 @@ export function useEditPackageForm(pkg: Package | null) {
         details: details
       };
 
-      console.log('📋 [useEditPackageForm] Setting form data with currency:', newFormData.currency);
+      console.log('📋 [useEditPackageForm] Estableciendo datos del formulario con divisa:', newFormData.currency);
       setFormData(newFormData);
     }
-  }, [pkg?.id]); // Remove pkg?.currency from deps to avoid unnecessary re-renders
+  }, [pkg?.id, pkg?.currency]); // Incluir pkg?.currency en las dependencias
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
   };
 
   const updateFormData = (updates: Partial<EditPackageFormData>) => {
-    console.log('🔄 [useEditPackageForm] Updating form data:', updates);
+    console.log('🔄 [useEditPackageForm] Actualizando datos del formulario:', updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      console.log('✅ [useEditPackageForm] New form data after update:', newData);
+      console.log('✅ [useEditPackageForm] Nuevos datos del formulario después de actualización:', newData);
       return newData;
     });
   };

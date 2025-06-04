@@ -16,7 +16,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string; // Add currency to interface
+  currency?: string;
   status: string;
 }
 
@@ -45,8 +45,9 @@ export function EditPackageForm({
     onSuccess
   });
 
-  console.log('🔍 [EditPackageForm] Current form currency:', formData.currency);
-  console.log('🔍 [EditPackageForm] Package currency:', pkg.currency);
+  console.log('🔍 [EditPackageForm] Divisa actual del formulario:', formData.currency);
+  console.log('🔍 [EditPackageForm] Divisa del paquete:', pkg.currency);
+  console.log('🔍 [EditPackageForm] Datos completos del formulario:', formData);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -72,7 +73,7 @@ export function EditPackageForm({
         amountToCollect={formData.amountToCollect}
         amountToCollectFormatted={formData.amountToCollectFormatted}
         onCurrencyChange={(currency) => {
-          console.log('💱 [EditPackageForm] Currency change requested:', currency);
+          console.log('💱 [EditPackageForm] Cambio de divisa solicitado:', currency);
           updateFormData({ currency });
         }}
         onAmountChange={(amountToCollect, amountToCollectFormatted) =>

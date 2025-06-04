@@ -23,21 +23,21 @@ export function AmountToCollectSection({
   const [isCurrencyEditable, setIsCurrencyEditable] = useState(false);
   
   useEffect(() => {
-    console.log('💱 [AmountToCollectSection] Component updated with currency:', currency);
-    console.log('💰 [AmountToCollectSection] Amount:', amountToCollect);
-    console.log('💰 [AmountToCollectSection] Formatted amount:', amountToCollectFormatted);
+    console.log('💱 [AmountToCollectSection] Componente actualizado con divisa:', currency);
+    console.log('💰 [AmountToCollectSection] Cantidad:', amountToCollect);
+    console.log('💰 [AmountToCollectSection] Cantidad formateada:', amountToCollectFormatted);
   }, [currency, amountToCollect, amountToCollectFormatted]);
 
   const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatNumber(value);
     const raw = parseFormattedNumber(formatted);
-    console.log('💰 [AmountToCollectSection] Amount changing from', value, 'to formatted:', formatted, 'raw:', raw);
+    console.log('💰 [AmountToCollectSection] Cantidad cambiando de', value, 'a formateado:', formatted, 'raw:', raw);
     onAmountChange(raw, formatted);
   };
 
   const handleCurrencyChange = (newCurrency: string) => {
-    console.log('💱 [AmountToCollectSection] Currency change from', currency, 'to', newCurrency);
+    console.log('💱 [AmountToCollectSection] Cambio de divisa de', currency, 'a', newCurrency);
     onCurrencyChange(newCurrency);
     setIsCurrencyEditable(false);
   };
@@ -46,24 +46,12 @@ export function AmountToCollectSection({
     setIsCurrencyEditable(true);
   };
 
-  // IMPROVED: Validate currency but preserve original value if valid
-  const displayCurrency = (() => {
-    if (!currency) {
-      console.warn('⚠️ [AmountToCollectSection] No currency provided, using COP');
-      return 'COP';
-    }
-    
-    if (['COP', 'AWG'].includes(currency)) {
-      return currency;
-    }
-    
-    console.warn('⚠️ [AmountToCollectSection] Invalid currency:', currency, 'using COP');
-    return 'COP';
-  })();
+  // Validar que la divisa sea una opción válida
+  const validCurrency = ['COP', 'AWG'].includes(currency) ? currency : 'COP';
   
-  console.log('🎯 [AmountToCollectSection] Displaying currency:', displayCurrency);
-  console.log('🎯 [AmountToCollectSection] Original currency prop:', currency);
-  console.log('🔍 [AmountToCollectSection] Is currency editable:', isCurrencyEditable);
+  console.log('🎯 [AmountToCollectSection] Mostrando divisa:', validCurrency);
+  console.log('🎯 [AmountToCollectSection] Divisa prop original:', currency);
+  console.log('🔍 [AmountToCollectSection] ¿Es divisa editable?:', isCurrencyEditable);
 
   return (
     <div className="space-y-4">
@@ -77,15 +65,15 @@ export function AmountToCollectSection({
             onClick={handleCurrencyClick}
             className="w-28 h-12 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
           >
-            <span className="text-gray-600 font-medium">{displayCurrency}</span>
+            <span className="text-gray-600 font-medium">{validCurrency}</span>
           </div>
         ) : (
           <Select 
-            value={displayCurrency} 
+            value={validCurrency} 
             onValueChange={handleCurrencyChange}
           >
             <SelectTrigger className="w-28">
-              <SelectValue placeholder="Divisa" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="COP">COP</SelectItem>
@@ -104,10 +92,10 @@ export function AmountToCollectSection({
         />
       </div>
 
-      {/* Debug info */}
+      {/* Debug info - remover en producción */}
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-        <div>🎯 <strong>Prop currency:</strong> {currency || 'undefined'}</div>
-        <div>🖥️ <strong>Display currency:</strong> {displayCurrency}</div>
+        <div>🎯 <strong>Prop divisa:</strong> {currency || 'undefined'}</div>
+        <div>🖥️ <strong>Divisa mostrada:</strong> {validCurrency}</div>
         <div>🔧 <strong>Editable:</strong> {isCurrencyEditable ? 'Sí' : 'No'}</div>
         <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
         <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>

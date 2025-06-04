@@ -25,23 +25,54 @@ export function useNotificationLog() {
   return useQuery({
     queryKey: ['notification-log'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: notifications, error } = await supabase
         .from('notification_log')
-        .select(`
-          *,
-          packages (
-            tracking_number
-          ),
-          customers (
-            name,
-            phone
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
-      return data as NotificationLogEntry[];
+      
+      // Fetch related data separately
+      const notificationsWithDetails = await Promise.all(
+        (notifications || []).map(async (notification) => {
+          const details: NotificationLogEntry = {
+            ...notification,
+            packages: undefined,
+            customers: undefined
+          };
+          
+          // Get package details if package_id exists
+          if (notification.package_id) {
+            const { data: packageData } = await supabase
+              .from('packages')
+              .select('tracking_number')
+              .eq('id', notification.package_id)
+              .single();
+            
+            if (packageData) {
+              details.packages = { tracking_number: packageData.tracking_number };
+            }
+          }
+          
+          // Get customer details if customer_id exists
+          if (notification.customer_id) {
+            const { data: customerData } = await supabase
+              .from('customers')
+              .select('name, phone')
+              .eq('id', notification.customer_id)
+              .single();
+            
+            if (customerData) {
+              details.customers = { name: customerData.name, phone: customerData.phone };
+            }
+          }
+          
+          return details;
+        })
+      );
+      
+      return notificationsWithDetails;
     }
   });
 }

@@ -7,32 +7,57 @@ export function useDispatchPackages(dispatchId: string) {
   return useQuery({
     queryKey: ['dispatch-packages', dispatchId],
     queryFn: async (): Promise<PackageInDispatch[]> => {
-      const { data, error } = await supabase
+      // First get the package IDs from dispatch_packages
+      const { data: dispatchPackages, error: dispatchError } = await supabase
         .from('dispatch_packages')
-        .select(`
-          packages (
-            id,
-            tracking_number,
-            origin,
-            destination,
-            status,
-            description,
-            weight,
-            freight,
-            amount_to_collect,
-            currency,
-            trip_id,
-            customers (
-              name,
-              email
-            )
-          )
-        `)
+        .select('package_id')
         .eq('dispatch_id', dispatchId);
       
-      if (error) throw error;
+      if (dispatchError) throw dispatchError;
       
-      return data?.map(item => item.packages).filter(Boolean) || [];
+      if (!dispatchPackages || dispatchPackages.length === 0) {
+        return [];
+      }
+      
+      const packageIds = dispatchPackages.map(dp => dp.package_id);
+      
+      // Then get the package details
+      const { data: packages, error: packagesError } = await supabase
+        .from('packages')
+        .select(`
+          id,
+          tracking_number,
+          origin,
+          destination,
+          status,
+          description,
+          weight,
+          freight,
+          amount_to_collect,
+          currency,
+          trip_id
+        `)
+        .in('id', packageIds);
+      
+      if (packagesError) throw packagesError;
+      
+      // Get customer details for each package
+      const packagesWithCustomers = await Promise.all(
+        (packages || []).map(async (pkg) => {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('name, email')
+            .eq('id', pkg.customer_id)
+            .single();
+          
+          return {
+            ...pkg,
+            customers: customer || { name: 'N/A', email: 'N/A' }
+          };
+        })
+      );
+      
+      return packagesWithCustomers;
     },
     enabled: !!dispatchId
   });

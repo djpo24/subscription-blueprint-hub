@@ -36,7 +36,7 @@ export function usePackagesByDate(date: Date) {
     queryFn: async (): Promise<TripWithPackages[]> => {
       const formattedDate = format(date, 'yyyy-MM-dd');
       
-      // Primero obtenemos todos los viajes del día
+      // First get all trips for the date
       const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select('*')
@@ -49,10 +49,11 @@ export function usePackagesByDate(date: Date) {
         return [];
       }
       
-      // Para cada viaje, obtenemos sus encomiendas con la estructura correcta
+      // For each trip, get its packages with customer details
       const tripsWithPackages: TripWithPackages[] = [];
       
       for (const trip of trips) {
+        // Get packages for this trip
         const { data: packages, error: packagesError } = await supabase
           .from('packages')
           .select(`
@@ -66,16 +67,28 @@ export function usePackagesByDate(date: Date) {
             amount_to_collect,
             status,
             origin,
-            destination,
-            customers (
-              name,
-              email
-            )
+            destination
           `)
           .eq('trip_id', trip.id)
           .order('created_at', { ascending: false });
         
         if (packagesError) throw packagesError;
+        
+        // Get customer details for each package
+        const packagesWithCustomers: PackageData[] = await Promise.all(
+          (packages || []).map(async (pkg) => {
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('name, email')
+              .eq('id', pkg.customer_id)
+              .single();
+            
+            return {
+              ...pkg,
+              customers: customer || { name: 'N/A', email: 'N/A' }
+            };
+          })
+        );
         
         tripsWithPackages.push({
           id: trip.id,
@@ -83,7 +96,7 @@ export function usePackagesByDate(date: Date) {
           destination: trip.destination,
           flight_number: trip.flight_number,
           status: trip.status,
-          packages: packages || []
+          packages: packagesWithCustomers
         });
       }
       

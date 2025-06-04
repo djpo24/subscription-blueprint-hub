@@ -7,10 +7,17 @@ type Currency = 'COP' | 'AWG';
 
 interface TripPackageCardSummaryProps {
   packageCount: number;
-  totalsByCurrency: Record<Currency, { weight: number; freight: number; amount_to_collect: number }>;
+  totalWeight: number;
+  totalFreight: number; // Siempre en COP
+  amountToCollectByCurrency: Record<Currency, number>;
 }
 
-export function TripPackageCardSummary({ packageCount, totalsByCurrency }: TripPackageCardSummaryProps) {
+export function TripPackageCardSummary({ 
+  packageCount, 
+  totalWeight, 
+  totalFreight, 
+  amountToCollectByCurrency 
+}: TripPackageCardSummaryProps) {
   const isMobile = useIsMobile();
 
   return (
@@ -27,7 +34,7 @@ export function TripPackageCardSummary({ packageCount, totalsByCurrency }: TripP
         <Weight className="h-4 w-4 text-purple-600" />
         <div>
           <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-purple-800`}>
-            {Object.values(totalsByCurrency).reduce((acc, curr) => acc + curr.weight, 0)} kg
+            {totalWeight} kg
           </div>
           <div className="text-xs text-purple-600">Peso</div>
         </div>
@@ -37,11 +44,7 @@ export function TripPackageCardSummary({ packageCount, totalsByCurrency }: TripP
         <DollarSign className="h-4 w-4 text-orange-600" />
         <div>
           <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-orange-800`}>
-            {Object.entries(totalsByCurrency).map(([currency, totals]) => (
-              <div key={currency}>
-                {formatCurrency(totals.freight, currency as Currency)}
-              </div>
-            ))}
+            {formatCurrency(totalFreight, 'COP')}
           </div>
           <div className="text-xs text-orange-600">Flete</div>
         </div>
@@ -51,11 +54,14 @@ export function TripPackageCardSummary({ packageCount, totalsByCurrency }: TripP
         <DollarSign className="h-4 w-4 text-green-600" />
         <div>
           <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
-            {Object.entries(totalsByCurrency).map(([currency, totals]) => (
+            {Object.entries(amountToCollectByCurrency).map(([currency, amount]) => (
               <div key={currency}>
-                {formatCurrency(totals.amount_to_collect, currency as Currency)}
+                {formatCurrency(amount, currency as Currency)}
               </div>
             ))}
+            {Object.keys(amountToCollectByCurrency).length === 0 && (
+              <div>{formatCurrency(0, 'COP')}</div>
+            )}
           </div>
           <div className="text-xs text-green-600">A Cobrar</div>
         </div>

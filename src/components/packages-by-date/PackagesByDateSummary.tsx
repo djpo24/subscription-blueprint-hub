@@ -19,7 +19,7 @@ export function PackagesByDateSummary({
   if (totalPackages === 0) return null;
 
   const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('es-CO')}`;
+    return `$${value.toLocaleString('es-CO')} COP`;
   };
 
   return (
@@ -34,7 +34,7 @@ export function PackagesByDateSummary({
       </div>
       <div className="text-center">
         <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-orange-600`}>{formatCurrency(totalFreight)}</div>
-        <div className="text-xs text-gray-600">Flete Total</div>
+        <div className="text-xs text-gray-600">Flete Total (COP)</div>
       </div>
       <div className="text-center">
         <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>{formatCurrency(totalAmountToCollect)}</div>

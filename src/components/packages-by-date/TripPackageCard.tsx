@@ -1,3 +1,4 @@
+
 import { Card } from '@/components/ui/card';
 import { TripPackageCardHeader } from './TripPackageCardHeader';
 import { TripPackageCardSummary } from './TripPackageCardSummary';
@@ -54,19 +55,23 @@ export function TripPackageCard({
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const queryClient = useQueryClient();
 
-  // Agrupar totales por moneda
-  const totalsByCurrency = trip.packages.reduce(
+  // Calcular totales separando el flete (siempre COP) de los montos a cobrar (por moneda)
+  const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
+  const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0); // Siempre COP
+  
+  // Agrupar solo los montos a cobrar por moneda
+  const amountToCollectByCurrency = trip.packages.reduce(
     (acc, pkg) => {
-      const currency = pkg.currency || 'COP';
-      if (!acc[currency]) {
-        acc[currency] = { weight: 0, freight: 0, amount_to_collect: 0 };
+      if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
+        const currency = pkg.currency || 'COP';
+        if (!acc[currency]) {
+          acc[currency] = 0;
+        }
+        acc[currency] += pkg.amount_to_collect;
       }
-      acc[currency].weight += pkg.weight || 0;
-      acc[currency].freight += pkg.freight || 0;
-      acc[currency].amount_to_collect += pkg.amount_to_collect || 0;
       return acc;
     },
-    {} as Record<Currency, { weight: number; freight: number; amount_to_collect: number }>
+    {} as Record<Currency, number>
   );
 
   const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
@@ -113,7 +118,9 @@ export function TripPackageCard({
       <div className="px-4 sm:px-6">
         <TripPackageCardSummary 
           packageCount={trip.packages.length}
-          totalsByCurrency={totalsByCurrency}
+          totalWeight={totalWeight}
+          totalFreight={totalFreight}
+          amountToCollectByCurrency={amountToCollectByCurrency}
         />
       </div>
       

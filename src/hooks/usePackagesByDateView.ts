@@ -71,14 +71,18 @@ export function usePackagesByDateView(selectedDate: Date) {
     console.log('Create dispatch for date:', selectedDate);
   };
 
-  // Calculate totals
+  // Calculate totals correctamente - el flete siempre en COP
   const totalPackages = trips.reduce((acc, trip) => acc + trip.packages.length, 0);
   const totalWeight = trips.reduce((acc, trip) => 
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.weight || 0), 0), 0
   );
+  
+  // El flete siempre se suma en COP, sin importar la moneda del paquete
   const totalFreight = trips.reduce((acc, trip) => 
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
   );
+  
+  // Los montos a cobrar se suman independientemente de la moneda (para el resumen general)
   const totalAmountToCollect = trips.reduce((acc, trip) => 
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.amount_to_collect || 0), 0), 0
   );

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { RecordPaymentContent } from './RecordPaymentContent';
+import { formatPackageDescription } from '@/utils/descriptionFormatter';
 import type { PaymentEntryData } from '@/types/payment';
 
 interface RecordPaymentDialogProps {
@@ -30,6 +31,7 @@ export function RecordPaymentDialog({
 }: RecordPaymentDialogProps) {
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [customerPackages, setCustomerPackages] = useState<any[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { data: paymentMethods = [] } = usePaymentMethods();
@@ -42,14 +44,42 @@ export function RecordPaymentDialog({
     type: 'partial'
   });
 
-  // Crear un objeto package ficticio para reutilizar los componentes móviles
-  const mockPackage = customer ? {
+  // Fetch customer packages when dialog opens
+  useEffect(() => {
+    if (isOpen && customer) {
+      fetchCustomerPackages();
+    }
+  }, [isOpen, customer]);
+
+  const fetchCustomerPackages = async () => {
+    if (!customer) return;
+
+    try {
+      const { data: packages, error } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('customer_id', customer.id)
+        .eq('status', 'delivered')
+        .gt('amount_to_collect', 0);
+
+      if (error) throw error;
+      
+      setCustomerPackages(packages || []);
+    } catch (error) {
+      console.error('Error fetching customer packages:', error);
+    }
+  };
+
+  // Crear un objeto package basado en los datos reales del cliente
+  const mockPackage = customer && customerPackages.length > 0 ? {
     id: 'payment-mock',
     tracking_number: customer.package_numbers,
-    destination: 'Múltiples destinos',
-    description: 'Pago de encomiendas pendientes',
+    destination: customerPackages[0].destination, // Usar el destino real del primer paquete
+    description: customerPackages.length === 1 
+      ? customerPackages[0].description 
+      : formatPackageDescription(customerPackages.map(p => p.description).join(', ')),
     amount_to_collect: customer.total_pending_amount,
-    currency: 'COP',
+    currency: customerPackages[0].currency || 'COP',
     customers: {
       name: customer.customer_name
     }

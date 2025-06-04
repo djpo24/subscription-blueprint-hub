@@ -39,13 +39,15 @@ export function AmountToCollectSection({
   const handleCurrencyChange = (newCurrency: string) => {
     console.log('💱 [AmountToCollectSection] Currency change from', currency, 'to', newCurrency);
     onCurrencyChange(newCurrency);
+    // Reset the editable state after changing currency
+    setIsCurrencyEditable(false);
   };
 
   const handleCurrencyClick = () => {
     setIsCurrencyEditable(true);
   };
 
-  // Asegurar que currency siempre sea un string válido y esté en el conjunto permitido
+  // Ensure currency is always a valid string and in the allowed set
   const safeCurrency = currency && ['COP', 'AWG'].includes(currency) ? currency : 'COP';
   
   console.log('🔍 [AmountToCollectSection] Rendering with safe currency:', safeCurrency);

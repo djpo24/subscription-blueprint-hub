@@ -12,7 +12,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string; // Add currency to the Package interface
+  currency?: string;
   status: string;
 }
 
@@ -21,7 +21,7 @@ interface FormData {
   weight: string;
   freight: string;
   amountToCollect: string;
-  currency: string; // Add currency to FormData interface
+  currency: string;
   details: string[];
 }
 
@@ -85,10 +85,13 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
+      // Ensure currency is explicitly set
+      const currencyToSave = formData.currency || 'COP';
+
       console.log('📤 [EditPackageFormSubmission] Updating package with values:', {
         freight: formData.freight ? parseFloat(formData.freight) : 0,
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-        currency: formData.currency
+        currency: currencyToSave
       });
 
       const { error } = await supabase
@@ -99,7 +102,7 @@ export function useEditPackageFormSubmission({
           weight: formData.weight ? parseFloat(formData.weight) : null,
           freight: formData.freight ? parseFloat(formData.freight) : 0,
           amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-          currency: formData.currency, // Include currency in the update
+          currency: currencyToSave,
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,
@@ -110,7 +113,7 @@ export function useEditPackageFormSubmission({
 
       if (error) throw error;
 
-      console.log('✅ [EditPackageFormSubmission] Package updated with currency:', formData.currency);
+      console.log('✅ [EditPackageFormSubmission] Package updated with currency:', currencyToSave);
 
       // Create tracking event
       await supabase

@@ -2,7 +2,7 @@
 import type { PaymentEntryData, PaymentMethod, ValidPayment } from '@/types/payment';
 
 export const createDefaultPayment = (defaultMethod?: PaymentMethod): PaymentEntryData => ({
-  methodId: defaultMethod?.id || '',
+  methodId: 'efectivo', // Default to "efectivo"
   amount: '',
   currency: 'AWG',
   type: 'partial'
@@ -14,9 +14,14 @@ export const filterAvailablePaymentMethods = (paymentMethods: PaymentMethod[]) =
   );
 };
 
-export const getCurrencySymbol = (currency: string, availablePaymentMethods: PaymentMethod[]) => {
-  const method = availablePaymentMethods.find(m => m.currency === currency);
-  return method?.symbol || '$';
+export const getCurrencySymbol = (currency: string, availablePaymentMethods?: PaymentMethod[]) => {
+  // Fixed currency symbols for delivery form
+  const symbols = {
+    'AWG': 'ƒ',
+    'USD': '$',
+    'COP': '$'
+  };
+  return symbols[currency as keyof typeof symbols] || '$';
 };
 
 export const getValidPayments = (payments: PaymentEntryData[]): ValidPayment[] => {
@@ -39,18 +44,15 @@ export const updatePaymentEntry = (
 ): PaymentEntryData => {
   const updatedPayment = { ...payment, [field]: value };
   
-  // If currency is updated, find appropriate payment method
-  if (field === 'currency') {
-    const methodForCurrency = availablePaymentMethods.find(m => m.currency === value);
-    if (methodForCurrency) {
-      updatedPayment.methodId = methodForCurrency.id;
-    }
-  }
-  
   // If amount is updated, recalculate type automatically
   if (field === 'amount' && packageAmount !== undefined) {
     const amount = parseFloat(value) || 0;
     updatedPayment.type = amount >= packageAmount ? 'full' : 'partial';
+  }
+  
+  // Ensure we always have a valid methodId
+  if (!updatedPayment.methodId) {
+    updatedPayment.methodId = 'efectivo';
   }
   
   return updatedPayment;

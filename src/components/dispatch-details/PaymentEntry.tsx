@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Minus } from 'lucide-react';
-import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 import type { PaymentEntryData } from '@/types/payment';
 
@@ -15,14 +14,13 @@ interface PaymentEntryProps {
   canRemove: boolean;
 }
 
-export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
-  const { data: paymentMethods = [] } = usePaymentMethods();
-  
-  // Filter payment methods for only Florín and Peso
-  const availablePaymentMethods = paymentMethods.filter(method => 
-    method.currency === 'AWG' || method.currency === 'COP'
-  );
+// Fixed payment methods for delivery form
+const DELIVERY_PAYMENT_METHODS = [
+  { id: 'efectivo', name: 'Efectivo' },
+  { id: 'transferencia', name: 'Transferencia' }
+];
 
+export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     console.log('📝 Input amount change:', rawValue);
@@ -40,8 +38,16 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
     return formatNumber(payment.amount);
   };
 
-  const selectedMethod = availablePaymentMethods.find(m => m.id === payment.methodId);
-  const currencySymbol = selectedMethod?.symbol || '$';
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      'AWG': 'ƒ',
+      'USD': '$',
+      'COP': '$'
+    };
+    return symbols[currency as keyof typeof symbols] || '$';
+  };
+
+  const currencySymbol = getCurrencySymbol(payment.currency);
 
   return (
     <div className="grid grid-cols-4 gap-2 items-end">
@@ -64,23 +70,21 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
         </Select>
       </div>
 
-      {/* Payment Method Selection */}
+      {/* Payment Method Selection - Fixed options */}
       <div>
         <Select
-          value={payment.methodId}
+          value={payment.methodId || 'efectivo'}
           onValueChange={(value) => onUpdate(index, 'methodId', value)}
         >
           <SelectTrigger className="h-10">
-            <SelectValue />
+            <SelectValue placeholder="Seleccionar método" />
           </SelectTrigger>
           <SelectContent>
-            {availablePaymentMethods
-              .filter(method => method.currency === payment.currency)
-              .map((method) => (
-                <SelectItem key={method.id} value={method.id}>
-                  {method.name}
-                </SelectItem>
-              ))}
+            {DELIVERY_PAYMENT_METHODS.map((method) => (
+              <SelectItem key={method.id} value={method.id}>
+                {method.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

@@ -19,9 +19,9 @@ export function CustomersPendingTable() {
   const handleRecordPayment = (customer: any) => {
     console.log('🎯 Registrar pago para:', customer.customer_name);
     
-    // Convertir el formato de customer a RecordPaymentCustomer
+    // Convert the customer format to RecordPaymentCustomer
     const recordPaymentCustomer: RecordPaymentCustomer = {
-      id: customer.package_id, // Usar package_id como customer_id
+      id: customer.package_id, // Use package_id as the customer ID for payment processing
       customer_name: customer.customer_name,
       phone: customer.customer_phone,
       total_pending_amount: customer.pending_amount,
@@ -140,7 +140,7 @@ export function CustomersPendingTable() {
             Clientes con Cobros Pendientes
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {customers.length} cliente{customers.length !== 1 ? 's' : ''} con paquetes entregados pendientes de cobro
+            {customers?.length || 0} cliente{(customers?.length || 0) !== 1 ? 's' : ''} con paquetes entregados pendientes de cobro
           </p>
         </CardHeader>
         <CardContent>
@@ -158,7 +158,7 @@ export function CustomersPendingTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {customers?.map((customer) => (
                   <TableRow key={customer.package_id}>
                     <TableCell>
                       <div className="font-medium">{customer.customer_name}</div>

@@ -23,37 +23,34 @@ export class PaymentSubmissionService {
       throw new Error('Por favor ingresa al menos un pago válido');
     }
 
-    // Get the first package ID for this customer (simplified approach)
-    const { data: packages, error: packagesError } = await supabase
+    // Get the customer ID from the package
+    const { data: packageData, error: packageError } = await supabase
       .from('packages')
-      .select('id')
-      .eq('customer_id', customer.id)
-      .eq('status', 'delivered')
-      .gt('amount_to_collect', 0)
-      .limit(1);
+      .select('customer_id')
+      .eq('id', customer.id)
+      .single();
 
-    if (packagesError) throw packagesError;
-    if (!packages || packages.length === 0) {
-      throw new Error('No se encontraron paquetes para este cliente');
+    if (packageError) throw packageError;
+    if (!packageData) {
+      throw new Error('No se encontró el paquete especificado');
     }
 
-    // Register all valid payments
+    // Register all valid payments using the new database function
     for (const payment of validPayments) {
-      const { error } = await supabase
-        .from('customer_payments')
-        .insert({
-          customer_id: customer.id,
-          package_id: packages[0].id,
-          amount: parseFloat(payment.amount),
-          payment_method: payment.methodId === 'efectivo' ? 'efectivo' : 
-                         payment.methodId === 'transferencia' ? 'transferencia' :
-                         payment.methodId === 'tarjeta' ? 'tarjeta' : 'otro',
-          currency: payment.currency,
-          notes: notes || null,
-          created_by: 'Usuario actual' // TODO: Replace with actual user
-        });
+      const { error } = await supabase.rpc('register_customer_payment', {
+        p_customer_id: packageData.customer_id,
+        p_package_id: customer.id,
+        p_amount: parseFloat(payment.amount),
+        p_payment_method: payment.methodId,
+        p_currency: payment.currency,
+        p_notes: notes || null,
+        p_created_by: 'Usuario actual' // TODO: Replace with actual user
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error registering payment:', error);
+        throw error;
+      }
     }
 
     const totalPaid = validPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,9 +14,9 @@ export function SimpleCustomersPendingTable() {
   const handleRecordPayment = (customer: any) => {
     console.log('🎯 Registrar pago para:', customer.customer_name);
     
-    // Convertir el formato de customer a RecordPaymentCustomer
+    // Convert the customer format to RecordPaymentCustomer
     const recordPaymentCustomer: RecordPaymentCustomer = {
-      id: customer.package_id, // Usar package_id como customer_id
+      id: customer.package_id, // Use package_id as the customer ID for payment processing
       customer_name: customer.customer_name,
       phone: customer.customer_phone,
       total_pending_amount: customer.pending_amount,
@@ -30,7 +29,7 @@ export function SimpleCustomersPendingTable() {
 
   const handlePaymentRecorded = () => {
     console.log('✅ Pago registrado exitosamente');
-    refetch(); // Refrescar los datos
+    refetch(); // Refresh the data
   };
 
   const handleClosePaymentDialog = () => {
@@ -113,11 +112,6 @@ export function SimpleCustomersPendingTable() {
                         <DollarSign className="h-3 w-3" />
                         ${customer.pending_amount?.toLocaleString('es-CO')} {customer.currency || 'COP'}
                       </div>
-                      {customer.debt_days > 0 && (
-                        <span className="text-red-600 text-xs">
-                          {customer.debt_days} días de mora
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3 sm:mt-0">

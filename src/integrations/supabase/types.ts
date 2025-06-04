@@ -1125,17 +1125,8 @@ export type Database = {
           customer_name: string
           customer_phone: string
           destination: string
-          traveler_name: string
-          amount_to_collect: number
-          pending_amount: number
-          paid_amount: number
-          debt_status: string
-          debt_type: string
-          debt_start_date: string
-          debt_days: number
           package_status: string
-          freight: number
-          debt_id: string
+          pending_amount: number
           delivery_date: string
           created_at: string
           currency: string
@@ -1195,6 +1186,18 @@ export type Database = {
       }
       refresh_collection_stats: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      register_customer_payment: {
+        Args: {
+          p_customer_id: string
+          p_package_id: string
+          p_amount: number
+          p_payment_method?: string
+          p_currency?: string
+          p_notes?: string
+          p_created_by?: string
+        }
         Returns: undefined
       }
       register_payment: {

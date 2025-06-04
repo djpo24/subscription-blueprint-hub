@@ -65,10 +65,9 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // Usar directamente la divisa del paquete, o COP por defecto
+      // FIXED: Mejor lógica para determinar la divisa
       const packageCurrency = pkg.currency || 'COP';
-      
-      console.log('✅ [useEditPackageForm] Divisa a usar:', packageCurrency);
+      console.log('✅ [useEditPackageForm] Divisa final a usar:', packageCurrency);
 
       const newFormData = {
         description: optionalDescription,
@@ -81,10 +80,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details: details
       };
 
-      console.log('📋 [useEditPackageForm] Estableciendo datos del formulario con divisa:', newFormData.currency);
+      console.log('📋 [useEditPackageForm] Datos finales del formulario:', newFormData);
       setFormData(newFormData);
     }
-  }, [pkg?.id, pkg?.currency]); // Incluir pkg?.currency en las dependencias
+  }, [pkg?.id, pkg?.currency, pkg?.amount_to_collect]); // Agregar más dependencias específicas
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');

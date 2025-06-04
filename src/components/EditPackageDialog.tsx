@@ -64,10 +64,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  // Mostrar información de la divisa
-  const currencyDisplay = pkg.currency || 'No especificada';
-
-  console.log('🎯 [EditPackageDialog] Renderizando con divisa del paquete:', pkg.currency);
+  // FIXED: Mejor display de la divisa
+  const currencyDisplay = pkg.currency || 'COP';
+  console.log('🎯 [EditPackageDialog] Divisa del paquete para mostrar:', pkg.currency);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,7 +81,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
               </span>
               {pkg.amount_to_collect && (
                 <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs ml-2">
-                  Monto: ${pkg.amount_to_collect.toLocaleString()}
+                  Monto: {currencyDisplay} ${pkg.amount_to_collect.toLocaleString()}
                 </span>
               )}
             </div>

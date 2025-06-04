@@ -46,12 +46,11 @@ export function AmountToCollectSection({
     setIsCurrencyEditable(true);
   };
 
-  // Validar que la divisa sea una opción válida
-  const validCurrency = ['COP', 'AWG'].includes(currency) ? currency : 'COP';
+  // FIXED: Asegurar que la divisa sea válida
+  const validCurrency = currency && ['COP', 'AWG'].includes(currency) ? currency : 'COP';
   
-  console.log('🎯 [AmountToCollectSection] Mostrando divisa:', validCurrency);
+  console.log('🎯 [AmountToCollectSection] Divisa a mostrar:', validCurrency);
   console.log('🎯 [AmountToCollectSection] Divisa prop original:', currency);
-  console.log('🔍 [AmountToCollectSection] ¿Es divisa editable?:', isCurrencyEditable);
 
   return (
     <div className="space-y-4">
@@ -90,15 +89,6 @@ export function AmountToCollectSection({
           placeholder="0"
           className="flex-1"
         />
-      </div>
-
-      {/* Debug info - remover en producción */}
-      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-        <div>🎯 <strong>Prop divisa:</strong> {currency || 'undefined'}</div>
-        <div>🖥️ <strong>Divisa mostrada:</strong> {validCurrency}</div>
-        <div>🔧 <strong>Editable:</strong> {isCurrencyEditable ? 'Sí' : 'No'}</div>
-        <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
-        <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>
       </div>
     </div>
   );

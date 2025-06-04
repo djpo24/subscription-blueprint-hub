@@ -45,7 +45,7 @@ export function useFinancialData() {
           status,
           delivered_at,
           customer_id,
-          customers!inner(name, phone, email)
+          customers(name, phone, email)
         `)
         .gte('created_at', monthStart.toISOString())
         .lte('created_at', monthEnd.toISOString());
@@ -75,7 +75,7 @@ export function useFinancialData() {
           tracking_number,
           amount_to_collect,
           customer_id,
-          customers!inner(name, phone, email)
+          customers(name, phone, email)
         `)
         .eq('status', 'delivered')
         .gt('amount_to_collect', 0);

@@ -112,10 +112,10 @@ export function RecordPaymentDialog({
           .insert({
             customer_id: customer.id,
             package_id: packages[0].id,
-            amount: parseFloat(payment.amount) || 0,
-            payment_method: payment.methodId === 'efectivo' ? 'efectivo' : 
-                           payment.methodId === 'transferencia' ? 'transferencia' :
-                           payment.methodId === 'tarjeta' ? 'tarjeta' : 'otro',
+            amount: payment.amount,
+            payment_method: payment.method_id === 'efectivo' ? 'efectivo' : 
+                           payment.method_id === 'transferencia' ? 'transferencia' :
+                           payment.method_id === 'tarjeta' ? 'tarjeta' : 'otro',
             currency: payment.currency,
             notes: notes || null,
             created_by: 'Usuario actual' // TODO: Replace with actual user
@@ -124,11 +124,11 @@ export function RecordPaymentDialog({
         if (error) throw error;
       }
 
-      const totalAmount = validPayments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+      const totalAmount = validPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
       toast({
         title: 'Pagos registrados',
-        description: `Se registraron pagos por un total de ${payment.currency} ${totalAmount.toLocaleString('es-CO')} para ${customer.customer_name}`,
+        description: `Se registraron pagos por un total de ${validPayments[0]?.currency || 'COP'} ${totalAmount.toLocaleString('es-CO')} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();

@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { EditPackageDialog } from './EditPackageDialog';
 import { ChatDialog } from './chat/ChatDialog';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -29,6 +30,7 @@ export function PackagesByDateView({
   previewRole
 }: PackagesByDateViewProps) {
   const { data: trips = [], isLoading } = usePackagesByDate(selectedDate);
+  const { data: dispatches = [] } = useDispatchRelations(selectedDate);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -71,6 +73,11 @@ export function PackagesByDateView({
     }, 500);
   };
 
+  const handleCreateDispatch = () => {
+    // TODO: Implement dispatch creation functionality
+    console.log('Create dispatch for date:', selectedDate);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4 sm:space-y-6">
@@ -93,12 +100,25 @@ export function PackagesByDateView({
   }
 
   const totalPackages = trips.reduce((acc, trip) => acc + trip.packages.length, 0);
+  const totalWeight = trips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.weight || 0), 0), 0
+  );
+  const totalFreight = trips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
+  );
+  const totalAmountToCollect = trips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.amount_to_collect || 0), 0), 0
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <PackagesByDateHeader 
         selectedDate={selectedDate}
+        totalPackages={totalPackages}
+        totalTrips={trips.length}
+        dispatchCount={dispatches.length}
         onBack={onBack}
+        onCreateDispatch={handleCreateDispatch}
       />
 
       {trips.length === 0 ? (
@@ -106,9 +126,10 @@ export function PackagesByDateView({
       ) : (
         <>
           <PackagesByDateSummary 
-            totalTrips={trips.length}
             totalPackages={totalPackages}
-            selectedDate={selectedDate}
+            totalWeight={totalWeight}
+            totalFreight={totalFreight}
+            totalAmountToCollect={totalAmountToCollect}
           />
 
           <div className="space-y-4 sm:space-y-6">

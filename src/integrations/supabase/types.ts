@@ -1096,6 +1096,14 @@ export type Database = {
           | { p_package_id: string; p_delivered_by: string; p_payments?: Json }
         Returns: undefined
       }
+      deliver_package_with_payment_v2: {
+        Args: {
+          p_package_id: string
+          p_delivered_by: string
+          p_payments?: Json
+        }
+        Returns: string
+      }
       generate_batch_label: {
         Args: { p_trip_id: string; p_batch_number: string }
         Returns: string

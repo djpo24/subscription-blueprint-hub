@@ -44,7 +44,7 @@ export class DeliveryService {
 
       console.log('💰 [DeliveryService] Pagos preparados para RPC:', paymentsForRpc);
 
-      // Llamar a la función RPC con mejor manejo de errores
+      // Llamar a la función RPC v2 con mejor manejo de errores
       const { data, error } = await supabase.rpc('deliver_package_with_payment_v2', {
         p_package_id: packageId,
         p_delivered_by: deliveredBy,

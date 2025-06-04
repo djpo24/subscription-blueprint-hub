@@ -85,13 +85,27 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // Ensure currency is explicitly set
-      const currencyToSave = formData.currency || 'COP';
+      // IMPROVED: Better currency preservation logic
+      const currencyToSave = (() => {
+        // Priority: formData.currency > package original currency > default COP
+        if (formData.currency && ['COP', 'AWG'].includes(formData.currency)) {
+          return formData.currency;
+        }
+        if (pkg.currency && ['COP', 'AWG'].includes(pkg.currency)) {
+          console.log('📝 [EditPackageFormSubmission] Using package original currency:', pkg.currency);
+          return pkg.currency;
+        }
+        console.log('📝 [EditPackageFormSubmission] Defaulting to COP');
+        return 'COP';
+      })();
 
       console.log('📤 [EditPackageFormSubmission] Updating package with values:', {
+        packageId: pkg.id,
+        originalCurrency: pkg.currency,
+        formCurrency: formData.currency,
+        finalCurrency: currencyToSave,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-        currency: currencyToSave
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
       });
 
       const { error } = await supabase

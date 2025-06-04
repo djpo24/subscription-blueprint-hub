@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface Package {
@@ -40,8 +39,7 @@ export function useEditPackageForm(pkg: Package | null) {
   useEffect(() => {
     if (pkg) {
       console.log('🔄 [useEditPackageForm] Initializing with package:', pkg);
-      console.log('💱 [useEditPackageForm] Raw package currency value:', pkg.currency);
-      console.log('💱 [useEditPackageForm] Currency type:', typeof pkg.currency);
+      console.log('💱 [useEditPackageForm] Package currency from DB:', pkg.currency);
       
       // Parse existing description to extract details and optional description
       const description = pkg.description || '';
@@ -66,10 +64,20 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // Usar DIRECTAMENTE la moneda de la base de datos, sin validaciones complejas
-      const packageCurrency = pkg.currency || 'COP';
+      // IMPROVED: More robust currency handling
+      let packageCurrency = 'COP'; // Default fallback
       
-      console.log('💱 [useEditPackageForm] Using DIRECT currency from DB:', packageCurrency);
+      if (pkg.currency) {
+        // If package has a currency, validate it's in our allowed list
+        if (['COP', 'AWG'].includes(pkg.currency)) {
+          packageCurrency = pkg.currency;
+        } else {
+          // If currency exists but isn't in our list, log warning but keep it
+          console.warn('⚠️ [useEditPackageForm] Unknown currency from DB:', pkg.currency, 'defaulting to COP');
+        }
+      }
+
+      console.log('✅ [useEditPackageForm] Final currency to use:', packageCurrency);
 
       const newFormData = {
         description: optionalDescription,
@@ -82,10 +90,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details: details
       };
 
-      console.log('✅ [useEditPackageForm] Final form data with DIRECT currency:', newFormData.currency);
+      console.log('📋 [useEditPackageForm] Setting form data with currency:', newFormData.currency);
       setFormData(newFormData);
     }
-  }, [pkg?.id, pkg?.currency]);
+  }, [pkg?.id]); // Remove pkg?.currency from deps to avoid unnecessary re-renders
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
@@ -95,7 +103,7 @@ export function useEditPackageForm(pkg: Package | null) {
     console.log('🔄 [useEditPackageForm] Updating form data:', updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      console.log('🔄 [useEditPackageForm] New form data after update:', newData);
+      console.log('✅ [useEditPackageForm] New form data after update:', newData);
       return newData;
     });
   };

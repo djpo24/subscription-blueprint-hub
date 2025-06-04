@@ -33,12 +33,13 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   // Initialize form when dialog opens with package data
   useEffect(() => {
     if (pkg && open) {
-      console.log('🔍 [EditPackageDialog] Inicializando con paquete:', pkg);
-      console.log('💱 [EditPackageDialog] Package currency EXACTA de DB:', pkg.currency);
-      console.log('📊 [EditPackageDialog] Customer ID:', pkg.customer_id);
-      console.log('📊 [EditPackageDialog] Trip ID:', pkg.trip_id);
+      console.log('🚀 [EditPackageDialog] Initializing dialog with package:', {
+        id: pkg.id,
+        tracking_number: pkg.tracking_number,
+        currency: pkg.currency,
+        amount_to_collect: pkg.amount_to_collect
+      });
       
-      // Set the IDs immediately when package is available
       setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(pkg.trip_id || '');
     }
@@ -63,15 +64,14 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  const displayCurrency = pkg.currency && ['COP', 'AWG'].includes(pkg.currency) ? pkg.currency : 'COP';
+  // IMPROVED: Better currency display in dialog header
+  const currencyDisplay = (() => {
+    if (!pkg.currency) return 'Sin especificar';
+    if (['COP', 'AWG'].includes(pkg.currency)) return pkg.currency;
+    return `${pkg.currency} (no estándar)`;
+  })();
 
-  console.log('🎯 [EditPackageDialog] Renderizando con moneda:', displayCurrency);
-  console.log('🎯 [EditPackageDialog] Paquete completo:', {
-    id: pkg.id,
-    tracking_number: pkg.tracking_number,
-    currency: pkg.currency,
-    amount_to_collect: pkg.amount_to_collect
-  });
+  console.log('🎯 [EditPackageDialog] Rendering with package currency:', pkg.currency);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,9 +80,16 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
           <DialogTitle>Editar Encomienda</DialogTitle>
           <DialogDescription>
             Modificar la información de la encomienda {pkg.tracking_number}.
-            <span className="block text-sm text-blue-600 mt-1">
-              Moneda original: {displayCurrency}
-            </span>
+            <div className="mt-2 text-sm">
+              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                Moneda: {currencyDisplay}
+              </span>
+              {pkg.amount_to_collect && (
+                <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs ml-2">
+                  Monto: ${pkg.amount_to_collect.toLocaleString()}
+                </span>
+              )}
+            </div>
           </DialogDescription>
         </DialogHeader>
         

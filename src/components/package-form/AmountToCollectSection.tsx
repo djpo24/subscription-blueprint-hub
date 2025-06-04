@@ -39,7 +39,6 @@ export function AmountToCollectSection({
   const handleCurrencyChange = (newCurrency: string) => {
     console.log('💱 [AmountToCollectSection] Currency change from', currency, 'to', newCurrency);
     onCurrencyChange(newCurrency);
-    // Reset the editable state after changing currency
     setIsCurrencyEditable(false);
   };
 
@@ -47,10 +46,23 @@ export function AmountToCollectSection({
     setIsCurrencyEditable(true);
   };
 
-  // Ensure currency is always a valid string and in the allowed set
-  const safeCurrency = currency && ['COP', 'AWG'].includes(currency) ? currency : 'COP';
+  // IMPROVED: Validate currency but preserve original value if valid
+  const displayCurrency = (() => {
+    if (!currency) {
+      console.warn('⚠️ [AmountToCollectSection] No currency provided, using COP');
+      return 'COP';
+    }
+    
+    if (['COP', 'AWG'].includes(currency)) {
+      return currency;
+    }
+    
+    console.warn('⚠️ [AmountToCollectSection] Invalid currency:', currency, 'using COP');
+    return 'COP';
+  })();
   
-  console.log('🔍 [AmountToCollectSection] Rendering with safe currency:', safeCurrency);
+  console.log('🎯 [AmountToCollectSection] Displaying currency:', displayCurrency);
+  console.log('🎯 [AmountToCollectSection] Original currency prop:', currency);
   console.log('🔍 [AmountToCollectSection] Is currency editable:', isCurrencyEditable);
 
   return (
@@ -65,11 +77,11 @@ export function AmountToCollectSection({
             onClick={handleCurrencyClick}
             className="w-28 h-12 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
           >
-            <span className="text-gray-600 font-medium">{safeCurrency}</span>
+            <span className="text-gray-600 font-medium">{displayCurrency}</span>
           </div>
         ) : (
           <Select 
-            value={safeCurrency} 
+            value={displayCurrency} 
             onValueChange={handleCurrencyChange}
           >
             <SelectTrigger className="w-28">
@@ -92,9 +104,10 @@ export function AmountToCollectSection({
         />
       </div>
 
-      {/* Debug info simplificado */}
+      {/* Debug info */}
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-        <div>🎯 <strong>Divisa actual:</strong> {safeCurrency}</div>
+        <div>🎯 <strong>Prop currency:</strong> {currency || 'undefined'}</div>
+        <div>🖥️ <strong>Display currency:</strong> {displayCurrency}</div>
         <div>🔧 <strong>Editable:</strong> {isCurrencyEditable ? 'Sí' : 'No'}</div>
         <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
         <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>

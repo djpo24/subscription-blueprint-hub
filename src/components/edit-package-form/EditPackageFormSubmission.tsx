@@ -85,40 +85,46 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // FIXED: Usar la divisa del formulario como prioridad principal
-      const currencyToSave = formData.currency && ['COP', 'AWG'].includes(formData.currency) 
-        ? formData.currency 
-        : 'COP';
+      // CRITICAL FIX: Strict currency validation and assignment
+      const currencyToSave = formData.currency === 'AWG' ? 'AWG' : 'COP';
 
-      console.log('📤 [EditPackageFormSubmission] Valores para actualizar:', {
+      console.log('📤 [EditPackageFormSubmission] DATOS FINALES PARA GUARDAR:', {
         packageId: pkg.id,
-        originalCurrency: pkg.currency,
-        formCurrency: formData.currency,
-        finalCurrency: currencyToSave,
+        trackingNumber: pkg.tracking_number,
+        currencyOriginal: pkg.currency,
+        currencyForm: formData.currency,
+        currencyFinal: currencyToSave,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
       });
 
+      const updateData = {
+        customer_id: customerId,
+        description: finalDescription,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        freight: formData.freight ? parseFloat(formData.freight) : 0,
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        currency: currencyToSave,
+        origin: tripData.origin,
+        destination: tripData.destination,
+        flight_number: tripData.flight_number,
+        trip_id: tripId,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('🔥 [EditPackageFormSubmission] UPDATE DATA:', updateData);
+
       const { error } = await supabase
         .from('packages')
-        .update({
-          customer_id: customerId,
-          description: finalDescription,
-          weight: formData.weight ? parseFloat(formData.weight) : null,
-          freight: formData.freight ? parseFloat(formData.freight) : 0,
-          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-          currency: currencyToSave,
-          origin: tripData.origin,
-          destination: tripData.destination,
-          flight_number: tripData.flight_number,
-          trip_id: tripId,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', pkg.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [EditPackageFormSubmission] Error en UPDATE:', error);
+        throw error;
+      }
 
-      console.log('✅ [EditPackageFormSubmission] Paquete actualizado con divisa:', currencyToSave);
+      console.log('✅ [EditPackageFormSubmission] PAQUETE ACTUALIZADO EXITOSAMENTE CON DIVISA:', currencyToSave);
 
       // Create tracking event
       await supabase
@@ -132,12 +138,12 @@ export function useEditPackageFormSubmission({
 
       toast({
         title: "Encomienda actualizada",
-        description: "La información ha sido actualizada correctamente"
+        description: `La información ha sido actualizada correctamente con divisa ${currencyToSave}`
       });
 
       onSuccess();
     } catch (error) {
-      console.error('❌ [EditPackageFormSubmission] Error updating package:', error);
+      console.error('❌ [EditPackageFormSubmission] Error completo:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar la encomienda",

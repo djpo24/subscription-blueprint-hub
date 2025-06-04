@@ -39,8 +39,12 @@ export function useEditPackageForm(pkg: Package | null) {
 
   useEffect(() => {
     if (pkg) {
-      console.log('🔄 [useEditPackageForm] Inicializando con paquete:', pkg);
-      console.log('💱 [useEditPackageForm] Divisa del paquete desde BD:', pkg.currency);
+      console.log('🔄 [useEditPackageForm] Inicializando con paquete:', {
+        id: pkg.id,
+        tracking: pkg.tracking_number,
+        currency: pkg.currency,
+        amount: pkg.amount_to_collect
+      });
       
       // Parse existing description to extract details and optional description
       const description = pkg.description || '';
@@ -65,9 +69,16 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // FIXED: Mejor lógica para determinar la divisa
-      const packageCurrency = pkg.currency || 'COP';
-      console.log('✅ [useEditPackageForm] Divisa final a usar:', packageCurrency);
+      // CRITICAL FIX: Ensure currency is exactly 'AWG' or 'COP'
+      let packageCurrency = 'COP'; // Default
+      if (pkg.currency === 'AWG') {
+        packageCurrency = 'AWG';
+      }
+      
+      console.log('✅ [useEditPackageForm] Divisa procesada:', {
+        original: pkg.currency,
+        processed: packageCurrency
+      });
 
       const newFormData = {
         description: optionalDescription,
@@ -80,20 +91,20 @@ export function useEditPackageForm(pkg: Package | null) {
         details: details
       };
 
-      console.log('📋 [useEditPackageForm] Datos finales del formulario:', newFormData);
+      console.log('📋 [useEditPackageForm] Form data final:', newFormData);
       setFormData(newFormData);
     }
-  }, [pkg?.id, pkg?.currency, pkg?.amount_to_collect]); // Agregar más dependencias específicas
+  }, [pkg?.id]);
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
   };
 
   const updateFormData = (updates: Partial<EditPackageFormData>) => {
-    console.log('🔄 [useEditPackageForm] Actualizando datos del formulario:', updates);
+    console.log('🔄 [useEditPackageForm] Actualizando:', updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      console.log('✅ [useEditPackageForm] Nuevos datos del formulario después de actualización:', newData);
+      console.log('✅ [useEditPackageForm] Nuevo estado:', newData);
       return newData;
     });
   };

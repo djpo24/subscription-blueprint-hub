@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +40,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     if (!customer) return;
 
     try {
+      console.log('🔍 Fetching packages for customer:', customer.id);
       const { data: packages, error } = await supabase
         .from('packages')
         .select('*')
@@ -50,6 +50,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
 
       if (error) throw error;
       
+      console.log('📦 Fetched packages:', packages);
       setCustomerPackages(packages || []);
     } catch (error) {
       console.error('Error fetching customer packages:', error);
@@ -71,14 +72,19 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     }
   } : null;
 
+  console.log('💰 Mock package currency:', mockPackage?.currency);
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen && mockPackage) {
+      console.log('🔄 Resetting form with package currency:', mockPackage.currency);
       setNotes('');
       // Usar la divisa del paquete como predeterminada
       const packageCurrency = mockPackage.currency || 'COP';
       const defaultMethod = paymentMethods.find(m => m.currency === packageCurrency) || 
                            paymentMethods.find(m => m.currency === 'COP');
+      
+      console.log('🎯 Setting default payment with currency:', packageCurrency);
       setPayment({
         methodId: defaultMethod?.id || '',
         amount: '',
@@ -108,13 +114,16 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
         }
       }
       
+      console.log('💳 Updated payment:', updated);
       return updated;
     });
   };
 
   const getCurrencySymbol = (currency: string) => {
     const method = paymentMethods.find(m => m.currency === currency);
-    return method?.symbol || '$';
+    const symbol = method?.symbol || '$';
+    console.log('💱 Currency symbol for', currency, ':', symbol);
+    return symbol;
   };
 
   const handleSubmit = async (onPaymentRecorded: () => void, onClose: () => void) => {

@@ -26,15 +26,18 @@ export function MobilePaymentSection({
   
   if (!requiresPayment) return null;
 
-  // Calcular totales de pago
+  // Usar la divisa del paquete
+  const packageCurrency = pkg.currency || 'COP';
+  console.log('💰 [MobilePaymentSection] Package currency:', packageCurrency);
+  
+  // Calcular totales de pago usando la divisa del paquete
   const totalCollected = payments.reduce((sum, payment) => {
     const amount = parseFloat(payment.amount) || 0;
     return sum + amount;
   }, 0);
 
-  // Usar la divisa del paquete como predeterminada
-  const packageCurrency = pkg.currency || 'COP';
   const currencySymbol = getCurrencySymbol(packageCurrency);
+  console.log('💱 [MobilePaymentSection] Currency symbol:', currencySymbol);
   
   const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
 

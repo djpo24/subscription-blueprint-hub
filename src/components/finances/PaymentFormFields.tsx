@@ -24,6 +24,9 @@ export function PaymentFormFields({
   onNotesChange,
   getCurrencySymbol
 }: PaymentFormFieldsProps) {
+  console.log('📋 [PaymentFormFields] Mock package:', mockPackage);
+  console.log('💳 [PaymentFormFields] Payments:', payments);
+  
   return (
     <div className="space-y-4">
       {/* Payment Section - usando el componente móvil */}

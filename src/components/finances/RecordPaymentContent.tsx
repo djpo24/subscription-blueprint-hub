@@ -42,6 +42,13 @@ export function RecordPaymentContent({
   onSubmit,
   getCurrencySymbol
 }: RecordPaymentContentProps) {
+  console.log('🏗️ [RecordPaymentContent] Mock package:', mockPackage);
+  console.log('💳 [RecordPaymentContent] Payments:', payments);
+  
+  // Usar la divisa del paquete
+  const packageCurrency = mockPackage?.currency || 'COP';
+  console.log('💰 [RecordPaymentContent] Package currency:', packageCurrency);
+  
   // Calcular totales de pago
   const totalCollected = payments.reduce((sum, payment) => {
     const amount = parseFloat(payment.amount) || 0;
@@ -49,10 +56,11 @@ export function RecordPaymentContent({
   }, 0);
 
   const remainingAmount = Math.max(0, customer.total_pending_amount - totalCollected);
-  
-  // Usar la divisa del paquete
-  const packageCurrency = mockPackage?.currency || 'COP';
   const currencySymbol = getCurrencySymbol(packageCurrency);
+
+  console.log('💱 [RecordPaymentContent] Currency symbol:', currencySymbol);
+  console.log('📊 [RecordPaymentContent] Total collected:', totalCollected);
+  console.log('📊 [RecordPaymentContent] Remaining amount:', remainingAmount);
 
   return (
     <div className="space-y-4">

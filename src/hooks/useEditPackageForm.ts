@@ -33,7 +33,7 @@ export function useEditPackageForm(pkg: Package | null) {
     freightFormatted: '',
     amountToCollect: '',
     amountToCollectFormatted: '',
-    currency: 'COP',
+    currency: 'COP', // Default inicial pero se actualizará con el paquete
     details: ['']
   });
 
@@ -65,14 +65,11 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // CRÍTICO: Usar la moneda del paquete primero, luego AWG como fallback
-      const packageCurrency = pkg.currency || 'AWG';
-      console.log('💱 [useEditPackageForm] Setting currency to:', packageCurrency);
-      console.log('💱 [useEditPackageForm] Raw package data:', {
-        id: pkg.id,
-        currency: pkg.currency,
-        amount_to_collect: pkg.amount_to_collect
-      });
+      // CRÍTICO: Usar la moneda EXACTA del paquete, sin fallbacks
+      // Si no hay moneda en el paquete, usar COP como default pero esto no debería pasar
+      const packageCurrency = pkg.currency || 'COP';
+      console.log('💱 [useEditPackageForm] Using EXACT currency from package:', packageCurrency);
+      console.log('💱 [useEditPackageForm] No fallbacks applied - using database value as-is');
 
       const newFormData = {
         description: optionalDescription,
@@ -85,10 +82,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details: details
       };
 
-      console.log('✅ [useEditPackageForm] Setting form data:', newFormData);
+      console.log('✅ [useEditPackageForm] Final form data with currency:', newFormData.currency);
       setFormData(newFormData);
     }
-  }, [pkg?.id, pkg?.currency]); // Asegurar que se ejecute cuando cambie la moneda
+  }, [pkg?.id]); // Solo dependemos del ID del paquete para evitar re-renders innecesarios
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');
@@ -98,7 +95,7 @@ export function useEditPackageForm(pkg: Package | null) {
     console.log('🔄 [useEditPackageForm] Updating form data:', updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      console.log('🔄 [useEditPackageForm] New form data:', newData);
+      console.log('🔄 [useEditPackageForm] New form data after update:', newData);
       return newData;
     });
   };

@@ -22,7 +22,7 @@ export function AmountToCollectSection({
 }: AmountToCollectSectionProps) {
   
   useEffect(() => {
-    console.log('💱 [AmountToCollectSection] Component mounted/updated with currency:', currency);
+    console.log('💱 [AmountToCollectSection] Component updated with currency:', currency);
     console.log('💰 [AmountToCollectSection] Amount:', amountToCollect);
     console.log('💰 [AmountToCollectSection] Formatted amount:', amountToCollectFormatted);
   }, [currency, amountToCollect, amountToCollectFormatted]);
@@ -41,6 +41,7 @@ export function AmountToCollectSection({
   };
 
   console.log('🔍 [AmountToCollectSection] Rendering with currency:', currency);
+  console.log('🔍 [AmountToCollectSection] Select value will be:', currency);
 
   return (
     <div className="space-y-4">
@@ -52,7 +53,6 @@ export function AmountToCollectSection({
         <Select 
           value={currency} 
           onValueChange={handleCurrencyChange}
-          key={`currency-${currency}`} // Force re-render when currency changes
         >
           <SelectTrigger className="w-28">
             <SelectValue placeholder="Divisa" />
@@ -74,7 +74,7 @@ export function AmountToCollectSection({
 
       {/* Debug info - visible in development */}
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-        <div>🎯 <strong>Divisa activa:</strong> {currency}</div>
+        <div>🎯 <strong>Divisa desde DB:</strong> {currency}</div>
         <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
         <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>
         <div>🕒 <strong>Timestamp:</strong> {new Date().toLocaleTimeString()}</div>

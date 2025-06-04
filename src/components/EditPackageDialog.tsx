@@ -15,7 +15,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string; // Add currency to interface
+  currency?: string;
   status: string;
 }
 
@@ -30,11 +30,11 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedTripId, setSelectedTripId] = useState('');
 
-  // Initialize form when dialog opens with package data - only set once when package changes
+  // Initialize form when dialog opens with package data
   useEffect(() => {
     if (pkg && open) {
       console.log('🔍 [EditPackageDialog] Inicializando con paquete:', pkg);
-      console.log('💱 [EditPackageDialog] Package currency:', pkg.currency);
+      console.log('💱 [EditPackageDialog] Package currency EXACTA de DB:', pkg.currency);
       console.log('📊 [EditPackageDialog] Customer ID:', pkg.customer_id);
       console.log('📊 [EditPackageDialog] Trip ID:', pkg.trip_id);
       
@@ -42,7 +42,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
       setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(pkg.trip_id || '');
     }
-  }, [pkg?.id, open]); // Only depend on package ID and open state
+  }, [pkg?.id, open]);
 
   // Reset when dialog closes
   useEffect(() => {
@@ -63,7 +63,13 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  console.log('🎯 [EditPackageDialog] Rendering with package currency:', pkg.currency);
+  console.log('🎯 [EditPackageDialog] Renderizando con moneda:', pkg.currency);
+  console.log('🎯 [EditPackageDialog] Paquete completo:', {
+    id: pkg.id,
+    tracking_number: pkg.tracking_number,
+    currency: pkg.currency,
+    amount_to_collect: pkg.amount_to_collect
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +80,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
             Modificar la información de la encomienda {pkg.tracking_number}.
             {pkg.currency && (
               <span className="block text-sm text-blue-600 mt-1">
-                Moneda actual: {pkg.currency}
+                Moneda en BD: {pkg.currency}
               </span>
             )}
           </DialogDescription>

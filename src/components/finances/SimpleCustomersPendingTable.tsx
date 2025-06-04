@@ -1,9 +1,15 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Users, Phone, AlertCircle, RefreshCw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DollarSign, Users, Phone, AlertCircle, RefreshCw, Calendar, Package, MapPin } from 'lucide-react';
 import { useCustomersPendingCollection } from '@/hooks/useCustomersPendingCollection';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
+import { formatCurrency } from '@/utils/currencyFormatter';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
 
 export function SimpleCustomersPendingTable() {
@@ -42,6 +48,33 @@ export function SimpleCustomersPendingTable() {
   const handleRetry = () => {
     console.log('🔄 Reintentando cargar datos...');
     refetch();
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    try {
+      return format(new Date(dateString), 'dd MMM yyyy', { locale: es });
+    } catch {
+      return 'Fecha inválida';
+    }
+  };
+
+  const getDaysSinceDelivery = (deliveryDate: string | null) => {
+    if (!deliveryDate) return 0;
+    try {
+      const delivery = new Date(deliveryDate);
+      const today = new Date();
+      const diffTime = Math.abs(today.getTime() - delivery.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } catch {
+      return 0;
+    }
+  };
+
+  const getUrgencyBadgeColor = (days: number) => {
+    if (days >= 30) return 'destructive';
+    if (days >= 15) return 'secondary';
+    return 'outline';
   };
 
   if (isLoading) {
@@ -93,19 +126,30 @@ export function SimpleCustomersPendingTable() {
     );
   }
 
+  const totalPendingAmount = customers?.reduce((sum, customer) => sum + (customer.pending_amount || 0), 0) || 0;
+
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Clientes con Pagos Pendientes
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Clientes con Pagos Pendientes
+              {customers && customers.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {customers.length}
+                </Badge>
+              )}
+            </CardTitle>
             {customers && customers.length > 0 && (
-              <span className="text-sm font-normal text-gray-500">
-                ({customers.length})
-              </span>
+              <div className="text-sm text-gray-600">
+                Total pendiente: <span className="font-medium text-red-600">
+                  {formatCurrency(totalPendingAmount, 'COP')}
+                </span>
+              </div>
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {!customers || customers.length === 0 ? (
@@ -114,42 +158,86 @@ export function SimpleCustomersPendingTable() {
               <p className="text-gray-500">No hay clientes con pagos pendientes</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {customers.map((customer, index) => (
-                <div
-                  key={`${customer.package_id}-${customer.customer_name}-${index}`}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{customer.customer_name}</h4>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        {customer.tracking_number}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {customer.customer_phone}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        ${customer.pending_amount?.toLocaleString('es-CO')} {customer.currency || 'COP'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3 sm:mt-0">
-                    <Button
-                      size="sm"
-                      onClick={() => handleRecordPayment(customer)}
-                      className="w-full sm:w-auto"
-                    >
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Registrar Pago
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Paquete</TableHead>
+                    <TableHead>Destino</TableHead>
+                    <TableHead>Fecha Entrega</TableHead>
+                    <TableHead>Días</TableHead>
+                    <TableHead className="text-right">Monto Pendiente</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer, index) => {
+                    const daysSinceDelivery = getDaysSinceDelivery(customer.delivery_date);
+                    return (
+                      <TableRow 
+                        key={`${customer.package_id}-${customer.customer_name}-${index}`}
+                        className="hover:bg-gray-50"
+                      >
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{customer.customer_name}</div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Phone className="h-3 w-3" />
+                              {customer.customer_phone}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Package className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm font-mono">
+                              {customer.tracking_number}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm">{customer.destination}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm">
+                              {formatDate(customer.delivery_date)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={getUrgencyBadgeColor(daysSinceDelivery)}
+                            className="text-xs"
+                          >
+                            {daysSinceDelivery} días
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="font-medium text-red-600">
+                            {formatCurrency(customer.pending_amount || 0, customer.currency as 'COP' | 'AWG' || 'COP')}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            onClick={() => handleRecordPayment(customer)}
+                            className="gap-1"
+                          >
+                            <DollarSign className="h-3 w-3" />
+                            Registrar Pago
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

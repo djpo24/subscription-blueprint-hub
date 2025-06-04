@@ -10,7 +10,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string;
+  currency: string;
   status: string;
 }
 
@@ -21,7 +21,7 @@ interface EditPackageFormData {
   freightFormatted: string;
   amountToCollect: string;
   amountToCollectFormatted: string;
-  currency: string;
+  currency: 'COP' | 'AWG';
   details: string[];
 }
 
@@ -69,18 +69,17 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
-      // FIXED: Ensure currency is properly validated and set
-      let packageCurrency = 'COP'; // Default fallback
-      if (pkg.currency === 'AWG' || pkg.currency === 'COP') {
-        packageCurrency = pkg.currency;
-      }
+      // FIXED: Strict currency validation with explicit type casting
+      const packageCurrency: 'COP' | 'AWG' = 
+        pkg.currency === 'AWG' ? 'AWG' : 'COP';
       
       console.log('✅ [useEditPackageForm] Divisa procesada:', {
         original: pkg.currency,
-        processed: packageCurrency
+        processed: packageCurrency,
+        type: typeof packageCurrency
       });
 
-      const newFormData = {
+      const newFormData: EditPackageFormData = {
         description: optionalDescription,
         weight: pkg.weight?.toString() || '',
         freight: pkg.freight?.toString() || '',
@@ -94,7 +93,7 @@ export function useEditPackageForm(pkg: Package | null) {
       console.log('📋 [useEditPackageForm] Form data final:', newFormData);
       setFormData(newFormData);
     }
-  }, [pkg?.id, pkg?.currency]); // Added pkg?.currency to dependencies
+  }, [pkg?.id, pkg?.currency]);
 
   const getFilledDetails = () => {
     return formData.details.filter(detail => detail.trim() !== '');

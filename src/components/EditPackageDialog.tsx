@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CustomerSearchSelector } from './CustomerSearchSelector';
 import { TripSelector } from './TripSelector';
 import { EditPackageForm } from './EditPackageForm';
@@ -15,7 +14,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string;
+  currency: string;
   status: string;
 }
 
@@ -64,9 +63,12 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
 
   if (!pkg) return null;
 
-  // FIXED: Mejor display de la divisa
-  const currencyDisplay = pkg.currency || 'COP';
-  console.log('🎯 [EditPackageDialog] Divisa del paquete para mostrar:', pkg.currency);
+  // Display currency with validation
+  const currencyDisplay = pkg.currency === 'AWG' ? 'AWG' : 'COP';
+  console.log('🎯 [EditPackageDialog] Divisa del paquete para mostrar:', {
+    original: pkg.currency,
+    display: currencyDisplay
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

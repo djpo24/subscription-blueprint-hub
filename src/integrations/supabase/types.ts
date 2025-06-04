@@ -676,7 +676,7 @@ export type Database = {
       package_debts: {
         Row: {
           created_at: string
-          currency: string | null
+          currency: string
           debt_start_date: string | null
           debt_type: string
           delivery_date: string | null
@@ -690,7 +690,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          currency?: string | null
+          currency?: string
           debt_start_date?: string | null
           debt_type?: string
           delivery_date?: string | null
@@ -704,7 +704,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          currency?: string | null
+          currency?: string
           debt_start_date?: string | null
           debt_type?: string
           delivery_date?: string | null

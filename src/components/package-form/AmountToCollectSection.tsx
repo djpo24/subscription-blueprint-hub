@@ -3,13 +3,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+
+type Currency = 'COP' | 'AWG';
 
 interface AmountToCollectSectionProps {
-  currency: string;
+  currency: Currency;
   amountToCollect: string;
   amountToCollectFormatted: string;
-  onCurrencyChange: (currency: string) => void;
+  onCurrencyChange: (currency: Currency) => void;
   onAmountChange: (amount: string, amountFormatted: string) => void;
 }
 
@@ -22,13 +24,12 @@ export function AmountToCollectSection({
 }: AmountToCollectSectionProps) {
   const [isCurrencyEditable, setIsCurrencyEditable] = useState(false);
   
-  useEffect(() => {
-    console.log('💱 [AmountToCollectSection] Props recibidas:', {
-      currency,
-      amountToCollect,
-      amountToCollectFormatted
-    });
-  }, [currency, amountToCollect, amountToCollectFormatted]);
+  console.log('💱 [AmountToCollectSection] Props recibidas:', {
+    currency,
+    amountToCollect,
+    amountToCollectFormatted,
+    currencyType: typeof currency
+  });
 
   const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -44,13 +45,9 @@ export function AmountToCollectSection({
       tipo: typeof newCurrency
     });
     
-    // Validate currency before setting
-    if (newCurrency === 'COP' || newCurrency === 'AWG') {
-      onCurrencyChange(newCurrency);
-    } else {
-      console.warn('⚠️ [AmountToCollectSection] Divisa inválida, usando COP como fallback');
-      onCurrencyChange('COP');
-    }
+    // Strict type validation
+    const validCurrency: Currency = newCurrency === 'AWG' ? 'AWG' : 'COP';
+    onCurrencyChange(validCurrency);
     setIsCurrencyEditable(false);
   };
 
@@ -58,13 +55,7 @@ export function AmountToCollectSection({
     setIsCurrencyEditable(true);
   };
 
-  // Ensure currency is valid for display
-  const displayCurrency = (currency === 'AWG' || currency === 'COP') ? currency : 'COP';
-  
-  console.log('🎯 [AmountToCollectSection] Divisa a mostrar:', {
-    original: currency,
-    display: displayCurrency
-  });
+  console.log('🎯 [AmountToCollectSection] Divisa a mostrar:', currency);
 
   return (
     <div className="space-y-4">
@@ -78,11 +69,11 @@ export function AmountToCollectSection({
             onClick={handleCurrencyClick}
             className="w-28 h-12 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
           >
-            <span className="text-gray-600 font-medium">{displayCurrency}</span>
+            <span className="text-gray-600 font-medium">{currency}</span>
           </div>
         ) : (
           <Select 
-            value={displayCurrency} 
+            value={currency} 
             onValueChange={handleCurrencyChange}
           >
             <SelectTrigger className="w-28">

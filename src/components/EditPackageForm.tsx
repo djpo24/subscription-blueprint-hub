@@ -16,7 +16,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string;
+  currency: string;
   status: string;
 }
 
@@ -48,7 +48,8 @@ export function EditPackageForm({
   console.log('🔍 [EditPackageForm] Estado actual:', {
     packageCurrency: pkg.currency,
     formCurrency: formData.currency,
-    trackingNumber: pkg.tracking_number
+    trackingNumber: pkg.tracking_number,
+    formCurrencyType: typeof formData.currency
   });
 
   return (
@@ -78,7 +79,8 @@ export function EditPackageForm({
           console.log('💱 [EditPackageForm] Cambio de divisa detectado:', {
             from: formData.currency,
             to: currency,
-            package: pkg.tracking_number
+            package: pkg.tracking_number,
+            currencyType: typeof currency
           });
           updateFormData({ currency });
         }}

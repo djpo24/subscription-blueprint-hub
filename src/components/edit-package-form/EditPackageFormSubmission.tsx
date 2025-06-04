@@ -12,7 +12,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
-  currency?: string;
+  currency: string;
   status: string;
 }
 
@@ -21,7 +21,7 @@ interface FormData {
   weight: string;
   freight: string;
   amountToCollect: string;
-  currency: string;
+  currency: 'COP' | 'AWG';
   details: string[];
 }
 
@@ -85,10 +85,8 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // CRITICAL FIX: Validate and ensure currency is correct
-      const currencyToSave = (formData.currency === 'AWG' || formData.currency === 'COP') 
-        ? formData.currency 
-        : 'COP';
+      // FIXED: Use the currency directly from the form data (already validated)
+      const currencyToSave = formData.currency;
 
       console.log('📤 [EditPackageFormSubmission] DATOS FINALES PARA GUARDAR:', {
         packageId: pkg.id,

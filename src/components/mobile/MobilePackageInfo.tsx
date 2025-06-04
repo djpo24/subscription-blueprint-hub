@@ -11,17 +11,38 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
   const packageCurrency = pkg.currency || 'COP';
   
+  // Logs detallados para debug
+  console.log('📋 [MobilePackageInfo] Package data:', pkg);
+  console.log('💰 [MobilePackageInfo] Package currency:', packageCurrency);
+  console.log('💰 [MobilePackageInfo] Amount to collect:', pkg.amount_to_collect);
+  console.log('💰 [MobilePackageInfo] Requires payment:', requiresPayment);
+  
   // Obtener símbolo de divisa
   const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'AWG': return 'ƒ';
-      case 'USD': return '$';
-      case 'COP': return '$';
-      default: return '$';
-    }
+    const symbols = {
+      'AWG': 'ƒ',
+      'USD': '$',
+      'COP': '$'
+    };
+    
+    const symbol = symbols[currency as keyof typeof symbols] || '$';
+    console.log('💱 [MobilePackageInfo] Currency symbol for', currency, ':', symbol);
+    return symbol;
   };
 
   const currencySymbol = getCurrencySymbol(packageCurrency);
+
+  const getCurrencyLabel = (currency: string) => {
+    const labels = {
+      'AWG': 'Florín (AWG)',
+      'USD': 'Dólar (USD)',
+      'COP': 'Peso (COP)'
+    };
+    
+    const label = labels[currency as keyof typeof labels] || `${currency}`;
+    console.log('🏷️ [MobilePackageInfo] Currency label for', currency, ':', label);
+    return label;
+  };
 
   return (
     <Card>
@@ -56,9 +77,7 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
               <div className="flex justify-between">
                 <span className="font-medium text-gray-600">Moneda:</span>
                 <span className="text-sm bg-blue-100 px-2 py-1 rounded">
-                  {packageCurrency === 'AWG' ? 'Florín (AWG)' : 
-                   packageCurrency === 'USD' ? 'Dólar (USD)' : 
-                   'Peso (COP)'}
+                  {getCurrencyLabel(packageCurrency)}
                 </span>
               </div>
             </>

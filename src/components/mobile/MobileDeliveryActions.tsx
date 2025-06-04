@@ -33,14 +33,20 @@ export function MobileDeliveryActions({
   const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
   const packageCurrency = pkg.currency || 'COP';
   
+  console.log('🎯 [MobileDeliveryActions] Package currency:', packageCurrency);
+  console.log('🎯 [MobileDeliveryActions] Remaining amount:', remainingAmount);
+  
   // Obtener símbolo de divisa
   const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'AWG': return 'ƒ';
-      case 'USD': return '$';
-      case 'COP': return '$';
-      default: return '$';
-    }
+    const symbols = {
+      'AWG': 'ƒ',
+      'USD': '$',
+      'COP': '$'
+    };
+    
+    const symbol = symbols[currency as keyof typeof symbols] || '$';
+    console.log('💱 [MobileDeliveryActions] Currency symbol for', currency, ':', symbol);
+    return symbol;
   };
 
   const currencySymbol = getCurrencySymbol(packageCurrency);

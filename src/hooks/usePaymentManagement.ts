@@ -1,70 +1,106 @@
-import { useState } from 'react';
-import { usePaymentMethods } from '@/hooks/usePaymentMethods';
-import type { PaymentEntryData } from '@/types/payment';
-import {
+
+import { useState, useEffect } from 'react';
+import { usePaymentMethods } from './usePaymentMethods';
+import { 
   createDefaultPayment,
   filterAvailablePaymentMethods,
-  getCurrencySymbol,
+  getCurrencySymbol as getSymbol,
   getValidPayments,
   updatePaymentEntry
 } from '@/utils/paymentUtils';
+import type { PaymentEntryData } from '@/types/payment';
 
 export function usePaymentManagement(packageCurrency?: string) {
   const { data: paymentMethods = [] } = usePaymentMethods();
-  
-  // Filter payment methods for only Florín and Peso
+  const [payments, setPayments] = useState<PaymentEntryData[]>([]);
+
+  console.log('🎯 [usePaymentManagement] Package currency received:', packageCurrency);
+  console.log('🎯 [usePaymentManagement] Available payment methods:', paymentMethods);
+
+  // Filter payment methods to show only supported currencies
   const availablePaymentMethods = filterAvailablePaymentMethods(paymentMethods);
 
-  // Use package currency as default, fallback to AWG if not specified
-  const defaultCurrency = packageCurrency && ['AWG', 'COP'].includes(packageCurrency) 
-    ? packageCurrency 
-    : 'AWG';
-  
-  const defaultMethod = availablePaymentMethods.find(m => m.currency === defaultCurrency) ||
-                       availablePaymentMethods.find(m => m.currency === 'AWG');
+  // Initialize with one payment entry when component mounts
+  useEffect(() => {
+    const currency = packageCurrency || 'AWG';
+    console.log('🔄 [usePaymentManagement] Initializing with currency:', currency);
+    
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
+                         availablePaymentMethods.find(m => m.currency === 'AWG') ||
+                         availablePaymentMethods[0];
+    
+    console.log('🎯 [usePaymentManagement] Default method selected:', defaultMethod);
+    
+    if (defaultMethod) {
+      const defaultPayment = createDefaultPayment(defaultMethod);
+      defaultPayment.currency = currency; // Asegurar que use la moneda del paquete
+      console.log('🎯 [usePaymentManagement] Default payment created:', defaultPayment);
+      setPayments([defaultPayment]);
+    }
+  }, [packageCurrency, availablePaymentMethods.length]);
 
-  // Initialize with single payment entry using package currency
-  const [payments, setPayments] = useState<PaymentEntryData[]>([
-    createDefaultPayment(defaultMethod)
-  ]);
-
-  // Simplified functions for single payment
   const addPayment = () => {
-    // No longer needed - keeping for compatibility
-  };
-
-  const removePayment = (index: number) => {
-    // No longer needed - keeping for compatibility
-  };
-
-  const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
-    if (index === 0) {
-      setPayments(prev => [
-        updatePaymentEntry(prev[0], field, value, availablePaymentMethods, packageAmount)
-      ]);
+    const currency = packageCurrency || 'AWG';
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
+                         availablePaymentMethods[0];
+    
+    if (defaultMethod) {
+      const newPayment = createDefaultPayment(defaultMethod);
+      newPayment.currency = currency;
+      setPayments(prev => [...prev, newPayment]);
     }
   };
 
+  const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
+    console.log('💳 [usePaymentManagement] Updating payment:', { index, field, value, packageAmount });
+    
+    setPayments(prev => 
+      prev.map((payment, i) => 
+        i === index 
+          ? updatePaymentEntry(payment, field, value, availablePaymentMethods, packageAmount)
+          : payment
+      )
+    );
+  };
+
+  const removePayment = (index: number) => {
+    setPayments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const resetPayments = () => {
-    setPayments([createDefaultPayment(defaultMethod)]);
+    const currency = packageCurrency || 'AWG';
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
+                         availablePaymentMethods[0];
+    
+    if (defaultMethod) {
+      const defaultPayment = createDefaultPayment(defaultMethod);
+      defaultPayment.currency = currency;
+      setPayments([defaultPayment]);
+    } else {
+      setPayments([]);
+    }
   };
 
-  const getSymbol = (currency: string) => {
-    return getCurrencySymbol(currency, availablePaymentMethods);
+  const getCurrencySymbol = (currency: string) => {
+    const symbol = getSymbol(currency, availablePaymentMethods);
+    console.log('💱 [usePaymentManagement] Currency symbol for', currency, ':', symbol);
+    return symbol;
   };
 
-  const getValidPaymentsData = () => {
-    return getValidPayments(payments);
+  const getValidPaymentsForSubmission = () => {
+    const validPayments = getValidPayments(payments);
+    console.log('✅ [usePaymentManagement] Valid payments for submission:', validPayments);
+    return validPayments;
   };
 
   return {
     payments,
     addPayment,
-    removePayment,
     updatePayment,
+    removePayment,
     resetPayments,
-    getCurrencySymbol: getSymbol,
-    getValidPayments: getValidPaymentsData,
+    getCurrencySymbol,
+    getValidPayments: getValidPaymentsForSubmission,
     availablePaymentMethods
   };
 }

@@ -25,6 +25,12 @@ export function DeliverPackageForm({
   const [notes, setNotes] = useState('');
   const { user } = useAuth();
   
+  // Logs detallados del paquete
+  console.log('🎯 [DeliverPackageForm] PAQUETE COMPLETO:', pkg);
+  console.log('🎯 [DeliverPackageForm] Tracking number:', pkg.tracking_number);
+  console.log('🎯 [DeliverPackageForm] Currency from package:', pkg.currency);
+  console.log('🎯 [DeliverPackageForm] Amount to collect:', pkg.amount_to_collect);
+  
   const deliverPackage = useDeliverPackage();
   const {
     payments,
@@ -96,12 +102,16 @@ export function DeliverPackageForm({
   }, 0);
 
   const remainingAmount = (pkg.amount_to_collect || 0) - totalCollected;
+  const packageCurrency = pkg.currency || 'COP';
+  const currencySymbol = getCurrencySymbol(packageCurrency);
 
   console.log('💰 Estado de pagos:', {
     requiresPayment,
     totalCollected,
     remainingAmount,
-    amountToCollect: pkg.amount_to_collect
+    amountToCollect: pkg.amount_to_collect,
+    packageCurrency,
+    currencySymbol
   });
 
   return (
@@ -143,7 +153,7 @@ export function DeliverPackageForm({
             <CardContent className="p-3">
               <p className="text-sm text-orange-700">
                 <strong>Atención:</strong> Queda un saldo pendiente de{' '}
-                <strong>${remainingAmount.toLocaleString('es-CO')} {pkg.currency || 'COP'}</strong>.
+                <strong>{currencySymbol}{remainingAmount.toLocaleString('es-CO')} {packageCurrency}</strong>.
                 Puedes registrar los pagos arriba.
               </p>
             </CardContent>

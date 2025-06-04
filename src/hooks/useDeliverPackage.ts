@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -28,11 +27,11 @@ export function useDeliverPackage() {
       });
 
       try {
-        // Primero intentamos la función RPC original - CAMBIO: enviar array directo, no JSON string
+        // Primero intentamos la función RPC original - CAMBIO: enviar array como JSON
         const { data, error } = await supabase.rpc('deliver_package_with_payment', {
           p_package_id: packageId,
           p_delivered_by: deliveredBy,
-          p_payments: payments || [] // Enviar array vacío en lugar de null, y NO JSON.stringify
+          p_payments: (payments || []) as any // Cast as any para evitar el error de tipos
         });
         
         if (error) {

@@ -1,82 +1,118 @@
 
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
-
-interface PaymentEntryData {
-  methodId: string;
-  amount: string;
-  currency: string;
-  type: 'full' | 'partial';
-}
+import { Minus } from 'lucide-react';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
+import type { PaymentEntryData } from '@/types/payment';
 
 interface PaymentEntryProps {
   payment: PaymentEntryData;
   index: number;
-  onUpdate: (index: number, field: keyof PaymentEntryData, value: string) => void;
+  onUpdate: (index: number, field: string, value: string) => void;
   onRemove: (index: number) => void;
-  canRemove?: boolean;
+  canRemove: boolean;
 }
 
-export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove = true }: PaymentEntryProps) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-medium">Pago #{index + 1}</span>
-          {canRemove && (
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm"
-              onClick={() => onRemove(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Moneda</Label>
-            <Select
-              value={payment.currency}
-              onValueChange={(value) => onUpdate(index, 'currency', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar moneda" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AWG">Florín (AWG)</SelectItem>
-                <SelectItem value="COP">Peso (COP)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label>Monto</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={payment.amount}
-              onChange={(e) => onUpdate(index, 'amount', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
+export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
+  const { data: paymentMethods = [] } = usePaymentMethods();
+  
+  // Filter payment methods for only Florín and Peso
+  const availablePaymentMethods = paymentMethods.filter(method => 
+    method.currency === 'AWG' || method.currency === 'COP'
+  );
 
-        {payment.amount && (
-          <div className="mt-2 text-sm text-gray-600">
-            Tipo de pago: <span className="font-medium">
-              {payment.type === 'full' ? 'Completo' : 'Parcial'}
-            </span>
-          </div>
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    console.log('📝 Input amount change:', rawValue);
+    
+    // Allow only numbers and format with periods
+    const formattedValue = formatNumber(rawValue);
+    const numericValue = parseFormattedNumber(formattedValue);
+    
+    // Update with the raw numeric value (without periods)
+    onUpdate(index, 'amount', numericValue);
+  };
+
+  const getDisplayAmount = () => {
+    if (!payment.amount) return '';
+    return formatNumber(payment.amount);
+  };
+
+  const selectedMethod = availablePaymentMethods.find(m => m.id === payment.methodId);
+  const currencySymbol = selectedMethod?.symbol || '$';
+
+  return (
+    <div className="grid grid-cols-4 gap-2 items-end">
+      {/* Currency Selection */}
+      <div>
+        <Select
+          value={payment.currency}
+          onValueChange={(value) => onUpdate(index, 'currency', value)}
+        >
+          <SelectTrigger className="h-10">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {['AWG', 'COP'].map((currency) => (
+              <SelectItem key={currency} value={currency}>
+                {currency}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Payment Method Selection */}
+      <div>
+        <Select
+          value={payment.methodId}
+          onValueChange={(value) => onUpdate(index, 'methodId', value)}
+        >
+          <SelectTrigger className="h-10">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {availablePaymentMethods
+              .filter(method => method.currency === payment.currency)
+              .map((method) => (
+                <SelectItem key={method.id} value={method.id}>
+                  {method.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Amount Input */}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+          {currencySymbol}
+        </span>
+        <Input
+          type="text"
+          value={getDisplayAmount()}
+          onChange={handleAmountChange}
+          className="pl-8 h-10"
+          placeholder="0"
+        />
+      </div>
+
+      {/* Remove Button */}
+      <div className="flex justify-center">
+        {canRemove && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onRemove(index)}
+            className="h-10 w-10 p-0"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

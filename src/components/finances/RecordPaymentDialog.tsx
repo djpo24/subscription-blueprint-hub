@@ -5,8 +5,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { RecordPaymentContent } from './RecordPaymentContent';
+import type { PaymentEntryData } from '@/types/payment';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -31,6 +32,15 @@ export function RecordPaymentDialog({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { data: paymentMethods = [] } = usePaymentMethods();
+
+  // Simplified payment state - just one payment entry
+  const [payment, setPayment] = useState<PaymentEntryData>({
+    methodId: '',
+    amount: '',
+    currency: 'COP',
+    type: 'partial'
+  });
 
   // Crear un objeto package ficticio para reutilizar los componentes móviles
   const mockPackage = customer ? {
@@ -45,39 +55,56 @@ export function RecordPaymentDialog({
     }
   } : null;
 
-  const {
-    payments,
-    addPayment,
-    updatePayment,
-    removePayment,
-    resetPayments,
-    getCurrencySymbol,
-    getValidPayments
-  } = usePaymentManagement('COP');
-
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
       setNotes('');
-      resetPayments();
-      // Agregar un pago inicial
-      addPayment();
+      const defaultMethod = paymentMethods.find(m => m.currency === 'COP');
+      setPayment({
+        methodId: defaultMethod?.id || '',
+        amount: '',
+        currency: 'COP',
+        type: 'partial'
+      });
     }
-  }, [isOpen, resetPayments, addPayment]);
+  }, [isOpen, paymentMethods]);
 
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
     console.log('💳 Actualizando pago:', { index, field, value });
-    updatePayment(index, field as any, value, customer?.total_pending_amount || 0);
+    
+    setPayment(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-calculate type based on amount
+      if (field === 'amount' && customer) {
+        const amount = parseFloat(value) || 0;
+        updated.type = amount >= customer.total_pending_amount ? 'full' : 'partial';
+      }
+      
+      // Update methodId when currency changes
+      if (field === 'currency') {
+        const methodForCurrency = paymentMethods.find(m => m.currency === value);
+        if (methodForCurrency) {
+          updated.methodId = methodForCurrency.id;
+        }
+      }
+      
+      return updated;
+    });
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const method = paymentMethods.find(m => m.currency === currency);
+    return method?.symbol || '$';
   };
 
   const handleSubmit = async () => {
     if (!customer) return;
 
-    const validPayments = getValidPayments();
-    if (validPayments.length === 0) {
+    if (!payment.methodId || !payment.amount || parseFloat(payment.amount) <= 0) {
       toast({
         title: 'Error',
-        description: 'Por favor ingresa al menos un pago válido',
+        description: 'Por favor ingresa un pago válido',
         variant: 'destructive',
       });
       return;
@@ -100,36 +127,30 @@ export function RecordPaymentDialog({
         throw new Error('No se encontraron paquetes para este cliente');
       }
 
-      // Registrar cada pago
-      for (const payment of validPayments) {
-        const { error } = await supabase
-          .from('customer_payments')
-          .insert({
-            customer_id: customer.id,
-            package_id: packages[0].id,
-            amount: payment.amount,
-            payment_method: payment.method_id === 'efectivo' ? 'efectivo' : 
-                           payment.method_id === 'transferencia' ? 'transferencia' :
-                           payment.method_id === 'tarjeta' ? 'tarjeta' : 'otro',
-            currency: payment.currency,
-            notes: notes || null,
-            created_by: 'Usuario actual' // TODO: Replace with actual user
-          });
+      // Registrar el pago
+      const { error } = await supabase
+        .from('customer_payments')
+        .insert({
+          customer_id: customer.id,
+          package_id: packages[0].id,
+          amount: parseFloat(payment.amount),
+          payment_method: payment.methodId === 'efectivo' ? 'efectivo' : 
+                         payment.methodId === 'transferencia' ? 'transferencia' :
+                         payment.methodId === 'tarjeta' ? 'tarjeta' : 'otro',
+          currency: payment.currency,
+          notes: notes || null,
+          created_by: 'Usuario actual' // TODO: Replace with actual user
+        });
 
-        if (error) throw error;
-      }
-
-      const totalAmount = validPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      if (error) throw error;
 
       toast({
-        title: 'Pagos registrados',
-        description: `Se registraron pagos por un total de ${validPayments[0]?.currency || 'COP'} ${totalAmount.toLocaleString('es-CO')} para ${customer.customer_name}`,
+        title: 'Pago registrado',
+        description: `Se registró un pago por ${payment.currency} ${parseFloat(payment.amount).toLocaleString('es-CO')} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setNotes('');
-      resetPayments();
     } catch (error) {
       console.error('Error recording payment:', error);
       toast({
@@ -147,12 +168,12 @@ export function RecordPaymentDialog({
   const contentProps = {
     customer,
     mockPackage,
-    payments,
+    payments: [payment], // Convert single payment to array for compatibility
     notes,
     isLoading,
-    onAddPayment: addPayment,
+    onAddPayment: () => {}, // Not needed for single payment
     onUpdatePayment: handlePaymentUpdate,
-    onRemovePayment: removePayment,
+    onRemovePayment: () => {}, // Not needed for single payment
     onNotesChange: setNotes,
     onCancel: onClose,
     onSubmit: handleSubmit,

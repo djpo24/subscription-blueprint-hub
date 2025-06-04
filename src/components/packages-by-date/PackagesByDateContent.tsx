@@ -1,4 +1,3 @@
-
 import { PackagesByDateHeader } from './PackagesByDateHeader';
 import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
@@ -80,6 +79,22 @@ export function PackagesByDateContent({
     }, 500);
   };
 
+  // Recopilar todos los paquetes de todos los viajes para el diálogo de despacho
+  const allPackages = trips.flatMap(trip => 
+    trip.packages.map(pkg => ({
+      id: pkg.id,
+      tracking_number: pkg.tracking_number,
+      origin: trip.origin,
+      destination: trip.destination,
+      status: pkg.status,
+      description: pkg.description,
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      customers: pkg.customers
+    }))
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <PackagesByDateHeader 
@@ -142,5 +157,23 @@ export function PackagesByDateContent({
         </div>
       )}
     </div>
+  );
+}
+
+// Exportar la función para obtener todos los paquetes
+export function getAllPackagesFromTrips(trips: Trip[]) {
+  return trips.flatMap(trip => 
+    trip.packages.map(pkg => ({
+      id: pkg.id,
+      tracking_number: pkg.tracking_number,
+      origin: trip.origin,
+      destination: trip.destination,
+      status: pkg.status,
+      description: pkg.description,
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      customers: pkg.customers
+    }))
   );
 }

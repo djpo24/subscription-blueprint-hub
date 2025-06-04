@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ export function usePackagesByDateView(selectedDate: Date) {
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+  const [createDispatchDialogOpen, setCreateDispatchDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Transform the data to match the expected Trip interface
@@ -67,11 +67,22 @@ export function usePackagesByDateView(selectedDate: Date) {
   };
 
   const handleCreateDispatch = () => {
-    // TODO: Implement dispatch creation functionality
     console.log('Create dispatch for date:', selectedDate);
+    setCreateDispatchDialogOpen(true);
   };
 
-  // Calculate totals correctamente - el flete siempre en COP
+  const handleCreateDispatchSuccess = () => {
+    setCreateDispatchDialogOpen(false);
+    
+    // Invalidar las consultas para actualizar la vista
+    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ['dispatch-relations', formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+  };
+
+  // Calculate totals correctly - el flete siempre en COP
   const totalPackages = trips.reduce((acc, trip) => acc + trip.packages.length, 0);
   const totalWeight = trips.reduce((acc, trip) => 
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.weight || 0), 0), 0
@@ -99,6 +110,8 @@ export function usePackagesByDateView(selectedDate: Date) {
     setChatDialogOpen,
     selectedCustomerId,
     selectedCustomerName,
+    createDispatchDialogOpen,
+    setCreateDispatchDialogOpen,
     totalPackages,
     totalWeight,
     totalFreight,
@@ -107,6 +120,7 @@ export function usePackagesByDateView(selectedDate: Date) {
     handleOpenChat,
     handlePackageEditSuccess,
     handleCreateDispatch,
+    handleCreateDispatchSuccess,
     queryClient
   };
 }

@@ -1,9 +1,9 @@
-
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
-import { PackagesByDateContent } from './packages-by-date/PackagesByDateContent';
+import { PackagesByDateContent, getAllPackagesFromTrips } from './packages-by-date/PackagesByDateContent';
 import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs';
+import { CreateDispatchDialog } from './CreateDispatchDialog';
 
 // Define a local Package type that matches what TripPackageCard expects
 interface Package {
@@ -49,6 +49,8 @@ export function PackagesByDateView({
     setChatDialogOpen,
     selectedCustomerId,
     selectedCustomerName,
+    createDispatchDialogOpen,
+    setCreateDispatchDialogOpen,
     totalPackages,
     totalWeight,
     totalFreight,
@@ -56,7 +58,8 @@ export function PackagesByDateView({
     handlePackageClick,
     handleOpenChat,
     handlePackageEditSuccess,
-    handleCreateDispatch
+    handleCreateDispatch,
+    handleCreateDispatchSuccess
   } = usePackagesByDateView(selectedDate);
 
   if (isLoading) {
@@ -79,6 +82,8 @@ export function PackagesByDateView({
       </div>
     );
   }
+
+  const allPackages = getAllPackagesFromTrips(trips);
 
   return (
     <>
@@ -109,6 +114,14 @@ export function PackagesByDateView({
         setChatDialogOpen={setChatDialogOpen}
         selectedCustomerId={selectedCustomerId}
         selectedCustomerName={selectedCustomerName}
+      />
+
+      <CreateDispatchDialog
+        open={createDispatchDialogOpen}
+        onOpenChange={setCreateDispatchDialogOpen}
+        tripDate={selectedDate}
+        packages={allPackages}
+        onSuccess={handleCreateDispatchSuccess}
       />
     </>
   );

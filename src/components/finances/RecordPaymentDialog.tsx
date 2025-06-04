@@ -33,8 +33,7 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [chargeAmount, setChargeAmount] = useState('');
+  const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [currency, setCurrency] = useState('COP');
   const [notes, setNotes] = useState('');
@@ -45,8 +44,7 @@ export function RecordPaymentDialog({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setPaymentAmount('');
-      setChargeAmount('');
+      setAmount('');
       setNotes('');
     }
   }, [isOpen]);
@@ -60,39 +58,27 @@ export function RecordPaymentDialog({
     return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  const handlePaymentAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const formattedValue = formatDisplayNumber(inputValue);
-    setPaymentAmount(formattedValue);
+    setAmount(formattedValue);
   };
 
-  const handleChargeAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    const formattedValue = formatDisplayNumber(inputValue);
-    setChargeAmount(formattedValue);
-  };
-
-  const getNumericPaymentAmount = (): number => {
+  const getNumericAmount = (): number => {
     // Remove periods to get the raw number for calculations
-    const rawValue = paymentAmount.replace(/\./g, '');
-    return parseFloat(rawValue) || 0;
-  };
-
-  const getNumericChargeAmount = (): number => {
-    // Remove periods to get the raw number for calculations
-    const rawValue = chargeAmount.replace(/\./g, '');
+    const rawValue = amount.replace(/\./g, '');
     return parseFloat(rawValue) || 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer || !paymentAmount) return;
+    if (!customer || !amount) return;
 
-    const numericPaymentAmount = getNumericPaymentAmount();
-    if (!numericPaymentAmount || numericPaymentAmount <= 0) {
+    const numericAmount = getNumericAmount();
+    if (!numericAmount || numericAmount <= 0) {
       toast({
         title: 'Error',
-        description: 'Por favor ingresa un monto de pago válido',
+        description: 'Por favor ingresa un monto válido',
         variant: 'destructive',
       });
       return;
@@ -120,7 +106,7 @@ export function RecordPaymentDialog({
         .insert({
           customer_id: customer.id,
           package_id: packages[0].id,
-          amount: numericPaymentAmount,
+          amount: numericAmount,
           payment_method: paymentMethod,
           currency,
           notes: notes || null,
@@ -131,13 +117,12 @@ export function RecordPaymentDialog({
 
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${paymentAmount} para ${customer.customer_name}`,
+        description: `Se registró un pago de ${currency} ${amount} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setPaymentAmount('');
-      setChargeAmount('');
+      setAmount('');
       setNotes('');
     } catch (error) {
       console.error('Error recording payment:', error);
@@ -159,11 +144,9 @@ export function RecordPaymentDialog({
     }).format(amount);
   };
 
-  // Calculate remaining amount dynamically based on payment amount and charge amount
-  const enteredPaymentAmount = getNumericPaymentAmount();
-  const enteredChargeAmount = getNumericChargeAmount();
-  const baseAmount = enteredChargeAmount > 0 ? enteredChargeAmount : (customer?.total_pending_amount || 0);
-  const remainingAmount = Math.max(0, baseAmount - enteredPaymentAmount);
+  // Calculate remaining amount dynamically
+  const enteredAmount = getNumericAmount();
+  const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
 
   if (!customer) return null;
 
@@ -192,7 +175,7 @@ export function RecordPaymentDialog({
           </div>
           <div className="pt-2">
             <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-              Total pendiente: {formatCurrency(customer.total_pending_amount)}
+              Total: {formatCurrency(customer.total_pending_amount)}
             </Badge>
           </div>
         </CardContent>
@@ -210,39 +193,28 @@ export function RecordPaymentDialog({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="payment-amount">Monto del Pago *</Label>
+                <Label htmlFor="amount">Monto *</Label>
                 <Input
-                  id="payment-amount"
+                  id="amount"
                   type="text"
-                  value={paymentAmount}
-                  onChange={handlePaymentAmountChange}
+                  value={amount}
+                  onChange={handleAmountChange}
                   placeholder="0"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="charge-amount">Valor a Cobrar</Label>
-                <Input
-                  id="charge-amount"
-                  type="text"
-                  value={chargeAmount}
-                  onChange={handleChargeAmountChange}
-                  placeholder="0"
-                />
+                <Label htmlFor="currency">Moneda</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COP">COP (Pesos)</SelectItem>
+                    <SelectItem value="AWG">AWG (Florín)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currency">Moneda</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="COP">COP (Pesos)</SelectItem>
-                  <SelectItem value="AWG">AWG (Florín)</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -261,20 +233,20 @@ export function RecordPaymentDialog({
             </div>
 
             {/* Dynamic Payment Summary - Same style as MobileDeliveryActions */}
-            {enteredPaymentAmount > 0 && (
+            {enteredAmount > 0 && (
               <Card className="border-green-200 bg-green-50">
                 <CardContent className="p-3">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-green-700">Valor a cobrar:</span>
+                      <span className="text-green-700">Total a cobrar:</span>
                       <span className="font-medium text-green-900">
-                        {formatCurrency(baseAmount)}
+                        {formatCurrency(customer.total_pending_amount)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-700">Monto del pago:</span>
+                      <span className="text-green-700">Monto ingresado:</span>
                       <span className="font-medium text-green-900">
-                        {formatCurrency(enteredPaymentAmount)}
+                        {formatCurrency(enteredAmount)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t border-green-300 pt-2">
@@ -312,7 +284,7 @@ export function RecordPaymentDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || !paymentAmount}
+                disabled={isLoading || !amount}
                 className="w-full"
               >
                 <Check className="h-4 w-4 mr-2" />

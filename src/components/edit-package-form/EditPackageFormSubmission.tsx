@@ -12,6 +12,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency?: string; // Add currency to the Package interface
   status: string;
 }
 
@@ -20,6 +21,7 @@ interface FormData {
   weight: string;
   freight: string;
   amountToCollect: string;
+  currency: string; // Add currency to FormData interface
   details: string[];
 }
 
@@ -83,9 +85,10 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      console.log('Actualizando encomienda con valores:', {
+      console.log('📤 [EditPackageFormSubmission] Updating package with values:', {
         freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        currency: formData.currency
       });
 
       const { error } = await supabase
@@ -96,6 +99,7 @@ export function useEditPackageFormSubmission({
           weight: formData.weight ? parseFloat(formData.weight) : null,
           freight: formData.freight ? parseFloat(formData.freight) : 0,
           amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+          currency: formData.currency, // Include currency in the update
           origin: tripData.origin,
           destination: tripData.destination,
           flight_number: tripData.flight_number,
@@ -105,6 +109,8 @@ export function useEditPackageFormSubmission({
         .eq('id', pkg.id);
 
       if (error) throw error;
+
+      console.log('✅ [EditPackageFormSubmission] Package updated with currency:', formData.currency);
 
       // Create tracking event
       await supabase
@@ -123,7 +129,7 @@ export function useEditPackageFormSubmission({
 
       onSuccess();
     } catch (error) {
-      console.error('Error updating package:', error);
+      console.error('❌ [EditPackageFormSubmission] Error updating package:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar la encomienda",

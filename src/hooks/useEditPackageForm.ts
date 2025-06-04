@@ -10,6 +10,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency?: string; // Add currency to the Package interface
   status: string;
 }
 
@@ -38,6 +39,9 @@ export function useEditPackageForm(pkg: Package | null) {
 
   useEffect(() => {
     if (pkg) {
+      console.log('🔄 [useEditPackageForm] Initializing with package:', pkg);
+      console.log('💱 [useEditPackageForm] Package currency from DB:', pkg.currency);
+      
       // Parse existing description to extract details and optional description
       const description = pkg.description || '';
       let optionalDescription = '';
@@ -61,6 +65,10 @@ export function useEditPackageForm(pkg: Package | null) {
         details.push('');
       }
 
+      // Use the package currency from database, fallback to COP if not available
+      const packageCurrency = pkg.currency || 'COP';
+      console.log('💱 [useEditPackageForm] Setting currency to:', packageCurrency);
+
       setFormData({
         description: optionalDescription,
         weight: pkg.weight?.toString() || '',
@@ -68,9 +76,11 @@ export function useEditPackageForm(pkg: Package | null) {
         freightFormatted: pkg.freight ? `$${pkg.freight.toLocaleString()}` : '',
         amountToCollect: pkg.amount_to_collect?.toString() || '',
         amountToCollectFormatted: pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString()}` : '',
-        currency: 'COP',
+        currency: packageCurrency, // Use the actual currency from the package
         details: details
       });
+
+      console.log('✅ [useEditPackageForm] Form data initialized with currency:', packageCurrency);
     }
   }, [pkg]);
 

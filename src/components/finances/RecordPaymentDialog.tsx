@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { DollarSign, User, Phone, Mail, Package, Check, X } from 'lucide-react';
+import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -105,11 +105,15 @@ export function RecordPaymentDialog({
     }).format(amount);
   };
 
+  // Calculate remaining amount dynamically
+  const enteredAmount = parseFloat(amount) || 0;
+  const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
+
   if (!customer) return null;
 
   const PaymentContent = () => (
     <div className="space-y-4">
-      {/* Customer Info Card - Similar to MobilePackageInfo */}
+      {/* Customer Info Card - Exact style from MobilePackageInfo */}
       <Card className="border-blue-200 bg-blue-50">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-blue-900">
@@ -132,13 +136,13 @@ export function RecordPaymentDialog({
           </div>
           <div className="pt-2">
             <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-              Pendiente: {formatCurrency(customer.total_pending_amount)}
+              Total: {formatCurrency(customer.total_pending_amount)}
             </Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Payment Form */}
+      {/* Payment Form - Exact style from MobilePaymentSection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -192,6 +196,34 @@ export function RecordPaymentDialog({
               </Select>
             </div>
 
+            {/* Dynamic Payment Summary - Same style as MobileDeliveryActions */}
+            {enteredAmount > 0 && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-3">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Total a cobrar:</span>
+                      <span className="font-medium text-green-900">
+                        {formatCurrency(customer.total_pending_amount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Monto ingresado:</span>
+                      <span className="font-medium text-green-900">
+                        {formatCurrency(enteredAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-green-300 pt-2">
+                      <span className="font-medium text-green-800">Pendiente:</span>
+                      <span className={`font-bold ${remainingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                        {formatCurrency(remainingAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="notes">Notas (opcional)</Label>
               <Textarea
@@ -203,7 +235,7 @@ export function RecordPaymentDialog({
               />
             </div>
 
-            {/* Action Buttons - Similar to MobileDeliveryActions */}
+            {/* Action Buttons - Exact style from MobileDeliveryActions */}
             <div className="grid grid-cols-2 gap-3 pt-4">
               <Button 
                 type="button" 

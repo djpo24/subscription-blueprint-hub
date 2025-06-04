@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface AmountToCollectSectionProps {
   currency: string;
@@ -20,6 +20,7 @@ export function AmountToCollectSection({
   onCurrencyChange,
   onAmountChange
 }: AmountToCollectSectionProps) {
+  const [isCurrencyEditable, setIsCurrencyEditable] = useState(false);
   
   useEffect(() => {
     console.log('💱 [AmountToCollectSection] Component updated with currency:', currency);
@@ -40,10 +41,15 @@ export function AmountToCollectSection({
     onCurrencyChange(newCurrency);
   };
 
+  const handleCurrencyClick = () => {
+    setIsCurrencyEditable(true);
+  };
+
   // Asegurar que currency siempre sea un string válido y esté en el conjunto permitido
   const safeCurrency = currency && ['COP', 'AWG'].includes(currency) ? currency : 'COP';
   
   console.log('🔍 [AmountToCollectSection] Rendering with safe currency:', safeCurrency);
+  console.log('🔍 [AmountToCollectSection] Is currency editable:', isCurrencyEditable);
 
   return (
     <div className="space-y-4">
@@ -52,18 +58,28 @@ export function AmountToCollectSection({
       </Label>
       
       <div className="flex gap-3">
-        <Select 
-          value={safeCurrency} 
-          onValueChange={handleCurrencyChange}
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue placeholder="Divisa" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="COP">COP</SelectItem>
-            <SelectItem value="AWG">AWG</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isCurrencyEditable ? (
+          <div 
+            onClick={handleCurrencyClick}
+            className="w-28 h-12 flex items-center justify-center bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            <span className="text-gray-600 font-medium">{safeCurrency}</span>
+          </div>
+        ) : (
+          <Select 
+            value={safeCurrency} 
+            onValueChange={handleCurrencyChange}
+          >
+            <SelectTrigger className="w-28">
+              <SelectValue placeholder="Divisa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COP">COP</SelectItem>
+              <SelectItem value="AWG">AWG</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+        
         <Input
           id="amountToCollect"
           type="text"
@@ -77,6 +93,7 @@ export function AmountToCollectSection({
       {/* Debug info simplificado */}
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
         <div>🎯 <strong>Divisa actual:</strong> {safeCurrency}</div>
+        <div>🔧 <strong>Editable:</strong> {isCurrencyEditable ? 'Sí' : 'No'}</div>
         <div>💰 <strong>Monto raw:</strong> {amountToCollect || '0'}</div>
         <div>💰 <strong>Monto formateado:</strong> {amountToCollectFormatted || '0'}</div>
       </div>

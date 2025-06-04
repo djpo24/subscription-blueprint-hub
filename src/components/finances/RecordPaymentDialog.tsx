@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
-import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -33,26 +33,56 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
-  const [formattedAmount, setFormattedAmount] = useState('');
+  const [rawAmount, setRawAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [currency, setCurrency] = useState('COP');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const formatNumberDisplay = (value: string): string => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    
+    // Add thousands separators (periods)
+    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    const formatted = formatNumber(inputValue);
-    setFormattedAmount(formatted);
+    // Store cursor position
+    const cursorPosition = e.target.selectionStart;
+    
+    // Remove all non-digit characters for raw value
+    const numbers = inputValue.replace(/\D/g, '');
+    setRawAmount(numbers);
+    
+    // Format for display
+    const formatted = formatNumberDisplay(numbers);
+    
+    // Update the input value directly to avoid re-render issues
+    if (inputRef.current) {
+      inputRef.current.value = formatted;
+      
+      // Restore cursor position, accounting for added separators
+      setTimeout(() => {
+        if (inputRef.current && cursorPosition !== null) {
+          const newCursorPos = Math.min(cursorPosition, formatted.length);
+          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer || !formattedAmount) return;
+    if (!customer || !rawAmount) return;
 
-    const numericAmount = parseFormattedNumber(formattedAmount);
-    if (!numericAmount || parseFloat(numericAmount) <= 0) {
+    const numericAmount = parseFloat(rawAmount);
+    if (!numericAmount || numericAmount <= 0) {
       toast({
         title: 'Error',
         description: 'Por favor ingresa un monto válido',
@@ -83,7 +113,7 @@ export function RecordPaymentDialog({
         .insert({
           customer_id: customer.id,
           package_id: packages[0].id,
-          amount: parseFloat(numericAmount),
+          amount: numericAmount,
           payment_method: paymentMethod,
           currency,
           notes: notes || null,
@@ -92,15 +122,19 @@ export function RecordPaymentDialog({
 
       if (error) throw error;
 
+      const formattedDisplay = formatNumberDisplay(rawAmount);
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${formattedAmount} para ${customer.customer_name}`,
+        description: `Se registró un pago de ${currency} ${formattedDisplay} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setFormattedAmount('');
+      setRawAmount('');
       setNotes('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
     } catch (error) {
       console.error('Error recording payment:', error);
       toast({
@@ -122,8 +156,7 @@ export function RecordPaymentDialog({
   };
 
   // Calculate remaining amount dynamically
-  const numericAmount = formattedAmount ? parseFloat(parseFormattedNumber(formattedAmount)) : 0;
-  const enteredAmount = numericAmount || 0;
+  const enteredAmount = rawAmount ? parseFloat(rawAmount) : 0;
   const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
 
   if (!customer) return null;
@@ -173,9 +206,9 @@ export function RecordPaymentDialog({
               <div className="space-y-2">
                 <Label htmlFor="amount">Monto *</Label>
                 <Input
+                  ref={inputRef}
                   id="amount"
                   type="text"
-                  value={formattedAmount}
                   onChange={handleAmountChange}
                   placeholder="0"
                   required
@@ -262,7 +295,7 @@ export function RecordPaymentDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || !formattedAmount}
+                disabled={isLoading || !rawAmount}
                 className="w-full"
               >
                 <Check className="h-4 w-4 mr-2" />

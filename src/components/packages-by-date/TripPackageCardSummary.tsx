@@ -21,7 +21,7 @@ export function TripPackageCardSummary({
   const isMobile = useIsMobile();
 
   return (
-    <div className="w-full bg-white py-[5px]">
+    <div className="w-full bg-white py-5">
       <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-4 gap-4'}`}>
         <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-blue-50 rounded-lg`}>
           <Package className="h-4 w-4 text-blue-600" />

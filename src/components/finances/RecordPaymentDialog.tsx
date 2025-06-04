@@ -13,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
-import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -34,8 +33,7 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
-  const [displayAmount, setDisplayAmount] = useState('');
-  const [rawAmount, setRawAmount] = useState('');
+  const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [currency, setCurrency] = useState('COP');
   const [notes, setNotes] = useState('');
@@ -46,29 +44,37 @@ export function RecordPaymentDialog({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setDisplayAmount('');
-      setRawAmount('');
+      setAmount('');
       setNotes('');
     }
   }, [isOpen]);
 
+  const formatDisplayNumber = (value: string): string => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    
+    // Add thousands separators (periods)
+    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    
-    // Parse the raw number (remove formatting)
-    const rawValue = parseFormattedNumber(inputValue);
-    setRawAmount(rawValue);
-    
-    // Format for display
-    const formattedValue = formatNumber(rawValue);
-    setDisplayAmount(formattedValue);
+    const formattedValue = formatDisplayNumber(inputValue);
+    setAmount(formattedValue);
+  };
+
+  const getNumericAmount = (): number => {
+    // Remove periods to get the raw number for calculations
+    const rawValue = amount.replace(/\./g, '');
+    return parseFloat(rawValue) || 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer || !rawAmount) return;
+    if (!customer || !amount) return;
 
-    const numericAmount = parseFloat(rawAmount);
+    const numericAmount = getNumericAmount();
     if (!numericAmount || numericAmount <= 0) {
       toast({
         title: 'Error',
@@ -111,13 +117,12 @@ export function RecordPaymentDialog({
 
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${displayAmount} para ${customer.customer_name}`,
+        description: `Se registró un pago de ${currency} ${amount} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setDisplayAmount('');
-      setRawAmount('');
+      setAmount('');
       setNotes('');
     } catch (error) {
       console.error('Error recording payment:', error);
@@ -140,7 +145,7 @@ export function RecordPaymentDialog({
   };
 
   // Calculate remaining amount dynamically
-  const enteredAmount = rawAmount ? parseFloat(rawAmount) : 0;
+  const enteredAmount = getNumericAmount();
   const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
 
   if (!customer) return null;
@@ -192,7 +197,7 @@ export function RecordPaymentDialog({
                 <Input
                   id="amount"
                   type="text"
-                  value={displayAmount}
+                  value={amount}
                   onChange={handleAmountChange}
                   placeholder="0"
                   required
@@ -279,7 +284,7 @@ export function RecordPaymentDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || !rawAmount}
+                disabled={isLoading || !amount}
                 className="w-full"
               >
                 <Check className="h-4 w-4 mr-2" />

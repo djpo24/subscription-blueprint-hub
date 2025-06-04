@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -13,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
+import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -33,7 +33,7 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
-  const [amount, setAmount] = useState('');
+  const [formattedAmount, setFormattedAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [currency, setCurrency] = useState('COP');
   const [notes, setNotes] = useState('');
@@ -41,9 +41,25 @@ export function RecordPaymentDialog({
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    const formatted = formatNumber(inputValue);
+    setFormattedAmount(formatted);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer || !amount) return;
+    if (!customer || !formattedAmount) return;
+
+    const numericAmount = parseFormattedNumber(formattedAmount);
+    if (!numericAmount || parseFloat(numericAmount) <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Por favor ingresa un monto válido',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsLoading(true);
 
@@ -67,7 +83,7 @@ export function RecordPaymentDialog({
         .insert({
           customer_id: customer.id,
           package_id: packages[0].id,
-          amount: parseFloat(amount),
+          amount: parseFloat(numericAmount),
           payment_method: paymentMethod,
           currency,
           notes: notes || null,
@@ -78,12 +94,12 @@ export function RecordPaymentDialog({
 
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${amount} para ${customer.customer_name}`,
+        description: `Se registró un pago de ${currency} ${formattedAmount} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
-      setAmount('');
+      setFormattedAmount('');
       setNotes('');
     } catch (error) {
       console.error('Error recording payment:', error);
@@ -106,7 +122,8 @@ export function RecordPaymentDialog({
   };
 
   // Calculate remaining amount dynamically
-  const enteredAmount = parseFloat(amount) || 0;
+  const numericAmount = formattedAmount ? parseFloat(parseFormattedNumber(formattedAmount)) : 0;
+  const enteredAmount = numericAmount || 0;
   const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - enteredAmount);
 
   if (!customer) return null;
@@ -157,13 +174,10 @@ export function RecordPaymentDialog({
                 <Label htmlFor="amount">Monto *</Label>
                 <Input
                   id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max={customer.total_pending_amount}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
+                  type="text"
+                  value={formattedAmount}
+                  onChange={handleAmountChange}
+                  placeholder="0"
                   required
                 />
               </div>
@@ -248,7 +262,7 @@ export function RecordPaymentDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || !amount}
+                disabled={isLoading || !formattedAmount}
                 className="w-full"
               >
                 <Check className="h-4 w-4 mr-2" />

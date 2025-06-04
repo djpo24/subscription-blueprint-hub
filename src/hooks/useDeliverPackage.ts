@@ -32,15 +32,15 @@ export function useDeliverPackage() {
         const { data, error } = await supabase.rpc('deliver_package_with_payment', {
           p_package_id: packageId,
           p_delivered_by: deliveredBy,
-          p_payments: payments && payments.length > 0 ? JSON.stringify(payments) : null
+          p_payments: payments ? JSON.stringify(payments) : null
         });
         
         if (error) {
           console.error('❌ Error en función RPC:', error);
           
           // Si es un error de permisos en collection_stats, intentamos una solución alternativa
-          if (error.message?.includes('collection_stats') || error.code === '42501' || error.code === '42804') {
-            console.log('🔄 Error detectado, intentando método alternativo...');
+          if (error.message?.includes('collection_stats') || error.code === '42501') {
+            console.log('🔄 Error de permisos detectado, intentando método alternativo...');
             
             // Primero obtenemos la información del paquete
             const { data: packageData, error: packageError } = await supabase
@@ -137,14 +137,14 @@ export function useDeliverPackage() {
 
               if (existingDebt) {
                 console.log('📝 Actualizando registro de deuda existente...');
-                // Actualizar registro existente - USAR currency_type cast
+                // Actualizar registro existente
                 const { error: debtError } = await supabase
                   .from('package_debts')
                   .update({
                     total_amount: packageData.amount_to_collect,
                     pending_amount: pendingAmount,
                     paid_amount: totalCollected,
-                    debt_type: 'unpaid',
+                    debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
                     delivery_date: new Date().toISOString(),
                     status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
                             totalCollected > 0 ? 'partial' : 'pending',
@@ -159,7 +159,7 @@ export function useDeliverPackage() {
                 }
               } else {
                 console.log('📝 Creando nuevo registro de deuda...');
-                // Crear nuevo registro - USAR currency_type cast
+                // Crear nuevo registro
                 const { error: debtError } = await supabase
                   .from('package_debts')
                   .insert({
@@ -167,10 +167,9 @@ export function useDeliverPackage() {
                     total_amount: packageData.amount_to_collect,
                     pending_amount: pendingAmount,
                     paid_amount: totalCollected,
-                    debt_type: 'unpaid',
-                    debt_start_date: new Date().toISOString().split('T')[0],
+                    debt_type: 'unpaid', // Cambio a 'unpaid' porque ya fue entregado
+                    debt_start_date: new Date().toISOString().split('T')[0], // Solo la fecha
                     delivery_date: new Date().toISOString(),
-                    currency: packageData.currency, // Usar la currency del paquete
                     status: totalCollected >= packageData.amount_to_collect ? 'paid' : 
                             totalCollected > 0 ? 'partial' : 'pending'
                   });
@@ -223,8 +222,8 @@ export function useDeliverPackage() {
       let errorMessage = "No se pudo completar la entrega del paquete. Intenta nuevamente.";
       
       // Mensaje más específico para errores de permisos
-      if (error?.message?.includes('collection_stats') || error?.code === '42501' || error?.code === '42804') {
-        errorMessage = "Error en la base de datos. Se está procesando con método alternativo.";
+      if (error?.message?.includes('collection_stats') || error?.code === '42501') {
+        errorMessage = "Error de permisos en la base de datos. Contacta al administrador del sistema.";
       }
       
       toast({

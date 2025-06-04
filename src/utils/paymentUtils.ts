@@ -4,32 +4,18 @@ import type { PaymentEntryData, PaymentMethod, ValidPayment } from '@/types/paym
 export const createDefaultPayment = (defaultMethod?: PaymentMethod): PaymentEntryData => ({
   methodId: defaultMethod?.id || '',
   amount: '',
-  currency: 'COP', // Default a COP
+  currency: 'AWG',
   type: 'partial'
 });
 
 export const filterAvailablePaymentMethods = (paymentMethods: PaymentMethod[]) => {
   return paymentMethods.filter(method => 
-    method.currency === 'ANG' || method.currency === 'COP'
+    method.currency === 'AWG' || method.currency === 'COP'
   );
 };
 
-// Mapear AWG a ANG para compatibilidad con la base de datos
-export const mapCurrencyForDB = (currency: string): string => {
-  if (currency === 'AWG') return 'ANG';
-  return currency;
-};
-
-// Mapear ANG a AWG para mostrar en la UI
-export const mapCurrencyForUI = (currency: string): string => {
-  if (currency === 'ANG') return 'AWG';
-  return currency;
-};
-
 export const getCurrencySymbol = (currency: string, availablePaymentMethods: PaymentMethod[]) => {
-  // Mapear AWG a ANG para buscar el método
-  const searchCurrency = mapCurrencyForDB(currency);
-  const method = availablePaymentMethods.find(m => m.currency === searchCurrency);
+  const method = availablePaymentMethods.find(m => m.currency === currency);
   return method?.symbol || '$';
 };
 
@@ -39,7 +25,7 @@ export const getValidPayments = (payments: PaymentEntryData[]): ValidPayment[] =
     .map(p => ({
       method_id: p.methodId,
       amount: parseFloat(p.amount),
-      currency: mapCurrencyForDB(p.currency), // Convertir AWG a ANG para la BD
+      currency: p.currency,
       type: p.type
     }));
 };
@@ -55,8 +41,7 @@ export const updatePaymentEntry = (
   
   // If currency is updated, find appropriate payment method
   if (field === 'currency') {
-    const searchCurrency = mapCurrencyForDB(value);
-    const methodForCurrency = availablePaymentMethods.find(m => m.currency === searchCurrency);
+    const methodForCurrency = availablePaymentMethods.find(m => m.currency === value);
     if (methodForCurrency) {
       updatedPayment.methodId = methodForCurrency.id;
     }

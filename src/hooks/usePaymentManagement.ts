@@ -6,9 +6,7 @@ import {
   filterAvailablePaymentMethods,
   getCurrencySymbol as getSymbol,
   getValidPayments,
-  updatePaymentEntry,
-  mapCurrencyForDB,
-  mapCurrencyForUI
+  updatePaymentEntry
 } from '@/utils/paymentUtils';
 import type { PaymentEntryData } from '@/types/payment';
 
@@ -24,43 +22,39 @@ export function usePaymentManagement(packageCurrency?: string) {
 
   // Initialize with one payment entry when component mounts
   useEffect(() => {
-    // Usar la moneda del paquete o COP como fallback
-    const currency = packageCurrency || 'COP';
+    // Usar la moneda del paquete o AWG como fallback (NO COP como fallback)
+    const currency = packageCurrency || 'AWG';
     console.log('🔄 [usePaymentManagement] Initializing with currency:', currency);
+    console.log('🔄 [usePaymentManagement] Package currency was:', packageCurrency);
     
-    // Mapear la currency para buscar en BD (AWG -> ANG)
-    const searchCurrency = mapCurrencyForDB(currency);
-    console.log('🔄 [usePaymentManagement] Search currency in DB:', searchCurrency);
-    
-    // Buscar método de pago que coincida con la moneda mapeada
-    const defaultMethod = availablePaymentMethods.find(m => m.currency === searchCurrency) || 
-                         availablePaymentMethods.find(m => m.currency === 'COP') ||
+    // Buscar método de pago que coincida con la moneda del paquete
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
+                         availablePaymentMethods.find(m => m.currency === 'AWG') ||
                          availablePaymentMethods[0];
     
     console.log('🎯 [usePaymentManagement] Default method selected:', defaultMethod);
+    console.log('🎯 [usePaymentManagement] Method currency:', defaultMethod?.currency);
     
     if (defaultMethod) {
       const defaultPayment = createDefaultPayment(defaultMethod);
-      // CRÍTICO: Usar la moneda original del paquete para la UI
+      // CRÍTICO: Asegurar que use la moneda del paquete, no la del método de pago
       defaultPayment.currency = currency;
-      defaultPayment.methodId = defaultMethod.id;
       console.log('🎯 [usePaymentManagement] Default payment created:', defaultPayment);
+      console.log('🎯 [usePaymentManagement] Payment currency set to:', defaultPayment.currency);
       setPayments([defaultPayment]);
     }
   }, [packageCurrency, availablePaymentMethods.length]);
 
   const addPayment = () => {
-    const currency = packageCurrency || 'COP';
+    const currency = packageCurrency || 'AWG';
     console.log('➕ [usePaymentManagement] Adding payment with currency:', currency);
     
-    const searchCurrency = mapCurrencyForDB(currency);
-    const defaultMethod = availablePaymentMethods.find(m => m.currency === searchCurrency) || 
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
                          availablePaymentMethods[0];
     
     if (defaultMethod) {
       const newPayment = createDefaultPayment(defaultMethod);
-      newPayment.currency = currency; // Usar la moneda original del paquete
-      newPayment.methodId = defaultMethod.id;
+      newPayment.currency = currency; // Asegurar que use la moneda del paquete
       console.log('➕ [usePaymentManagement] New payment created:', newPayment);
       setPayments(prev => [...prev, newPayment]);
     }
@@ -68,6 +62,7 @@ export function usePaymentManagement(packageCurrency?: string) {
 
   const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
     console.log('💳 [usePaymentManagement] Updating payment:', { index, field, value, packageAmount });
+    console.log('💳 [usePaymentManagement] Package currency context:', packageCurrency);
     
     setPayments(prev => 
       prev.map((payment, i) => 
@@ -83,17 +78,15 @@ export function usePaymentManagement(packageCurrency?: string) {
   };
 
   const resetPayments = () => {
-    const currency = packageCurrency || 'COP';
+    const currency = packageCurrency || 'AWG';
     console.log('🔄 [usePaymentManagement] Resetting payments with currency:', currency);
     
-    const searchCurrency = mapCurrencyForDB(currency);
-    const defaultMethod = availablePaymentMethods.find(m => m.currency === searchCurrency) || 
+    const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
                          availablePaymentMethods[0];
     
     if (defaultMethod) {
       const defaultPayment = createDefaultPayment(defaultMethod);
       defaultPayment.currency = currency;
-      defaultPayment.methodId = defaultMethod.id;
       console.log('🔄 [usePaymentManagement] Reset payment created:', defaultPayment);
       setPayments([defaultPayment]);
     } else {

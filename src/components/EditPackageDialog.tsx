@@ -37,14 +37,17 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
       console.log('🚀 [EditPackageDialog] Initializing dialog with package:', {
         id: pkg.id,
         tracking_number: pkg.tracking_number,
+        customer_id: pkg.customer_id,
+        trip_id: pkg.trip_id,
         currency: pkg.currency,
         amount_to_collect: pkg.amount_to_collect
       });
       
+      // Asegurar que los IDs se establezcan correctamente
       setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(pkg.trip_id || '');
     }
-  }, [pkg?.id, open]);
+  }, [pkg, open]);
 
   // Reset when dialog closes
   useEffect(() => {
@@ -69,7 +72,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
   const currencyDisplay: Currency = (pkg.currency === 'AWG' || pkg.currency === 'COP') ? pkg.currency : 'COP';
   console.log('🎯 [EditPackageDialog] Package currency for display:', {
     original: pkg.currency,
-    display: currencyDisplay
+    display: currencyDisplay,
+    customer_id: pkg.customer_id,
+    selectedCustomerId: selectedCustomerId
   });
 
   return (
@@ -88,6 +93,9 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
                   Monto: {currencyDisplay} ${pkg.amount_to_collect.toLocaleString()}
                 </span>
               )}
+              <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs ml-2">
+                Cliente ID: {selectedCustomerId || 'No asignado'}
+              </span>
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -98,14 +106,14 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, onSuccess 
               selectedCustomerId={selectedCustomerId}
               onCustomerChange={setSelectedCustomerId}
               readOnly={true}
-              key={`customer-${pkg.customer_id}`}
+              key={`customer-${pkg.customer_id}-${selectedCustomerId}`}
             />
 
             <TripSelector
               selectedTripId={selectedTripId}
               onTripChange={setSelectedTripId}
               readOnly={true}
-              key={`trip-${pkg.trip_id}`}
+              key={`trip-${pkg.trip_id}-${selectedTripId}`}
             />
           </div>
 

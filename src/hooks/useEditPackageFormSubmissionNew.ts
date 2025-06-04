@@ -50,10 +50,30 @@ export function useEditPackageFormSubmissionNew({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerId || !tripId) {
+    // Use the package's existing IDs if the form ones are empty
+    const finalCustomerId = customerId || pkg.customer_id;
+    const finalTripId = tripId || pkg.trip_id;
+    
+    console.log('🔍 [useEditPackageFormSubmissionNew] Validating IDs:', {
+      formCustomerId: customerId,
+      packageCustomerId: pkg.customer_id,
+      finalCustomerId: finalCustomerId,
+      formTripId: tripId,
+      packageTripId: pkg.trip_id,
+      finalTripId: finalTripId
+    });
+    
+    if (!finalCustomerId || !finalTripId) {
+      console.error('❌ [useEditPackageFormSubmissionNew] Missing required IDs:', {
+        finalCustomerId,
+        finalTripId,
+        originalCustomerId: pkg.customer_id,
+        originalTripId: pkg.trip_id
+      });
+      
       toast({
-        title: "Error",
-        description: "Debe seleccionar un cliente y un viaje",
+        title: "Error de validación",
+        description: `Faltan datos requeridos: ${!finalCustomerId ? 'Cliente' : ''} ${!finalTripId ? 'Viaje' : ''}`,
         variant: "destructive"
       });
       return;
@@ -76,7 +96,7 @@ export function useEditPackageFormSubmissionNew({
       const { data: tripData, error: tripError } = await supabase
         .from('trips')
         .select('origin, destination, flight_number')
-        .eq('id', tripId)
+        .eq('id', finalTripId)
         .single();
 
       if (tripError) throw tripError;
@@ -96,12 +116,14 @@ export function useEditPackageFormSubmissionNew({
         originalCurrency: pkg.currency,
         formCurrency: formData.currency,
         finalCurrency: validCurrency,
+        finalCustomerId,
+        finalTripId,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
       });
 
       const updateData = {
-        customer_id: customerId,
+        customer_id: finalCustomerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
@@ -110,7 +132,7 @@ export function useEditPackageFormSubmissionNew({
         origin: tripData.origin,
         destination: tripData.destination,
         flight_number: tripData.flight_number,
-        trip_id: tripId,
+        trip_id: finalTripId,
         updated_at: new Date().toISOString()
       };
 

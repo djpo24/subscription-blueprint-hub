@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateForQuery } from '@/utils/dateUtils';
+import { format } from 'date-fns';
 
 export function useCreateDispatch() {
   const queryClient = useQueryClient();
@@ -94,12 +95,23 @@ export function useCreateDispatch() {
         // No lanzamos el error para no fallar todo el proceso
       }
 
-      return dispatch;
+      return { dispatch, date };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const formattedDate = format(data.date, 'yyyy-MM-dd');
+      
+      // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations', formattedDate] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['packages-by-date', formattedDate] });
+      queryClient.refetchQueries({ queryKey: ['packages'] });
     }
   });
 }

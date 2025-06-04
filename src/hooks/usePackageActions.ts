@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export function usePackageActions() {
   const { toast } = useToast();
@@ -12,7 +13,7 @@ export function usePackageActions() {
       // Get trip details for origin and destination
       const { data: tripData, error: tripError } = await supabase
         .from('trips')
-        .select('origin, destination, flight_number')
+        .select('origin, destination, flight_number, trip_date')
         .eq('id', newTripId)
         .single();
 
@@ -43,10 +44,25 @@ export function usePackageActions() {
           location: tripData.origin
         }]);
 
-      return { packageId, newTripId };
+      return { packageId, newTripId, tripDate: tripData.trip_date };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
+      
+      // Invalidar por fecha específica del trip
+      if (data.tripDate) {
+        const formattedDate = format(new Date(data.tripDate), 'yyyy-MM-dd');
+        queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+      }
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['packages'] });
+      
       toast({
         title: "Encomienda reprogramada",
         description: "La encomienda ha sido reprogramada exitosamente",
@@ -90,7 +106,16 @@ export function usePackageActions() {
       return packageId;
     },
     onSuccess: () => {
+      // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['packages'] });
+      
       toast({
         title: "Encomienda en bodega",
         description: "La encomienda ha sido movida a bodega",

@@ -39,7 +39,10 @@ export function useDispatchRelations(date?: Date) {
       }
       
       return data || [];
-    }
+    },
+    refetchOnWindowFocus: true,
+    refetchInterval: 15000, // Refetch cada 15 segundos para despachos
+    staleTime: 3000 // Los datos se consideran obsoletos después de 3 segundos
   });
 }
 

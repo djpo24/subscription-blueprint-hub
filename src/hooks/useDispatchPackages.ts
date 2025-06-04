@@ -60,6 +60,9 @@ export function useDispatchPackages(dispatchId: string) {
       
       return packagesWithCustomers;
     },
-    enabled: !!dispatchId
+    enabled: !!dispatchId,
+    refetchOnWindowFocus: true,
+    refetchInterval: 20000, // Refetch cada 20 segundos
+    staleTime: 5000 // Los datos se consideran obsoletos después de 5 segundos
   });
 }

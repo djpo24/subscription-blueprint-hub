@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export function useTripActions() {
   const { toast } = useToast();
@@ -81,12 +82,28 @@ export function useTripActions() {
 
       if (tripUpdateError) throw tripUpdateError;
 
-      return { updatedPackages: packages.length };
+      return { updatedPackages: packages.length, tripId };
     },
     onSuccess: (data) => {
+      // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
+      
+      // También invalidar por ID específico del trip
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', data.tripId] });
+      
+      // Invalidar por fecha actual
+      const today = format(new Date(), 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', today] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations', today] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
+      
       toast({
         title: "Viaje marcado en tránsito",
         description: `${data.updatedPackages} paquetes actualizados a "En Tránsito"`,
@@ -176,12 +193,28 @@ export function useTripActions() {
 
       if (tripUpdateError) throw tripUpdateError;
 
-      return { updatedPackages: packages.length };
+      return { updatedPackages: packages.length, tripId };
     },
     onSuccess: (data) => {
+      // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
+      
+      // También invalidar por ID específico del trip
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', data.tripId] });
+      
+      // Invalidar por fecha actual
+      const today = format(new Date(), 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', today] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations', today] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
+      
       toast({
         title: "Viaje marcado como llegado",
         description: `${data.updatedPackages} paquetes actualizados a "En Destino"`,

@@ -105,7 +105,10 @@ export function usePackagesByDate(date: Date) {
       
       return tripsWithPackages;
     },
-    enabled: !!date
+    enabled: !!date,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Refetch cada 30 segundos para mantener datos actualizados
+    staleTime: 5000 // Los datos se consideran obsoletos después de 5 segundos
   });
 }
 
@@ -117,8 +120,12 @@ export function useInvalidatePackagesByDate() {
     if (date) {
       const formattedDate = format(date, 'yyyy-MM-dd');
       queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+      // Forzar refetch inmediato
+      queryClient.refetchQueries({ queryKey: ['packages-by-date', formattedDate] });
     } else {
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      // Forzar refetch inmediato de todas las queries de packages-by-date
+      queryClient.refetchQueries({ queryKey: ['packages-by-date'] });
     }
   };
 }

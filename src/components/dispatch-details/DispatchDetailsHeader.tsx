@@ -1,6 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Truck, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DispatchDetailsHeaderProps {
   canMarkAsInTransit: boolean;
@@ -21,6 +22,26 @@ export function DispatchDetailsHeader({
   isMarkingAsArrived,
   hasPackages
 }: DispatchDetailsHeaderProps) {
+  const queryClient = useQueryClient();
+
+  const handleMarkAsInTransit = async () => {
+    onMarkAsInTransit();
+    // Forzar actualización inmediata después de 1 segundo
+    setTimeout(() => {
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
+    }, 1000);
+  };
+
+  const handleMarkAsArrived = async () => {
+    onMarkAsArrived();
+    // Forzar actualización inmediata después de 1 segundo
+    setTimeout(() => {
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
+    }, 1000);
+  };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -32,7 +53,7 @@ export function DispatchDetailsHeader({
           <Button 
             size="sm" 
             variant="outline"
-            onClick={onMarkAsInTransit}
+            onClick={handleMarkAsInTransit}
             disabled={isMarkingAsInTransit}
             className="flex items-center gap-1"
           >
@@ -44,7 +65,7 @@ export function DispatchDetailsHeader({
           <Button 
             size="sm" 
             variant="outline"
-            onClick={onMarkAsArrived}
+            onClick={handleMarkAsArrived}
             disabled={isMarkingAsArrived}
             className="flex items-center gap-1"
           >

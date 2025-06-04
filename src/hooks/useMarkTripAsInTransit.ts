@@ -1,0 +1,126 @@
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+
+export function useMarkTripAsInTransit() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const markTripAsInTransitMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      // Get all packages that are "procesado" (dispatched but not in transit) for this trip
+      const { data: packages, error: packagesError } = await supabase
+        .from('packages')
+        .select('id, tracking_number')
+        .eq('trip_id', tripId)
+        .eq('status', 'procesado');
+
+      if (packagesError) throw packagesError;
+
+      if (!packages || packages.length === 0) {
+        throw new Error('No packages found in "procesado" status for this trip');
+      }
+
+      // Update all packages to "transito" status
+      const { error: updateError } = await supabase
+        .from('packages')
+        .update({
+          status: 'transito',
+          updated_at: new Date().toISOString()
+        })
+        .eq('trip_id', tripId)
+        .eq('status', 'procesado');
+
+      if (updateError) throw updateError;
+
+      // Update dispatch status to "en_transito" for all dispatches containing these packages
+      const packageIds = packages.map(pkg => pkg.id);
+      const { data: dispatchPackages, error: dispatchPackagesError } = await supabase
+        .from('dispatch_packages')
+        .select('dispatch_id')
+        .in('package_id', packageIds);
+
+      if (dispatchPackagesError) throw dispatchPackagesError;
+
+      if (dispatchPackages && dispatchPackages.length > 0) {
+        const dispatchIds = [...new Set(dispatchPackages.map(dp => dp.dispatch_id))];
+        const { error: dispatchUpdateError } = await supabase
+          .from('dispatch_relations')
+          .update({
+            status: 'en_transito',
+            updated_at: new Date().toISOString()
+          })
+          .in('id', dispatchIds);
+
+        if (dispatchUpdateError) throw dispatchUpdateError;
+      }
+
+      // Create tracking events for each package
+      const trackingEvents = packages.map(pkg => ({
+        package_id: pkg.id,
+        event_type: 'in_transit',
+        description: 'Paquete en tránsito',
+        location: 'En vuelo'
+      }));
+
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert(trackingEvents);
+
+      if (trackingError) throw trackingError;
+
+      // Update trip status to "in_progress"
+      const { error: tripUpdateError } = await supabase
+        .from('trips')
+        .update({
+          status: 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tripId);
+
+      if (tripUpdateError) throw tripUpdateError;
+
+      return { updatedPackages: packages.length, tripId };
+    },
+    onSuccess: (data) => {
+      // Invalidar todas las queries relevantes inmediatamente
+      queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
+      
+      // También invalidar por ID específico del trip
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', data.tripId] });
+      
+      // Invalidar por fecha actual
+      const today = format(new Date(), 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', today] });
+      queryClient.invalidateQueries({ queryKey: ['dispatch-relations', today] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
+      
+      toast({
+        title: "Viaje marcado en tránsito",
+        description: `${data.updatedPackages} paquetes actualizados a "En Tránsito"`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error marking trip as in transit:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo marcar el viaje como en tránsito",
+        variant: "destructive"
+      });
+    }
+  });
+
+  return {
+    markTripAsInTransit: markTripAsInTransitMutation.mutate,
+    isMarkingAsInTransit: markTripAsInTransitMutation.isPending,
+  };
+}

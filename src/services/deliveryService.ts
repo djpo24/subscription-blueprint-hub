@@ -38,14 +38,14 @@ export class DeliveryService {
       const paymentsForRpc = payments && payments.length > 0 ? payments.map(p => ({
         method_id: p.method_id,
         amount: p.amount,
-        currency: p.currency,
+        currency: p.currency, // Mantener como string, el cast se hará en la función RPC
         type: p.type
       })) : null;
 
       console.log('💰 [DeliveryService] Pagos preparados para RPC:', paymentsForRpc);
 
-      // Llamar a la función RPC
-      const { data, error } = await supabase.rpc('deliver_package_with_payment', {
+      // Llamar a la función RPC con mejor manejo de errores
+      const { data, error } = await supabase.rpc('deliver_package_with_payment_v2', {
         p_package_id: packageId,
         p_delivered_by: deliveredBy,
         p_payments: paymentsForRpc

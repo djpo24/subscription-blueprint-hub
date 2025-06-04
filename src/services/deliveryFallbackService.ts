@@ -71,7 +71,7 @@ export class DeliveryFallbackService {
 
       // CRUCIAL: Si el paquete tiene monto a cobrar, crear registro de deuda SIEMPRE
       if (packageData.amount_to_collect && packageData.amount_to_collect > 0) {
-        await this.createOrUpdateDebtRecord(packageId, packageData.amount_to_collect, totalCollected);
+        await this.createOrUpdateDebtRecord(packageId, packageData.amount_to_collect, totalCollected, packageData.currency);
       } else {
         console.log('ℹ️ [DeliveryFallbackService] Paquete sin monto a cobrar, no se crea registro de deuda');
       }
@@ -114,6 +114,15 @@ export class DeliveryFallbackService {
 
       console.log('✅ [DeliveryFallbackService] Registro de entrega creado:', deliveryData);
 
+      // Mapear métodos de pago a UUIDs
+      const getPaymentMethodUuid = (methodId: string, currency: string): string => {
+        if (methodId === 'efectivo' && currency === 'AWG') return '11111111-1111-1111-1111-111111111111';
+        if (methodId === 'efectivo' && currency === 'COP') return '22222222-2222-2222-2222-222222222222';
+        if (methodId === 'transferencia' && currency === 'AWG') return '33333333-3333-3333-3333-333333333333';
+        if (methodId === 'transferencia' && currency === 'COP') return '44444444-4444-4444-4444-444444444444';
+        return '11111111-1111-1111-1111-111111111111'; // Default a efectivo AWG
+      };
+
       // Crear registros de pago
       for (const payment of payments) {
         console.log('💳 [DeliveryFallbackService] Creando pago:', payment);
@@ -121,7 +130,7 @@ export class DeliveryFallbackService {
           .from('delivery_payments')
           .insert({
             delivery_id: deliveryData.id,
-            payment_method_id: payment.method_id,
+            payment_method_id: getPaymentMethodUuid(payment.method_id, payment.currency),
             amount: payment.amount,
             currency: payment.currency,
             payment_type: payment.type
@@ -143,7 +152,8 @@ export class DeliveryFallbackService {
   private static async createOrUpdateDebtRecord(
     packageId: string, 
     amountToCollect: number, 
-    totalCollected: number
+    totalCollected: number,
+    packageCurrency: string
   ) {
     console.log('💸 [DeliveryFallbackService] Creando/actualizando registro de deuda...');
     
@@ -163,7 +173,7 @@ export class DeliveryFallbackService {
 
       if (existingDebt) {
         console.log('📝 [DeliveryFallbackService] Actualizando registro de deuda existente...');
-        // Actualizar registro existente
+        // Actualizar registro existente con cast explícito
         const { error: debtError } = await supabase
           .from('package_debts')
           .update({

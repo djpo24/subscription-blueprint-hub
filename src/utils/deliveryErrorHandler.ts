@@ -21,6 +21,10 @@ export class DeliveryErrorHandler {
       console.log('🔍 [DeliveryErrorHandler] Código de error:', error.code);
       
       switch (error.code) {
+        case '42804': // Error de tipo de datos
+          errorMessage = "Error de formato de datos. Se intentará método alternativo.";
+          shouldTryFallback = true;
+          break;
         case '22023':
           errorMessage = "Error de formato de datos. Se intentará método alternativo.";
           shouldTryFallback = true;
@@ -37,6 +41,7 @@ export class DeliveryErrorHandler {
           break;
         default:
           console.log('🔍 [DeliveryErrorHandler] Código de error no manejado:', error.code);
+          shouldTryFallback = true; // Intentar fallback para códigos desconocidos
       }
     }
     
@@ -44,7 +49,10 @@ export class DeliveryErrorHandler {
     if (error?.message) {
       console.log('🔍 [DeliveryErrorHandler] Mensaje de error:', error.message);
       
-      if (error.message.includes('collection_stats')) {
+      if (error.message.includes('currency_type') || error.message.includes('currency')) {
+        errorMessage = "Error de tipo de moneda. Se intentará método alternativo.";
+        shouldTryFallback = true;
+      } else if (error.message.includes('collection_stats')) {
         errorMessage = "Error de permisos en estadísticas. Se intentará método alternativo.";
         shouldTryFallback = true;
       } else if (error.message.includes('permission denied')) {
@@ -72,11 +80,13 @@ export class DeliveryErrorHandler {
   static isPermissionError(error: any): boolean {
     const isPermissionError = !!(
       error?.message?.includes('collection_stats') || 
+      error?.message?.includes('currency_type') ||
       error?.code === '42501' || 
+      error?.code === '42804' || // Agregar error de tipo de datos
       error?.message?.includes('permission denied')
     );
     
-    console.log('🔒 [DeliveryErrorHandler] ¿Es error de permisos?', isPermissionError, {
+    console.log('🔒 [DeliveryErrorHandler] ¿Es error de permisos o tipo?', isPermissionError, {
       errorMessage: error?.message,
       errorCode: error?.code
     });

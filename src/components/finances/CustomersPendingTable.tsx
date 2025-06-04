@@ -9,26 +9,26 @@ import { Button } from '@/components/ui/button';
 import { Phone, Mail, Package, DollarSign } from 'lucide-react';
 import { useCustomersPendingCollection } from '@/hooks/useCustomersPendingCollection';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
-
-interface CustomerPendingCollection {
-  id: string;
-  customer_name: string;
-  phone: string;
-  email: string;
-  total_packages: number;
-  total_pending_amount: number;
-  last_delivery_date: string;
-  package_numbers: string;
-  package_statuses?: string;
-}
+import type { RecordPaymentCustomer } from '@/types/recordPayment';
 
 export function CustomersPendingTable() {
   const { data: customers, isLoading, error, refetch } = useCustomersPendingCollection();
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerPendingCollection | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<RecordPaymentCustomer | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
-  const handleRecordPayment = (customer: CustomerPendingCollection) => {
-    setSelectedCustomer(customer);
+  const handleRecordPayment = (customer: any) => {
+    console.log('🎯 Registrar pago para:', customer.customer_name);
+    
+    // Convertir el formato de customer a RecordPaymentCustomer
+    const recordPaymentCustomer: RecordPaymentCustomer = {
+      id: customer.package_id, // Usar package_id como customer_id
+      customer_name: customer.customer_name,
+      phone: customer.customer_phone,
+      total_pending_amount: customer.pending_amount,
+      package_numbers: customer.tracking_number
+    };
+    
+    setSelectedCustomer(recordPaymentCustomer);
     setIsPaymentDialogOpen(true);
   };
 
@@ -150,17 +150,16 @@ export function CustomersPendingTable() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
-                  <TableHead className="text-center">Paquetes</TableHead>
-                  <TableHead>Estado de Paquetes</TableHead>
+                  <TableHead>Estado del Paquete</TableHead>
                   <TableHead className="text-right">Monto Pendiente</TableHead>
-                  <TableHead>Última Entrega</TableHead>
-                  <TableHead>Números de Seguimiento</TableHead>
+                  <TableHead>Fecha de Entrega</TableHead>
+                  <TableHead>Número de Seguimiento</TableHead>
                   <TableHead className="text-center">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {customers.map((customer) => (
-                  <TableRow key={customer.id}>
+                  <TableRow key={customer.package_id}>
                     <TableCell>
                       <div className="font-medium">{customer.customer_name}</div>
                     </TableCell>
@@ -168,47 +167,35 @@ export function CustomersPendingTable() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1 text-sm">
                           <Phone className="h-3 w-3" />
-                          {customer.phone}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Mail className="h-3 w-3" />
-                          {customer.email}
+                          {customer.customer_phone}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">{customer.total_packages}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {customer.package_statuses?.split(', ').map((status, index) => (
-                          <Badge 
-                            key={index} 
-                            variant={getStatusBadgeVariant(status)}
-                            className="text-xs"
-                          >
-                            {getStatusText(status)}
-                          </Badge>
-                        ))}
-                      </div>
+                      <Badge 
+                        variant={getStatusBadgeVariant(customer.package_status)}
+                        className="text-xs"
+                      >
+                        {getStatusText(customer.package_status)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="font-semibold text-orange-600">
-                        {formatCurrency(customer.total_pending_amount)}
+                        {formatCurrency(customer.pending_amount)}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(customer.last_delivery_date), {
+                        {customer.delivery_date ? formatDistanceToNow(new Date(customer.delivery_date), {
                           addSuffix: true,
                           locale: es,
-                        })}
+                        }) : 'N/A'}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="max-w-[200px]">
                         <span className="text-sm font-mono text-muted-foreground">
-                          {customer.package_numbers}
+                          {customer.tracking_number}
                         </span>
                       </div>
                     </TableCell>

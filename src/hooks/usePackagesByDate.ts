@@ -12,6 +12,7 @@ interface PackageData {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency: 'COP' | 'AWG';
   status: string;
   origin: string;
   destination: string;
@@ -65,6 +66,7 @@ export function usePackagesByDate(date: Date) {
             weight,
             freight,
             amount_to_collect,
+            currency,
             status,
             origin,
             destination
@@ -85,6 +87,7 @@ export function usePackagesByDate(date: Date) {
             
             return {
               ...pkg,
+              currency: pkg.currency || 'COP',
               customers: customer || { name: 'N/A', email: 'N/A' }
             };
           })

@@ -14,6 +14,31 @@ import { ChatDialog } from './chat/ChatDialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 
+// Define a local Package type that matches what TripPackageCard expects
+interface Package {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  description: string;
+  weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
+  currency: 'COP' | 'AWG';
+  status: string;
+  customers?: {
+    name: string;
+    email: string;
+  };
+}
+
+interface Trip {
+  id: string;
+  origin: string;
+  destination: string;
+  flight_number: string | null;
+  packages: Package[];
+}
+
 interface PackagesByDateViewProps {
   selectedDate: Date;
   onBack: () => void;
@@ -29,7 +54,7 @@ export function PackagesByDateView({
   disableChat = false,
   previewRole
 }: PackagesByDateViewProps) {
-  const { data: trips = [], isLoading } = usePackagesByDate(selectedDate);
+  const { data: tripsData = [], isLoading } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -37,6 +62,26 @@ export function PackagesByDateView({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
   const queryClient = useQueryClient();
+
+  // Transform the data to match the expected Trip interface
+  const trips: Trip[] = tripsData.map(trip => ({
+    id: trip.id,
+    origin: trip.origin,
+    destination: trip.destination,
+    flight_number: trip.flight_number,
+    packages: trip.packages.map(pkg => ({
+      id: pkg.id,
+      tracking_number: pkg.tracking_number,
+      customer_id: pkg.customer_id,
+      description: pkg.description,
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      currency: pkg.currency,
+      status: pkg.status,
+      customers: pkg.customers || undefined
+    }))
+  }));
 
   const handlePackageClick = (pkg: any) => {
     setSelectedPackage(pkg);

@@ -2,16 +2,11 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePaymentManagement } from '@/hooks/usePaymentManagement';
-import { MobilePackageInfo } from '@/components/mobile/MobilePackageInfo';
-import { MobilePaymentSection } from '@/components/mobile/MobilePaymentSection';
-import { MobileDeliveryFormFields } from '@/components/mobile/MobileDeliveryFormFields';
+import { RecordPaymentContent } from './RecordPaymentContent';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -147,78 +142,22 @@ export function RecordPaymentDialog({
     }
   };
 
-  // Calcular totales de pago
-  const totalCollected = payments.reduce((sum, payment) => {
-    const amount = parseFloat(payment.amount) || 0;
-    return sum + amount;
-  }, 0);
-
-  const remainingAmount = Math.max(0, (customer?.total_pending_amount || 0) - totalCollected);
-
   if (!customer || !mockPackage) return null;
 
-  const PaymentContent = () => (
-    <div className="space-y-4">
-      {/* Package Info - usando el componente móvil */}
-      <MobilePackageInfo package={mockPackage as any} />
-
-      {/* Payment Section - usando el componente móvil */}
-      <MobilePaymentSection
-        package={mockPackage as any}
-        payments={payments}
-        onAddPayment={addPayment}
-        onUpdatePayment={handlePaymentUpdate}
-        onRemovePayment={removePayment}
-        getCurrencySymbol={getCurrencySymbol}
-      />
-
-      {/* Delivery Form - Solo notas, omitiendo "entregado por" */}
-      <div className="space-y-4">
-        <MobileDeliveryFormFields
-          deliveredBy=""
-          setDeliveredBy={() => {}}
-          notes={notes}
-          setNotes={setNotes}
-          hideDeliveredBy={true}
-        />
-
-        {/* Payment Warning for uncollected amounts */}
-        {remainingAmount > 0 && (
-          <Card className="border-orange-200 bg-orange-50">
-            <CardContent className="p-3">
-              <p className="text-sm text-orange-700">
-                <strong>Atención:</strong> Queda un saldo pendiente de{' '}
-                <strong>${remainingAmount.toLocaleString('es-CO')} COP</strong>.
-                Puedes registrar más pagos arriba.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Action Buttons - exactamente como en el móvil */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="w-full"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={isLoading || payments.length === 0}
-            className="w-full"
-            onClick={handleSubmit}
-          >
-            <Check className="h-4 w-4 mr-2" />
-            {isLoading ? 'Registrando...' : 'Registrar Pago'}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  const contentProps = {
+    customer,
+    mockPackage,
+    payments,
+    notes,
+    isLoading,
+    onAddPayment: addPayment,
+    onUpdatePayment: handlePaymentUpdate,
+    onRemovePayment: removePayment,
+    onNotesChange: setNotes,
+    onCancel: onClose,
+    onSubmit: handleSubmit,
+    getCurrencySymbol
+  };
 
   if (isMobile) {
     return (
@@ -230,7 +169,7 @@ export function RecordPaymentDialog({
             </SheetTitle>
           </SheetHeader>
           <div className="mt-6">
-            <PaymentContent />
+            <RecordPaymentContent {...contentProps} />
           </div>
         </SheetContent>
       </Sheet>
@@ -245,7 +184,7 @@ export function RecordPaymentDialog({
             Registrar Pago
           </DialogTitle>
         </DialogHeader>
-        <PaymentContent />
+        <RecordPaymentContent {...contentProps} />
       </DialogContent>
     </Dialog>
   );

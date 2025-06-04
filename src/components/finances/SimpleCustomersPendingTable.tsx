@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,16 +13,18 @@ export function SimpleCustomersPendingTable() {
 
   const handleRecordPayment = (customer: any) => {
     console.log('🎯 Registrar pago para:', customer.customer_name);
+    console.log('📦 Datos del cliente/paquete:', customer);
     
-    // Convert the customer format to RecordPaymentCustomer
+    // Create the RecordPaymentCustomer using the package data
     const recordPaymentCustomer: RecordPaymentCustomer = {
-      id: customer.package_id, // Use package_id as the customer ID for payment processing
+      id: customer.package_id, // This will be used as the package ID in payment processing
       customer_name: customer.customer_name,
       phone: customer.customer_phone,
       total_pending_amount: customer.pending_amount,
       package_numbers: customer.tracking_number
     };
     
+    console.log('💰 Datos para registro de pago:', recordPaymentCustomer);
     setSelectedCustomer(recordPaymentCustomer);
     setIsPaymentDialogOpen(true);
   };
@@ -154,12 +155,14 @@ export function SimpleCustomersPendingTable() {
         </CardContent>
       </Card>
 
-      <RecordPaymentDialog
-        isOpen={isPaymentDialogOpen}
-        onClose={handleClosePaymentDialog}
-        customer={selectedCustomer}
-        onPaymentRecorded={handlePaymentRecorded}
-      />
+      {selectedCustomer && (
+        <RecordPaymentDialog
+          isOpen={isPaymentDialogOpen}
+          onClose={handleClosePaymentDialog}
+          customer={selectedCustomer}
+          onPaymentRecorded={handlePaymentRecorded}
+        />
+      )}
     </>
   );
 }

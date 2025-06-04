@@ -27,9 +27,23 @@ export function RecordPaymentDialogWrapper({
     handleSubmit(onPaymentRecorded, onClose);
   };
 
-  if (!customer || !mockPackage) {
+  console.log('🎭 Dialog state:', { isOpen, customer, mockPackage });
+
+  if (!customer) {
+    console.log('❌ No customer provided to dialog');
     return null;
   }
+
+  // Always show the dialog if we have a customer, create a basic mockPackage if needed
+  const displayPackage = mockPackage || {
+    id: customer.id,
+    tracking_number: customer.package_numbers,
+    customer_id: customer.id,
+    amount_to_collect: customer.total_pending_amount,
+    currency: 'COP',
+    status: 'delivered',
+    destination: 'Unknown'
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -42,7 +56,7 @@ export function RecordPaymentDialogWrapper({
 
         <RecordPaymentContent
           customer={customer}
-          mockPackage={mockPackage}
+          mockPackage={displayPackage}
           payments={payments}
           notes={notes}
           isLoading={isLoading}

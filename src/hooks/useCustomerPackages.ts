@@ -1,57 +1,57 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { formatPackageDescription } from '@/utils/descriptionFormatter';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
 
+interface Package {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  amount_to_collect: number;
+  currency?: string;
+  status: string;
+  destination: string;
+}
+
 export function useCustomerPackages(customer: RecordPaymentCustomer | null, isOpen: boolean) {
-  const [customerPackages, setCustomerPackages] = useState<any[]>([]);
-
-  // Fetch customer packages when dialog opens
-  useEffect(() => {
-    if (isOpen && customer) {
-      fetchCustomerPackages();
-    }
-  }, [isOpen, customer]);
-
-  const fetchCustomerPackages = async () => {
-    if (!customer) return;
-
-    try {
+  const { data: packages = [] } = useQuery({
+    queryKey: ['customer-packages', customer?.id],
+    queryFn: async (): Promise<Package[]> => {
+      if (!customer?.id) return [];
+      
       console.log('🔍 Fetching packages for customer:', customer.id);
-      const { data: packages, error } = await supabase
+      
+      // Since customer.id is actually a package_id, we fetch that specific package
+      const { data, error } = await supabase
         .from('packages')
         .select('*')
-        .eq('customer_id', customer.id)
-        .eq('status', 'delivered')
-        .gt('amount_to_collect', 0);
+        .eq('id', customer.id)
+        .single();
 
-      if (error) throw error;
-      
-      console.log('📦 Fetched packages:', packages);
-      setCustomerPackages(packages || []);
-    } catch (error) {
-      console.error('Error fetching customer packages:', error);
-    }
-  };
+      if (error) {
+        console.error('Error fetching package:', error);
+        return [];
+      }
 
-  // Create a package object based on real customer data
-  const mockPackage = customer && customerPackages.length > 0 ? {
-    id: 'payment-mock',
+      console.log('📦 Fetched package:', data);
+      return data ? [data] : [];
+    },
+    enabled: !!customer?.id && isOpen,
+  });
+
+  // Create a mock package using the customer data for the payment dialog
+  const mockPackage = customer ? {
+    id: customer.id,
     tracking_number: customer.package_numbers,
-    destination: customerPackages[0].destination,
-    description: customerPackages.length === 1 
-      ? customerPackages[0].description 
-      : formatPackageDescription(customerPackages.map(p => p.description).join(', ')),
+    customer_id: customer.id, // This is actually the package_id
     amount_to_collect: customer.total_pending_amount,
-    currency: customerPackages[0].currency || 'COP',
-    customers: {
-      name: customer.customer_name
-    }
+    currency: packages[0]?.currency || 'COP', // Use the actual package currency if available
+    status: 'delivered',
+    destination: packages[0]?.destination || 'Unknown'
   } : null;
 
   return {
-    customerPackages,
+    customerPackages: packages,
     mockPackage
   };
 }

@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DollarSign, User, Phone, Package, Check, X } from 'lucide-react';
+import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export function RecordPaymentDialog({
   customer, 
   onPaymentRecorded 
 }: RecordPaymentDialogProps) {
+  const [displayAmount, setDisplayAmount] = useState('');
   const [rawAmount, setRawAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [currency, setCurrency] = useState('COP');
@@ -40,41 +42,26 @@ export function RecordPaymentDialog({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const formatNumberDisplay = (value: string): string => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, '');
-    if (!numbers) return '';
-    
-    // Add thousands separators (periods)
-    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setDisplayAmount('');
+      setRawAmount('');
+      setNotes('');
+    }
+  }, [isOpen]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    // Store cursor position
-    const cursorPosition = e.target.selectionStart;
     
-    // Remove all non-digit characters for raw value
-    const numbers = inputValue.replace(/\D/g, '');
-    setRawAmount(numbers);
+    // Parse the raw number (remove formatting)
+    const rawValue = parseFormattedNumber(inputValue);
+    setRawAmount(rawValue);
     
     // Format for display
-    const formatted = formatNumberDisplay(numbers);
-    
-    // Update the input value directly to avoid re-render issues
-    if (inputRef.current) {
-      inputRef.current.value = formatted;
-      
-      // Restore cursor position, accounting for added separators
-      setTimeout(() => {
-        if (inputRef.current && cursorPosition !== null) {
-          const newCursorPos = Math.min(cursorPosition, formatted.length);
-          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 0);
-    }
+    const formattedValue = formatNumber(rawValue);
+    setDisplayAmount(formattedValue);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,19 +109,16 @@ export function RecordPaymentDialog({
 
       if (error) throw error;
 
-      const formattedDisplay = formatNumberDisplay(rawAmount);
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago de ${currency} ${formattedDisplay} para ${customer.customer_name}`,
+        description: `Se registró un pago de ${currency} ${displayAmount} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();
       onClose();
+      setDisplayAmount('');
       setRawAmount('');
       setNotes('');
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
     } catch (error) {
       console.error('Error recording payment:', error);
       toast({
@@ -206,9 +190,9 @@ export function RecordPaymentDialog({
               <div className="space-y-2">
                 <Label htmlFor="amount">Monto *</Label>
                 <Input
-                  ref={inputRef}
                   id="amount"
                   type="text"
+                  value={displayAmount}
                   onChange={handleAmountChange}
                   placeholder="0"
                   required

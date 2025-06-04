@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -64,7 +65,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
       ? customerPackages[0].description 
       : formatPackageDescription(customerPackages.map(p => p.description).join(', ')),
     amount_to_collect: customer.total_pending_amount,
-    currency: customerPackages[0].currency || 'COP',
+    currency: customerPackages[0].currency || 'COP', // Usar la divisa del primer paquete
     customers: {
       name: customer.customer_name
     }
@@ -72,17 +73,20 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
 
   // Reset form when dialog opens/closes
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && mockPackage) {
       setNotes('');
-      const defaultMethod = paymentMethods.find(m => m.currency === 'COP');
+      // Usar la divisa del paquete como predeterminada
+      const packageCurrency = mockPackage.currency || 'COP';
+      const defaultMethod = paymentMethods.find(m => m.currency === packageCurrency) || 
+                           paymentMethods.find(m => m.currency === 'COP');
       setPayment({
         methodId: defaultMethod?.id || '',
         amount: '',
-        currency: 'COP',
+        currency: packageCurrency,
         type: 'partial'
       });
     }
-  }, [isOpen, paymentMethods]);
+  }, [isOpen, paymentMethods, mockPackage]);
 
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
     console.log('💳 Actualizando pago:', { index, field, value });
@@ -159,9 +163,10 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
 
       if (error) throw error;
 
+      const currencySymbol = getCurrencySymbol(payment.currency);
       toast({
         title: 'Pago registrado',
-        description: `Se registró un pago por ${payment.currency} ${parseFloat(payment.amount).toLocaleString('es-CO')} para ${customer.customer_name}`,
+        description: `Se registró un pago por ${currencySymbol}${parseFloat(payment.amount).toLocaleString('es-CO')} ${payment.currency} para ${customer.customer_name}`,
       });
 
       onPaymentRecorded();

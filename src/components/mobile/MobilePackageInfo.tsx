@@ -9,6 +9,19 @@ interface MobilePackageInfoProps {
 
 export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
+  const packageCurrency = pkg.currency || 'COP';
+  
+  // Obtener símbolo de divisa
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case 'AWG': return 'ƒ';
+      case 'USD': return '$';
+      case 'COP': return '$';
+      default: return '$';
+    }
+  };
+
+  const currencySymbol = getCurrencySymbol(packageCurrency);
 
   return (
     <Card>
@@ -37,17 +50,17 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
               <div className="flex justify-between border-t pt-2">
                 <span className="font-medium text-gray-600">Monto a cobrar:</span>
                 <span className="font-bold text-green-600">
-                  ${pkg.amount_to_collect?.toLocaleString('es-CO')} {pkg.currency || 'COP'}
+                  {currencySymbol}{pkg.amount_to_collect?.toLocaleString('es-CO')} {packageCurrency}
                 </span>
               </div>
-              {pkg.currency && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-600">Moneda:</span>
-                  <span className="text-sm bg-blue-100 px-2 py-1 rounded">
-                    {pkg.currency === 'AWG' ? 'Florín (AWG)' : 'Peso (COP)'}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Moneda:</span>
+                <span className="text-sm bg-blue-100 px-2 py-1 rounded">
+                  {packageCurrency === 'AWG' ? 'Florín (AWG)' : 
+                   packageCurrency === 'USD' ? 'Dólar (USD)' : 
+                   'Peso (COP)'}
+                </span>
+              </div>
             </>
           )}
         </div>

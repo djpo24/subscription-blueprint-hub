@@ -49,6 +49,10 @@ export function RecordPaymentContent({
   }, 0);
 
   const remainingAmount = Math.max(0, customer.total_pending_amount - totalCollected);
+  
+  // Usar la divisa del paquete
+  const packageCurrency = mockPackage?.currency || 'COP';
+  const currencySymbol = getCurrencySymbol(packageCurrency);
 
   return (
     <div className="space-y-4">
@@ -70,7 +74,8 @@ export function RecordPaymentContent({
       {/* Payment Summary Warning */}
       <PaymentSummaryCard
         remainingAmount={remainingAmount}
-        currency="COP"
+        currency={packageCurrency}
+        currencySymbol={currencySymbol}
       />
 
       {/* Action Buttons */}

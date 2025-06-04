@@ -42,7 +42,7 @@ interface PackagesByDateContentProps {
   totalAmountToCollect: number;
   onBack: () => void;
   onAddPackage: (tripId: string) => void;
-  onPackageClick: (pkg: Package) => void;
+  onPackageClick: (pkg: Package, tripId: string) => void;
   onOpenChat: (customerId: string, customerName?: string) => void;
   onCreateDispatch: () => void;
   previewRole?: 'admin' | 'employee' | 'traveler';

@@ -21,7 +21,7 @@ export function useDispatchPackages(dispatchId: string) {
       
       const packageIds = dispatchPackages.map(dp => dp.package_id);
       
-      // Then get the package details
+      // Then get the package details including customer_id
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select(`
@@ -35,7 +35,8 @@ export function useDispatchPackages(dispatchId: string) {
           freight,
           amount_to_collect,
           currency,
-          trip_id
+          trip_id,
+          customer_id
         `)
         .in('id', packageIds);
       

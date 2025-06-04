@@ -28,7 +28,7 @@ export function useCustomersPendingCollection() {
           `)
           .eq('status', 'delivered')
           .gt('amount_to_collect', 0)
-          .order('delivered_at', { ascending: false, nullsLast: true })
+          .order('delivered_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(50);
 

@@ -40,6 +40,7 @@ export function PackageForm({
   console.log('📋 [PackageForm] Current form data:', formData);
   console.log('💰 [PackageForm] Selected currency for amount to collect:', formData.currency);
   console.log('💰 [PackageForm] Amount to collect:', formData.amountToCollect);
+  console.log('🚢 [PackageForm] Freight (always COP):', formData.freight);
 
   const generateTrackingNumber = () => {
     const prefix = 'EO';
@@ -100,9 +101,9 @@ export function PackageForm({
         customer_id: customerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
+        freight: formData.freight ? parseFloat(formData.freight) : 0, // El flete siempre en COP
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-        currency: formData.currency, // IMPORTANTE: Usar la divisa seleccionada
+        currency: formData.currency, // Esta es la divisa para el monto a cobrar, NO para el flete
         origin: tripData.origin,
         destination: tripData.destination,
         flight_number: tripData.flight_number,
@@ -111,8 +112,9 @@ export function PackageForm({
       };
 
       console.log('📤 [PackageForm] Datos del paquete a insertar:', packageData);
-      console.log('💰 [PackageForm] Divisa que se enviará a la BD:', packageData.currency);
-      console.log('💰 [PackageForm] Monto a cobrar que se enviará:', packageData.amount_to_collect);
+      console.log('💰 [PackageForm] Divisa para monto a cobrar:', packageData.currency);
+      console.log('💰 [PackageForm] Monto a cobrar:', packageData.amount_to_collect);
+      console.log('🚢 [PackageForm] Flete (siempre en COP):', packageData.freight);
 
       const { error } = await supabase
         .from('packages')

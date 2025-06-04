@@ -85,21 +85,12 @@ export function useEditPackageFormSubmission({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // IMPROVED: Better currency preservation logic
-      const currencyToSave = (() => {
-        // Priority: formData.currency > package original currency > default COP
-        if (formData.currency && ['COP', 'AWG'].includes(formData.currency)) {
-          return formData.currency;
-        }
-        if (pkg.currency && ['COP', 'AWG'].includes(pkg.currency)) {
-          console.log('📝 [EditPackageFormSubmission] Using package original currency:', pkg.currency);
-          return pkg.currency;
-        }
-        console.log('📝 [EditPackageFormSubmission] Defaulting to COP');
-        return 'COP';
-      })();
+      // FIXED: Usar la divisa del formulario como prioridad principal
+      const currencyToSave = formData.currency && ['COP', 'AWG'].includes(formData.currency) 
+        ? formData.currency 
+        : 'COP';
 
-      console.log('📤 [EditPackageFormSubmission] Updating package with values:', {
+      console.log('📤 [EditPackageFormSubmission] Valores para actualizar:', {
         packageId: pkg.id,
         originalCurrency: pkg.currency,
         formCurrency: formData.currency,
@@ -127,7 +118,7 @@ export function useEditPackageFormSubmission({
 
       if (error) throw error;
 
-      console.log('✅ [EditPackageFormSubmission] Package updated with currency:', currencyToSave);
+      console.log('✅ [EditPackageFormSubmission] Paquete actualizado con divisa:', currencyToSave);
 
       // Create tracking event
       await supabase

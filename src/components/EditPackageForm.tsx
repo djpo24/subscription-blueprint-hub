@@ -45,9 +45,11 @@ export function EditPackageForm({
     onSuccess
   });
 
-  console.log('🔍 [EditPackageForm] Divisa actual del formulario:', formData.currency);
-  console.log('🔍 [EditPackageForm] Divisa del paquete:', pkg.currency);
-  console.log('🔍 [EditPackageForm] Datos completos del formulario:', formData);
+  console.log('🔍 [EditPackageForm] Estado actual:', {
+    packageCurrency: pkg.currency,
+    formCurrency: formData.currency,
+    trackingNumber: pkg.tracking_number
+  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -73,7 +75,11 @@ export function EditPackageForm({
         amountToCollect={formData.amountToCollect}
         amountToCollectFormatted={formData.amountToCollectFormatted}
         onCurrencyChange={(currency) => {
-          console.log('💱 [EditPackageForm] Cambio de divisa solicitado:', currency);
+          console.log('💱 [EditPackageForm] Cambio de divisa detectado:', {
+            from: formData.currency,
+            to: currency,
+            package: pkg.tracking_number
+          });
           updateFormData({ currency });
         }}
         onAmountChange={(amountToCollect, amountToCollectFormatted) =>

@@ -22,37 +22,47 @@ export function usePaymentManagement(packageCurrency?: string) {
 
   // Initialize with one payment entry when component mounts
   useEffect(() => {
+    // Usar la moneda del paquete o AWG como fallback (NO COP como fallback)
     const currency = packageCurrency || 'AWG';
     console.log('🔄 [usePaymentManagement] Initializing with currency:', currency);
+    console.log('🔄 [usePaymentManagement] Package currency was:', packageCurrency);
     
+    // Buscar método de pago que coincida con la moneda del paquete
     const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
                          availablePaymentMethods.find(m => m.currency === 'AWG') ||
                          availablePaymentMethods[0];
     
     console.log('🎯 [usePaymentManagement] Default method selected:', defaultMethod);
+    console.log('🎯 [usePaymentManagement] Method currency:', defaultMethod?.currency);
     
     if (defaultMethod) {
       const defaultPayment = createDefaultPayment(defaultMethod);
-      defaultPayment.currency = currency; // Asegurar que use la moneda del paquete
+      // CRÍTICO: Asegurar que use la moneda del paquete, no la del método de pago
+      defaultPayment.currency = currency;
       console.log('🎯 [usePaymentManagement] Default payment created:', defaultPayment);
+      console.log('🎯 [usePaymentManagement] Payment currency set to:', defaultPayment.currency);
       setPayments([defaultPayment]);
     }
   }, [packageCurrency, availablePaymentMethods.length]);
 
   const addPayment = () => {
     const currency = packageCurrency || 'AWG';
+    console.log('➕ [usePaymentManagement] Adding payment with currency:', currency);
+    
     const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
                          availablePaymentMethods[0];
     
     if (defaultMethod) {
       const newPayment = createDefaultPayment(defaultMethod);
-      newPayment.currency = currency;
+      newPayment.currency = currency; // Asegurar que use la moneda del paquete
+      console.log('➕ [usePaymentManagement] New payment created:', newPayment);
       setPayments(prev => [...prev, newPayment]);
     }
   };
 
   const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
     console.log('💳 [usePaymentManagement] Updating payment:', { index, field, value, packageAmount });
+    console.log('💳 [usePaymentManagement] Package currency context:', packageCurrency);
     
     setPayments(prev => 
       prev.map((payment, i) => 
@@ -69,12 +79,15 @@ export function usePaymentManagement(packageCurrency?: string) {
 
   const resetPayments = () => {
     const currency = packageCurrency || 'AWG';
+    console.log('🔄 [usePaymentManagement] Resetting payments with currency:', currency);
+    
     const defaultMethod = availablePaymentMethods.find(m => m.currency === currency) || 
                          availablePaymentMethods[0];
     
     if (defaultMethod) {
       const defaultPayment = createDefaultPayment(defaultMethod);
       defaultPayment.currency = currency;
+      console.log('🔄 [usePaymentManagement] Reset payment created:', defaultPayment);
       setPayments([defaultPayment]);
     } else {
       setPayments([]);

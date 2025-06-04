@@ -19,11 +19,21 @@ export function AmountToCollectSection({
   onCurrencyChange,
   onAmountChange
 }: AmountToCollectSectionProps) {
+  console.log('💱 [AmountToCollectSection] Current currency:', currency);
+  console.log('💰 [AmountToCollectSection] Current amount:', amountToCollect);
+  console.log('💰 [AmountToCollectSection] Current formatted amount:', amountToCollectFormatted);
+
   const handleAmountToCollectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatNumber(value);
     const raw = parseFormattedNumber(formatted);
+    console.log('💰 [AmountToCollectSection] Amount changing from', value, 'to formatted:', formatted, 'raw:', raw);
     onAmountChange(raw, formatted);
+  };
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    console.log('💱 [AmountToCollectSection] Currency changing from', currency, 'to', newCurrency);
+    onCurrencyChange(newCurrency);
   };
 
   return (
@@ -33,13 +43,13 @@ export function AmountToCollectSection({
       </Label>
       
       <div className="flex gap-3">
-        <Select value={currency} onValueChange={onCurrencyChange}>
+        <Select value={currency} onValueChange={handleCurrencyChange}>
           <SelectTrigger className="w-28">
-            <SelectValue />
+            <SelectValue placeholder="Divisa" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="COP">COP</SelectItem>
-            <SelectItem value="ANG">ANG</SelectItem>
+            <SelectItem value="AWG">AWG</SelectItem>
           </SelectContent>
         </Select>
         <Input
@@ -50,6 +60,13 @@ export function AmountToCollectSection({
           placeholder="0"
           className="flex-1"
         />
+      </div>
+
+      {/* Debug info - visible in development */}
+      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        <div>Divisa seleccionada: <strong>{currency}</strong></div>
+        <div>Monto: <strong>{amountToCollect || '0'}</strong></div>
+        <div>Monto formateado: <strong>{amountToCollectFormatted || '0'}</strong></div>
       </div>
     </div>
   );

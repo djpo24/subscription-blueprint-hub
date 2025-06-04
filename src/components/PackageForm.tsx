@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,10 @@ export function PackageForm({
     currency: 'COP', // Default to Colombian Pesos
     details: [''] // Array to store product details
   });
+
+  console.log('📋 [PackageForm] Current form data:', formData);
+  console.log('💰 [PackageForm] Selected currency for amount to collect:', formData.currency);
+  console.log('💰 [PackageForm] Amount to collect:', formData.amountToCollect);
 
   const generateTrackingNumber = () => {
     const prefix = 'EO';
@@ -87,41 +92,49 @@ export function PackageForm({
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      console.log('Creando encomienda con valores:', {
+      // Preparar los datos para insertar
+      const packageData = {
+        tracking_number: trackingNumber,
+        customer_id: customerId,
+        description: finalDescription,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
-      });
+        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        currency: formData.currency, // IMPORTANTE: Usar la divisa seleccionada
+        origin: tripData.origin,
+        destination: tripData.destination,
+        flight_number: tripData.flight_number,
+        trip_id: tripId,
+        status: 'recibido'
+      };
+
+      console.log('📤 [PackageForm] Datos del paquete a insertar:', packageData);
+      console.log('💰 [PackageForm] Divisa que se enviará a la BD:', packageData.currency);
+      console.log('💰 [PackageForm] Monto a cobrar que se enviará:', packageData.amount_to_collect);
 
       const { error } = await supabase
         .from('packages')
-        .insert([{
-          tracking_number: trackingNumber,
-          customer_id: customerId,
-          description: finalDescription,
-          weight: formData.weight ? parseFloat(formData.weight) : null,
-          freight: formData.freight ? parseFloat(formData.freight) : 0,
-          amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-          origin: tripData.origin,
-          destination: tripData.destination,
-          flight_number: tripData.flight_number,
-          trip_id: tripId,
-          status: 'recibido' // Usar el nuevo estado en español
-        }]);
+        .insert([packageData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [PackageForm] Error al insertar en BD:', error);
+        throw error;
+      }
+
+      console.log('✅ [PackageForm] Paquete creado exitosamente en BD');
 
       // Create initial tracking event
-      const { data: packageData } = await supabase
+      const { data: newPackageData } = await supabase
         .from('packages')
         .select('id')
         .eq('tracking_number', trackingNumber)
         .single();
 
-      if (packageData) {
+      if (newPackageData) {
         await supabase
           .from('tracking_events')
           .insert([{
-            package_id: packageData.id,
+            package_id: newPackageData.id,
             event_type: 'created',
             description: 'Encomienda creada',
             location: tripData.origin
@@ -135,7 +148,7 @@ export function PackageForm({
 
       onSuccess();
     } catch (error) {
-      console.error('Error creating package:', error);
+      console.error('❌ [PackageForm] Error creating package:', error);
       toast({
         title: "Error",
         description: "No se pudo crear la encomienda",
@@ -169,12 +182,14 @@ export function PackageForm({
         currency={formData.currency}
         amountToCollect={formData.amountToCollect}
         amountToCollectFormatted={formData.amountToCollectFormatted}
-        onCurrencyChange={(currency) =>
-          setFormData(prev => ({ ...prev, currency }))
-        }
-        onAmountChange={(amountToCollect, amountToCollectFormatted) =>
-          setFormData(prev => ({ ...prev, amountToCollect, amountToCollectFormatted }))
-        }
+        onCurrencyChange={(currency) => {
+          console.log('💱 [PackageForm] Currency changed to:', currency);
+          setFormData(prev => ({ ...prev, currency }));
+        }}
+        onAmountChange={(amountToCollect, amountToCollectFormatted) => {
+          console.log('💰 [PackageForm] Amount changed to:', amountToCollect);
+          setFormData(prev => ({ ...prev, amountToCollect, amountToCollectFormatted }));
+        }}
       />
 
       <OptionalDescriptionField

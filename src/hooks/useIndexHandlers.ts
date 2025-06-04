@@ -1,15 +1,16 @@
 
-import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
-interface UseIndexHandlersProps {
+interface UseIndexHandlersParams {
   activeTab: string;
   refetchUnreadMessages: () => void;
   refetchTrips: () => void;
   packagesRefetch: () => void;
-  setSelectedTripId: (id: string | undefined) => void;
+  setSelectedTripId: (id: string) => void;
   setPackageDialogOpen: (open: boolean) => void;
   setTripDialogOpen: (open: boolean) => void;
-  setSelectedDate: (date: Date | undefined) => void;
+  setSelectedDate: (date: Date | null) => void;
   setViewingPackagesByDate: (date: Date | null) => void;
   setActiveTab: (tab: string) => void;
 }
@@ -25,19 +26,11 @@ export function useIndexHandlers({
   setSelectedDate,
   setViewingPackagesByDate,
   setActiveTab,
-}: UseIndexHandlersProps) {
-  // Actualizar notificaciones cuando cambie de pestaña
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      // Cuando entra al chat, marcar como visitado y limpiar notificaciones
-      const now = new Date().toISOString();
-      localStorage.setItem('chat-last-visited', now);
-      refetchUnreadMessages();
-    }
-  }, [activeTab, refetchUnreadMessages]);
+}: UseIndexHandlersParams) {
+  const queryClient = useQueryClient();
 
   const handleNewPackage = () => {
-    setSelectedTripId(undefined);
+    setSelectedTripId('');
     setPackageDialogOpen(true);
   };
 
@@ -53,37 +46,61 @@ export function useIndexHandlers({
 
   const handleViewPackagesByDate = (date: Date) => {
     setViewingPackagesByDate(date);
-    setActiveTab('trips');
   };
 
   const handlePackageSuccess = () => {
     setPackageDialogOpen(false);
+    
+    // Invalidar múltiples consultas para asegurar sincronización
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
+    
     packagesRefetch();
+    refetchTrips();
   };
 
   const handleTripSuccess = () => {
     setTripDialogOpen(false);
-    setSelectedDate(undefined);
+    setSelectedDate(null);
+    
+    // Invalidar consultas de viajes y paquetes
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+    
     refetchTrips();
   };
 
   const handleTripDialogClose = (open: boolean) => {
-    setTripDialogOpen(open);
     if (!open) {
-      setSelectedDate(undefined);
+      setSelectedDate(null);
     }
+    setTripDialogOpen(open);
   };
 
   const handleViewNotifications = () => {
     setActiveTab('notifications');
+    refetchUnreadMessages();
   };
 
   const handlePackagesUpdate = () => {
+    // Invalidar todas las consultas relacionadas con paquetes
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    
     packagesRefetch();
+    refetchTrips();
   };
 
   const handleBackToCalendar = () => {
     setViewingPackagesByDate(null);
+    
+    // Refrescar datos del calendario
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    refetchTrips();
   };
 
   return {

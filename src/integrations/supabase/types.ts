@@ -817,7 +817,7 @@ export type Database = {
           amount_to_collect: number | null
           batch_id: string | null
           created_at: string
-          currency: string | null
+          currency: string
           customer_id: string
           delivered_at: string | null
           delivered_by: string | null
@@ -840,7 +840,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
-          currency?: string | null
+          currency?: string
           customer_id: string
           delivered_at?: string | null
           delivered_by?: string | null
@@ -863,7 +863,7 @@ export type Database = {
           amount_to_collect?: number | null
           batch_id?: string | null
           created_at?: string
-          currency?: string | null
+          currency?: string
           customer_id?: string
           delivered_at?: string | null
           delivered_by?: string | null

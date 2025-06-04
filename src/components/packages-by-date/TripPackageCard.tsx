@@ -6,6 +6,8 @@ import { Plus, Package, Weight, DollarSign, MessageSquare, Plane, MapPin } from 
 import { PackageItem } from './PackageItem';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 interface Package {
   id: string;
@@ -37,6 +39,7 @@ interface TripPackageCardProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
+  tripDate?: Date; // Para invalidar las consultas correctas
 }
 
 export function TripPackageCard({ 
@@ -45,10 +48,12 @@ export function TripPackageCard({
   onPackageClick,
   onOpenChat,
   previewRole,
-  disableChat = false
+  disableChat = false,
+  tripDate
 }: TripPackageCardProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   const totals = trip.packages.reduce(
     (acc, pkg) => ({
@@ -64,6 +69,43 @@ export function TripPackageCard({
   };
 
   const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
+
+  const handleAddPackage = (tripId: string) => {
+    onAddPackage(tripId);
+    
+    // Invalidar las consultas relevantes después de un pequeño delay
+    // para permitir que el diálogo se cierre y la encomienda se cree
+    setTimeout(() => {
+      // Invalidar consultas específicas del viaje
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', tripId] });
+      
+      // Si tenemos la fecha del viaje, invalidar también las consultas por fecha
+      if (tripDate) {
+        const formattedDate = format(tripDate, 'yyyy-MM-dd');
+        queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+      }
+      
+      // Invalidar consultas generales de paquetes
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      
+      // Invalidar viajes para actualizar contadores
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    }, 500);
+  };
+
+  const handlePackageClick = (pkg: Package) => {
+    onPackageClick(pkg);
+    
+    // Invalidar después de la edición de paquetes
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', trip.id] });
+      if (tripDate) {
+        const formattedDate = format(tripDate, 'yyyy-MM-dd');
+        queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+    }, 500);
+  };
 
   return (
     <Card className="border border-gray-200">
@@ -82,7 +124,7 @@ export function TripPackageCard({
             )}
           </div>
           <Button
-            onClick={() => onAddPackage(trip.id)}
+            onClick={() => handleAddPackage(trip.id)}
             size={isMobile ? "sm" : "default"}
             className={`${isMobile ? 'w-full text-xs' : 'text-sm'} flex items-center gap-2`}
           >
@@ -139,7 +181,7 @@ export function TripPackageCard({
               <PackageItem
                 key={pkg.id}
                 package={pkg}
-                onClick={() => onPackageClick(pkg)}
+                onClick={() => handlePackageClick(pkg)}
                 onOpenChat={canShowChat ? onOpenChat : undefined}
                 previewRole={previewRole}
                 disableChat={disableChat}

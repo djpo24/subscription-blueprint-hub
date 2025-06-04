@@ -1,16 +1,17 @@
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { usePackagesByDate } from '@/hooks/usePackagesByDate';
-import { useDispatchRelations } from '@/hooks/useDispatchRelations';
-import { CreateDispatchDialog } from './CreateDispatchDialog';
-import { EditPackageDialog } from './EditPackageDialog';
-import { ChatDialog } from './chat/ChatDialog';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { TripPackageCard } from './packages-by-date/TripPackageCard';
 import { PackagesByDateHeader } from './packages-by-date/PackagesByDateHeader';
 import { PackagesByDateSummary } from './packages-by-date/PackagesByDateSummary';
-import { TripPackageCard } from './packages-by-date/TripPackageCard';
 import { EmptyTripsState } from './packages-by-date/EmptyTripsState';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useState } from 'react';
+import { EditPackageDialog } from './EditPackageDialog';
+import { ChatDialog } from './chat/ChatDialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -27,146 +28,119 @@ export function PackagesByDateView({
   disableChat = false,
   previewRole
 }: PackagesByDateViewProps) {
-  const isMobile = useIsMobile();
-  const [showCreateDispatch, setShowCreateDispatch] = useState(false);
-  const [editPackageDialogOpen, setEditPackageDialogOpen] = useState(false);
+  const { data: trips = [], isLoading } = usePackagesByDate(selectedDate);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [showChatDialog, setShowChatDialog] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
-  const { data: packagesByTrip = [], isLoading, refetch } = usePackagesByDate(selectedDate);
-  const { data: dispatches = [] } = useDispatchRelations(selectedDate);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+  const queryClient = useQueryClient();
 
   const handlePackageClick = (pkg: any) => {
-    // Ensure the package has the correct structure for the EditPackageDialog
-    const packageWithCorrectStructure = {
-      id: pkg.id,
-      tracking_number: pkg.tracking_number,
-      customer_id: pkg.customer_id,
-      trip_id: pkg.trip_id,
-      description: pkg.description,
-      weight: pkg.weight,
-      freight: pkg.freight,
-      amount_to_collect: pkg.amount_to_collect,
-      status: pkg.status
-    };
-    
-    console.log('Package structure for edit dialog:', packageWithCorrectStructure);
-    setSelectedPackage(packageWithCorrectStructure);
-    setEditPackageDialogOpen(true);
-  };
-
-  const handleEditPackageSuccess = () => {
-    setEditPackageDialogOpen(false);
-    setSelectedPackage(null);
-    refetch();
-  };
-
-  const handleCreateDispatchSuccess = () => {
-    setShowCreateDispatch(false);
+    setSelectedPackage(pkg);
+    setEditDialogOpen(true);
   };
 
   const handleOpenChat = (customerId: string, customerName?: string) => {
     setSelectedCustomerId(customerId);
-    setSelectedCustomerName(customerName);
-    setShowChatDialog(true);
+    setSelectedCustomerName(customerName || 'Cliente');
+    setChatDialogOpen(true);
+  };
+
+  const handlePackageEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedPackage(null);
+    
+    // Invalidar las consultas para actualizar la vista
+    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+  };
+
+  const handleAddPackageWithRefresh = (tripId: string) => {
+    onAddPackage(tripId);
+    
+    // Después de crear la encomienda, invalidar las consultas
+    setTimeout(() => {
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    }, 500);
   };
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
-          <PackagesByDateHeader
-            selectedDate={selectedDate}
-            totalPackages={0}
-            totalTrips={0}
-            dispatchCount={0}
-            onBack={onBack}
-            onCreateDispatch={() => {}}
-          />
-        </CardHeader>
-        <CardContent className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
-          <div className="text-center py-8 text-gray-500">
-            Cargando encomiendas del día...
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al Calendario
+          </Button>
+        </div>
+        <div className="flex justify-center py-8">
+          <div className="text-gray-500">Cargando encomiendas...</div>
+        </div>
+      </div>
     );
   }
 
-  const totalPackages = packagesByTrip.reduce((total, trip) => total + trip.packages.length, 0);
-  const allPackages = packagesByTrip.flatMap(trip => trip.packages);
-
-  // Calcular totales generales
-  const grandTotals = allPackages.reduce(
-    (acc, pkg) => ({
-      weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0),
-      amount_to_collect: acc.amount_to_collect + (pkg.amount_to_collect || 0)
-    }),
-    { weight: 0, freight: 0, amount_to_collect: 0 }
-  );
+  const totalPackages = trips.reduce((acc, trip) => acc + trip.packages.length, 0);
 
   return (
-    <>
-      <Card>
-        <CardHeader className={`${isMobile ? 'px-3 pb-3' : 'px-6 pb-4'}`}>
-          <PackagesByDateHeader
-            selectedDate={selectedDate}
+    <div className="space-y-4 sm:space-y-6">
+      <PackagesByDateHeader 
+        selectedDate={selectedDate}
+        onBack={onBack}
+      />
+
+      {trips.length === 0 ? (
+        <EmptyTripsState selectedDate={selectedDate} />
+      ) : (
+        <>
+          <PackagesByDateSummary 
+            totalTrips={trips.length}
             totalPackages={totalPackages}
-            totalTrips={packagesByTrip.length}
-            dispatchCount={dispatches.length}
-            onBack={onBack}
-            onCreateDispatch={() => setShowCreateDispatch(true)}
+            selectedDate={selectedDate}
           />
 
-          <PackagesByDateSummary
-            totalPackages={totalPackages}
-            totalWeight={grandTotals.weight}
-            totalFreight={grandTotals.freight}
-            totalAmountToCollect={grandTotals.amount_to_collect}
-          />
-        </CardHeader>
-        <CardContent className={`${isMobile ? 'px-3 pb-3 space-y-4' : 'px-6 pb-4 space-y-6'}`}>
-          {packagesByTrip.length === 0 ? (
-            <EmptyTripsState selectedDate={selectedDate} />
-          ) : (
-            packagesByTrip.map((trip) => (
+          <div className="space-y-4 sm:space-y-6">
+            {trips.map((trip) => (
               <TripPackageCard
                 key={trip.id}
                 trip={trip}
-                onAddPackage={onAddPackage}
+                onAddPackage={handleAddPackageWithRefresh}
                 onPackageClick={handlePackageClick}
                 onOpenChat={handleOpenChat}
-                disableChat={disableChat}
                 previewRole={previewRole}
+                disableChat={disableChat}
+                tripDate={selectedDate}
               />
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      <CreateDispatchDialog
-        open={showCreateDispatch}
-        onOpenChange={setShowCreateDispatch}
-        tripDate={selectedDate}
-        packages={allPackages}
-        onSuccess={handleCreateDispatchSuccess}
-      />
+            ))}
+          </div>
+        </>
+      )}
 
       <EditPackageDialog
-        open={editPackageDialogOpen}
-        onOpenChange={setEditPackageDialogOpen}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         package={selectedPackage}
-        onSuccess={handleEditPackageSuccess}
+        onSuccess={handlePackageEditSuccess}
       />
 
       <ChatDialog
-        open={showChatDialog}
-        onOpenChange={setShowChatDialog}
+        open={chatDialogOpen}
+        onOpenChange={setChatDialogOpen}
         customerId={selectedCustomerId}
         customerName={selectedCustomerName}
       />
-    </>
+    </div>
   );
 }

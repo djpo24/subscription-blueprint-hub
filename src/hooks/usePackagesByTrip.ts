@@ -24,3 +24,16 @@ export function usePackagesByTrip(tripId: string) {
     enabled: !!tripId
   });
 }
+
+// Hook para invalidar manualmente las consultas de paquetes por viaje
+export function useInvalidatePackagesByTrip() {
+  const queryClient = useQueryClient();
+  
+  return (tripId?: string) => {
+    if (tripId) {
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', tripId] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
+    }
+  };
+}

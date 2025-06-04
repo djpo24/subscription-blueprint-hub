@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -91,4 +91,18 @@ export function usePackagesByDate(date: Date) {
     },
     enabled: !!date
   });
+}
+
+// Hook para invalidar las consultas de paquetes por fecha
+export function useInvalidatePackagesByDate() {
+  const queryClient = useQueryClient();
+  
+  return (date?: Date) => {
+    if (date) {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+    }
+  };
 }

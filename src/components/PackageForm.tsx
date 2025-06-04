@@ -8,6 +8,8 @@ import { FreightAndWeightFields } from './package-form/FreightAndWeightFields';
 import { AmountToCollectSection } from './package-form/AmountToCollectSection';
 import { OptionalDescriptionField } from './package-form/OptionalDescriptionField';
 
+type Currency = 'COP' | 'AWG';
+
 interface PackageFormProps {
   customerId: string;
   tripId?: string;
@@ -31,7 +33,7 @@ export function PackageForm({
     freightFormatted: '',
     amountToCollect: '',
     amountToCollectFormatted: '',
-    currency: 'COP', // Default to Colombian Pesos
+    currency: 'COP' as Currency, // Fixed type annotation
     details: [''] // Array to store product details
   });
 

@@ -24,6 +24,7 @@ interface Package {
   weight: number | null;
   freight: number | null;
   amount_to_collect: number | null;
+  currency: string;
   origin: string;
   destination: string;
   created_at: string;

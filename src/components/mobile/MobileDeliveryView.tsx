@@ -1,11 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Camera, ArrowLeft, Smartphone, BarChart3 } from 'lucide-react';
 import { QRScanner } from './QRScanner';
 import { MobileDeliveryForm } from './MobileDeliveryForm';
-import { supabase } from '@/integrations/supabase/client';
+import { usePackageByTrackingNumber } from '@/hooks/usePackageByTrackingNumber';
+import { useScannerSounds } from '@/hooks/qr-scanner/useScannerSounds';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 type ViewMode = 'menu' | 'scanner' | 'delivery';
@@ -16,11 +16,17 @@ interface MobileDeliveryViewProps {
 
 export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('menu');
-  const [scannedPackage, setScannedPackage] = useState<PackageInDispatch | null>(null);
+  const [scannedTrackingNumber, setScannedTrackingNumber] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Check if device is mobile
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  // Hook para sonidos del escáner
+  const { playErrorBeep } = useScannerSounds();
+
+  // Hook para obtener datos del paquete
+  const { data: packageData, error: packageError, isLoading: packageLoading } = usePackageByTrackingNumber(scannedTrackingNumber);
 
   const handleBarcodeScanned = async (barcodeData: string) => {
     setIsLoading(true);
@@ -32,79 +38,51 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
       
       if (trackingNumber) {
         console.log('🔍 Buscando paquete con tracking number:', trackingNumber);
-        
-        // Buscar el paquete en la base de datos usando el tracking number
-        const { data: packageData, error: packageError } = await supabase
-          .from('packages')
-          .select('*')
-          .eq('tracking_number', trackingNumber)
-          .single();
-
-        if (packageError) {
-          console.error('❌ Error buscando paquete:', packageError);
-          throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
-        }
-
-        if (!packageData) {
-          throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
-        }
-
-        console.log('📦 Paquete encontrado:', packageData);
-
-        // Buscar los datos del cliente
-        const { data: customerData, error: customerError } = await supabase
-          .from('customers')
-          .select('name, email')
-          .eq('id', packageData.customer_id)
-          .single();
-
-        if (customerError) {
-          console.error('⚠️ Error buscando cliente:', customerError);
-        }
-
-        // Crear el objeto PackageInDispatch con los datos reales
-        const realPackage: PackageInDispatch = {
-          id: packageData.id,
-          tracking_number: packageData.tracking_number,
-          origin: packageData.origin,
-          destination: packageData.destination,
-          status: packageData.status,
-          description: packageData.description,
-          weight: packageData.weight,
-          freight: packageData.freight,
-          amount_to_collect: packageData.amount_to_collect,
-          currency: packageData.currency,
-          trip_id: packageData.trip_id,
-          customers: customerData ? {
-            name: customerData.name,
-            email: customerData.email
-          } : {
-            name: 'Cliente no encontrado',
-            email: 'N/A'
-          }
-        };
-        
-        console.log('✅ Paquete con datos completos:', realPackage);
-        setScannedPackage(realPackage);
-        setViewMode('delivery');
+        setScannedTrackingNumber(trackingNumber);
       } else {
         throw new Error('Código de barras no válido o vacío');
       }
     } catch (error) {
       console.error('❌ Error procesando código de barras:', error);
+      
+      // Reproducir sonido de error
+      await playErrorBeep();
+      
       alert(`Error: ${error instanceof Error ? error.message : 'Código de barras no válido o no se pudo procesar'}`);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Manejar cuando se obtienen los datos del paquete
+  useEffect(() => {
+    if (packageData && scannedTrackingNumber) {
+      console.log('✅ Paquete cargado exitosamente:', packageData);
+      setViewMode('delivery');
+    }
+  }, [packageData, scannedTrackingNumber]);
+
+  // Manejar errores al cargar el paquete
+  useEffect(() => {
+    if (packageError && scannedTrackingNumber) {
+      console.error('❌ Error cargando paquete:', packageError);
+      
+      // Reproducir sonido de error
+      playErrorBeep();
+      
+      alert(`Error: No se encontró el paquete con tracking number: ${scannedTrackingNumber}`);
+      setScannedTrackingNumber(null);
+      setViewMode('menu');
+    }
+  }, [packageError, scannedTrackingNumber, playErrorBeep]);
+
   const handleDeliveryComplete = () => {
-    setScannedPackage(null);
+    setScannedTrackingNumber(null);
     setViewMode('menu');
   };
 
   const handleBackToMenu = () => {
-    setScannedPackage(null);
+    setScannedTrackingNumber(null);
     setViewMode('menu');
   };
 
@@ -173,8 +151,9 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
                   <li>1. Haz clic en "Escanear Código de Barras"</li>
                   <li>2. Permite el acceso a la cámara</li>
                   <li>3. Apunta la cámara al código de barras del paquete</li>
-                  <li>4. Completa la información de entrega</li>
-                  <li>5. Confirma la entrega</li>
+                  <li>4. Escucha el pitido de confirmación</li>
+                  <li>5. Completa la información de entrega</li>
+                  <li>6. Confirma la entrega</li>
                 </ol>
               </CardContent>
             </Card>
@@ -185,13 +164,13 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
           <QRScanner
             onQRCodeScanned={handleBarcodeScanned}
             onCancel={() => setViewMode('menu')}
-            isLoading={isLoading}
+            isLoading={isLoading || packageLoading}
           />
         )}
 
-        {viewMode === 'delivery' && scannedPackage && (
+        {viewMode === 'delivery' && packageData && (
           <MobileDeliveryForm
-            package={scannedPackage}
+            package={packageData}
             onDeliveryComplete={handleDeliveryComplete}
             onCancel={() => setViewMode('menu')}
           />

@@ -1,6 +1,7 @@
 
 import { useState, useRef } from 'react';
 import { BrowserQRCodeReader, BrowserMultiFormatReader } from '@zxing/browser';
+import { useScannerSounds } from './useScannerSounds';
 
 export function useBarcodeScanner() {
   const [isScanning, setIsScanning] = useState(false);
@@ -8,6 +9,9 @@ export function useBarcodeScanner() {
   const barcodeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const scanningAbortController = useRef<AbortController | null>(null);
   const continuousScanRef = useRef<boolean>(false);
+  
+  // Integrar los sonidos del escáner
+  const { playSuccessBeep, playErrorBeep, cleanup: cleanupSounds } = useScannerSounds();
 
   // Función para escaneo continuo con prioridad a Barcode sobre QR
   const continuousCodeScan = async (
@@ -24,7 +28,11 @@ export function useBarcodeScanner() {
       const barcodeResult = await barcodeReader.decodeOnceFromVideoDevice(deviceId, videoElement);
       
       if (barcodeResult && continuousScanRef.current) {
-        console.log('Thermal printer Barcode successfully detected:', barcodeResult.getText());
+        console.log('🔊 Thermal printer Barcode successfully detected:', barcodeResult.getText());
+        
+        // Reproducir sonido de éxito cuando se detecta un código
+        await playSuccessBeep();
+        
         onCodeScanned(barcodeResult.getText());
         stopScanning();
         return;
@@ -36,7 +44,11 @@ export function useBarcodeScanner() {
         const qrResult = await qrReader.decodeOnceFromVideoDevice(deviceId, videoElement);
         
         if (qrResult && continuousScanRef.current) {
-          console.log('Thermal printer QR Code successfully detected as fallback:', qrResult.getText());
+          console.log('🔊 Thermal printer QR Code successfully detected as fallback:', qrResult.getText());
+          
+          // Reproducir sonido de éxito cuando se detecta un QR
+          await playSuccessBeep();
+          
           onCodeScanned(qrResult.getText());
           stopScanning();
           return;
@@ -92,6 +104,10 @@ export function useBarcodeScanner() {
       
     } catch (err) {
       console.error('Error starting thermal printer Barcode scan:', err);
+      
+      // Reproducir sonido de error si falla al iniciar
+      await playErrorBeep();
+      
       setIsScanning(false);
       continuousScanRef.current = false;
       throw err;
@@ -113,6 +129,9 @@ export function useBarcodeScanner() {
     // Clear the code reader references
     qrCodeReaderRef.current = null;
     barcodeReaderRef.current = null;
+    
+    // Limpiar recursos de audio
+    cleanupSounds();
     
     setIsScanning(false);
   };

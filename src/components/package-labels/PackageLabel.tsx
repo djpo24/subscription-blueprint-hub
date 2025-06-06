@@ -99,13 +99,13 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* QR Code centrado con marco - padding reducido a 10px y márgenes de 15px */}
+      {/* QR Code centrado con marco - padding reducido a 10px y márgenes de 15px arriba y 25px abajo */}
       <div style={{ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: '15px',
-        marginBottom: '15px',
+        marginBottom: '25px',
         padding: '10px',
         border: '2px solid #ddd',
         borderRadius: '8px',

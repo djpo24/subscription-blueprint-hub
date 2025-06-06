@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import jsPDF from 'jspdf';
 
@@ -122,7 +121,7 @@ export function useMultipleLabelsPDF() {
       // Agregar margen superior de 15px (convertido a mm)
       currentY += 5.5; // 15px ≈ 5.5mm
 
-      // QR Code centrado con marco - padding reducido a 10px y márgenes de 15px
+      // QR Code centrado con marco - padding reducido a 10px y márgenes de 15px arriba y 25px abajo
       const qrSize = 52;
       const qrPadding = 3.5; // 10px convertido a escala PDF (10px ≈ 3.5mm)
       const qrX = startX + (labelWidth - qrSize) / 2;
@@ -149,8 +148,8 @@ export function useMultipleLabelsPDF() {
 
       currentY += qrSize + qrPadding;
       
-      // Agregar margen inferior de 15px (convertido a mm)
-      currentY += 5.5; // 15px ≈ 5.5mm
+      // Agregar margen inferior de 25px (convertido a mm) - aumentado de 15px a 25px
+      currentY += 9; // 25px ≈ 9mm
 
       // Peso y Total en la misma línea - peso izquierda, total derecha
       pdf.setFontSize(11);

@@ -30,14 +30,21 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
-  // PRIORIZAR la fecha del viaje por encima de todo
-  // Si no hay fecha de viaje, usar la fecha de creación como respaldo
-  const travelDate = pkg.trip?.trip_date 
-    ? new Date(pkg.trip.trip_date) 
+  // Verificar explícitamente si existe trip_date y es una cadena válida antes de usarla
+  const hasTripDate = pkg.trip?.trip_date && typeof pkg.trip.trip_date === 'string' && pkg.trip.trip_date.trim() !== '';
+  
+  // Usar fecha del viaje si existe, de lo contrario usar fecha de creación
+  const travelDate = hasTripDate 
+    ? new Date(pkg.trip!.trip_date) 
     : new Date(pkg.created_at);
   
-  console.log(`📅 NewPackageLabel - Usando fecha: ${travelDate.toISOString()}`);
-  console.log(`📅 NewPackageLabel - Fuente de fecha: ${pkg.trip?.trip_date ? 'Fecha del VIAJE' : 'Fecha de CREACIÓN'}`);
+  console.log(`📅 NewPackageLabel - Paquete ID: ${pkg.id}`);
+  console.log(`📅 NewPackageLabel - ¿Tiene fecha de viaje?: ${hasTripDate ? 'SÍ' : 'NO'}`);
+  if (hasTripDate) {
+    console.log(`📅 NewPackageLabel - Fecha de viaje raw: ${pkg.trip!.trip_date}`);
+  }
+  console.log(`📅 NewPackageLabel - Fecha utilizada: ${travelDate.toISOString()}`);
+  console.log(`📅 NewPackageLabel - Fuente de fecha: ${hasTripDate ? 'Fecha del VIAJE' : 'Fecha de CREACIÓN'}`);
   
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;

@@ -56,6 +56,8 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
         
         if (tripData) {
           console.log('🚢 Encontrado datos del viaje para etiqueta:', tripData);
+          console.log('📅 Fecha del viaje RAW de la BD:', tripData.trip_date);
+          
           setPackageWithTripData(prevState => ({
             ...prevState,
             trip: { trip_date: tripData.trip_date }

@@ -69,6 +69,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         }
         
         console.log('✅ Datos de viajes obtenidos:', tripsData?.length || 0);
+        console.log('📅 Fechas de viaje encontradas:', tripsData?.map(t => t.trip_date) || []);
         
         // Mapear los datos de los viajes a los paquetes
         const enhancedPackages = packages.map(pkg => {

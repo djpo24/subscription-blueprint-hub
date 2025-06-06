@@ -170,8 +170,8 @@ export function useMultipleLabelsPDF() {
 
       currentY += 10;
 
-      // Texto informativo centrado - reducido espacio superior
-      pdf.setFontSize(7);
+      // Texto informativo centrado - tamaño aumentado en 3pt
+      pdf.setFontSize(10); // Aumentado de 7 a 10 (3pt más)
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 0, 0);
       

@@ -139,10 +139,10 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* Texto informativo centrado - reducido espacio superior */}
+      {/* Texto informativo centrado - tamaño aumentado en 3pt */}
       <div style={{ 
         textAlign: 'center',
-        fontSize: isPrintMode ? '11px' : '9px',
+        fontSize: isPrintMode ? '14px' : '12px', // Aumentado de 11px/9px a 14px/12px (3pt más)
         lineHeight: '1.2',
         marginBottom: '12px',
         fontWeight: 'bold'

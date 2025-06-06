@@ -22,6 +22,21 @@ export function TripPackageCardSummary({
 }: TripPackageCardSummaryProps) {
   const isMobile = useIsMobile();
 
+  // Función para renderizar los montos por moneda
+  const renderAmounts = (amountsByCurrency: Record<Currency, number>, defaultCurrency: Currency = 'COP') => {
+    const entries = Object.entries(amountsByCurrency);
+    
+    if (entries.length === 0) {
+      return <div>{formatCurrency(0, defaultCurrency)}</div>;
+    }
+    
+    return entries.map(([currency, amount]) => (
+      <div key={currency}>
+        {formatCurrency(amount, currency as Currency)}
+      </div>
+    ));
+  };
+
   return (
     <div className="w-full bg-white py-5 px-5">
       <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-5 gap-4'}`}>
@@ -57,14 +72,7 @@ export function TripPackageCardSummary({
           <DollarSign className="h-4 w-4 text-red-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-red-800`}>
-              {Object.entries(pendingAmountByCurrency).map(([currency, amount]) => (
-                <div key={currency}>
-                  {formatCurrency(amount, currency as Currency)}
-                </div>
-              ))}
-              {Object.keys(pendingAmountByCurrency).length === 0 && (
-                <div>{formatCurrency(0, 'COP')}</div>
-              )}
+              {renderAmounts(pendingAmountByCurrency)}
             </div>
             <div className="text-xs text-red-600">A Cobrar</div>
           </div>
@@ -74,14 +82,7 @@ export function TripPackageCardSummary({
           <CheckCircle className="h-4 w-4 text-green-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
-              {Object.entries(collectedAmountByCurrency).map(([currency, amount]) => (
-                <div key={currency}>
-                  {formatCurrency(amount, currency as Currency)}
-                </div>
-              ))}
-              {Object.keys(collectedAmountByCurrency).length === 0 && (
-                <div>{formatCurrency(0, 'COP')}</div>
-              )}
+              {renderAmounts(collectedAmountByCurrency)}
             </div>
             <div className="text-xs text-green-600">Cobrado</div>
           </div>

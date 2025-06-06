@@ -40,13 +40,21 @@ export function TripPackageCardSummary({
     ));
   };
 
+  // Provide default empty currency records to ensure proper typing
+  const defaultCurrencyRecord: Record<Currency, number> = { COP: 0, AWG: 0 };
+  
+  const safePendingAmounts = pendingAmountByCurrency || defaultCurrencyRecord;
+  const safeCollectedAmounts = collectedAmountByCurrency || defaultCurrencyRecord;
+
   // Verificar si hay algún monto cobrado
-  const hasPendingAmounts = Object.values(pendingAmountByCurrency || {}).some(amount => amount > 0);
-  const hasCollectedAmounts = Object.values(collectedAmountByCurrency || {}).some(amount => amount > 0);
+  const hasPendingAmounts = Object.values(safePendingAmounts).some(amount => amount > 0);
+  const hasCollectedAmounts = Object.values(safeCollectedAmounts).some(amount => amount > 0);
 
   console.log('📊 Summary data:', {
     pendingAmountByCurrency,
     collectedAmountByCurrency,
+    safePendingAmounts,
+    safeCollectedAmounts,
     hasPendingAmounts,
     hasCollectedAmounts
   });
@@ -86,7 +94,7 @@ export function TripPackageCardSummary({
           <DollarSign className="h-4 w-4 text-red-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-red-800`}>
-              {renderAmounts(pendingAmountByCurrency || {}, true)}
+              {renderAmounts(safePendingAmounts, true)}
             </div>
             <div className="text-xs text-red-600">A Cobrar</div>
           </div>
@@ -96,7 +104,7 @@ export function TripPackageCardSummary({
           <CheckCircle className="h-4 w-4 text-green-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
-              {renderAmounts(collectedAmountByCurrency || {})}
+              {renderAmounts(safeCollectedAmounts)}
             </div>
             <div className="text-xs text-green-600">Cobrado</div>
           </div>

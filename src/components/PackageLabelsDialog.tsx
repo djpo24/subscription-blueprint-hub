@@ -62,6 +62,10 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     }))
   );
 
+  console.log('PackageLabelsDialog - All packages count:', allPackages.length);
+  console.log('PackageLabelsDialog - Selected package IDs:', selectedPackageIds.size);
+  console.log('PackageLabelsDialog - Selected printed package IDs:', selectedPrintedPackageIds.size);
+
   // Por ahora, simulamos el estado de impresión basado en el status
   // En el futuro, esto debería venir de una tabla específica de etiquetas impresas
   const pendingPackages = allPackages.filter(pkg => 
@@ -135,6 +139,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     } else {
       newSelected.add(packageId);
     }
+    console.log('PackageLabelsDialog - Package toggled:', packageId, 'New selection size:', newSelected.size);
     setSelectedPackageIds(newSelected);
   };
 
@@ -145,6 +150,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     } else {
       newSelected.add(packageId);
     }
+    console.log('PackageLabelsDialog - Printed package toggled:', packageId, 'New selection size:', newSelected.size);
     setSelectedPrintedPackageIds(newSelected);
   };
 
@@ -180,6 +186,10 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
 
   const handlePrintSelected = () => {
     const selectedPackages = allPackages.filter(pkg => selectedPackageIds.has(pkg.id));
+    console.log('PackageLabelsDialog - handlePrintSelected - Selected packages count:', selectedPackages.length);
+    console.log('PackageLabelsDialog - handlePrintSelected - Selected package IDs:', Array.from(selectedPackageIds));
+    console.log('PackageLabelsDialog - handlePrintSelected - Filtered packages:', selectedPackages.map(p => p.id));
+    
     if (selectedPackages.length > 0) {
       setMultipleLabelOpen(true);
     }
@@ -187,17 +197,23 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
 
   const handleReprintSelected = () => {
     const selectedPackages = allPackages.filter(pkg => selectedPrintedPackageIds.has(pkg.id));
+    console.log('PackageLabelsDialog - handleReprintSelected - Selected packages count:', selectedPackages.length);
+    
     if (selectedPackages.length > 0) {
       setMultipleLabelOpen(true);
     }
   };
 
   const getSelectedPackages = () => {
-    return allPackages.filter(pkg => selectedPackageIds.has(pkg.id));
+    const selected = allPackages.filter(pkg => selectedPackageIds.has(pkg.id));
+    console.log('PackageLabelsDialog - getSelectedPackages returning:', selected.length, 'packages');
+    return selected;
   };
 
   const getSelectedPrintedPackages = () => {
-    return allPackages.filter(pkg => selectedPrintedPackageIds.has(pkg.id));
+    const selected = allPackages.filter(pkg => selectedPrintedPackageIds.has(pkg.id));
+    console.log('PackageLabelsDialog - getSelectedPrintedPackages returning:', selected.length, 'packages');
+    return selected;
   };
 
   // Vista móvil con cards

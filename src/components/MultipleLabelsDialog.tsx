@@ -29,7 +29,12 @@ export function MultipleLabelsDialog({ open, onOpenChange, packages }: MultipleL
   const [selectedPackages, setSelectedPackages] = useState<Package[]>([]);
   const [showLabels, setShowLabels] = useState(false);
 
+  console.log('MultipleLabelsDialog - Total packages received:', packages.length);
+  console.log('MultipleLabelsDialog - Selected packages:', selectedPackages.length);
+  console.log('MultipleLabelsDialog - Show labels:', showLabels);
+
   const handlePrintSelected = (packages: Package[]) => {
+    console.log('MultipleLabelsDialog - handlePrintSelected called with packages:', packages.length);
     setSelectedPackages(packages);
     setShowLabels(true);
   };

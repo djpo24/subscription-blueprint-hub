@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { PackageLabel } from './package-labels/PackageLabel';
 import { PackageLabelPreview } from './package-labels/PackageLabelPreview';
@@ -83,7 +82,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       printContainer.style.backgroundColor = 'white';
       printContainer.style.overflow = 'visible';
       
-      // Dar tiempo extra para que el DOM se estabilice completamente
+      // Tiempo extra aumentado para que el DOM se estabilice completamente con múltiples páginas
       setTimeout(() => {
         const labelPages = printContainer.querySelectorAll('.label-page');
         console.log('📊 Final verification before print:');
@@ -98,18 +97,28 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           const packageElement = page.querySelector('[data-package-id]');
           const packageId = packageElement?.getAttribute('data-package-id');
           console.log(`  📄 Page ${index + 1}: Package ID = ${packageId || 'MISSING'}`);
+          
+          // Forzar que cada página sea reconocida individualmente
+          (page as HTMLElement).style.pageBreakAfter = 'always';
+          (page as HTMLElement).style.breakAfter = 'page';
+          (page as HTMLElement).style.height = '100vh';
+          (page as HTMLElement).style.minHeight = '100vh';
         });
         
         console.log('🖨️ Executing window.print() with', labelPages.length, 'pages');
-        window.print();
         
+        // Dar un tiempo adicional para que los estilos se apliquen
         setTimeout(() => {
-          if (printContainer) {
-            printContainer.style.display = 'none';
-            console.log('✅ Print container hidden');
-          }
-        }, 1000);
-      }, 1500); // Tiempo aumentado para estabilidad
+          window.print();
+          
+          setTimeout(() => {
+            if (printContainer) {
+              printContainer.style.display = 'none';
+              console.log('✅ Print container hidden');
+            }
+          }, 1000);
+        }, 500);
+      }, 2000); // Tiempo aumentado para múltiples páginas
     } else {
       console.error('❌ Print container not found');
     }

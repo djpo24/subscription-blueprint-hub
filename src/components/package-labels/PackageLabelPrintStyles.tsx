@@ -48,19 +48,19 @@ export function PackageLabelPrintStyles() {
         
         .label-page {
           width: 100% !important;
-          height: 11in !important;
+          height: 100vh !important;
           margin: 0 !important;
-          padding: 40px !important;
+          padding: 0 !important;
           display: flex !important;
           flex-direction: column !important;
-          justify-content: flex-start !important;
+          justify-content: center !important;
           align-items: center !important;
           position: relative !important;
           box-sizing: border-box !important;
           background: white !important;
-          overflow: visible !important;
+          overflow: hidden !important;
           
-          /* Múltiples propiedades para máxima compatibilidad */
+          /* Forzar salto de página después de cada etiqueta */
           page-break-after: always !important;
           page-break-before: auto !important;
           page-break-inside: avoid !important;
@@ -68,9 +68,9 @@ export function PackageLabelPrintStyles() {
           break-before: auto !important;
           break-inside: avoid !important;
           
-          /* Forzar altura mínima para que el navegador reconozca como página */
-          min-height: 11in !important;
-          max-height: 11in !important;
+          /* Asegurar que cada página tenga el tamaño correcto */
+          min-height: 100vh !important;
+          max-height: 100vh !important;
         }
         
         .label-page:first-child {
@@ -87,10 +87,10 @@ export function PackageLabelPrintStyles() {
           width: auto !important;
           height: auto !important;
           margin: 0 auto !important;
-          padding: 20px !important;
+          padding: 40px !important;
           display: flex !important;
           justify-content: center !important;
-          align-items: flex-start !important;
+          align-items: center !important;
           border: none !important;
           box-sizing: border-box !important;
           background: white !important;
@@ -110,6 +110,12 @@ export function PackageLabelPrintStyles() {
         .label-page [style*="width"][style*="height"] {
           display: flex !important;
           visibility: visible !important;
+        }
+        
+        /* Forzar recálculo del layout para múltiples páginas */
+        .print-container .label-page:nth-child(n+4) {
+          page-break-before: always !important;
+          break-before: page !important;
         }
       }
     `}</style>

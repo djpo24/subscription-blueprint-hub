@@ -23,10 +23,10 @@ export interface LabelData {
 }
 
 export async function generateLabelData(pkg: Package): Promise<LabelData> {
-  console.log('🚨 GENERANDO ETIQUETA CON FORMATO ACTUALIZADO para paquete:', pkg.id);
-  console.log('📝 Asegurando formato consistente con QR móvil para:', pkg.tracking_number);
+  console.log('🏷️ Generating FRESH label data for package:', pkg.id);
+  console.log('📝 Using updated format consistent with mobile QR test');
   
-  // Generar QR Code usando exactamente el mismo formato del QR de prueba móvil
+  // Generate QR Code usando el MISMO formato exacto del QR de prueba móvil
   const qrData = {
     id: pkg.id,
     tracking: pkg.tracking_number,
@@ -35,7 +35,7 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     action: 'package_scan'
   };
 
-  console.log('📱 QR Data para formato móvil:', JSON.stringify(qrData));
+  console.log('📱 QR Data for package', pkg.id, ':', qrData);
 
   const qrDataString = JSON.stringify(qrData);
   const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -47,9 +47,9 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     }
   });
 
-  console.log('✅ QR Code generado con NUEVO formato para:', pkg.id);
+  console.log('✅ QR Code generated for package', pkg.id, 'Size:', qrCodeUrl.length, 'chars');
 
-  // Generar código de barras
+  // Generate Barcode
   const canvas = document.createElement('canvas');
   JsBarcode(canvas, pkg.tracking_number, {
     format: "CODE128",
@@ -61,6 +61,8 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
   });
   const barcodeUrl = canvas.toDataURL();
 
+  console.log('✅ Barcode generated for package', pkg.id, 'Size:', barcodeUrl.length, 'chars');
+
   return {
     qrCodeDataUrl: qrCodeUrl,
     barcodeDataUrl: barcodeUrl
@@ -68,23 +70,20 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
 }
 
 export async function generateAllLabelsData(packages: Package[]): Promise<Map<string, LabelData>> {
-  console.log('🔄 INICIANDO GENERACIÓN CON FORMATO ACTUALIZADO para', packages.length, 'paquetes');
+  console.log('🔄 Starting FRESH generation for', packages.length, 'packages');
   const labelsData = new Map<string, LabelData>();
-
-  // Borrar cualquier caché anterior para forzar la regeneración con el formato actualizado
-  console.log('🗑️ BORRANDO datos en caché para forzar el uso del formato actualizado');
 
   for (const pkg of packages) {
     try {
-      console.log('🏷️ Procesando paquete con formato actualizado:', pkg.id);
+      console.log('🏷️ Processing package', pkg.id, '- Tracking:', pkg.tracking_number);
       const labelData = await generateLabelData(pkg);
       labelsData.set(pkg.id, labelData);
-      console.log('✅ Datos de etiqueta almacenados con NUEVO formato para:', pkg.id);
+      console.log('✅ Label data stored for package', pkg.id);
     } catch (error) {
-      console.error(`❌ Error generando códigos para paquete ${pkg.id}:`, error);
+      console.error(`❌ Error generating codes for package ${pkg.id}:`, error);
     }
   }
 
-  console.log('🎯 Generación de etiquetas con formato actualizado completada:', labelsData.size);
+  console.log('🎯 FRESH labels generation completed:', labelsData.size, 'labels generated');
   return labelsData;
 }

@@ -1,6 +1,6 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PackageLabel } from './package-labels/PackageLabel';
+import { PackageLabel } from './PackageLabel';
 
 interface Package {
   id: string;
@@ -25,8 +25,6 @@ interface PackageLabelDialogProps {
 
 export function PackageLabelDialog({ open, onOpenChange, package: pkg }: PackageLabelDialogProps) {
   if (!pkg) return null;
-  
-  console.log('🏷️ PackageLabelDialog rendering with package:', pkg.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,7 +32,7 @@ export function PackageLabelDialog({ open, onOpenChange, package: pkg }: Package
         <DialogHeader>
           <DialogTitle>Etiqueta de Encomienda</DialogTitle>
           <DialogDescription>
-            Etiqueta para imprimir de la encomienda {pkg.tracking_number} (Formato actualizado)
+            Etiqueta para imprimir de la encomienda {pkg.tracking_number}
           </DialogDescription>
         </DialogHeader>
         

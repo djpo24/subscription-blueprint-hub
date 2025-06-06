@@ -25,15 +25,12 @@ interface PackageLabelProps {
 export function PackageLabel({ package: pkg }: PackageLabelProps) {
   const { barcodeCanvasRef, qrCodeDataUrl, barcodeDataUrl } = usePackageCodes(pkg);
 
-  console.log('🏷️ PackageLabel component rendering for package:', pkg.id);
-  console.log('📱 QR Code URL status:', qrCodeDataUrl ? 'Generated' : 'Pending');
-  console.log('📊 Barcode URL status:', barcodeDataUrl ? 'Generated' : 'Pending');
-  
-  // Forzar recarga de datos para asegurar el uso del formato actualizado
-  console.log('⚠️ Forzando uso del formato actualizado para etiqueta');
+  console.log('🏷️ PackageLabel rendering for package:', pkg.id);
+  console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
+  console.log('📊 Barcode status:', barcodeDataUrl ? 'Generated' : 'Pending');
 
   const handlePrint = () => {
-    console.log('🖨️ Printing single label with updated format for package:', pkg.id);
+    console.log('🖨️ Printing single label for package:', pkg.id);
     window.print();
   };
 

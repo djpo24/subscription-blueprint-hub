@@ -34,6 +34,7 @@ export function PackageLabelPrintStyles() {
           margin: 0 !important;
           padding: 0 !important;
           background: white !important;
+          overflow: visible !important;
         }
         
         .screen-only {
@@ -62,6 +63,8 @@ export function PackageLabelPrintStyles() {
           break-after: page !important;
           break-before: auto !important;
           break-inside: avoid !important;
+          overflow: visible !important;
+          min-height: 100vh !important;
         }
         
         .label-page:first-child {
@@ -84,6 +87,13 @@ export function PackageLabelPrintStyles() {
           box-sizing: border-box !important;
           background: white !important;
           position: relative !important;
+          overflow: visible !important;
+        }
+        
+        [data-package-id] {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
       }
     `}</style>

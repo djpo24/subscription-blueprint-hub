@@ -54,7 +54,7 @@ export function useMultipleLabelsPDF() {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'letter'
+      format: [102, 152] // Tamaño personalizado: 102mm x 152mm
     });
 
     let isFirstPage = true;
@@ -78,55 +78,52 @@ export function useMultipleLabelsPDF() {
       // Configurar fuente
       pdf.setFont('helvetica');
       
-      // Dimensiones de la etiqueta centrada en la página
-      const pageWidth = 216; // mm (carta)
-      const pageHeight = 279; // mm (carta)
-      const labelWidth = 100; // mm
-      const labelHeight = 150; // mm
-      const startX = (pageWidth - labelWidth) / 2;
-      const startY = (pageHeight - labelHeight) / 2;
+      // Dimensiones de la etiqueta - ahora ocupa toda la página
+      const pageWidth = 102; // mm
+      const pageHeight = 152; // mm
+      const labelWidth = 96; // mm (dejando 3mm de margen a cada lado)
+      const labelHeight = 146; // mm (dejando 3mm de margen arriba y abajo)
+      const startX = 3; // mm (margen izquierdo)
+      const startY = 3; // mm (margen superior)
 
       // Dibujar borde principal de la etiqueta
       pdf.setLineWidth(0.5);
       pdf.setDrawColor(180, 180, 180);
       pdf.rect(startX, startY, labelWidth, labelHeight);
 
-      let currentY = startY + 12;
+      let currentY = startY + 10;
 
       // Header - ENVIOS OJITO y tracking number
-      pdf.setFontSize(14);
+      pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 0, 0);
-      pdf.text('ENVIOS OJITO', startX + 5, currentY);
+      pdf.text('ENVIOS OJITO', startX + 3, currentY);
       
       const trackingText = pkg.tracking_number;
       const trackingWidth = pdf.getTextWidth(trackingText);
-      pdf.text(trackingText, startX + labelWidth - trackingWidth - 5, currentY);
+      pdf.text(trackingText, startX + labelWidth - trackingWidth - 3, currentY);
 
-      currentY += 6;
+      currentY += 5;
 
-      // Segunda línea - Cliente y fecha - reducido espacio
-      pdf.setFontSize(9);
+      // Segunda línea - Cliente y fecha
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(100, 100, 100);
       
-      pdf.text(pkg.customers?.name || 'Cliente', startX + 5, currentY);
+      pdf.text(pkg.customers?.name || 'Cliente', startX + 3, currentY);
 
       const dateText = formatDate(pkg.created_at);
       const dateWidth = pdf.getTextWidth(dateText);
-      pdf.text(dateText, startX + labelWidth - dateWidth - 5, currentY);
+      pdf.text(dateText, startX + labelWidth - dateWidth - 3, currentY);
 
-      currentY += 6;
+      currentY += 8;
 
-      // Agregar margen superior de 15px (convertido a mm)
-      currentY += 5.5; // 15px ≈ 5.5mm
-
-      // QR Code centrado con marco - padding reducido a 10px y márgenes de 15px arriba y 25px abajo
-      const qrSize = 52;
-      const qrPadding = 3.5; // 10px convertido a escala PDF (10px ≈ 3.5mm)
+      // QR Code centrado con marco - ajustado para el nuevo tamaño
+      const qrSize = 45; // Reducido para encajar mejor
+      const qrPadding = 3;
       const qrX = startX + (labelWidth - qrSize) / 2;
       
-      // Marco del QR con padding reducido
+      // Marco del QR
       pdf.setFillColor(249, 249, 249);
       pdf.setDrawColor(220, 220, 220);
       pdf.setLineWidth(0.3);
@@ -146,31 +143,28 @@ export function useMultipleLabelsPDF() {
         console.error('Error agregando QR code:', error);
       }
 
-      currentY += qrSize + qrPadding;
-      
-      // Agregar margen inferior de 25px (convertido a mm) - aumentado de 15px a 25px
-      currentY += 9; // 25px ≈ 9mm
+      currentY += qrSize + qrPadding + 8;
 
-      // Peso y Total en la misma línea - peso izquierda, total derecha
-      pdf.setFontSize(11);
+      // Peso y Total en la misma línea
+      pdf.setFontSize(10);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
       
       // Peso (izquierda)
       const pesoText = `Peso: ${pkg.weight ? `${pkg.weight}kg` : '3kg'}`;
-      pdf.text(pesoText, startX + 5, currentY);
+      pdf.text(pesoText, startX + 3, currentY);
       
       // Total (derecha)
       const totalAmount = pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.354.435';
       const currencySymbol = getCurrencySymbol(pkg.currency);
       const totalText = `Total: ${currencySymbol}${totalAmount}`;
       const totalWidth = pdf.getTextWidth(totalText);
-      pdf.text(totalText, startX + labelWidth - totalWidth - 5, currentY);
+      pdf.text(totalText, startX + labelWidth - totalWidth - 3, currentY);
 
-      currentY += 10;
+      currentY += 8;
 
-      // Texto informativo centrado - tamaño aumentado en 3pt y espaciado aumentado en 2pt
-      pdf.setFontSize(10); // Aumentado de 7 a 10 (3pt más)
+      // Texto informativo centrado
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 0, 0);
       
@@ -181,18 +175,18 @@ export function useMultipleLabelsPDF() {
       let infoWidth = pdf.getTextWidth(infoText);
       pdf.text(infoText, startX + (labelWidth - infoWidth) / 2, currentY);
       
-      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
+      currentY += 3;
       infoWidth = pdf.getTextWidth(infoText2);
       pdf.text(infoText2, startX + (labelWidth - infoWidth) / 2, currentY);
       
-      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
+      currentY += 3;
       infoWidth = pdf.getTextWidth(infoText3);
       pdf.text(infoText3, startX + (labelWidth - infoWidth) / 2, currentY);
 
-      currentY += 10;
+      currentY += 8;
 
-      // Direcciones centradas - tamaño aumentado en 3pt y espaciado aumentado en 2pt
-      pdf.setFontSize(9.5); // Aumentado de 6.5 a 9.5 (3pt más)
+      // Direcciones centradas
+      pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
       
       // Dirección Barranquilla
@@ -201,13 +195,13 @@ export function useMultipleLabelsPDF() {
       let addressWidth = pdf.getTextWidth(addressLine);
       pdf.text(addressLine, startX + (labelWidth - addressWidth) / 2, currentY);
       
-      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
+      currentY += 3;
       pdf.setFont('helvetica', 'normal');
       let phoneLine = 'Tel: +5731272717446';
       let phoneWidth = pdf.getTextWidth(phoneLine);
       pdf.text(phoneLine, startX + (labelWidth - phoneWidth) / 2, currentY);
 
-      currentY += 5.5; // Aumentado de 5 a 5.5 (2pt más de espaciado)
+      currentY += 5;
 
       // Dirección Curacao
       pdf.setFont('helvetica', 'bold');
@@ -215,7 +209,7 @@ export function useMultipleLabelsPDF() {
       addressWidth = pdf.getTextWidth(addressLine);
       pdf.text(addressLine, startX + (labelWidth - addressWidth) / 2, currentY);
       
-      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
+      currentY += 3;
       pdf.setFont('helvetica', 'normal');
       phoneLine = 'Tel: +599 9 6964306';
       phoneWidth = pdf.getTextWidth(phoneLine);

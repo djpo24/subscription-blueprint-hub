@@ -33,6 +33,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
   const [packagesWithTripData, setPackagesWithTripData] = useState<Package[]>([]);
+  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
 
   console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
 
@@ -41,44 +42,57 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     const fetchTripsData = async () => {
       if (packages.length === 0) return;
       
-      // Obtener los trip_ids únicos
-      const tripIds = [...new Set(packages.filter(pkg => pkg.trip_id).map(pkg => pkg.trip_id))];
+      setIsLoadingTrips(true);
       
-      if (tripIds.length === 0) {
-        console.log('⚠️ Ningún paquete tiene un viaje asociado');
-        setPackagesWithTripData(packages);
-        return;
-      }
-      
-      // Obtener los datos de los viajes
-      const { data: tripsData, error } = await supabase
-        .from('trips')
-        .select('id, trip_date')
-        .in('id', tripIds);
-      
-      if (error) {
+      try {
+        // Obtener los trip_ids únicos
+        const tripIds = [...new Set(packages
+          .filter(pkg => pkg.trip_id)
+          .map(pkg => pkg.trip_id))];
+        
+        if (tripIds.length === 0) {
+          console.log('⚠️ Ningún paquete tiene un viaje asociado');
+          setPackagesWithTripData(packages);
+          return;
+        }
+        
+        console.log('🚢 Obteniendo datos de viajes para', tripIds.length, 'viajes');
+        
+        // Obtener los datos de los viajes en una sola consulta
+        const { data: tripsData, error } = await supabase
+          .from('trips')
+          .select('id, trip_date, origin, destination')
+          .in('id', tripIds);
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log('✅ Datos de viajes obtenidos:', tripsData?.length || 0);
+        
+        // Mapear los datos de los viajes a los paquetes
+        const enhancedPackages = packages.map(pkg => {
+          if (!pkg.trip_id) return pkg;
+          
+          const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
+          if (tripData) {
+            console.log(`📅 Encontrado fecha de viaje para paquete ${pkg.id}: ${tripData.trip_date}`);
+            return {
+              ...pkg,
+              trip: { trip_date: tripData.trip_date }
+            };
+          }
+          return pkg;
+        });
+        
+        console.log('✅ Datos de viajes cargados para', enhancedPackages.length, 'paquetes');
+        setPackagesWithTripData(enhancedPackages);
+      } catch (error) {
         console.error('❌ Error al obtener datos de viajes:', error);
         setPackagesWithTripData(packages);
-        return;
+      } finally {
+        setIsLoadingTrips(false);
       }
-      
-      // Mapear los datos de los viajes a los paquetes
-      const enhancedPackages = packages.map(pkg => {
-        if (!pkg.trip_id) return pkg;
-        
-        const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
-        if (tripData) {
-          console.log(`📅 Encontrado fecha de viaje para paquete ${pkg.id}: ${tripData.trip_date}`);
-          return {
-            ...pkg,
-            trip: { trip_date: tripData.trip_date }
-          };
-        }
-        return pkg;
-      });
-      
-      console.log('✅ Datos de viajes cargados para', enhancedPackages.length, 'paquetes');
-      setPackagesWithTripData(enhancedPackages);
     };
 
     fetchTripsData();
@@ -112,12 +126,12 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     window.print();
   };
 
-  if (isGeneratingCodes) {
+  if (isLoadingTrips || isGeneratingCodes) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Generando códigos QR con nuevo formato...</p>
+          <p>{isLoadingTrips ? 'Cargando datos de viajes...' : 'Generando códigos QR con nuevo formato...'}</p>
         </div>
       </div>
     );
@@ -138,11 +152,14 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {packagesWithTripData.map((pkg, index) => {
             const labelData = labelsData.get(pkg.id);
+            
             return (
               <div key={pkg.id} className="border border-gray-300 bg-white p-4">
                 <div className="text-xs text-gray-500 mb-2">
                   Etiqueta {index + 1} de {packagesWithTripData.length} - {pkg.tracking_number}
-                  {pkg.trip?.trip_date && <span className="ml-2">- Fecha de viaje: {new Date(pkg.trip.trip_date).toLocaleDateString()}</span>}
+                  {pkg.trip?.trip_date && (
+                    <span className="ml-2">- Fecha de viaje: {new Date(pkg.trip.trip_date).toLocaleDateString()}</span>
+                  )}
                 </div>
                 <div className="flex justify-center bg-gray-50 p-4">
                   <NewPackageLabel 

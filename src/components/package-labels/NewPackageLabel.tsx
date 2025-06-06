@@ -30,12 +30,14 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
-  // Verificar si tenemos una fecha de viaje y usar esa, de lo contrario usar la fecha de creación
+  // PRIORIZAR la fecha del viaje por encima de todo
+  // Si no hay fecha de viaje, usar la fecha de creación como respaldo
   const travelDate = pkg.trip?.trip_date 
     ? new Date(pkg.trip.trip_date) 
     : new Date(pkg.created_at);
   
-  console.log(`📅 NewPackageLabel - Usando fecha: ${travelDate.toISOString()} (de ${pkg.trip?.trip_date ? 'viaje' : 'creación'})`);
+  console.log(`📅 NewPackageLabel - Usando fecha: ${travelDate.toISOString()}`);
+  console.log(`📅 NewPackageLabel - Fuente de fecha: ${pkg.trip?.trip_date ? 'Fecha del VIAJE' : 'Fecha de CREACIÓN'}`);
   
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;
@@ -56,7 +58,7 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
   };
 
   return (
-    <div style={baseStyles} data-package-id={pkg.id}>
+    <div style={baseStyles} data-package-id={pkg.id} data-trip-date={pkg.trip?.trip_date || 'none'}>
       {/* Header - Ahora "ENVIOS OJITO" */}
       <div style={{
         textAlign: 'center',

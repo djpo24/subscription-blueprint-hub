@@ -30,33 +30,46 @@ interface PackageLabelProps {
 export function PackageLabel({ package: pkg }: PackageLabelProps) {
   const { barcodeCanvasRef, qrCodeDataUrl, barcodeDataUrl } = usePackageCodes(pkg);
   const [packageWithTripData, setPackageWithTripData] = useState<Package>(pkg);
+  const [isLoadingTripData, setIsLoadingTripData] = useState(false);
 
   useEffect(() => {
-    // Si el paquete tiene un trip_id, obtener los datos del viaje
+    // Obtener datos del viaje para el paquete
     const fetchTripData = async () => {
-      if (pkg.trip_id) {
-        console.log('🚢 Obteniendo datos del viaje para etiqueta. Trip ID:', pkg.trip_id);
+      if (!pkg.trip_id) {
+        console.log('⚠️ El paquete no tiene un viaje asociado, usando fecha de creación');
+        return;
+      }
+      
+      setIsLoadingTripData(true);
+      console.log('🚢 Obteniendo datos del viaje para etiqueta. Trip ID:', pkg.trip_id);
+      
+      try {
         const { data: tripData, error } = await supabase
           .from('trips')
-          .select('trip_date')
+          .select('trip_date, origin, destination')
           .eq('id', pkg.trip_id)
           .single();
         
-        if (!error && tripData) {
-          console.log('🚢 Encontrado datos del viaje para etiqueta:', tripData);
-          setPackageWithTripData({ ...pkg, trip: { trip_date: tripData.trip_date } });
-        } else {
-          console.log('⚠️ No se encontró información del viaje o hubo un error:', error);
-          setPackageWithTripData(pkg);
+        if (error) {
+          throw error;
         }
-      } else {
-        console.log('⚠️ El paquete no tiene un viaje asociado, usando fecha de creación');
-        setPackageWithTripData(pkg);
+        
+        if (tripData) {
+          console.log('🚢 Encontrado datos del viaje para etiqueta:', tripData);
+          setPackageWithTripData(prevState => ({
+            ...prevState,
+            trip: { trip_date: tripData.trip_date }
+          }));
+        }
+      } catch (error) {
+        console.error('⚠️ Error al obtener datos del viaje:', error);
+      } finally {
+        setIsLoadingTripData(false);
       }
     };
 
     fetchTripData();
-  }, [pkg]);
+  }, [pkg.trip_id]);
 
   console.log('🏷️ PackageLabel rendering for package:', pkg.id);
   console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
@@ -79,15 +92,21 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
           Nuevo formato que coincide exactamente con la imagen de ejemplo
         </div>
         
-        {/* Vista previa de la etiqueta */}
-        <div className="flex justify-center bg-gray-50 p-4">
-          <NewPackageLabel 
-            package={packageWithTripData}
-            qrCodeDataUrl={qrCodeDataUrl}
-            barcodeDataUrl={barcodeDataUrl}
-            isPreview={true}
-          />
-        </div>
+        {isLoadingTripData ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Cargando datos del viaje...</span>
+          </div>
+        ) : (
+          <div className="flex justify-center bg-gray-50 p-4">
+            <NewPackageLabel 
+              package={packageWithTripData}
+              qrCodeDataUrl={qrCodeDataUrl}
+              barcodeDataUrl={barcodeDataUrl}
+              isPreview={true}
+            />
+          </div>
+        )}
 
         <button
           onClick={handlePrint}

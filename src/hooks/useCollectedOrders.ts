@@ -58,11 +58,11 @@ export function useCollectedOrders() {
             payment_date: payment.payment_date,
             notes: payment.notes,
             created_by: payment.created_by,
-            tracking_number: payment.packages.tracking_number,
-            destination: payment.packages.destination,
-            delivered_at: payment.packages.delivered_at,
-            customer_name: payment.packages.customers?.name || 'N/A',
-            customer_phone: payment.packages.customers?.phone || 'N/A'
+            tracking_number: payment.packages?.tracking_number || 'N/A',
+            destination: payment.packages?.destination || 'N/A',
+            delivered_at: payment.packages?.delivered_at || null,
+            customer_name: payment.packages?.customers?.name || 'N/A',
+            customer_phone: payment.packages?.customers?.phone || 'N/A'
           }));
 
         console.log('✅ Transformed collected orders data:', transformedData);

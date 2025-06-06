@@ -5,7 +5,6 @@ import { TripPackageCardContent } from './TripPackageCardContent';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { usePackageDispatchInfo } from '@/hooks/usePackageDispatchInfo';
 
 type Currency = 'COP' | 'AWG';
 
@@ -56,10 +55,6 @@ export function TripPackageCard({
 }: TripPackageCardProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const queryClient = useQueryClient();
-  
-  // Obtener información de despachos para todos los paquetes del viaje
-  const packageIds = trip.packages.map(pkg => pkg.id);
-  const { data: dispatchInfo = {} } = usePackageDispatchInfo(packageIds);
 
   const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
@@ -108,7 +103,6 @@ export function TripPackageCard({
         onOpenChat={canShowChat ? onOpenChat : undefined}
         previewRole={previewRole}
         disableChat={disableChat}
-        dispatchInfo={dispatchInfo}
       />
     </Card>
   );

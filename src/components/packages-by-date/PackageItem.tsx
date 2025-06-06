@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { PackageDispatchBadge } from './PackageDispatchBadge';
 
 type Currency = 'COP' | 'AWG';
 
@@ -30,10 +29,6 @@ interface PackageItemProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
-  dispatchInfo?: {
-    dispatchNumber: number;
-    totalDispatches: number;
-  };
 }
 
 export function PackageItem({ 
@@ -41,8 +36,7 @@ export function PackageItem({
   onClick, 
   onOpenChat,
   previewRole,
-  disableChat = false,
-  dispatchInfo
+  disableChat = false
 }: PackageItemProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
 
@@ -80,15 +74,9 @@ export function PackageItem({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <span className="font-semibold text-lg">{pkg.customers?.name || 'Cliente no especificado'}</span>
-              <div className="flex items-center gap-2">
-                <Badge className={getStatusColor(pkg.status)}>
-                  {pkg.status}
-                </Badge>
-                <PackageDispatchBadge 
-                  dispatchNumber={dispatchInfo?.dispatchNumber}
-                  totalDispatches={dispatchInfo?.totalDispatches}
-                />
-              </div>
+              <Badge className={getStatusColor(pkg.status)}>
+                {pkg.status}
+              </Badge>
             </div>
             <span className="font-semibold text-lg">{pkg.tracking_number}</span>
           </div>

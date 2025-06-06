@@ -28,7 +28,6 @@ interface TripPackageCardContentProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
-  dispatchInfo?: Record<string, { dispatchNumber: number; totalDispatches: number }>;
 }
 
 export function TripPackageCardContent({ 
@@ -36,8 +35,7 @@ export function TripPackageCardContent({
   onPackageClick, 
   onOpenChat,
   previewRole,
-  disableChat = false,
-  dispatchInfo = {}
+  disableChat = false
 }: TripPackageCardContentProps) {
   const isMobile = useIsMobile();
 
@@ -58,7 +56,6 @@ export function TripPackageCardContent({
               onOpenChat={onOpenChat}
               previewRole={previewRole}
               disableChat={disableChat}
-              dispatchInfo={dispatchInfo[pkg.id]}
             />
           ))}
         </div>

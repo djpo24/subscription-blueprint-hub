@@ -41,16 +41,18 @@ export function PackageLabelPrintStyles() {
         }
         
         @page {
-          size: 10cm 15cm;
-          margin: 0;
+          size: letter;
+          margin: 0.5in;
         }
         
         .label-page {
-          width: 10cm !important;
-          height: 15cm !important;
+          width: 100% !important;
+          height: 100vh !important;
           margin: 0 !important;
-          padding: 0 !important;
-          display: block !important;
+          padding: 20px !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
           position: relative !important;
           box-sizing: border-box !important;
           background: white !important;
@@ -60,7 +62,6 @@ export function PackageLabelPrintStyles() {
           break-after: page !important;
           break-before: auto !important;
           break-inside: avoid !important;
-          overflow: hidden !important;
         }
         
         .label-page:first-child {
@@ -74,8 +75,8 @@ export function PackageLabelPrintStyles() {
         }
         
         .label-content {
-          width: 10cm !important;
-          height: 15cm !important;
+          width: auto !important;
+          height: auto !important;
           margin: 0 !important;
           padding: 0 !important;
           display: block !important;

@@ -1,7 +1,9 @@
+
 import { PackagesByDateHeader } from './PackagesByDateHeader';
 import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
 import { TripPackageCardSummary } from './TripPackageCardSummary';
+import { usePackagePaymentsByTrip } from '@/hooks/usePackagePaymentsByTrip';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -48,6 +50,35 @@ interface PackagesByDateContentProps {
   disableChat?: boolean;
 }
 
+// Componente para mostrar el resumen de un viaje individual
+function TripSummaryContainer({ trip, children }: { trip: Trip; children: React.ReactNode }) {
+  const { data: paymentData } = usePackagePaymentsByTrip(trip.id);
+
+  // Calcular totales para este viaje específico
+  const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
+  const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0);
+  
+  // Usar los datos de pagos del hook para separar pendientes y cobrados
+  const pendingAmountByCurrency = paymentData?.pending || {};
+  const collectedAmountByCurrency = paymentData?.collected || {};
+
+  return (
+    <div className="space-y-4">
+      {/* Cajas de resumen fuera del contenedor del viaje */}
+      <TripPackageCardSummary 
+        packageCount={trip.packages.length}
+        totalWeight={totalWeight}
+        totalFreight={totalFreight}
+        pendingAmountByCurrency={pendingAmountByCurrency as Record<Currency, number>}
+        collectedAmountByCurrency={collectedAmountByCurrency as Record<Currency, number>}
+      />
+      
+      {/* Contenedor del viaje */}
+      {children}
+    </div>
+  );
+}
+
 export function PackagesByDateContent({
   selectedDate,
   trips,
@@ -74,6 +105,7 @@ export function PackagesByDateContent({
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-trip', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['package-payments-by-trip', tripId] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       queryClient.invalidateQueries({ queryKey: ['trips'] });
     }, 500);
@@ -110,50 +142,20 @@ export function PackagesByDateContent({
         <EmptyTripsState selectedDate={selectedDate} />
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {trips.map((trip) => {
-            // Calcular totales para este viaje específico
-            const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
-            const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0);
-            
-            // Agrupar solo los montos a cobrar por moneda
-            const amountToCollectByCurrency = trip.packages.reduce(
-              (acc, pkg) => {
-                if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
-                  const currency = pkg.currency || 'COP';
-                  if (!acc[currency]) {
-                    acc[currency] = 0;
-                  }
-                  acc[currency] += pkg.amount_to_collect;
-                }
-                return acc;
-              },
-              {} as Record<Currency, number>
-            );
-
-            return (
-              <div key={trip.id} className="space-y-4">
-                {/* Cajas de resumen fuera del contenedor del viaje */}
-                <TripPackageCardSummary 
-                  packageCount={trip.packages.length}
-                  totalWeight={totalWeight}
-                  totalFreight={totalFreight}
-                  amountToCollectByCurrency={amountToCollectByCurrency}
-                />
-                
-                {/* Contenedor del viaje */}
-                <TripPackageCard
-                  trip={trip}
-                  onAddPackage={handleAddPackageWithRefresh}
-                  onPackageClick={onPackageClick}
-                  onOpenChat={onOpenChat}
-                  previewRole={previewRole}
-                  disableChat={disableChat}
-                  tripDate={selectedDate}
-                  showSummary={false}
-                />
-              </div>
-            );
-          })}
+          {trips.map((trip) => (
+            <TripSummaryContainer key={trip.id} trip={trip}>
+              <TripPackageCard
+                trip={trip}
+                onAddPackage={handleAddPackageWithRefresh}
+                onPackageClick={onPackageClick}
+                onOpenChat={onOpenChat}
+                previewRole={previewRole}
+                disableChat={disableChat}
+                tripDate={selectedDate}
+                showSummary={false}
+              />
+            </TripSummaryContainer>
+          ))}
         </div>
       )}
     </div>

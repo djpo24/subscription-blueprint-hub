@@ -1,5 +1,5 @@
 
-import { Package, Weight, DollarSign } from 'lucide-react';
+import { Package, Weight, DollarSign, CheckCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/utils/currencyFormatter';
 
@@ -9,20 +9,22 @@ interface TripPackageCardSummaryProps {
   packageCount: number;
   totalWeight: number;
   totalFreight: number; // Siempre en COP
-  amountToCollectByCurrency: Record<Currency, number>;
+  pendingAmountByCurrency: Record<Currency, number>; // Solo montos pendientes
+  collectedAmountByCurrency: Record<Currency, number>; // Solo montos cobrados
 }
 
 export function TripPackageCardSummary({ 
   packageCount, 
   totalWeight, 
   totalFreight, 
-  amountToCollectByCurrency 
+  pendingAmountByCurrency,
+  collectedAmountByCurrency
 }: TripPackageCardSummaryProps) {
   const isMobile = useIsMobile();
 
   return (
     <div className="w-full bg-white py-5 px-5">
-      <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-4 gap-4'}`}>
+      <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-5 gap-4'}`}>
         <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-blue-50 rounded-lg`}>
           <Package className="h-4 w-4 text-blue-600" />
           <div>
@@ -51,20 +53,37 @@ export function TripPackageCardSummary({
           </div>
         </div>
         
-        <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-green-50 rounded-lg`}>
-          <DollarSign className="h-4 w-4 text-green-600" />
+        <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-red-50 rounded-lg`}>
+          <DollarSign className="h-4 w-4 text-red-600" />
           <div>
-            <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
-              {Object.entries(amountToCollectByCurrency).map(([currency, amount]) => (
+            <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-red-800`}>
+              {Object.entries(pendingAmountByCurrency).map(([currency, amount]) => (
                 <div key={currency}>
                   {formatCurrency(amount, currency as Currency)}
                 </div>
               ))}
-              {Object.keys(amountToCollectByCurrency).length === 0 && (
+              {Object.keys(pendingAmountByCurrency).length === 0 && (
                 <div>{formatCurrency(0, 'COP')}</div>
               )}
             </div>
-            <div className="text-xs text-green-600">A Cobrar</div>
+            <div className="text-xs text-red-600">A Cobrar</div>
+          </div>
+        </div>
+
+        <div className={`flex items-center gap-2 ${isMobile ? 'p-2' : 'p-3'} bg-green-50 rounded-lg`}>
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <div>
+            <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
+              {Object.entries(collectedAmountByCurrency).map(([currency, amount]) => (
+                <div key={currency}>
+                  {formatCurrency(amount, currency as Currency)}
+                </div>
+              ))}
+              {Object.keys(collectedAmountByCurrency).length === 0 && (
+                <div>{formatCurrency(0, 'COP')}</div>
+              )}
+            </div>
+            <div className="text-xs text-green-600">Cobrado</div>
           </div>
         </div>
       </div>

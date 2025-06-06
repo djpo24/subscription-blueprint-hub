@@ -10,9 +10,13 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
+  trip_id?: string;
   customers?: {
     name: string;
     email: string;
+  };
+  trip?: {
+    trip_date: string;
   };
 }
 
@@ -26,8 +30,11 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
-  // Obtenemos la fecha formateada para mostrar en el formato solicitado: "Junio 1/25"
-  const travelDate = new Date(pkg.created_at);
+  // Obtener la fecha del viaje si está disponible, de lo contrario usar la fecha de creación del paquete
+  const travelDate = pkg.trip?.trip_date 
+    ? new Date(pkg.trip.trip_date) 
+    : new Date(pkg.created_at);
+  
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;
   

@@ -11,9 +11,13 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
+  trip_id?: string;
   customers?: {
     name: string;
     email: string;
+  };
+  trip?: {
+    trip_date: string;
   };
 }
 

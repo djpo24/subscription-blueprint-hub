@@ -4,6 +4,7 @@ import { NewPackageLabel } from './package-labels/NewPackageLabel';
 import { generateAllLabelsData, LabelData } from './package-labels/PackageLabelGenerator';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Package {
   id: string;
@@ -14,9 +15,13 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
+  trip_id?: string;
   customers?: {
     name: string;
     email: string;
+  };
+  trip?: {
+    trip_date: string;
   };
 }
 
@@ -27,16 +32,66 @@ interface MultiplePackageLabelsProps {
 export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) {
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
+  const [packagesWithTripData, setPackagesWithTripData] = useState<Package[]>([]);
 
   console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
 
   useEffect(() => {
+    // Cargar los datos de los viajes para los paquetes
+    const fetchTripsData = async () => {
+      if (packages.length === 0) return;
+      
+      // Obtener los trip_ids únicos
+      const tripIds = [...new Set(packages.filter(pkg => pkg.trip_id).map(pkg => pkg.trip_id))];
+      
+      if (tripIds.length === 0) {
+        console.log('⚠️ Ningún paquete tiene un viaje asociado');
+        setPackagesWithTripData(packages);
+        return;
+      }
+      
+      // Obtener los datos de los viajes
+      const { data: tripsData, error } = await supabase
+        .from('trips')
+        .select('id, trip_date')
+        .in('id', tripIds);
+      
+      if (error) {
+        console.error('❌ Error al obtener datos de viajes:', error);
+        setPackagesWithTripData(packages);
+        return;
+      }
+      
+      // Mapear los datos de los viajes a los paquetes
+      const enhancedPackages = packages.map(pkg => {
+        if (!pkg.trip_id) return pkg;
+        
+        const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
+        if (tripData) {
+          return {
+            ...pkg,
+            trip: { trip_date: tripData.trip_date }
+          };
+        }
+        return pkg;
+      });
+      
+      console.log('✅ Datos de viajes cargados para', enhancedPackages.length, 'paquetes');
+      setPackagesWithTripData(enhancedPackages);
+    };
+
+    fetchTripsData();
+  }, [packages]);
+
+  useEffect(() => {
     const generateLabelsData = async () => {
-      console.log('🔄 Generating labels data for', packages.length, 'packages with new format');
+      if (packagesWithTripData.length === 0) return;
+      
+      console.log('🔄 Generando labels data para', packagesWithTripData.length, 'paquetes con nuevo formato');
       setIsGeneratingCodes(true);
       
       try {
-        const newLabelsData = await generateAllLabelsData(packages);
+        const newLabelsData = await generateAllLabelsData(packagesWithTripData);
         console.log('✅ Generated labels data:', newLabelsData.size, 'labels');
         setLabelsData(newLabelsData);
       } catch (error) {
@@ -46,13 +101,13 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       }
     };
 
-    if (packages.length > 0) {
+    if (packagesWithTripData.length > 0) {
       generateLabelsData();
     }
-  }, [packages]);
+  }, [packagesWithTripData]);
 
   const handlePrint = () => {
-    console.log('🖨️ Printing', packages.length, 'labels with new format');
+    console.log('🖨️ Printing', packagesWithTripData.length, 'labels with new format');
     window.print();
   };
 
@@ -73,19 +128,19 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       <div className="screen-only mb-4 p-4 border rounded-lg bg-white">
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <Printer className="h-5 w-5" />
-          Vista Previa - {packages.length} Etiquetas (Nuevo Formato)
+          Vista Previa - {packagesWithTripData.length} Etiquetas (Nuevo Formato)
         </h3>
         <div className="text-sm text-gray-600 mb-4">
           Formato actualizado que coincide exactamente con la imagen de ejemplo
         </div>
         
         <div className="space-y-4 max-h-96 overflow-y-auto">
-          {packages.map((pkg, index) => {
+          {packagesWithTripData.map((pkg, index) => {
             const labelData = labelsData.get(pkg.id);
             return (
               <div key={pkg.id} className="border border-gray-300 bg-white p-4">
                 <div className="text-xs text-gray-500 mb-2">
-                  Etiqueta {index + 1} de {packages.length} - {pkg.tracking_number}
+                  Etiqueta {index + 1} de {packagesWithTripData.length} - {pkg.tracking_number}
                 </div>
                 <div className="flex justify-center bg-gray-50 p-4">
                   <NewPackageLabel 
@@ -105,13 +160,13 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
         >
           <Printer className="h-4 w-4" />
-          Imprimir {packages.length} Etiqueta{packages.length !== 1 ? 's' : ''}
+          Imprimir {packagesWithTripData.length} Etiqueta{packagesWithTripData.length !== 1 ? 's' : ''}
         </Button>
       </div>
 
       {/* Etiquetas para impresión */}
       <div className="print-only">
-        {packages.map((pkg) => {
+        {packagesWithTripData.map((pkg) => {
           const labelData = labelsData.get(pkg.id);
           return (
             <div key={pkg.id} style={{ pageBreakAfter: 'always' }}>

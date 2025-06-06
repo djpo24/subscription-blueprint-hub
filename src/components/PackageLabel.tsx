@@ -1,6 +1,8 @@
 
 import { usePackageCodes } from '@/hooks/usePackageCodes';
 import { NewPackageLabel } from './package-labels/NewPackageLabel';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Package {
   id: string;
@@ -11,9 +13,13 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
+  trip_id?: string;
   customers?: {
     name: string;
     email: string;
+  };
+  trip?: {
+    trip_date: string;
   };
 }
 
@@ -23,6 +29,33 @@ interface PackageLabelProps {
 
 export function PackageLabel({ package: pkg }: PackageLabelProps) {
   const { barcodeCanvasRef, qrCodeDataUrl, barcodeDataUrl } = usePackageCodes(pkg);
+  const [packageWithTripData, setPackageWithTripData] = useState<Package>(pkg);
+
+  useEffect(() => {
+    // Si el paquete tiene un trip_id, obtener los datos del viaje
+    const fetchTripData = async () => {
+      if (pkg.trip_id) {
+        const { data: tripData, error } = await supabase
+          .from('trips')
+          .select('trip_date')
+          .eq('id', pkg.trip_id)
+          .single();
+        
+        if (!error && tripData) {
+          console.log('🚢 Encontrado datos del viaje para etiqueta:', tripData);
+          setPackageWithTripData({ ...pkg, trip: { trip_date: tripData.trip_date } });
+        } else {
+          console.log('⚠️ No se encontró información del viaje o hubo un error:', error);
+          setPackageWithTripData(pkg);
+        }
+      } else {
+        console.log('⚠️ El paquete no tiene un viaje asociado, usando fecha de creación');
+        setPackageWithTripData(pkg);
+      }
+    };
+
+    fetchTripData();
+  }, [pkg]);
 
   console.log('🏷️ PackageLabel rendering for package:', pkg.id);
   console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
@@ -47,7 +80,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
         {/* Vista previa de la etiqueta */}
         <div className="flex justify-center bg-gray-50 p-4">
           <NewPackageLabel 
-            package={pkg}
+            package={packageWithTripData}
             qrCodeDataUrl={qrCodeDataUrl}
             barcodeDataUrl={barcodeDataUrl}
             isPreview={true}
@@ -65,7 +98,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       {/* Etiqueta real para impresión */}
       <div className="print-only">
         <NewPackageLabel 
-          package={pkg}
+          package={packageWithTripData}
           qrCodeDataUrl={qrCodeDataUrl}
           barcodeDataUrl={barcodeDataUrl}
           isPreview={false}

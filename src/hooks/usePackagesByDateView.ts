@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,11 +16,22 @@ export function usePackagesByDateView(selectedDate: Date) {
   const [createDispatchDialogOpen, setCreateDispatchDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Safely extract trips from the data object
+  // Safely extract trips from the data object with robust type checking
   const tripsData = data?.trips || [];
+  
+  // Add additional safety check to ensure tripsData is an array
+  const safeTripsData = Array.isArray(tripsData) ? tripsData : [];
+  
+  console.log('🔍 [usePackagesByDateView] Data validation:', {
+    hasData: !!data,
+    dataTrips: data?.trips,
+    tripsDataType: typeof tripsData,
+    isArray: Array.isArray(tripsData),
+    safeTripsLength: safeTripsData.length
+  });
 
   // Transform the data to match the expected Trip interface
-  const trips = tripsData.map(trip => ({
+  const trips = safeTripsData.map(trip => ({
     id: trip.id,
     origin: trip.origin,
     destination: trip.destination,

@@ -30,9 +30,9 @@ export function PackageLabelDialog({ open, onOpenChange, package: pkg }: Package
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Etiqueta de Encomienda</DialogTitle>
+          <DialogTitle>Etiqueta de Encomienda - Nuevo Formato</DialogTitle>
           <DialogDescription>
-            Etiqueta para imprimir de la encomienda {pkg.tracking_number}
+            Etiqueta actualizada que coincide con el formato de ejemplo para {pkg.tracking_number}
           </DialogDescription>
         </DialogHeader>
         

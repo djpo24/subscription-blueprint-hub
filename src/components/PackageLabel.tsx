@@ -1,8 +1,6 @@
 
 import { usePackageCodes } from '@/hooks/usePackageCodes';
-import { PackageLabelPreviewCard } from './package-labels/PackageLabelPreviewCard';
-import { PackageLabelPrint } from './package-labels/PackageLabelPrint';
-import { PackageLabelPrintStyles } from './package-labels/PackageLabelPrintStyles';
+import { NewPackageLabel } from './package-labels/NewPackageLabel';
 
 interface Package {
   id: string;
@@ -28,11 +26,9 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
 
   console.log('🏷️ PackageLabel rendering for package:', pkg.id);
   console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
-  console.log('📊 Barcode status:', barcodeDataUrl ? 'Generated' : 'Pending');
 
   const handlePrint = () => {
     console.log('🖨️ Printing single label for package:', pkg.id);
-    console.log('📐 Print size: 10cm x 15cm');
     window.print();
   };
 
@@ -45,35 +41,61 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       <div className="mb-4 p-4 border rounded-lg bg-white screen-only">
         <h3 className="text-lg font-semibold mb-2">Vista Previa de la Etiqueta</h3>
         <div className="text-sm text-gray-600 mb-4">
-          Dimensiones: 10cm x 15cm - Formato actualizado
+          Nuevo formato que coincide exactamente con la imagen de ejemplo
         </div>
         
-        {/* Vista previa escalada de la etiqueta */}
-        <PackageLabelPreviewCard 
-          package={pkg}
-          qrCodeDataUrl={qrCodeDataUrl}
-          barcodeDataUrl={barcodeDataUrl}
-        />
+        {/* Vista previa de la etiqueta */}
+        <div className="flex justify-center bg-gray-50 p-4">
+          <NewPackageLabel 
+            package={pkg}
+            qrCodeDataUrl={qrCodeDataUrl}
+            barcodeDataUrl={barcodeDataUrl}
+            isPreview={true}
+          />
+        </div>
 
         <button
           onClick={handlePrint}
           className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Imprimir Etiqueta (10cm × 15cm)
+          Imprimir Etiqueta
         </button>
       </div>
 
       {/* Etiqueta real para impresión */}
       <div className="print-only">
-        <PackageLabelPrint 
+        <NewPackageLabel 
           package={pkg}
           qrCodeDataUrl={qrCodeDataUrl}
           barcodeDataUrl={barcodeDataUrl}
+          isPreview={false}
         />
       </div>
 
       {/* Estilos para impresión */}
-      <PackageLabelPrintStyles />
+      <style>{`
+        @media screen {
+          .print-only { display: none; }
+          .screen-only { display: block; }
+        }
+        
+        @media print {
+          body * { visibility: hidden; }
+          .print-only, .print-only * { visibility: visible; }
+          .screen-only { display: none !important; }
+          .print-only {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+          }
+          @page {
+            size: 10cm 15cm;
+            margin: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }

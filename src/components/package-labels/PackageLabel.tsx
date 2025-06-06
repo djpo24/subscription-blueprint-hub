@@ -1,3 +1,4 @@
+
 import { format } from 'date-fns';
 import { LabelData } from './PackageLabelGenerator';
 
@@ -98,13 +99,13 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* QR Code centrado con marco - espacios mínimos arriba y abajo */}
+      {/* QR Code centrado con marco - tamaño aumentado 40px y padding 20px */}
       <div style={{ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: '8px',
-        padding: '12px',
+        padding: '20px',
         border: '2px solid #ddd',
         borderRadius: '8px',
         backgroundColor: '#f9f9f9'
@@ -114,8 +115,8 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
             src={labelData.qrCodeDataUrl} 
             alt="QR Code" 
             style={{ 
-              width: isPrintMode ? '180px' : '160px', 
-              height: isPrintMode ? '180px' : '160px'
+              width: isPrintMode ? '220px' : '200px', 
+              height: isPrintMode ? '220px' : '200px'
             }}
           />
         )}

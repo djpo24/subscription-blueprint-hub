@@ -1,8 +1,10 @@
+
 import { useEffect, useState } from 'react';
 import { PackageLabel } from './package-labels/PackageLabel';
 import { PackageLabelPreview } from './package-labels/PackageLabelPreview';
 import { PackageLabelPrintStyles } from './package-labels/PackageLabelPrintStyles';
 import { generateAllLabelsData, LabelData } from './package-labels/PackageLabelGenerator';
+import { useMultipleLabelsPDF } from '@/hooks/useMultipleLabelsPDF';
 
 interface Package {
   id: string;
@@ -26,6 +28,9 @@ interface MultiplePackageLabelsProps {
 export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) {
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
+  const [isPrintingPDF, setIsPrintingPDF] = useState(false);
+  
+  const { printMultipleLabelsAsPDF } = useMultipleLabelsPDF();
 
   console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
   console.log('🏷️ MultiplePackageLabels - Package IDs:', packages.map(p => p.id));
@@ -52,12 +57,16 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     }
   }, [packages]);
 
-  const handlePrint = () => {
-    console.log('🖨️ Starting print process for', packages.length, 'labels');
-    console.log('🔍 Labels data available:', labelsData.size);
+  const handlePrintPDF = async () => {
+    console.log('🖨️ Starting PDF print process for', packages.length, 'labels');
     
     if (isGeneratingCodes) {
       console.log('⏳ Still generating codes, waiting...');
+      return;
+    }
+
+    if (isPrintingPDF) {
+      console.log('⏳ PDF generation in progress...');
       return;
     }
 
@@ -67,60 +76,14 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       return;
     }
 
-    const printContainer = document.querySelector('.print-container') as HTMLElement;
-    if (printContainer) {
-      console.log('📄 Preparing print container with', packages.length, 'labels');
-      
-      // Configurar el contenedor para impresión
-      printContainer.style.display = 'block';
-      printContainer.style.position = 'fixed';
-      printContainer.style.top = '0';
-      printContainer.style.left = '0';
-      printContainer.style.zIndex = '9999';
-      printContainer.style.width = '100vw';
-      printContainer.style.height = '100vh';
-      printContainer.style.backgroundColor = 'white';
-      printContainer.style.overflow = 'visible';
-      
-      // Tiempo extra aumentado para que el DOM se estabilice completamente con múltiples páginas
-      setTimeout(() => {
-        const labelPages = printContainer.querySelectorAll('.label-page');
-        console.log('📊 Final verification before print:');
-        console.log('  - Expected pages:', packages.length);
-        console.log('  - Found pages:', labelPages.length);
-        console.log('  - All pages have content:', Array.from(labelPages).every(page => 
-          page.querySelector('[data-package-id]') !== null
-        ));
-        
-        // Verificar que cada página tiene la estructura correcta
-        labelPages.forEach((page, index) => {
-          const packageElement = page.querySelector('[data-package-id]');
-          const packageId = packageElement?.getAttribute('data-package-id');
-          console.log(`  📄 Page ${index + 1}: Package ID = ${packageId || 'MISSING'}`);
-          
-          // Forzar que cada página sea reconocida individualmente
-          (page as HTMLElement).style.pageBreakAfter = 'always';
-          (page as HTMLElement).style.breakAfter = 'page';
-          (page as HTMLElement).style.height = '100vh';
-          (page as HTMLElement).style.minHeight = '100vh';
-        });
-        
-        console.log('🖨️ Executing window.print() with', labelPages.length, 'pages');
-        
-        // Dar un tiempo adicional para que los estilos se apliquen
-        setTimeout(() => {
-          window.print();
-          
-          setTimeout(() => {
-            if (printContainer) {
-              printContainer.style.display = 'none';
-              console.log('✅ Print container hidden');
-            }
-          }, 1000);
-        }, 500);
-      }, 2000); // Tiempo aumentado para múltiples páginas
-    } else {
-      console.error('❌ Print container not found');
+    try {
+      setIsPrintingPDF(true);
+      await printMultipleLabelsAsPDF(packages, labelsData);
+      console.log('✅ PDF print process completed');
+    } catch (error) {
+      console.error('❌ Error printing PDF:', error);
+    } finally {
+      setIsPrintingPDF(false);
     }
   };
 
@@ -135,6 +98,18 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     );
   }
 
+  if (isPrintingPDF) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p>Generando PDF con {packages.length} etiquetas...</p>
+          <p className="text-sm text-gray-600 mt-2">Esto puede tomar unos segundos</p>
+        </div>
+      </div>
+    );
+  }
+
   console.log('🎨 Rendering MultiplePackageLabels with', packages.length, 'packages');
 
   return (
@@ -143,40 +118,9 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       <PackageLabelPreview 
         packages={packages}
         labelsData={labelsData}
-        onPrint={handlePrint}
+        onPrint={handlePrintPDF}
+        isPDFMode={true}
       />
-
-      {/* Contenedor de impresión optimizado */}
-      <div className="print-container" style={{ 
-        display: 'none',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 9999,
-        backgroundColor: 'white',
-        overflow: 'visible'
-      }}>
-        {packages.map((pkg, index) => {
-          const labelData = labelsData.get(pkg.id);
-          console.log(`📄 Creating page ${index + 1}/${packages.length} for package ${pkg.id}`);
-          
-          return (
-            <div key={`print-page-${pkg.id}`} className="label-page">
-              <div className="label-content">
-                <div data-package-id={pkg.id} data-page-number={index + 1}>
-                  <PackageLabel 
-                    package={pkg} 
-                    labelData={labelData}
-                    isPrintMode={true}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
       <PackageLabelPrintStyles />
     </div>

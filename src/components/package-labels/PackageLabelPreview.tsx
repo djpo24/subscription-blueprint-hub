@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { PackageLabel } from './PackageLabel';
 import { LabelData } from './PackageLabelGenerator';
+import { FileText, Printer } from 'lucide-react';
 
 interface Package {
   id: string;
@@ -22,14 +23,28 @@ interface PackageLabelPreviewProps {
   packages: Package[];
   labelsData: Map<string, LabelData>;
   onPrint: () => void;
+  isPDFMode?: boolean;
 }
 
-export function PackageLabelPreview({ packages, labelsData, onPrint }: PackageLabelPreviewProps) {
+export function PackageLabelPreview({ packages, labelsData, onPrint, isPDFMode = false }: PackageLabelPreviewProps) {
   return (
     <div className="screen-only mb-4 p-4 border rounded-lg bg-white">
-      <h3 className="text-lg font-semibold mb-2">Vista Previa - {packages.length} Etiquetas</h3>
+      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+        {isPDFMode ? <FileText className="h-5 w-5" /> : <Printer className="h-5 w-5" />}
+        Vista Previa - {packages.length} Etiquetas
+      </h3>
       <div className="text-sm text-gray-600 mb-4">
-        Se imprimirán {packages.length} etiqueta{packages.length !== 1 ? 's' : ''} en páginas separadas tamaño carta (cada etiqueta en su propia hoja)
+        {isPDFMode ? (
+          <>
+            Se generará un PDF con {packages.length} etiqueta{packages.length !== 1 ? 's' : ''} 
+            (cada etiqueta en su propia página tamaño carta)
+          </>
+        ) : (
+          <>
+            Se imprimirán {packages.length} etiqueta{packages.length !== 1 ? 's' : ''} 
+            en páginas separadas tamaño carta (cada etiqueta en su propia hoja)
+          </>
+        )}
       </div>
       
       <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -51,9 +66,10 @@ export function PackageLabelPreview({ packages, labelsData, onPrint }: PackageLa
 
       <Button
         onClick={onPrint}
-        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
       >
-        Imprimir {packages.length} Etiqueta{packages.length !== 1 ? 's' : ''} (Tamaño Carta)
+        {isPDFMode ? <FileText className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
+        {isPDFMode ? 'Generar e Imprimir PDF' : 'Imprimir'} {packages.length} Etiqueta{packages.length !== 1 ? 's' : ''} (Tamaño Carta)
       </Button>
     </div>
   );

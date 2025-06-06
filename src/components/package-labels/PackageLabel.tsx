@@ -157,7 +157,8 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         textAlign: 'center',
         fontSize: isPrintMode ? '13px' : '11px', // Aumentado de 10px/8px a 13px/11px (3pt más)
         lineHeight: '1.5', // Aumentado de 1.3 a 1.5 (2pt más de espaciado)
-        color: '#000'
+        color: '#000',
+        marginBottom: '15px'
       }}>
         <div style={{ marginBottom: '6px' }}>
           <div style={{ fontWeight: 'bold' }}>Dirección en B/QUILLA: Calle 45B # 22 - 124</div>
@@ -167,6 +168,37 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
           <div style={{ fontWeight: 'bold' }}>Dirección Curacao: Jo corsenstraat 48 brievengat</div>
           <div>Tel: +599 9 6964306</div>
         </div>
+      </div>
+
+      {/* Código de barras en la parte inferior */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 'auto',
+        paddingTop: '10px',
+        borderTop: '1px solid #ddd'
+      }}>
+        {labelData?.barcodeDataUrl && (
+          <div style={{ textAlign: 'center' }}>
+            <img 
+              src={labelData.barcodeDataUrl} 
+              alt="Barcode" 
+              style={{ 
+                width: isPrintMode ? '280px' : '250px',
+                height: isPrintMode ? '60px' : '50px',
+                objectFit: 'contain'
+              }}
+            />
+            <div style={{ 
+              fontSize: isPrintMode ? '10px' : '8px', 
+              color: '#666', 
+              marginTop: '4px' 
+            }}>
+              {pkg.tracking_number}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

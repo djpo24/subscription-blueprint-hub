@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import jsPDF from 'jspdf';
 
@@ -215,7 +216,44 @@ export function useMultipleLabelsPDF() {
       phoneWidth = pdf.getTextWidth(phoneLine);
       pdf.text(phoneLine, startX + (labelWidth - phoneWidth) / 2, currentY);
 
-      console.log(`✅ Etiqueta ${i + 1} agregada al PDF`);
+      currentY += 8;
+
+      // Código de barras en la parte inferior de la etiqueta
+      const barcodeWidth = 70; // mm
+      const barcodeHeight = 15; // mm
+      const barcodeX = startX + (labelWidth - barcodeWidth) / 2;
+      
+      // Línea separadora antes del código de barras
+      pdf.setLineWidth(0.2);
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(startX + 10, currentY, startX + labelWidth - 10, currentY);
+      
+      currentY += 5;
+
+      // Código de barras centrado
+      try {
+        pdf.addImage(
+          labelData.barcodeDataUrl,
+          'PNG',
+          barcodeX,
+          currentY,
+          barcodeWidth,
+          barcodeHeight
+        );
+      } catch (error) {
+        console.error('Error agregando código de barras:', error);
+      }
+
+      currentY += barcodeHeight + 2;
+
+      // Texto del tracking number debajo del código de barras
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      const trackingNumberWidth = pdf.getTextWidth(pkg.tracking_number);
+      pdf.text(pkg.tracking_number, startX + (labelWidth - trackingNumberWidth) / 2, currentY);
+
+      console.log(`✅ Etiqueta ${i + 1} agregada al PDF con código de barras`);
     }
 
     console.log('📄 PDF generado con', packages.length, 'páginas');

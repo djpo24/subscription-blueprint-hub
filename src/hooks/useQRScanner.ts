@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useRef } from 'react';
-import { BrowserQRCodeReader } from '@zxing/browser';
+import { BrowserQRCodeReader, BarcodeFormat } from '@zxing/browser';
 
 export function useQRScanner() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -11,10 +12,11 @@ export function useQRScanner() {
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanningAbortController = useRef<AbortController | null>(null);
+  const continuousScanRef = useRef<boolean>(false);
 
   const initCamera = async () => {
     try {
-      console.log('Initializing camera with high resolution...');
+      console.log('Initializing camera for Beeprt CC450 CPCL QR scanning...');
       
       // Check if camera is available and get camera list
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -46,7 +48,7 @@ export function useQRScanner() {
       setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
       setHasPermission(true);
       
-      console.log('Camera initialized. Default camera:', sortedCameras[0]?.label || 'Unknown');
+      console.log('Camera initialized for thermal printer QR detection. Default camera:', sortedCameras[0]?.label || 'Unknown');
     } catch (err) {
       console.error('Camera permission denied:', err);
       setHasPermission(false);
@@ -58,31 +60,33 @@ export function useQRScanner() {
     return {
       deviceId: { exact: deviceId },
       facingMode: 'environment',
-      // Configuración para máxima resolución y calidad
+      // Configuración ultra alta para impresoras térmicas
       width: { 
-        ideal: 1920, 
-        min: 640,
+        ideal: 2560, // Aumentar resolución ideal
+        min: 1280,
         max: 4096 
       },
       height: { 
-        ideal: 1080, 
-        min: 480,
+        ideal: 1440, // Aumentar resolución ideal
+        min: 720,
         max: 2160 
       },
-      // Enfocar específicamente para lectura de cerca
+      // Configuraciones específicas para códigos QR de impresoras térmicas
       focusMode: 'continuous',
-      // Configuraciones adicionales para mejor calidad
       aspectRatio: { ideal: 16/9 },
-      frameRate: { ideal: 30, min: 15, max: 60 },
-      // Configuraciones específicas para dispositivos móviles
+      frameRate: { ideal: 60, min: 30, max: 60 }, // Aumentar framerate
       exposureMode: 'continuous',
-      whiteBalanceMode: 'continuous'
+      whiteBalanceMode: 'continuous',
+      // Configuraciones adicionales para mejor contraste
+      brightness: { ideal: 0.5 },
+      contrast: { ideal: 1.2 },
+      saturation: { ideal: 1.1 }
     };
   };
 
   const startVideoStream = async (deviceId: string) => {
     try {
-      console.log('Starting high-resolution video stream with device:', deviceId);
+      console.log('Starting ultra high-resolution video stream for thermal printer QR codes with device:', deviceId);
       
       // Stop existing stream
       if (streamRef.current) {
@@ -93,11 +97,11 @@ export function useQRScanner() {
       // Get optimal constraints for the device
       const videoConstraints = getOptimalVideoConstraints(deviceId);
       
-      console.log('Video constraints:', videoConstraints);
+      console.log('Video constraints for thermal printer QR:', videoConstraints);
 
       const constraints = {
         video: videoConstraints,
-        audio: false // No necesitamos audio para QR scanning
+        audio: false
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -106,7 +110,7 @@ export function useQRScanner() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         
-        // Configurar el elemento video para mejor calidad
+        // Configurar el elemento video para máxima calidad
         videoRef.current.setAttribute('playsinline', 'true');
         videoRef.current.setAttribute('autoplay', 'true');
         videoRef.current.setAttribute('muted', 'true');
@@ -116,7 +120,7 @@ export function useQRScanner() {
         // Log de la resolución actual del stream
         const track = stream.getVideoTracks()[0];
         const settings = track.getSettings();
-        console.log('Actual video settings:', {
+        console.log('Actual video settings for thermal printer QR:', {
           width: settings.width,
           height: settings.height,
           frameRate: settings.frameRate,
@@ -124,22 +128,23 @@ export function useQRScanner() {
           deviceId: settings.deviceId
         });
         
-        console.log('High-resolution video stream started successfully');
+        console.log('Ultra high-resolution video stream started for thermal printer QR detection');
       }
 
       return stream;
     } catch (err) {
-      console.error('Error starting high-resolution video stream:', err);
+      console.error('Error starting ultra high-resolution video stream:', err);
       
-      // Fallback to lower resolution if high resolution fails
+      // Fallback to high resolution if ultra high resolution fails
       try {
-        console.log('Trying fallback resolution...');
+        console.log('Trying high resolution fallback for thermal printer QR...');
         const fallbackConstraints = {
           video: {
             deviceId: { exact: deviceId },
             facingMode: 'environment',
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 }
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 30, min: 15 }
           },
           audio: false
         };
@@ -150,12 +155,12 @@ export function useQRScanner() {
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
           await videoRef.current.play();
-          console.log('Fallback video stream started');
+          console.log('High resolution fallback video stream started');
         }
         
         return fallbackStream;
       } catch (fallbackErr) {
-        console.error('Fallback video stream also failed:', fallbackErr);
+        console.error('High resolution fallback also failed:', fallbackErr);
         throw fallbackErr;
       }
     }
@@ -184,6 +189,40 @@ export function useQRScanner() {
     }
   };
 
+  // Función para escaneo continuo optimizado para impresoras térmicas
+  const continuousQRScan = async (onQRCodeScanned: (qrData: string) => void, codeReader: BrowserQRCodeReader, deviceId: string) => {
+    if (!videoRef.current || !continuousScanRef.current) return;
+
+    try {
+      console.log('Attempting thermal printer QR scan...');
+      const result = await codeReader.decodeOnceFromVideoDevice(deviceId, videoRef.current);
+      
+      if (result && continuousScanRef.current) {
+        console.log('Thermal printer QR Code successfully detected:', result.getText());
+        onQRCodeScanned(result.getText());
+        stopScanning();
+        return;
+      }
+    } catch (scanError: any) {
+      // Continuar intentando si no se detectó código o hay errores menores
+      if (scanError.name === 'NotFoundException') {
+        // No se encontró código QR, continuar escaneando
+        if (continuousScanRef.current) {
+          setTimeout(() => {
+            continuousQRScan(onQRCodeScanned, codeReader, deviceId);
+          }, 50); // Escanear cada 50ms para mayor frecuencia
+        }
+      } else {
+        console.error('Thermal printer QR scan error:', scanError);
+        if (continuousScanRef.current) {
+          setTimeout(() => {
+            continuousQRScan(onQRCodeScanned, codeReader, deviceId);
+          }, 100);
+        }
+      }
+    }
+  };
+
   const startScanning = async (onQRCodeScanned: (qrData: string) => void) => {
     if (!videoRef.current || availableCameras.length === 0) {
       console.error('Video element or cameras not available');
@@ -193,9 +232,10 @@ export function useQRScanner() {
     try {
       setIsScanning(true);
       setError(null);
+      continuousScanRef.current = true;
       
       const selectedCamera = availableCameras[currentCameraIndex];
-      console.log('Starting QR scan with high-resolution camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+      console.log('Starting thermal printer QR scan with camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
 
       // Start video stream if not already started
       if (!streamRef.current) {
@@ -206,58 +246,32 @@ export function useQRScanner() {
       const abortController = new AbortController();
       scanningAbortController.current = abortController;
 
-      // Configurar QR code reader con mejores opciones - removing unsupported tryHarder option
+      // Configurar QR code reader optimizado para impresoras térmicas
       const codeReader = new BrowserQRCodeReader(undefined, {
-        delayBetweenScanAttempts: 100, // Reducir delay para scanning más rápido
-        delayBetweenScanSuccess: 500 // Delay después de escaneo exitoso
+        delayBetweenScanAttempts: 50, // Reducir delay significativamente para escaneo más agresivo
+        delayBetweenScanSuccess: 300, // Reducir delay después de escaneo exitoso
+        // Usar formatos específicos para mejor detección
+        formats: [BarcodeFormat.QR_CODE]
       });
       codeReaderRef.current = codeReader;
 
-      // Start scanning from the video element
-      try {
-        console.log('Starting QR decode with enhanced settings...');
-        const result = await codeReader.decodeOnceFromVideoDevice(selectedCamera.deviceId, videoRef.current);
-        
-        // Check if scanning was aborted
-        if (abortController.signal.aborted) {
-          console.log('QR scanning was aborted');
-          return;
-        }
-        
-        if (result) {
-          console.log('QR Code successfully scanned:', result.getText());
-          onQRCodeScanned(result.getText());
-          stopScanning();
-        }
-      } catch (scanError: any) {
-        // Check if scanning was aborted
-        if (abortController.signal.aborted) {
-          console.log('QR scanning was aborted during decode');
-          return;
-        }
-        
-        console.error('QR scan error:', scanError);
-        
-        // Provide more specific error messages
-        if (scanError.name === 'NotFoundError') {
-          setError('No se pudo detectar un código QR. Asegúrate de que esté bien iluminado y enfocado.');
-        } else if (scanError.name === 'NotReadableError') {
-          setError('Error de lectura de la cámara. Intenta cambiar de cámara.');
-        } else {
-          setError('Error al escanear. Intenta nuevamente o cambia de cámara.');
-        }
-        
-        setIsScanning(false);
-      }
+      // Iniciar escaneo continuo
+      console.log('Starting continuous thermal printer QR decode...');
+      continuousQRScan(onQRCodeScanned, codeReader, selectedCamera.deviceId);
+      
     } catch (err) {
-      console.error('Error starting QR scan:', err);
-      setError('Error al inicializar el escáner. Verifica los permisos de la cámara.');
+      console.error('Error starting thermal printer QR scan:', err);
+      setError('Error al inicializar el escáner para códigos QR de impresora térmica');
       setIsScanning(false);
+      continuousScanRef.current = false;
     }
   };
 
   const stopScanning = () => {
-    console.log('Stopping QR scanning...');
+    console.log('Stopping thermal printer QR scanning...');
+    
+    // Detener escaneo continuo
+    continuousScanRef.current = false;
     
     // Abort any ongoing scanning
     if (scanningAbortController.current) {
@@ -272,7 +286,7 @@ export function useQRScanner() {
   };
 
   const cleanup = () => {
-    console.log('Cleaning up camera resources...');
+    console.log('Cleaning up thermal printer QR scanner resources...');
     
     // Stop scanning
     stopScanning();
@@ -301,7 +315,7 @@ export function useQRScanner() {
       if (selectedCamera) {
         startVideoStream(selectedCamera.deviceId).catch(err => {
           console.error('Error starting video stream on camera change:', err);
-          setError('Error al inicializar la cámara con alta resolución');
+          setError('Error al inicializar la cámara con ultra alta resolución');
         });
       }
     }

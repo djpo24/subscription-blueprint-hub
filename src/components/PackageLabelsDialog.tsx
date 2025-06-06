@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -47,6 +46,7 @@ interface PackageLabelsDialogProps {
 export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: PackageLabelsDialogProps) {
   const isMobile = useIsMobile();
   const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
+  const [selectedPrintedPackageIds, setSelectedPrintedPackageIds] = useState<Set<string>>(new Set());
   const [singleLabelOpen, setSingleLabelOpen] = useState(false);
   const [multipleLabelOpen, setMultipleLabelOpen] = useState(false);
   const [selectedPackageForLabel, setSelectedPackageForLabel] = useState<any>(null);
@@ -138,6 +138,16 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     setSelectedPackageIds(newSelected);
   };
 
+  const handlePrintedPackageToggle = (packageId: string) => {
+    const newSelected = new Set(selectedPrintedPackageIds);
+    if (newSelected.has(packageId)) {
+      newSelected.delete(packageId);
+    } else {
+      newSelected.add(packageId);
+    }
+    setSelectedPrintedPackageIds(newSelected);
+  };
+
   const handleSelectAll = (packages: any[]) => {
     const packageIds = packages.map(pkg => pkg.id);
     if (packageIds.every(id => selectedPackageIds.has(id))) {
@@ -153,8 +163,30 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     }
   };
 
+  const handleSelectAllPrinted = (packages: any[]) => {
+    const packageIds = packages.map(pkg => pkg.id);
+    if (packageIds.every(id => selectedPrintedPackageIds.has(id))) {
+      // Deseleccionar todos
+      const newSelected = new Set(selectedPrintedPackageIds);
+      packageIds.forEach(id => newSelected.delete(id));
+      setSelectedPrintedPackageIds(newSelected);
+    } else {
+      // Seleccionar todos
+      const newSelected = new Set(selectedPrintedPackageIds);
+      packageIds.forEach(id => newSelected.add(id));
+      setSelectedPrintedPackageIds(newSelected);
+    }
+  };
+
   const handlePrintSelected = () => {
     const selectedPackages = allPackages.filter(pkg => selectedPackageIds.has(pkg.id));
+    if (selectedPackages.length > 0) {
+      setMultipleLabelOpen(true);
+    }
+  };
+
+  const handleReprintSelected = () => {
+    const selectedPackages = allPackages.filter(pkg => selectedPrintedPackageIds.has(pkg.id));
     if (selectedPackages.length > 0) {
       setMultipleLabelOpen(true);
     }
@@ -164,8 +196,12 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     return allPackages.filter(pkg => selectedPackageIds.has(pkg.id));
   };
 
+  const getSelectedPrintedPackages = () => {
+    return allPackages.filter(pkg => selectedPrintedPackageIds.has(pkg.id));
+  };
+
   // Vista móvil con cards
-  const renderMobileView = (packages: any[], showActions: boolean = false) => (
+  const renderMobileView = (packages: any[], showActions: boolean = false, isPrintedTab: boolean = false) => (
     <div className="space-y-3">
       {packages.map((pkg) => (
         <Card key={pkg.id} className="border border-gray-200">
@@ -175,8 +211,8 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
                 <div className="flex items-center gap-2">
                   {showActions && (
                     <Checkbox
-                      checked={selectedPackageIds.has(pkg.id)}
-                      onCheckedChange={() => handlePackageToggle(pkg.id)}
+                      checked={isPrintedTab ? selectedPrintedPackageIds.has(pkg.id) : selectedPackageIds.has(pkg.id)}
+                      onCheckedChange={() => isPrintedTab ? handlePrintedPackageToggle(pkg.id) : handlePackageToggle(pkg.id)}
                     />
                   )}
                   <div className="flex-1 min-w-0">
@@ -214,7 +250,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
                       className="flex items-center gap-1"
                     >
                       <Printer className="h-3 w-3" />
-                      <span className="text-xs">Imprimir</span>
+                      <span className="text-xs">{isPrintedTab ? 'Re-imprimir' : 'Imprimir'}</span>
                     </Button>
                   )}
                 </div>
@@ -227,15 +263,17 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
   );
 
   // Vista desktop con tabla
-  const renderDesktopView = (packages: any[], showActions: boolean = false) => (
+  const renderDesktopView = (packages: any[], showActions: boolean = false, isPrintedTab: boolean = false) => (
     <Table>
       <TableHeader>
         <TableRow>
           {showActions && (
             <TableHead className="w-12">
               <Checkbox
-                checked={packages.length > 0 && packages.every(pkg => selectedPackageIds.has(pkg.id))}
-                onCheckedChange={() => handleSelectAll(packages)}
+                checked={packages.length > 0 && packages.every(pkg => 
+                  isPrintedTab ? selectedPrintedPackageIds.has(pkg.id) : selectedPackageIds.has(pkg.id)
+                )}
+                onCheckedChange={() => isPrintedTab ? handleSelectAllPrinted(packages) : handleSelectAll(packages)}
               />
             </TableHead>
           )}
@@ -255,8 +293,8 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
             {showActions && (
               <TableCell>
                 <Checkbox
-                  checked={selectedPackageIds.has(pkg.id)}
-                  onCheckedChange={() => handlePackageToggle(pkg.id)}
+                  checked={isPrintedTab ? selectedPrintedPackageIds.has(pkg.id) : selectedPackageIds.has(pkg.id)}
+                  onCheckedChange={() => isPrintedTab ? handlePrintedPackageToggle(pkg.id) : handlePackageToggle(pkg.id)}
                 />
               </TableCell>
             )}
@@ -294,7 +332,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
                   className="flex items-center gap-1"
                 >
                   <Printer className="h-3 w-3" />
-                  Imprimir
+                  {isPrintedTab ? 'Re-imprimir' : 'Imprimir'}
                 </Button>
               </TableCell>
             )}
@@ -331,15 +369,28 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
                 </TabsTrigger>
               </TabsList>
 
-              {selectedPackageIds.size > 0 && (
-                <Button
-                  onClick={handlePrintSelected}
-                  className="flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  Imprimir Seleccionadas ({selectedPackageIds.size})
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {selectedPackageIds.size > 0 && (
+                  <Button
+                    onClick={handlePrintSelected}
+                    className="flex items-center gap-2"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Imprimir Seleccionadas ({selectedPackageIds.size})
+                  </Button>
+                )}
+
+                {selectedPrintedPackageIds.size > 0 && (
+                  <Button
+                    onClick={handleReprintSelected}
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Re-imprimir Seleccionadas ({selectedPrintedPackageIds.size})
+                  </Button>
+                )}
+              </div>
             </div>
 
             <TabsContent value="pending" className="mt-4 overflow-auto max-h-96">
@@ -350,8 +401,8 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
               ) : (
                 <>
                   {isMobile 
-                    ? renderMobileView(pendingPackages, true)
-                    : renderDesktopView(pendingPackages, true)
+                    ? renderMobileView(pendingPackages, true, false)
+                    : renderDesktopView(pendingPackages, true, false)
                   }
                 </>
               )}
@@ -365,8 +416,8 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
               ) : (
                 <>
                   {isMobile 
-                    ? renderMobileView(printedPackages, false)
-                    : renderDesktopView(printedPackages, false)
+                    ? renderMobileView(printedPackages, true, true)
+                    : renderDesktopView(printedPackages, true, true)
                   }
                 </>
               )}
@@ -386,7 +437,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
       <MultipleLabelsDialog
         open={multipleLabelOpen}
         onOpenChange={setMultipleLabelOpen}
-        packages={getSelectedPackages()}
+        packages={selectedPackageIds.size > 0 ? getSelectedPackages() : getSelectedPrintedPackages()}
       />
     </>
   );

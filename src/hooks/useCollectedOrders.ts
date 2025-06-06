@@ -21,11 +21,12 @@ export function useCollectedOrders() {
             notes,
             created_by,
             package_id,
-            packages (
+            packages!customer_payments_package_id_fkey (
               tracking_number,
               destination,
               delivered_at,
-              customers (
+              customer_id,
+              customers!packages_customer_id_fkey (
                 name,
                 phone
               )

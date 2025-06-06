@@ -2,7 +2,7 @@
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Calculator, Package, Users } from 'lucide-react';
-import { SimpleCustomersPendingTable } from '@/components/finances/SimpleCustomersPendingTable';
+import { FinancesTabs } from '@/components/finances/FinancesTabs';
 import { useFinancialData } from '@/hooks/useFinancialData';
 
 export function FinancesTab() {
@@ -168,7 +168,7 @@ export function FinancesTab() {
           </Card>
         </div>
 
-        <SimpleCustomersPendingTable />
+        <FinancesTabs />
       </div>
     </TabsContent>
   );

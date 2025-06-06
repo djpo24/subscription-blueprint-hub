@@ -26,6 +26,11 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
+  // Obtenemos la fecha formateada para mostrar en el formato solicitado: "Junio 1/25"
+  const travelDate = new Date(pkg.created_at);
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;
+  
   const baseStyles = {
     width: '10cm',
     height: '15cm',
@@ -43,7 +48,7 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
 
   return (
     <div style={baseStyles} data-package-id={pkg.id}>
-      {/* Header - Código QR de Prueba */}
+      {/* Header - Ahora "ENVIOS OJITO" */}
       <div style={{
         textAlign: 'center',
         padding: '20px 10px 10px 10px',
@@ -55,14 +60,21 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
           margin: '0 0 5px 0',
           color: '#333'
         }}>
-          Código QR de Prueba
+          ENVIOS OJITO
         </h1>
         <p style={{
           fontSize: '18px',
           margin: '0',
           color: '#666'
         }}>
-          Paquete para: <strong>{pkg.customers?.name || 'CLIENTE'}</strong>
+          {pkg.customers?.name || 'CLIENTE'}
+        </p>
+        <p style={{
+          fontSize: '16px',
+          margin: '5px 0 0 0',
+          color: '#666'
+        }}>
+          Fecha del viaje: {formattedTravelDate}
         </p>
       </div>
 
@@ -108,11 +120,25 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         <div style={{ marginBottom: '8px' }}>
           <strong>Cliente:</strong> {pkg.customers?.name || 'CLIENTE'}
         </div>
-        <div style={{ marginBottom: '8px' }}>
-          <strong>Estado:</strong> {pkg.status}
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: '12px', 
+          fontWeight: 'bold',
+          fontSize: '13px' 
+        }}>
+          Toda encomienda debe ser verificada en el local al momento de la entrega. Una vez entregada, no se aceptan reclamos.
         </div>
-        <div>
-          <strong>ID:</strong> {pkg.id}
+        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+          Dirección en B/QUILLA: Calle 45B # 22 - 124
+        </div>
+        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+          Tel: +573127271746
+        </div>
+        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+          Dirección Curacao: Jo corsenstraat 48 brievengat
+        </div>
+        <div style={{ fontSize: '13px' }}>
+          Tel: +599 9 6964306
         </div>
       </div>
     </div>

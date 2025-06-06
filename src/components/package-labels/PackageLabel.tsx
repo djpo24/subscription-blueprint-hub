@@ -50,14 +50,14 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        minHeight: isPrintMode ? '60px' : '50px'
+        minHeight: isPrintMode ? '50px' : '40px'
       }}>
         <div>
-          <div style={{ fontSize: isPrintMode ? '24px' : '20px', fontWeight: 'bold', lineHeight: '1' }}>E</div>
-          <div style={{ fontSize: isPrintMode ? '12px' : '10px', fontWeight: 'bold' }}>ENCOMIENDA</div>
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px' }}>ZONA: {pkg.origin.substring(0, 1)}</div>
+          <div style={{ fontSize: isPrintMode ? '20px' : '16px', fontWeight: 'bold', lineHeight: '1' }}>E</div>
+          <div style={{ fontSize: isPrintMode ? '10px' : '8px', fontWeight: 'bold' }}>ENCOMIENDA</div>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px' }}>ZONA: {pkg.origin.substring(0, 1)}</div>
         </div>
-        <div style={{ textAlign: 'right', fontSize: isPrintMode ? '10px' : '8px' }}>
+        <div style={{ textAlign: 'right', fontSize: isPrintMode ? '8px' : '6px' }}>
           <div>#{pkg.tracking_number.substring(0, 12)}</div>
           <div>{format(new Date(pkg.created_at), 'dd/MM/yy')}</div>
           <div>DE: {pkg.origin.substring(0, 6)}</div>
@@ -67,65 +67,62 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
       {/* Sección de servicio */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: isPrintMode ? '8px' : '6px', 
+        padding: isPrintMode ? '6px' : '4px', 
         borderBottom: '2px solid #000',
         textAlign: 'center'
       }}>
-        <div style={{ fontSize: isPrintMode ? '14px' : '12px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
+        <div style={{ fontSize: isPrintMode ? '12px' : '10px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
       </div>
 
-      {/* Información del remitente y destinatario */}
+      {/* Información del remitente y destinatario - Reducido */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: isPrintMode ? '12px' : '8px', 
+        padding: isPrintMode ? '8px' : '6px', 
         borderBottom: '2px solid #000',
-        flexGrow: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
+        minHeight: isPrintMode ? '140px' : '120px'
       }}>
-        <div style={{ marginBottom: isPrintMode ? '8px' : '6px' }}>
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px', fontWeight: 'bold' }}>DESDE:</div>
-          <div style={{ fontSize: isPrintMode ? '11px' : '9px', wordWrap: 'break-word' }}>{pkg.origin}</div>
+        <div style={{ marginBottom: isPrintMode ? '6px' : '4px' }}>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px', fontWeight: 'bold' }}>DESDE:</div>
+          <div style={{ fontSize: isPrintMode ? '9px' : '7px', wordWrap: 'break-word' }}>{pkg.origin}</div>
         </div>
         
-        <div style={{ marginBottom: isPrintMode ? '8px' : '6px' }}>
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px', fontWeight: 'bold' }}>PARA:</div>
-          <div style={{ fontSize: isPrintMode ? '13px' : '11px', fontWeight: 'bold', wordWrap: 'break-word' }}>{pkg.customers?.name || 'CLIENTE'}</div>
-          <div style={{ fontSize: isPrintMode ? '11px' : '9px', wordWrap: 'break-word' }}>{pkg.destination}</div>
+        <div style={{ marginBottom: isPrintMode ? '6px' : '4px' }}>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px', fontWeight: 'bold' }}>PARA:</div>
+          <div style={{ fontSize: isPrintMode ? '11px' : '9px', fontWeight: 'bold', wordWrap: 'break-word' }}>{pkg.customers?.name || 'CLIENTE'}</div>
+          <div style={{ fontSize: isPrintMode ? '9px' : '7px', wordWrap: 'break-word' }}>{pkg.destination}</div>
         </div>
 
-        <div style={{ marginBottom: isPrintMode ? '8px' : '6px' }}>
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px', fontWeight: 'bold' }}>DESCRIPCIÓN:</div>
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px', wordWrap: 'break-word', maxHeight: isPrintMode ? '50px' : '40px', overflow: 'hidden' }}>{pkg.description}</div>
+        <div style={{ marginBottom: isPrintMode ? '6px' : '4px' }}>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px', fontWeight: 'bold' }}>DESCRIPCIÓN:</div>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px', wordWrap: 'break-word', maxHeight: isPrintMode ? '30px' : '25px', overflow: 'hidden' }}>{pkg.description}</div>
         </div>
 
         {pkg.weight && (
-          <div style={{ fontSize: isPrintMode ? '10px' : '8px' }}>
+          <div style={{ fontSize: isPrintMode ? '8px' : '6px' }}>
             <span style={{ fontWeight: 'bold' }}>PESO:</span> {pkg.weight} kg
           </div>
         )}
       </div>
 
-      {/* Código de barras */}
+      {/* Código de barras - Reducido */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: isPrintMode ? '8px' : '6px', 
+        padding: isPrintMode ? '6px' : '4px', 
         borderBottom: '2px solid #000',
         textAlign: 'center',
-        minHeight: isPrintMode ? '80px' : '70px',
+        minHeight: isPrintMode ? '60px' : '50px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center'
       }}>
-        <div style={{ fontSize: isPrintMode ? '10px' : '8px', fontWeight: 'bold', marginBottom: '2px' }}>TRACKING #</div>
+        <div style={{ fontSize: isPrintMode ? '8px' : '6px', fontWeight: 'bold', marginBottom: '2px' }}>TRACKING #</div>
         {labelData?.barcodeDataUrl && (
           <img 
             src={labelData.barcodeDataUrl} 
             alt="Barcode" 
             style={{ 
               width: '90%', 
-              height: isPrintMode ? '60px' : '50px', 
+              height: isPrintMode ? '40px' : '35px', 
               objectFit: 'contain',
               margin: '0 auto'
             }}
@@ -133,23 +130,30 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         )}
       </div>
 
-      {/* QR Code */}
+      {/* QR Code - MÁS GRANDE como en la imagen de ejemplo */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: isPrintMode ? '8px' : '6px',
+        padding: isPrintMode ? '10px' : '8px',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: isPrintMode ? '90px' : '80px'
+        flexGrow: 1,
+        minHeight: isPrintMode ? '150px' : '130px'
       }}>
         {labelData?.qrCodeDataUrl && (
           <div style={{ textAlign: 'center' }}>
             <img 
               src={labelData.qrCodeDataUrl} 
               alt="QR Code" 
-              style={{ width: isPrintMode ? '75px' : '65px', height: isPrintMode ? '75px' : '65px', marginBottom: '2px' }}
+              style={{ 
+                width: isPrintMode ? '120px' : '100px', 
+                height: isPrintMode ? '120px' : '100px', 
+                marginBottom: '4px',
+                border: '1px solid #ddd'
+              }}
             />
-            <div style={{ fontSize: isPrintMode ? '8px' : '6px' }}>Gestión digital</div>
+            <div style={{ fontSize: isPrintMode ? '8px' : '6px', fontWeight: 'bold' }}>GESTIÓN DIGITAL</div>
           </div>
         )}
       </div>

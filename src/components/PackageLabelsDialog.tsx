@@ -50,6 +50,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
   const [singleLabelOpen, setSingleLabelOpen] = useState(false);
   const [multipleLabelOpen, setMultipleLabelOpen] = useState(false);
   const [selectedPackageForLabel, setSelectedPackageForLabel] = useState<any>(null);
+  const [packagesForMultipleLabels, setPackagesForMultipleLabels] = useState<any[]>([]);
 
   // Obtener todos los paquetes de todos los viajes
   const allPackages = trips.flatMap(trip => 
@@ -191,6 +192,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     console.log('PackageLabelsDialog - handlePrintSelected - Filtered packages:', selectedPackages.map(p => p.id));
     
     if (selectedPackages.length > 0) {
+      setPackagesForMultipleLabels(selectedPackages);
       setMultipleLabelOpen(true);
     }
   };
@@ -200,6 +202,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     console.log('PackageLabelsDialog - handleReprintSelected - Selected packages count:', selectedPackages.length);
     
     if (selectedPackages.length > 0) {
+      setPackagesForMultipleLabels(selectedPackages);
       setMultipleLabelOpen(true);
     }
   };
@@ -453,7 +456,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
       <MultipleLabelsDialog
         open={multipleLabelOpen}
         onOpenChange={setMultipleLabelOpen}
-        packages={selectedPackageIds.size > 0 ? getSelectedPackages() : getSelectedPrintedPackages()}
+        packages={packagesForMultipleLabels}
       />
     </>
   );

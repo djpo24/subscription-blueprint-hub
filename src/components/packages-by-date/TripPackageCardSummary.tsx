@@ -8,9 +8,9 @@ type Currency = 'COP' | 'AWG';
 interface TripPackageCardSummaryProps {
   packageCount: number;
   totalWeight: number;
-  totalFreight: number; // Siempre en COP
-  pendingAmountByCurrency: Record<Currency, number>; // Solo montos pendientes
-  collectedAmountByCurrency: Record<Currency, number>; // Solo montos cobrados
+  totalFreight: number;
+  pendingAmountByCurrency: Record<Currency, number>;
+  collectedAmountByCurrency: Record<Currency, number>;
 }
 
 export function TripPackageCardSummary({ 
@@ -23,11 +23,14 @@ export function TripPackageCardSummary({
   const isMobile = useIsMobile();
 
   // Función para renderizar los montos por moneda
-  const renderAmounts = (amountsByCurrency: Record<Currency, number>, defaultCurrency: Currency = 'COP') => {
-    const entries = Object.entries(amountsByCurrency);
+  const renderAmounts = (amountsByCurrency: Record<Currency, number>, showZero: boolean = false) => {
+    const entries = Object.entries(amountsByCurrency).filter(([, amount]) => amount > 0);
     
     if (entries.length === 0) {
-      return <div>{formatCurrency(0, defaultCurrency)}</div>;
+      if (showZero) {
+        return <div>{formatCurrency(0, 'COP')}</div>;
+      }
+      return <div className="text-gray-400">-</div>;
     }
     
     return entries.map(([currency, amount]) => (
@@ -36,6 +39,17 @@ export function TripPackageCardSummary({
       </div>
     ));
   };
+
+  // Verificar si hay algún monto cobrado
+  const hasPendingAmounts = Object.values(pendingAmountByCurrency || {}).some(amount => amount > 0);
+  const hasCollectedAmounts = Object.values(collectedAmountByCurrency || {}).some(amount => amount > 0);
+
+  console.log('📊 Summary data:', {
+    pendingAmountByCurrency,
+    collectedAmountByCurrency,
+    hasPendingAmounts,
+    hasCollectedAmounts
+  });
 
   return (
     <div className="w-full bg-white py-5 px-5">
@@ -72,7 +86,7 @@ export function TripPackageCardSummary({
           <DollarSign className="h-4 w-4 text-red-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-red-800`}>
-              {renderAmounts(pendingAmountByCurrency)}
+              {renderAmounts(pendingAmountByCurrency || {}, true)}
             </div>
             <div className="text-xs text-red-600">A Cobrar</div>
           </div>
@@ -82,7 +96,7 @@ export function TripPackageCardSummary({
           <CheckCircle className="h-4 w-4 text-green-600" />
           <div>
             <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-green-800`}>
-              {renderAmounts(collectedAmountByCurrency)}
+              {renderAmounts(collectedAmountByCurrency || {})}
             </div>
             <div className="text-xs text-green-600">Cobrado</div>
           </div>

@@ -1,9 +1,9 @@
-
 import { PackagesByDateHeader } from './PackagesByDateHeader';
 import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
 import { TripPackageCardSummary } from './TripPackageCardSummary';
 import { usePackagePaymentsByTrip } from '@/hooks/usePackagePaymentsByTrip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -52,7 +52,7 @@ interface PackagesByDateContentProps {
 
 // Componente para mostrar el resumen de un viaje individual
 function TripSummaryContainer({ trip, children }: { trip: Trip; children: React.ReactNode }) {
-  const { data: paymentData } = usePackagePaymentsByTrip(trip.id);
+  const { data: paymentData, error: paymentError, isLoading } = usePackagePaymentsByTrip(trip.id);
 
   // Calcular totales para este viaje específico
   const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
@@ -62,8 +62,30 @@ function TripSummaryContainer({ trip, children }: { trip: Trip; children: React.
   const pendingAmountByCurrency = paymentData?.pending || {};
   const collectedAmountByCurrency = paymentData?.collected || {};
 
+  console.log('🔍 TripSummaryContainer data:', {
+    tripId: trip.id,
+    paymentData,
+    paymentError,
+    isLoading,
+    pendingAmountByCurrency,
+    collectedAmountByCurrency
+  });
+
+  if (paymentError) {
+    console.error('❌ Error loading payment data for trip:', trip.id, paymentError);
+  }
+
   return (
     <div className="space-y-4">
+      {/* Mostrar error si hay problemas con los pagos */}
+      {paymentError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Error cargando datos de pagos: {paymentError.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Cajas de resumen fuera del contenedor del viaje */}
       <TripPackageCardSummary 
         packageCount={trip.packages.length}

@@ -8,7 +8,7 @@ export function usePackagePaymentsByTrip(tripId: string) {
     queryFn: async () => {
       console.log('🔍 Fetching package payments for trip:', tripId);
       
-      // Obtener todos los paquetes del viaje
+      // Obtener todos los paquetes del viaje con sus datos de cobro
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select('id, amount_to_collect, currency')
@@ -29,11 +29,12 @@ export function usePackagePaymentsByTrip(tripId: string) {
       const packageIds = packages.map(pkg => pkg.id);
       console.log('🔍 Package IDs to search:', packageIds);
 
-      // Obtener pagos desde delivery_payments (a través de package_deliveries)
-      const { data: packageDeliveries, error: deliveriesError } = await supabase
+      // Obtener entregas de paquetes con sus pagos
+      const { data: deliveries, error: deliveriesError } = await supabase
         .from('package_deliveries')
         .select(`
           package_id,
+          total_amount_collected,
           delivery_payments (
             amount,
             currency
@@ -42,11 +43,11 @@ export function usePackagePaymentsByTrip(tripId: string) {
         .in('package_id', packageIds);
 
       if (deliveriesError) {
-        console.error('❌ Error fetching package deliveries:', deliveriesError);
+        console.error('❌ Error fetching deliveries:', deliveriesError);
         throw deliveriesError;
       }
 
-      console.log('🚚 Package deliveries found:', packageDeliveries?.length || 0, packageDeliveries);
+      console.log('🚚 Package deliveries found:', deliveries?.length || 0, deliveries);
 
       // Obtener pagos adicionales desde package_payments
       const { data: packagePayments, error: packagePaymentsError } = await supabase
@@ -63,82 +64,63 @@ export function usePackagePaymentsByTrip(tripId: string) {
 
       // Calcular montos cobrados por moneda
       const collectedByCurrency: Record<string, number> = {};
+      const pendingByCurrency: Record<string, number> = {};
 
-      // Sumar pagos de delivery_payments
-      let totalFromDeliveryPayments = 0;
-      (packageDeliveries || []).forEach(delivery => {
-        if (delivery.delivery_payments && Array.isArray(delivery.delivery_payments)) {
+      // Procesar cada paquete
+      packages.forEach(pkg => {
+        const currency = pkg.currency || 'COP';
+        const amountToCollect = pkg.amount_to_collect || 0;
+        
+        let totalPaidForPackage = 0;
+
+        // Sumar pagos desde delivery_payments
+        const delivery = deliveries?.find(d => d.package_id === pkg.id);
+        if (delivery?.delivery_payments && Array.isArray(delivery.delivery_payments)) {
           delivery.delivery_payments.forEach(payment => {
-            const currency = payment.currency || 'COP';
             const amount = Number(payment.amount) || 0;
+            totalPaidForPackage += amount;
             
             if (!collectedByCurrency[currency]) {
               collectedByCurrency[currency] = 0;
             }
             collectedByCurrency[currency] += amount;
-            totalFromDeliveryPayments += amount;
             
-            console.log(`💳 Delivery payment: ${amount} ${currency} for package ${delivery.package_id}`);
+            console.log(`💳 Delivery payment: ${amount} ${currency} for package ${pkg.id}`);
           });
         }
-      });
 
-      // Sumar pagos de package_payments (asumiendo que están en la misma moneda del paquete)
-      let totalFromPackagePayments = 0;
-      (packagePayments || []).forEach(payment => {
-        const packageData = packages.find(pkg => pkg.id === payment.package_id);
-        const currency = packageData?.currency || 'COP';
-        const amount = Number(payment.amount) || 0;
-        
-        if (!collectedByCurrency[currency]) {
-          collectedByCurrency[currency] = 0;
-        }
-        collectedByCurrency[currency] += amount;
-        totalFromPackagePayments += amount;
-        
-        console.log(`💰 Package payment: ${amount} ${currency} for package ${payment.package_id}`);
-      });
+        // Sumar pagos desde package_payments
+        const payments = packagePayments?.filter(p => p.package_id === pkg.id) || [];
+        payments.forEach(payment => {
+          const amount = Number(payment.amount) || 0;
+          totalPaidForPackage += amount;
+          
+          if (!collectedByCurrency[currency]) {
+            collectedByCurrency[currency] = 0;
+          }
+          collectedByCurrency[currency] += amount;
+          
+          console.log(`💰 Package payment: ${amount} ${currency} for package ${pkg.id}`);
+        });
 
-      // Calcular montos pendientes por moneda
-      const pendingByCurrency: Record<string, number> = {};
-      
-      packages.forEach(pkg => {
-        if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
-          const currency = pkg.currency || 'COP';
+        // Calcular monto pendiente
+        if (amountToCollect > 0) {
+          const pending = Math.max(0, amountToCollect - totalPaidForPackage);
+          
           if (!pendingByCurrency[currency]) {
             pendingByCurrency[currency] = 0;
           }
-          
-          // Obtener cuánto se ha pagado de este paquete específico
-          let totalPaidForThisPackage = 0;
-          
-          // Pagos desde delivery_payments
-          const deliveryForPackage = packageDeliveries?.find(d => d.package_id === pkg.id);
-          if (deliveryForPackage?.delivery_payments && Array.isArray(deliveryForPackage.delivery_payments)) {
-            const deliveryPaymentAmount = deliveryForPackage.delivery_payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
-            totalPaidForThisPackage += deliveryPaymentAmount;
-          }
-          
-          // Pagos desde package_payments
-          const packagePaymentsForPackage = (packagePayments || [])
-            .filter(payment => payment.package_id === pkg.id);
-          const packagePaymentAmount = packagePaymentsForPackage.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
-          totalPaidForThisPackage += packagePaymentAmount;
-          
-          const pending = Math.max(0, pkg.amount_to_collect - totalPaidForThisPackage);
           pendingByCurrency[currency] += pending;
           
-          console.log(`📊 Package ${pkg.id}: amount_to_collect=${pkg.amount_to_collect}, paid=${totalPaidForThisPackage}, pending=${pending}`);
+          console.log(`📊 Package ${pkg.id}: amount_to_collect=${amountToCollect}, paid=${totalPaidForPackage}, pending=${pending}`);
         }
       });
 
       console.log('✅ Package payments calculated:', {
         collected: collectedByCurrency,
         pending: pendingByCurrency,
-        totalFromDeliveryPayments,
-        totalFromPackagePayments,
-        packageDeliveries: packageDeliveries?.length || 0,
-        packagePayments: packagePayments?.length || 0
+        totalDeliveries: deliveries?.length || 0,
+        totalPackagePayments: packagePayments?.length || 0
       });
 
       return {
@@ -148,6 +130,6 @@ export function usePackagePaymentsByTrip(tripId: string) {
     },
     enabled: !!tripId,
     refetchOnWindowFocus: false,
-    staleTime: 30000 // Los datos se consideran obsoletos después de 30 segundos
+    staleTime: 30000
   });
 }

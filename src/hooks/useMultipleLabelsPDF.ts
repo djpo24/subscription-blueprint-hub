@@ -11,14 +11,9 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
-  amount_to_collect?: number;
-  currency?: 'COP' | 'AWG';
   customers?: {
     name: string;
     email: string;
-  };
-  trip?: {
-    trip_date: string;
   };
 }
 
@@ -28,209 +23,17 @@ interface LabelData {
 }
 
 export function useMultipleLabelsPDF() {
-  const formatTravelDate = (dateString: string) => {
-    try {
-      const tripDate = new Date(dateString);
-      
-      if (!isNaN(tripDate.getTime())) {
-        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-        return `${monthNames[tripDate.getMonth()]} ${tripDate.getDate()}/${tripDate.getFullYear().toString().slice(2)}`;
-      }
-    } catch (e) {
-      console.error('Error formatting date:', e);
-    }
-    
-    // Fallback a fecha actual
-    const fallbackDate = new Date();
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    return `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
-  };
-
-  const formatAmountToCollect = (pkg: Package) => {
-    if (!pkg.amount_to_collect || pkg.amount_to_collect === 0) {
-      return 'Total: $0';
-    }
-    
-    const symbol = pkg.currency === 'AWG' ? 'ƒ' : '$';
-    const formattedAmount = pkg.amount_to_collect.toLocaleString('es-CO');
-    return `Total: ${symbol}${formattedAmount}`;
-  };
-
-  const formatWeight = (pkg: Package) => {
-    if (!pkg.weight) {
-      return 'Peso: N/A';
-    }
-    return `Peso: ${pkg.weight}kg`;
-  };
-
-  const addLabelToPDF = (
-    pdf: jsPDF, 
-    pkg: Package, 
-    labelData: LabelData,
-    pageWidth: number,
-    pageHeight: number
-  ) => {
-    console.log(`📄 Creando etiqueta para paquete ${pkg.id} directamente en PDF`);
-    
-    // Dimensiones de la etiqueta (10cm x 15cm convertidos a puntos)
-    const labelWidth = 283.46; // 10cm en puntos
-    const labelHeight = 425.2; // 15cm en puntos
-    
-    // Centrar la etiqueta en la página
-    const startX = (pageWidth - labelWidth) / 2;
-    const startY = (pageHeight - labelHeight) / 2;
-    
-    let currentY = startY;
-    
-    // Borde de la etiqueta
-    pdf.setDrawColor(221, 221, 221);
-    pdf.setLineWidth(1);
-    pdf.rect(startX, startY, labelWidth, labelHeight);
-    
-    // HEADER - "ENVIOS OJITO" y tracking number
-    currentY += 30;
-    
-    // "ENVIOS OJITO" a la izquierda
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(24);
-    pdf.setTextColor(51, 51, 51);
-    pdf.text('ENVIOS OJITO', startX + 20, currentY);
-    
-    // Tracking number a la derecha
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(16);
-    pdf.setTextColor(102, 102, 102);
-    const trackingWidth = pdf.getTextWidth(pkg.tracking_number);
-    pdf.text(pkg.tracking_number, startX + labelWidth - trackingWidth - 20, currentY);
-    
-    currentY += 25;
-    
-    // Nombre del cliente a la izquierda y fecha del viaje a la derecha
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(18);
-    pdf.setTextColor(102, 102, 102);
-    
-    const customerName = pkg.customers?.name || 'CLIENTE';
-    pdf.text(customerName, startX + 20, currentY);
-    
-    const formattedTravelDate = pkg.trip?.trip_date ? formatTravelDate(pkg.trip.trip_date) : formatTravelDate(new Date().toISOString());
-    pdf.setFontSize(16);
-    const dateWidth = pdf.getTextWidth(formattedTravelDate);
-    pdf.text(formattedTravelDate, startX + labelWidth - dateWidth - 20, currentY);
-    
-    currentY += 25;
-    
-    // Línea separadora
-    pdf.setDrawColor(238, 238, 238);
-    pdf.setLineWidth(0.5);
-    pdf.line(startX + 15, currentY, startX + labelWidth - 15, currentY);
-    
-    currentY += 20;
-    
-    // QR Code centrado
-    if (labelData.qrCodeDataUrl) {
-      try {
-        const qrSize = 120; // Tamaño del QR code
-        const qrX = startX + (labelWidth - qrSize) / 2;
-        
-        // Borde alrededor del QR
-        pdf.setDrawColor(221, 221, 221);
-        pdf.setLineWidth(2);
-        pdf.rect(qrX - 10, currentY - 10, qrSize + 20, qrSize + 20);
-        
-        // Agregar QR code
-        pdf.addImage(
-          labelData.qrCodeDataUrl, 
-          'PNG', 
-          qrX, 
-          currentY, 
-          qrSize, 
-          qrSize
-        );
-        
-        currentY += qrSize + 30;
-      } catch (error) {
-        console.error('Error agregando QR code al PDF:', error);
-        currentY += 120;
-      }
-    }
-    
-    // Línea separadora
-    pdf.setDrawColor(238, 238, 238);
-    pdf.setLineWidth(0.5);
-    pdf.line(startX + 15, currentY, startX + labelWidth - 15, currentY);
-    
-    currentY += 20;
-    
-    // Peso a la izquierda y monto a cobrar a la derecha
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(16);
-    pdf.setTextColor(0, 0, 0);
-    
-    const weightText = formatWeight(pkg);
-    pdf.text(weightText, startX + 20, currentY);
-    
-    const amountText = formatAmountToCollect(pkg);
-    pdf.setFont('helvetica', 'bold');
-    const amountWidth = pdf.getTextWidth(amountText);
-    pdf.text(amountText, startX + labelWidth - amountWidth - 20, currentY);
-    
-    currentY += 25;
-    
-    // Disclaimer
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(0, 0, 0);
-    
-    const disclaimerText = 'Toda encomienda debe ser verificada en el local al momento de la entrega. Una vez entregada, no se aceptan reclamos.';
-    const disclaimerLines = pdf.splitTextToSize(disclaimerText, labelWidth - 40);
-    
-    disclaimerLines.forEach((line: string, index: number) => {
-      const lineWidth = pdf.getTextWidth(line);
-      const lineX = startX + (labelWidth - lineWidth) / 2;
-      pdf.text(line, lineX, currentY + (index * 12));
-    });
-    
-    currentY += disclaimerLines.length * 12 + 15;
-    
-    // Información de contacto
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(11);
-    pdf.setTextColor(0, 0, 0);
-    
-    const contactInfo = [
-      'Dirección en B/QUILLA: Calle 45B # 22 - 124',
-      'Tel: +573127271746',
-      'Dirección Curacao: Jo corsenstraat 48 brievengat',
-      'Tel: +599 9 6964306'
-    ];
-    
-    contactInfo.forEach((info, index) => {
-      const infoWidth = pdf.getTextWidth(info);
-      const infoX = startX + (labelWidth - infoWidth) / 2;
-      pdf.text(info, infoX, currentY + (index * 10));
-    });
-    
-    console.log(`✅ Etiqueta para paquete ${pkg.id} creada correctamente en PDF`);
-  };
-
   const generatePDFFromLabels = useCallback(async (
     packages: Package[], 
     labelsData: Map<string, LabelData>
   ) => {
-    console.log('📄 Iniciando generación de PDF con jsPDF nativo para', packages.length, 'etiquetas');
+    console.log('📄 Iniciando generación de PDF con', packages.length, 'etiquetas');
     
-    // Crear PDF con páginas tamaño carta
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'pt',
-      format: 'letter' // 8.5" x 11"
+      unit: 'mm',
+      format: 'letter'
     });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    
-    console.log(`📄 Dimensiones de página: ${pageWidth}pt x ${pageHeight}pt`);
 
     let isFirstPage = true;
 
@@ -250,11 +53,167 @@ export function useMultipleLabelsPDF() {
       }
       isFirstPage = false;
 
-      // Agregar la etiqueta centrada en la página
-      addLabelToPDF(pdf, pkg, labelData, pageWidth, pageHeight);
+      // Configurar fuente
+      pdf.setFont('helvetica');
+      
+      // Dimensiones de la etiqueta (centrada en página carta)
+      const pageWidth = 216; // mm (carta)
+      const pageHeight = 279; // mm (carta)
+      const labelWidth = 100; // mm (10cm)
+      const labelHeight = 150; // mm (15cm)
+      const startX = (pageWidth - labelWidth) / 2;
+      const startY = (pageHeight - labelHeight) / 2;
+
+      // Dibujar borde principal de la etiqueta
+      pdf.setLineWidth(0.5);
+      pdf.rect(startX, startY, labelWidth, labelHeight);
+
+      let currentY = startY;
+
+      // Header superior
+      const headerHeight = 25;
+      pdf.rect(startX, currentY, labelWidth, headerHeight);
+      
+      // Logo "E" y texto ENCOMIENDA
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('E', startX + 5, currentY + 15);
+      
+      pdf.setFontSize(8);
+      pdf.text('ENCOMIENDA', startX + 5, currentY + 20);
+      pdf.setFontSize(6);
+      pdf.text(`ZONA: ${pkg.origin.substring(0, 1)}`, startX + 5, currentY + 23);
+
+      // Información derecha del header
+      pdf.setFontSize(6);
+      pdf.text(`#${pkg.tracking_number.substring(0, 12)}`, startX + labelWidth - 25, currentY + 8);
+      pdf.text(new Date(pkg.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' }), startX + labelWidth - 25, currentY + 12);
+      pdf.text(`DE: ${pkg.origin.substring(0, 6)}`, startX + labelWidth - 25, currentY + 16);
+
+      currentY += headerHeight;
+
+      // Sección de servicio
+      const serviceHeight = 10;
+      pdf.rect(startX, currentY, labelWidth, serviceHeight);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      const serviceText = 'ENCOMIENDA EXPRESS';
+      const serviceTextWidth = pdf.getTextWidth(serviceText);
+      pdf.text(serviceText, startX + (labelWidth - serviceTextWidth) / 2, currentY + 7);
+
+      currentY += serviceHeight;
+
+      // Información del remitente y destinatario
+      const infoHeight = 55;
+      pdf.rect(startX, currentY, labelWidth, infoHeight);
+      
+      let infoY = currentY + 8;
+      
+      // DESDE
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DESDE:', startX + 5, infoY);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      const fromLines = pdf.splitTextToSize(pkg.origin, labelWidth - 15);
+      pdf.text(fromLines, startX + 5, infoY + 4);
+      
+      infoY += 15;
+      
+      // PARA
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PARA:', startX + 5, infoY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      const customerName = pkg.customers?.name || 'CLIENTE';
+      const customerLines = pdf.splitTextToSize(customerName, labelWidth - 15);
+      pdf.text(customerLines, startX + 5, infoY + 4);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      const toLines = pdf.splitTextToSize(pkg.destination, labelWidth - 15);
+      pdf.text(toLines, startX + 5, infoY + 10);
+      
+      infoY += 20;
+      
+      // DESCRIPCIÓN
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DESCRIPCIÓN:', startX + 5, infoY);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6);
+      const descLines = pdf.splitTextToSize(pkg.description, labelWidth - 15);
+      pdf.text(descLines.slice(0, 3), startX + 5, infoY + 4); // Máximo 3 líneas
+      
+      // PESO (si existe)
+      if (pkg.weight) {
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`PESO: `, startX + 5, infoY + 15);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${pkg.weight} kg`, startX + 15, infoY + 15);
+      }
+
+      currentY += infoHeight;
+
+      // Código de barras
+      const barcodeHeight = 25;
+      pdf.rect(startX, currentY, labelWidth, barcodeHeight);
+      
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      const trackingText = 'TRACKING #';
+      const trackingTextWidth = pdf.getTextWidth(trackingText);
+      pdf.text(trackingText, startX + (labelWidth - trackingTextWidth) / 2, currentY + 6);
+
+      // Agregar imagen del código de barras
+      try {
+        pdf.addImage(
+          labelData.barcodeDataUrl, 
+          'PNG', 
+          startX + 5, 
+          currentY + 8, 
+          labelWidth - 10, 
+          15
+        );
+      } catch (error) {
+        console.error('Error agregando código de barras:', error);
+      }
+
+      currentY += barcodeHeight;
+
+      // QR Code
+      const qrHeight = 25;
+      pdf.rect(startX, currentY, labelWidth, qrHeight);
+      
+      try {
+        // Centrar QR Code
+        const qrSize = 15;
+        const qrX = startX + (labelWidth - qrSize) / 2;
+        pdf.addImage(
+          labelData.qrCodeDataUrl, 
+          'PNG', 
+          qrX, 
+          currentY + 3, 
+          qrSize, 
+          qrSize
+        );
+        
+        // Texto "Gestión digital"
+        pdf.setFontSize(5);
+        pdf.setFont('helvetica', 'normal');
+        const digitalText = 'Gestión digital';
+        const digitalTextWidth = pdf.getTextWidth(digitalText);
+        pdf.text(digitalText, startX + (labelWidth - digitalTextWidth) / 2, currentY + 22);
+      } catch (error) {
+        console.error('Error agregando QR code:', error);
+      }
+
+      console.log(`✅ Etiqueta ${i + 1} agregada al PDF`);
     }
 
-    console.log('📄 PDF generado exitosamente con jsPDF nativo -', packages.length, 'páginas');
+    console.log('📄 PDF generado con', packages.length, 'páginas');
     return pdf;
   }, []);
 
@@ -263,7 +222,7 @@ export function useMultipleLabelsPDF() {
     labelsData: Map<string, LabelData>
   ) => {
     try {
-      console.log('🖨️ Iniciando impresión de PDF con jsPDF nativo para', packages.length, 'etiquetas');
+      console.log('🖨️ Iniciando impresión de PDF con', packages.length, 'etiquetas');
       
       const pdf = await generatePDFFromLabels(packages, labelsData);
       
@@ -284,9 +243,9 @@ export function useMultipleLabelsPDF() {
         };
       }
       
-      console.log('✅ PDF con jsPDF nativo abierto para impresión');
+      console.log('✅ PDF abierto para impresión');
     } catch (error) {
-      console.error('❌ Error al generar PDF con jsPDF nativo para impresión:', error);
+      console.error('❌ Error al generar PDF para impresión:', error);
       throw error;
     }
   }, [generatePDFFromLabels]);

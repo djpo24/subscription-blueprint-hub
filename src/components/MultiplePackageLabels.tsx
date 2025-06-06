@@ -1,10 +1,10 @@
 
 import { useEffect, useState } from 'react';
-import { NewPackageLabel } from './package-labels/NewPackageLabel';
+import { PackageLabel } from './package-labels/PackageLabel';
+import { PackageLabelPreview } from './package-labels/PackageLabelPreview';
+import { PackageLabelPrintStyles } from './package-labels/PackageLabelPrintStyles';
 import { generateAllLabelsData, LabelData } from './package-labels/PackageLabelGenerator';
-import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useMultipleLabelsPDF } from '@/hooks/useMultipleLabelsPDF';
 
 interface Package {
   id: string;
@@ -15,13 +15,9 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
-  trip_id?: string;
   customers?: {
     name: string;
     email: string;
-  };
-  trip?: {
-    trip_date: string;
   };
 }
 
@@ -32,90 +28,22 @@ interface MultiplePackageLabelsProps {
 export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) {
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
-  const [packagesWithTripData, setPackagesWithTripData] = useState<Package[]>([]);
-  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+  const [isPrintingPDF, setIsPrintingPDF] = useState(false);
+  
+  const { printMultipleLabelsAsPDF } = useMultipleLabelsPDF();
 
   console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
-
-  useEffect(() => {
-    // Cargar los datos de los viajes para los paquetes
-    const fetchTripsData = async () => {
-      if (packages.length === 0) return;
-      
-      setIsLoadingTrips(true);
-      
-      try {
-        // Obtener los trip_ids únicos
-        const tripIds = [...new Set(packages
-          .filter(pkg => pkg.trip_id)
-          .map(pkg => pkg.trip_id))];
-        
-        if (tripIds.length === 0) {
-          console.log('⚠️ Ningún paquete tiene un viaje asociado');
-          setPackagesWithTripData(packages);
-          return;
-        }
-        
-        console.log('🚢 Obteniendo datos de viajes para', tripIds.length, 'viajes');
-        console.log('🚢 IDs de viajes:', tripIds);
-        
-        // Obtener los datos de los viajes en una sola consulta
-        const { data: tripsData, error } = await supabase
-          .from('trips')
-          .select('id, trip_date, origin, destination')
-          .in('id', tripIds);
-        
-        if (error) {
-          throw error;
-        }
-        
-        console.log('✅ Datos de viajes obtenidos:', tripsData?.length || 0);
-        console.log('📅 Fechas de viaje encontradas:', tripsData?.map(t => t.trip_date) || []);
-        
-        // Mapear los datos de los viajes a los paquetes
-        const enhancedPackages = packages.map(pkg => {
-          if (!pkg.trip_id) return pkg;
-          
-          const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
-          if (tripData) {
-            console.log(`📅 Encontrado fecha de viaje para paquete ${pkg.id}: ${tripData.trip_date}`);
-            console.log(`🛠️ Tipo de dato trip_date para paquete ${pkg.id}: ${typeof tripData.trip_date}`);
-            
-            // Importante: asegurarnos de que trip_date sea string
-            const tripDateString = String(tripData.trip_date);
-            console.log(`📅 Fecha de viaje convertida a string para paquete ${pkg.id}: ${tripDateString}`);
-            
-            return {
-              ...pkg,
-              trip: { trip_date: tripDateString }
-            };
-          }
-          return pkg;
-        });
-        
-        console.log('✅ Datos de viajes cargados para', enhancedPackages.length, 'paquetes');
-        setPackagesWithTripData(enhancedPackages);
-      } catch (error) {
-        console.error('❌ Error al obtener datos de viajes:', error);
-        setPackagesWithTripData(packages);
-      } finally {
-        setIsLoadingTrips(false);
-      }
-    };
-
-    fetchTripsData();
-  }, [packages]);
+  console.log('🏷️ MultiplePackageLabels - Package IDs:', packages.map(p => p.id));
 
   useEffect(() => {
     const generateLabelsData = async () => {
-      if (packagesWithTripData.length === 0) return;
-      
-      console.log('🔄 Generando labels data para', packagesWithTripData.length, 'paquetes con nuevo formato');
+      console.log('🔄 Generating labels data for', packages.length, 'packages');
       setIsGeneratingCodes(true);
       
       try {
-        const newLabelsData = await generateAllLabelsData(packagesWithTripData);
+        const newLabelsData = await generateAllLabelsData(packages);
         console.log('✅ Generated labels data:', newLabelsData.size, 'labels');
+        console.log('🗂️ Labels data keys:', Array.from(newLabelsData.keys()));
         setLabelsData(newLabelsData);
       } catch (error) {
         console.error('❌ Error generating labels data:', error);
@@ -124,114 +52,77 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       }
     };
 
-    if (packagesWithTripData.length > 0) {
+    if (packages.length > 0) {
       generateLabelsData();
     }
-  }, [packagesWithTripData]);
+  }, [packages]);
 
-  const handlePrint = () => {
-    console.log('🖨️ Printing', packagesWithTripData.length, 'labels with new format');
-    window.print();
+  const handlePrintPDF = async () => {
+    console.log('🖨️ Starting PDF print process for', packages.length, 'labels');
+    
+    if (isGeneratingCodes) {
+      console.log('⏳ Still generating codes, waiting...');
+      return;
+    }
+
+    if (isPrintingPDF) {
+      console.log('⏳ PDF generation in progress...');
+      return;
+    }
+
+    const missingLabels = packages.filter(pkg => !labelsData.has(pkg.id));
+    if (missingLabels.length > 0) {
+      console.error('❌ Missing label data for packages:', missingLabels.map(p => p.id));
+      return;
+    }
+
+    try {
+      setIsPrintingPDF(true);
+      await printMultipleLabelsAsPDF(packages, labelsData);
+      console.log('✅ PDF print process completed');
+    } catch (error) {
+      console.error('❌ Error printing PDF:', error);
+    } finally {
+      setIsPrintingPDF(false);
+    }
   };
 
-  if (isLoadingTrips || isGeneratingCodes) {
+  if (isGeneratingCodes) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>{isLoadingTrips ? 'Cargando datos de viajes...' : 'Generando códigos QR con nuevo formato...'}</p>
+          <p>Generando códigos QR y de barras...</p>
         </div>
       </div>
     );
   }
 
+  if (isPrintingPDF) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p>Generando PDF con {packages.length} etiquetas...</p>
+          <p className="text-sm text-gray-600 mt-2">Esto puede tomar unos segundos</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('🎨 Rendering MultiplePackageLabels with', packages.length, 'packages');
+
   return (
     <div className="multiple-labels-container">
       {/* Vista previa en pantalla */}
-      <div className="screen-only mb-4 p-4 border rounded-lg bg-white">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Printer className="h-5 w-5" />
-          Vista Previa - {packagesWithTripData.length} Etiquetas (Nuevo Formato)
-        </h3>
-        <div className="text-sm text-gray-600 mb-4">
-          Formato actualizado que coincide exactamente con la imagen de ejemplo
-        </div>
-        
-        <div className="space-y-4 overflow-y-auto">
-          {packagesWithTripData.map((pkg, index) => {
-            const labelData = labelsData.get(pkg.id);
-            
-            return (
-              <div key={pkg.id} className="border border-gray-300 bg-white p-4">
-                <div className="text-xs text-gray-500 mb-2">
-                  Etiqueta {index + 1} de {packagesWithTripData.length} - {pkg.tracking_number}
-                  {pkg.trip?.trip_date && (
-                    <span className="ml-2">- Fecha de viaje: {pkg.trip.trip_date}</span>
-                  )}
-                </div>
-                <div className="flex justify-center bg-gray-50 p-4">
-                  <NewPackageLabel 
-                    package={pkg}
-                    qrCodeDataUrl={labelData?.qrCodeDataUrl || ''}
-                    barcodeDataUrl={labelData?.barcodeDataUrl || ''}
-                    isPreview={true}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <PackageLabelPreview 
+        packages={packages}
+        labelsData={labelsData}
+        onPrint={handlePrintPDF}
+        isPDFMode={true}
+      />
 
-        <Button
-          onClick={handlePrint}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Printer className="h-4 w-4" />
-          Imprimir {packagesWithTripData.length} Etiqueta{packagesWithTripData.length !== 1 ? 's' : ''}
-        </Button>
-      </div>
-
-      {/* Etiquetas para impresión */}
-      <div className="print-only">
-        {packagesWithTripData.map((pkg) => {
-          const labelData = labelsData.get(pkg.id);
-          return (
-            <div key={pkg.id} style={{ pageBreakAfter: 'always' }}>
-              <NewPackageLabel 
-                package={pkg}
-                qrCodeDataUrl={labelData?.qrCodeDataUrl || ''}
-                barcodeDataUrl={labelData?.barcodeDataUrl || ''}
-                isPreview={false}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Estilos para impresión */}
-      <style>{`
-        @media screen {
-          .print-only { display: none; }
-          .screen-only { display: block; }
-        }
-        
-        @media print {
-          body * { visibility: hidden; }
-          .print-only, .print-only * { visibility: visible; }
-          .screen-only { display: none !important; }
-          .print-only {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-          }
-          @page {
-            size: 10cm 15cm;
-            margin: 0;
-          }
-        }
-      `}</style>
+      <PackageLabelPrintStyles />
     </div>
   );
 }

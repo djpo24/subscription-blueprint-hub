@@ -13,7 +13,7 @@ export function PackageDispatchBadge({ dispatchNumber, totalDispatches }: Packag
   }
 
   return (
-    <Badge variant="outline" className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border-blue-200">
+    <Badge variant="outline" className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border-purple-200 font-medium">
       <Package2 className="h-3 w-3" />
       Despacho {dispatchNumber}/{totalDispatches}
     </Badge>

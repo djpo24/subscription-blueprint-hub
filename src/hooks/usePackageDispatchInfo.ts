@@ -8,12 +8,15 @@ export function usePackageDispatchInfo(packageIds: string[]) {
     queryFn: async () => {
       if (packageIds.length === 0) return {};
       
+      console.log('🔍 Fetching dispatch info for packages:', packageIds);
+      
       // Obtener información de despachos para los paquetes
       const { data: dispatchPackages, error } = await supabase
         .from('dispatch_packages')
         .select(`
           package_id,
           dispatch_id,
+          created_at,
           dispatch_relations!inner (
             id,
             dispatch_date,
@@ -28,6 +31,8 @@ export function usePackageDispatchInfo(packageIds: string[]) {
         return {};
       }
 
+      console.log('📦 Dispatch packages data:', dispatchPackages);
+
       // Agrupar por paquete y calcular números de despacho
       const packageDispatchInfo: Record<string, { dispatchNumber: number; totalDispatches: number }> = {};
       
@@ -41,24 +46,29 @@ export function usePackageDispatchInfo(packageIds: string[]) {
         return acc;
       }, {} as Record<string, any[]>);
 
+      console.log('📊 Dispatches by package:', dispatchesByPackage);
+
       // Para cada paquete, determinar su número de despacho y total
       Object.entries(dispatchesByPackage).forEach(([packageId, dispatches]) => {
-        // Ordenar por fecha de creación
+        // Ordenar por fecha de creación del despacho
         dispatches.sort((a, b) => 
           new Date(a.dispatch_relations.created_at).getTime() - 
           new Date(b.dispatch_relations.created_at).getTime()
         );
 
-        // El número de despacho es la posición en el array + 1
-        const dispatchNumber = dispatches.length; // El último despacho al que fue asignado
+        // El número de despacho actual es la posición del último despacho + 1
+        const dispatchNumber = dispatches.length;
         const totalDispatches = dispatches.length;
 
         packageDispatchInfo[packageId] = {
           dispatchNumber,
           totalDispatches
         };
+
+        console.log(`📋 Package ${packageId}: Dispatch ${dispatchNumber}/${totalDispatches}`);
       });
 
+      console.log('✅ Final dispatch info:', packageDispatchInfo);
       return packageDispatchInfo;
     },
     enabled: packageIds.length > 0,

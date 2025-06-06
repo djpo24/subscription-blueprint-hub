@@ -57,6 +57,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         }
         
         console.log('🚢 Obteniendo datos de viajes para', tripIds.length, 'viajes');
+        console.log('🚢 IDs de viajes:', tripIds);
         
         // Obtener los datos de los viajes en una sola consulta
         const { data: tripsData, error } = await supabase
@@ -78,9 +79,15 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
           if (tripData) {
             console.log(`📅 Encontrado fecha de viaje para paquete ${pkg.id}: ${tripData.trip_date}`);
+            console.log(`🛠️ Tipo de dato trip_date para paquete ${pkg.id}: ${typeof tripData.trip_date}`);
+            
+            // Importante: asegurarnos de que trip_date sea string
+            const tripDateString = String(tripData.trip_date);
+            console.log(`📅 Fecha de viaje convertida a string para paquete ${pkg.id}: ${tripDateString}`);
+            
             return {
               ...pkg,
-              trip: { trip_date: tripData.trip_date }
+              trip: { trip_date: tripDateString }
             };
           }
           return pkg;
@@ -159,7 +166,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
                 <div className="text-xs text-gray-500 mb-2">
                   Etiqueta {index + 1} de {packagesWithTripData.length} - {pkg.tracking_number}
                   {pkg.trip?.trip_date && (
-                    <span className="ml-2">- Fecha de viaje: {new Date(pkg.trip.trip_date).toLocaleDateString()}</span>
+                    <span className="ml-2">- Fecha de viaje: {pkg.trip.trip_date}</span>
                   )}
                 </div>
                 <div className="flex justify-center bg-gray-50 p-4">

@@ -57,10 +57,15 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
         if (tripData) {
           console.log('🚢 Encontrado datos del viaje para etiqueta:', tripData);
           console.log('📅 Fecha del viaje RAW de la BD:', tripData.trip_date);
+          console.log('🛠️ Tipo de dato trip_date:', typeof tripData.trip_date);
+          
+          // Importante: asegurarnos de que trip_date sea string
+          const tripDateString = String(tripData.trip_date);
+          console.log('📅 Fecha del viaje convertida a string:', tripDateString);
           
           setPackageWithTripData(prevState => ({
             ...prevState,
-            trip: { trip_date: tripData.trip_date }
+            trip: { trip_date: tripDateString }
           }));
         }
       } catch (error) {

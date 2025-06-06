@@ -30,24 +30,41 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
-  // Verificar explícitamente si existe trip_date y es una cadena válida antes de usarla
-  const hasTripDate = pkg.trip?.trip_date && typeof pkg.trip.trip_date === 'string' && pkg.trip.trip_date.trim() !== '';
+  // Formato explícito para la fecha
+  let formattedTravelDate = '';
   
-  // Usar fecha del viaje si existe, de lo contrario usar fecha de creación
-  const travelDate = hasTripDate 
-    ? new Date(pkg.trip!.trip_date) 
-    : new Date(pkg.created_at);
-  
-  console.log(`📅 NewPackageLabel - Paquete ID: ${pkg.id}`);
-  console.log(`📅 NewPackageLabel - ¿Tiene fecha de viaje?: ${hasTripDate ? 'SÍ' : 'NO'}`);
-  if (hasTripDate) {
-    console.log(`📅 NewPackageLabel - Fecha de viaje raw: ${pkg.trip!.trip_date}`);
+  // Verificación simple: usar directamente trip_date si existe
+  if (pkg.trip && pkg.trip.trip_date) {
+    try {
+      // Convertir la fecha de ISO a objeto Date
+      const tripDate = new Date(pkg.trip.trip_date);
+      
+      // Verificar que sea una fecha válida
+      if (!isNaN(tripDate.getTime())) {
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        formattedTravelDate = `${monthNames[tripDate.getMonth()]} ${tripDate.getDate()}/${tripDate.getFullYear().toString().slice(2)}`;
+        console.log(`✅ Fecha de viaje formateada: ${formattedTravelDate}`);
+      } else {
+        // Fecha inválida - usar fallback
+        const fallbackDate = new Date();
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
+        console.log(`⚠️ Fecha de viaje inválida, usando actual: ${formattedTravelDate}`);
+      }
+    } catch (e) {
+      // Error al procesar la fecha - usar fallback
+      const fallbackDate = new Date();
+      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
+      console.log(`❌ Error al procesar fecha de viaje: ${e}`);
+    }
+  } else {
+    // No hay fecha de viaje - usar fecha actual
+    const fallbackDate = new Date();
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
+    console.log(`⚠️ No hay fecha de viaje, usando actual: ${formattedTravelDate}`);
   }
-  console.log(`📅 NewPackageLabel - Fecha utilizada: ${travelDate.toISOString()}`);
-  console.log(`📅 NewPackageLabel - Fuente de fecha: ${hasTripDate ? 'Fecha del VIAJE' : 'Fecha de CREACIÓN'}`);
-  
-  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-  const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;
   
   const baseStyles = {
     width: '10cm',

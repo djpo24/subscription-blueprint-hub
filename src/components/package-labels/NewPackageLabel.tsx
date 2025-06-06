@@ -18,6 +18,8 @@ interface Package {
   trip?: {
     trip_date: string;
   };
+  amount_to_collect?: number;
+  currency?: 'COP' | 'AWG';
 }
 
 interface NewPackageLabelProps {
@@ -33,38 +35,51 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
   // Formato explícito para la fecha
   let formattedTravelDate = '';
   
-  // Verificación simple: usar directamente trip_date si existe
   if (pkg.trip && pkg.trip.trip_date) {
     try {
-      // Convertir la fecha de ISO a objeto Date
       const tripDate = new Date(pkg.trip.trip_date);
       
-      // Verificar que sea una fecha válida
       if (!isNaN(tripDate.getTime())) {
         const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         formattedTravelDate = `${monthNames[tripDate.getMonth()]} ${tripDate.getDate()}/${tripDate.getFullYear().toString().slice(2)}`;
         console.log(`✅ Fecha de viaje formateada: ${formattedTravelDate}`);
       } else {
-        // Fecha inválida - usar fallback
         const fallbackDate = new Date();
         const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
         console.log(`⚠️ Fecha de viaje inválida, usando actual: ${formattedTravelDate}`);
       }
     } catch (e) {
-      // Error al procesar la fecha - usar fallback
       const fallbackDate = new Date();
       const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
       formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
       console.log(`❌ Error al procesar fecha de viaje: ${e}`);
     }
   } else {
-    // No hay fecha de viaje - usar fecha actual
     const fallbackDate = new Date();
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     formattedTravelDate = `${monthNames[fallbackDate.getMonth()]} ${fallbackDate.getDate()}/${fallbackDate.getFullYear().toString().slice(2)}`;
     console.log(`⚠️ No hay fecha de viaje, usando actual: ${formattedTravelDate}`);
   }
+
+  // Format amount to collect with proper currency symbol
+  const formatAmountToCollect = () => {
+    if (!pkg.amount_to_collect || pkg.amount_to_collect === 0) {
+      return 'Total: $0';
+    }
+    
+    const symbol = pkg.currency === 'AWG' ? 'ƒ' : '$';
+    const formattedAmount = pkg.amount_to_collect.toLocaleString('es-CO');
+    return `Total: ${symbol}${formattedAmount}`;
+  };
+
+  // Format weight
+  const formatWeight = () => {
+    if (!pkg.weight) {
+      return 'Peso: N/A';
+    }
+    return `Peso: ${pkg.weight}kg`;
+  };
   
   const baseStyles = {
     width: '10cm',
@@ -157,8 +172,23 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         <div style={{ marginBottom: '8px' }}>
           <strong>Tracking:</strong> {pkg.tracking_number}
         </div>
-        <div style={{ marginBottom: '8px' }}>
-          <strong>Cliente:</strong> {pkg.customers?.name || 'CLIENTE'}
+        {/* Peso a la izquierda y monto a cobrar a la derecha */}
+        <div style={{ 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '8px',
+          fontSize: '16px'
+        }}>
+          <span style={{ textAlign: 'left' }}>
+            {formatWeight()}
+          </span>
+          <span style={{ 
+            textAlign: 'right',
+            fontWeight: 'bold'
+          }}>
+            {formatAmountToCollect()}
+          </span>
         </div>
         <div style={{ 
           textAlign: 'center', 

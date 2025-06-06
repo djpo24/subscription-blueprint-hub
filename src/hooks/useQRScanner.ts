@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { BrowserQRCodeReader } from '@zxing/browser';
 
@@ -207,11 +206,10 @@ export function useQRScanner() {
       const abortController = new AbortController();
       scanningAbortController.current = abortController;
 
-      // Configurar QR code reader con mejores opciones
+      // Configurar QR code reader con mejores opciones - removing unsupported tryHarder option
       const codeReader = new BrowserQRCodeReader(undefined, {
         delayBetweenScanAttempts: 100, // Reducir delay para scanning más rápido
-        delayBetweenScanSuccess: 500, // Delay después de escaneo exitoso
-        tryHarder: true // Intentar más duro para detectar códigos
+        delayBetweenScanSuccess: 500 // Delay después de escaneo exitoso
       });
       codeReaderRef.current = codeReader;
 

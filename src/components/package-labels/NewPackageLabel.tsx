@@ -151,7 +151,7 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         </div>
       </div>
 
-      {/* QR Code Section - Large and centered like in the example */}
+      {/* QR Code Section - Reduced size to 180px */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -171,8 +171,8 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
               src={qrCodeDataUrl} 
               alt="QR Code" 
               style={{
-                width: '200px',
-                height: '200px',
+                width: '180px',
+                height: '180px',
                 display: 'block'
               }}
             />

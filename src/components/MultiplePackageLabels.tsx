@@ -68,6 +68,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         
         const tripData = tripsData?.find(trip => trip.id === pkg.trip_id);
         if (tripData) {
+          console.log(`📅 Encontrado fecha de viaje para paquete ${pkg.id}: ${tripData.trip_date}`);
           return {
             ...pkg,
             trip: { trip_date: tripData.trip_date }
@@ -141,6 +142,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
               <div key={pkg.id} className="border border-gray-300 bg-white p-4">
                 <div className="text-xs text-gray-500 mb-2">
                   Etiqueta {index + 1} de {packagesWithTripData.length} - {pkg.tracking_number}
+                  {pkg.trip?.trip_date && <span className="ml-2">- Fecha de viaje: {new Date(pkg.trip.trip_date).toLocaleDateString()}</span>}
                 </div>
                 <div className="flex justify-center bg-gray-50 p-4">
                   <NewPackageLabel 

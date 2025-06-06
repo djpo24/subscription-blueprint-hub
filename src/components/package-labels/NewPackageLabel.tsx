@@ -30,10 +30,12 @@ interface NewPackageLabelProps {
 export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, isPreview = false }: NewPackageLabelProps) {
   const scale = isPreview ? 0.6 : 1;
   
-  // Obtener la fecha del viaje si está disponible, de lo contrario usar la fecha de creación del paquete
+  // Verificar si tenemos una fecha de viaje y usar esa, de lo contrario usar la fecha de creación
   const travelDate = pkg.trip?.trip_date 
     ? new Date(pkg.trip.trip_date) 
     : new Date(pkg.created_at);
+  
+  console.log(`📅 NewPackageLabel - Usando fecha: ${travelDate.toISOString()} (de ${pkg.trip?.trip_date ? 'viaje' : 'creación'})`);
   
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   const formattedTravelDate = `${monthNames[travelDate.getMonth()]} ${travelDate.getDate()}/${travelDate.getFullYear().toString().slice(2)}`;

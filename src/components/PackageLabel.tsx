@@ -35,6 +35,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
     // Si el paquete tiene un trip_id, obtener los datos del viaje
     const fetchTripData = async () => {
       if (pkg.trip_id) {
+        console.log('🚢 Obteniendo datos del viaje para etiqueta. Trip ID:', pkg.trip_id);
         const { data: tripData, error } = await supabase
           .from('trips')
           .select('trip_date')
@@ -59,6 +60,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
 
   console.log('🏷️ PackageLabel rendering for package:', pkg.id);
   console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
+  console.log('📅 Trip date:', packageWithTripData.trip?.trip_date || 'No disponible');
 
   const handlePrint = () => {
     console.log('🖨️ Printing single label for package:', pkg.id);

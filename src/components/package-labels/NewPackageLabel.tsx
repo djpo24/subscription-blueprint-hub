@@ -62,20 +62,25 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         }}>
           ENVIOS OJITO
         </h1>
-        <p style={{
+        {/* Nombre del cliente y fecha del viaje en la misma línea */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           fontSize: '18px',
-          margin: '0',
+          margin: '5px 0',
           color: '#666'
         }}>
-          {pkg.customers?.name || 'CLIENTE'}
-        </p>
-        <p style={{
-          fontSize: '16px',
-          margin: '5px 0 0 0',
-          color: '#666'
-        }}>
-          Fecha del viaje: {formattedTravelDate}
-        </p>
+          <span style={{ fontWeight: 'normal' }}>
+            {pkg.customers?.name || 'CLIENTE'}
+          </span>
+          <span style={{ 
+            fontSize: '16px',
+            fontWeight: 'normal'
+          }}>
+            {formattedTravelDate}
+          </span>
+        </div>
       </div>
 
       {/* QR Code Section - Large and centered like in the example */}

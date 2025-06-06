@@ -23,6 +23,10 @@ interface PackageLabelPreviewCardProps {
 }
 
 export function PackageLabelPreviewCard({ package: pkg, qrCodeDataUrl, barcodeDataUrl }: PackageLabelPreviewCardProps) {
+  console.log('🔄 Rendering preview card with NEW format for package:', pkg.id);
+  console.log('📊 Barcode data available:', barcodeDataUrl ? 'Yes' : 'No');
+  console.log('📱 QR Code data available:', qrCodeDataUrl ? 'Yes' : 'No');
+
   return (
     <div className="label-preview border-2 border-gray-300 bg-white p-3" style={{ 
       width: '200px', 
@@ -31,7 +35,7 @@ export function PackageLabelPreviewCard({ package: pkg, qrCodeDataUrl, barcodeDa
       transformOrigin: 'top left'
     }}>
       <div className="h-full flex flex-col border border-black">
-        {/* Header superior estilo USPS */}
+        {/* Header superior estilo actualizado */}
         <div className="bg-white p-2 border-b border-black">
           <div className="flex justify-between items-start text-xs">
             <div>

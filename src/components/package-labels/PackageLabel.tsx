@@ -24,6 +24,9 @@ interface PackageLabelProps {
 }
 
 export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
+  console.log('🔄 Rendering PackageLabel with new format for package:', pkg.id);
+  console.log('🧩 Label data available:', labelData ? 'Yes' : 'No');
+  
   const baseStyles = {
     width: isPrintMode ? 'auto' : '10cm',
     height: isPrintMode ? 'auto' : '15cm',

@@ -23,6 +23,8 @@ interface PackageLabelPrintProps {
 }
 
 export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl }: PackageLabelPrintProps) {
+  console.log('🖨️ Rendering print version with UPDATED format for package:', pkg.id);
+  
   return (
     <div className="label-print" style={{
       width: '10cm',
@@ -62,7 +64,7 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
         padding: '8px', 
         borderBottom: '2px solid #000'
       }}>
-        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>ENCOMIENDA EXPRESS</div>
       </div>
 
       {/* Información del remitente y destinatario */}

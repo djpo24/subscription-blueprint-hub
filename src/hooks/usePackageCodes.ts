@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 
@@ -22,13 +22,24 @@ export function usePackageCodes(pkg: Package) {
   const barcodeCanvasRef = useRef<HTMLCanvasElement>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [barcodeDataUrl, setBarcodeDataUrl] = useState<string>('');
+  
+  // Añadir un ID de renderizado para forzar la regeneración
+  const renderIdRef = useRef(new Date().getTime());
+
+  // Crear una función para forzar la regeneración
+  const regenerateCodes = useCallback(() => {
+    console.log('🔄 Forzando REGENERACIÓN de códigos para formato actualizado');
+    renderIdRef.current = new Date().getTime();
+    setQrCodeDataUrl('');
+    setBarcodeDataUrl('');
+  }, []);
 
   useEffect(() => {
     const generateQRCode = async () => {
       try {
-        console.log('🔄 Generating FRESH QR code for package:', pkg.id);
+        console.log('🚨 Generando QR con FORMATO ACTUALIZADO para paquete:', pkg.id);
         
-        // Usar el MISMO formato exacto que el QR de prueba para móvil
+        // Usar EXACTAMENTE el mismo formato que el QR de prueba para móvil
         const qrData = {
           id: pkg.id,
           tracking: pkg.tracking_number,
@@ -37,7 +48,7 @@ export function usePackageCodes(pkg: Package) {
           action: 'package_scan'
         };
 
-        console.log('📱 QR Data for individual package:', qrData);
+        console.log('📱 Datos para QR con formato actualizado:', JSON.stringify(qrData));
 
         const qrDataString = JSON.stringify(qrData);
         const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -49,16 +60,16 @@ export function usePackageCodes(pkg: Package) {
           }
         });
         
-        console.log('✅ Individual QR code generated, size:', qrCodeUrl.length, 'chars');
+        console.log('✅ QR generado con formato ACTUALIZADO, tamaño:', qrCodeUrl.length);
         setQrCodeDataUrl(qrCodeUrl);
       } catch (error) {
-        console.error('❌ Error generating individual QR code:', error);
+        console.error('❌ Error generando QR con formato actualizado:', error);
       }
     };
 
     const generateBarcode = () => {
       try {
-        console.log('🔄 Generating FRESH barcode for package:', pkg.id);
+        console.log('🔄 Generando código de barras para formato actualizado:', pkg.id);
         
         if (barcodeCanvasRef.current) {
           JsBarcode(barcodeCanvasRef.current, pkg.tracking_number, {
@@ -71,25 +82,33 @@ export function usePackageCodes(pkg: Package) {
           });
           
           const barcodeUrl = barcodeCanvasRef.current.toDataURL();
-          console.log('✅ Individual barcode generated, size:', barcodeUrl.length, 'chars');
+          console.log('✅ Código de barras generado con formato actualizado');
           setBarcodeDataUrl(barcodeUrl);
         }
       } catch (error) {
-        console.error('❌ Error generating individual barcode:', error);
+        console.error('❌ Error generando código de barras:', error);
       }
     };
 
-    // Limpiar estados anteriores para forzar regeneración
+    // Generar nuevos códigos siempre para garantizar formato actualizado
+    console.log('🧹 Limpiando estados anteriores para forzar regeneración con formato actualizado');
     setQrCodeDataUrl('');
     setBarcodeDataUrl('');
     
-    generateQRCode();
-    generateBarcode();
-  }, [pkg]);
+    // Pequeño retraso para asegurar que la limpieza se complete
+    const timer = setTimeout(() => {
+      generateQRCode();
+      generateBarcode();
+      console.log('🎯 Regeneración con formato actualizado completada, render ID:', renderIdRef.current);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [pkg, renderIdRef.current]);
 
   return {
     barcodeCanvasRef,
     qrCodeDataUrl,
-    barcodeDataUrl
+    barcodeDataUrl,
+    regenerateCodes
   };
 }

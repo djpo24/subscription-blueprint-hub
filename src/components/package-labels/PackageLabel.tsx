@@ -79,12 +79,12 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* Segunda línea - Cliente y fecha */}
+      {/* Segunda línea - Cliente y fecha - reducido espacio inferior */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: '24px',
+        marginBottom: '8px',
         fontSize: isPrintMode ? '14px' : '12px'
       }}>
         <div style={{ color: '#666' }}>
@@ -95,12 +95,12 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* QR Code centrado con marco - aumentado 20px */}
+      {/* QR Code centrado con marco - espacios mínimos arriba y abajo */}
       <div style={{ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: '32px',
+        marginBottom: '8px',
         padding: '12px',
         border: '2px solid #ddd',
         borderRadius: '8px',
@@ -118,9 +118,9 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         )}
       </div>
 
-      {/* Peso y Total en líneas separadas */}
+      {/* Peso y Total en líneas separadas - reducido espacio superior */}
       <div style={{ 
-        marginBottom: '20px',
+        marginBottom: '12px',
         fontSize: isPrintMode ? '16px' : '14px'
       }}>
         <div style={{ 
@@ -141,12 +141,12 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* Texto informativo centrado */}
+      {/* Texto informativo centrado - reducido espacio superior */}
       <div style={{ 
         textAlign: 'center',
         fontSize: isPrintMode ? '11px' : '9px',
         lineHeight: '1.2',
-        marginBottom: '16px',
+        marginBottom: '12px',
         fontWeight: 'bold'
       }}>
         <div>Toda encomienda debe ser verificada en el local al</div>

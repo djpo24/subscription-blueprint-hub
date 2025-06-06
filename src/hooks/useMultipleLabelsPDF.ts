@@ -102,7 +102,7 @@ export function useMultipleLabelsPDF() {
 
       currentY += 6;
 
-      // Segunda línea - Cliente y fecha
+      // Segunda línea - Cliente y fecha - reducido espacio
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(100, 100, 100);
@@ -113,9 +113,9 @@ export function useMultipleLabelsPDF() {
       const dateWidth = pdf.getTextWidth(dateText);
       pdf.text(dateText, startX + labelWidth - dateWidth - 5, currentY);
 
-      currentY += 18;
+      currentY += 6;
 
-      // QR Code centrado con marco - aumentado de 35mm a 42mm (aproximadamente 7mm más, equivalente a 20px)
+      // QR Code centrado con marco - espacios mínimos
       const qrSize = 42;
       const qrX = startX + (labelWidth - qrSize) / 2;
       
@@ -139,9 +139,9 @@ export function useMultipleLabelsPDF() {
         console.error('Error agregando QR code:', error);
       }
 
-      currentY += qrSize + 18;
+      currentY += qrSize + 6;
 
-      // Peso (izquierda)
+      // Peso (izquierda) - reducido espacio superior
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
@@ -164,9 +164,9 @@ export function useMultipleLabelsPDF() {
       const totalWidth = pdf.getTextWidth(totalText);
       pdf.text(totalText, startX + labelWidth - totalWidth - 5, currentY);
 
-      currentY += 16;
+      currentY += 10;
 
-      // Texto informativo centrado
+      // Texto informativo centrado - reducido espacio superior
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 0, 0);
@@ -186,9 +186,9 @@ export function useMultipleLabelsPDF() {
       infoWidth = pdf.getTextWidth(infoText3);
       pdf.text(infoText3, startX + (labelWidth - infoWidth) / 2, currentY);
 
-      currentY += 12;
+      currentY += 10;
 
-      // Direcciones centradas
+      // Direcciones centradas - reducido espacio superior
       pdf.setFontSize(6.5);
       pdf.setTextColor(0, 0, 0);
       

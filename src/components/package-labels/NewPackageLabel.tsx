@@ -151,14 +151,14 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         </div>
       </div>
 
-      {/* QR Code Section - Reduced size to 180px */}
+      {/* QR Code Section - Reduced padding above and below */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '10px 30px',
+        padding: '5px 30px',
         flexGrow: 1,
-        minHeight: '300px'
+        minHeight: '200px'
       }}>
         {qrCodeDataUrl && (
           <div style={{

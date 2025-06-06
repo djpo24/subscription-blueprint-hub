@@ -12,6 +12,7 @@ interface Package {
   description: string;
   weight: number | null;
   amount_to_collect?: number | null;
+  currency?: string;
   customers?: {
     name: string;
     email: string;
@@ -32,6 +33,10 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount).replace('COP', '').trim();
+  };
+
+  const getCurrencySymbol = (currency?: string) => {
+    return currency === 'AWG' ? 'ƒ' : '$';
   };
 
   const baseStyles = {
@@ -118,26 +123,19 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         )}
       </div>
 
-      {/* Peso y Total en líneas separadas - reducido espacio superior */}
+      {/* Peso y Total en la misma línea - peso izquierda, total derecha */}
       <div style={{ 
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: '12px',
         fontSize: isPrintMode ? '16px' : '14px'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'flex-start',
-          marginBottom: '8px'
-        }}>
-          <span style={{ fontWeight: 'bold' }}>Peso: </span>
-          <span>{pkg.weight ? `${pkg.weight}kg` : '3kg'}</span>
+        <div style={{ fontWeight: 'bold' }}>
+          Peso: {pkg.weight ? `${pkg.weight}kg` : '3kg'}
         </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'flex-end',
-          fontSize: isPrintMode ? '18px' : '16px',
-          fontWeight: 'bold'
-        }}>
-          <span>Total: ₡{pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.543.545'}</span>
+        <div style={{ fontWeight: 'bold' }}>
+          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.543.545'}
         </div>
       </div>
 

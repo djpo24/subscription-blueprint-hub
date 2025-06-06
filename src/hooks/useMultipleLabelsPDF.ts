@@ -12,6 +12,7 @@ interface Package {
   description: string;
   weight: number | null;
   amount_to_collect?: number | null;
+  currency?: string;
   customers?: {
     name: string;
     email: string;
@@ -31,6 +32,10 @@ export function useMultipleLabelsPDF() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount).replace('COP', '').trim();
+  };
+
+  const getCurrencySymbol = (currency?: string) => {
+    return currency === 'AWG' ? 'ƒ' : '$';
   };
 
   const formatDate = (dateString: string) => {
@@ -141,26 +146,19 @@ export function useMultipleLabelsPDF() {
 
       currentY += qrSize + 6;
 
-      // Peso (izquierda) - reducido espacio superior
+      // Peso y Total en la misma línea - peso izquierda, total derecha
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
-      const pesoLabel = 'Peso: ';
-      pdf.text(pesoLabel, startX + 5, currentY);
       
-      pdf.setFont('helvetica', 'normal');
-      const pesoValue = pkg.weight ? `${pkg.weight}kg` : '5kg';
-      const pesoLabelWidth = pdf.getTextWidth(pesoLabel);
-      pdf.text(pesoValue, startX + 5 + pesoLabelWidth, currentY);
-
-      currentY += 8;
-
+      // Peso (izquierda)
+      const pesoText = `Peso: ${pkg.weight ? `${pkg.weight}kg` : '3kg'}`;
+      pdf.text(pesoText, startX + 5, currentY);
+      
       // Total (derecha)
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
       const totalAmount = pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.354.435';
-      const totalText = `Total: ¡$${totalAmount}`;
+      const currencySymbol = getCurrencySymbol(pkg.currency);
+      const totalText = `Total: ${currencySymbol}${totalAmount}`;
       const totalWidth = pdf.getTextWidth(totalText);
       pdf.text(totalText, startX + labelWidth - totalWidth - 5, currentY);
 

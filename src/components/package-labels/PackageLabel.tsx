@@ -25,15 +25,15 @@ interface PackageLabelProps {
 
 export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
   const baseStyles = {
-    width: isPrintMode ? '100%' : '4in',
-    height: isPrintMode ? '100%' : '6in',
+    width: '10cm',
+    height: '15cm',
     backgroundColor: 'white',
     color: 'black',
     fontSize: '12px',
     fontFamily: 'Arial, sans-serif',
     display: 'flex',
     flexDirection: 'column' as const,
-    border: isPrintMode ? 'none' : '2px solid #000',
+    border: '2px solid #000',
     margin: '0',
     padding: '0',
     boxSizing: 'border-box' as const

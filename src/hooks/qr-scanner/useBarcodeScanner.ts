@@ -30,11 +30,15 @@ export function useBarcodeScanner() {
       if (barcodeResult && continuousScanRef.current) {
         console.log('🔊 Thermal printer Barcode successfully detected:', barcodeResult.getText());
         
-        // Reproducir sonido de éxito cuando se detecta un código
+        // Detener el escaneo primero
+        stopScanning();
+        
+        // Reproducir sonido de éxito DESPUÉS de detener el escaneo
+        console.log('🔊 Playing success sound...');
         await playSuccessBeep();
         
+        // Llamar al callback después del sonido
         onCodeScanned(barcodeResult.getText());
-        stopScanning();
         return;
       }
     } catch (barcodeError: any) {
@@ -46,11 +50,15 @@ export function useBarcodeScanner() {
         if (qrResult && continuousScanRef.current) {
           console.log('🔊 Thermal printer QR Code successfully detected as fallback:', qrResult.getText());
           
-          // Reproducir sonido de éxito cuando se detecta un QR
+          // Detener el escaneo primero
+          stopScanning();
+          
+          // Reproducir sonido de éxito DESPUÉS de detener el escaneo
+          console.log('🔊 Playing success sound for QR...');
           await playSuccessBeep();
           
+          // Llamar al callback después del sonido
           onCodeScanned(qrResult.getText());
-          stopScanning();
           return;
         }
       } catch (qrError: any) {
@@ -130,15 +138,24 @@ export function useBarcodeScanner() {
     qrCodeReaderRef.current = null;
     barcodeReaderRef.current = null;
     
-    // Limpiar recursos de audio
-    cleanupSounds();
-    
     setIsScanning(false);
+    
+    // NO limpiar recursos de audio inmediatamente - darle tiempo al sonido
+    // El cleanup se hará después cuando se necesite o cuando el componente se desmonte
+  };
+
+  const cleanup = () => {
+    stopScanning();
+    // Limpiar recursos de audio con un pequeño delay para permitir que termine el sonido
+    setTimeout(() => {
+      cleanupSounds();
+    }, 500);
   };
 
   return {
     isScanning,
     startScanning,
-    stopScanning
+    stopScanning,
+    cleanup
   };
 }

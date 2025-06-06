@@ -8,6 +8,7 @@ export function useScannerSounds() {
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🎵 AudioContext creado:', audioContextRef.current.state);
     }
     return audioContextRef.current;
   }, []);
@@ -15,7 +16,16 @@ export function useScannerSounds() {
   // Función para crear el sonido característico de escáner de supermercado
   const playSuccessBeep = useCallback(async () => {
     try {
+      console.log('🔊 Iniciando reproducción de sonido de escáner...');
       const audioContext = getAudioContext();
+      
+      // Asegurar que el contexto esté activo
+      if (audioContext.state === 'suspended') {
+        console.log('🎵 Reactivando AudioContext suspendido...');
+        await audioContext.resume();
+      }
+      
+      console.log('🎵 AudioContext state:', audioContext.state);
       
       // Crear un oscilador para el sonido de beep
       const oscillator = audioContext.createOscillator();
@@ -31,14 +41,26 @@ export function useScannerSounds() {
       
       // Configurar el volumen con fade in/out rápido
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01); // Fade in rápido
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.15); // Fade out
+      gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.01); // Volume más alto
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2); // Fade out más largo
       
-      // Reproducir el sonido por 150ms (típico de escáneres)
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.15);
+      // Reproducir el sonido por 200ms (más duración para asegurar que se escuche)
+      const startTime = audioContext.currentTime;
+      const duration = 0.2;
       
-      console.log('🔊 Sonido de escáner reproducido exitosamente');
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+      
+      console.log('🔊 Sonido de escáner programado - inicio:', startTime, 'duración:', duration);
+      
+      // Esperar a que termine el sonido
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log('🔊 Sonido de escáner completado');
+          resolve();
+        }, duration * 1000 + 50); // Agregar 50ms extra
+      });
+      
     } catch (error) {
       console.error('❌ Error al reproducir sonido de escáner:', error);
     }
@@ -47,7 +69,13 @@ export function useScannerSounds() {
   // Función para crear sonido de error (opcional)
   const playErrorBeep = useCallback(async () => {
     try {
+      console.log('🔊 Iniciando reproducción de sonido de error...');
       const audioContext = getAudioContext();
+      
+      // Asegurar que el contexto esté activo
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -60,13 +88,25 @@ export function useScannerSounds() {
       oscillator.type = 'sawtooth'; // Onda diente de sierra para sonido más áspero
       
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.01);
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.4);
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      const startTime = audioContext.currentTime;
+      const duration = 0.4;
       
-      console.log('🔊 Sonido de error reproducido');
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+      
+      console.log('🔊 Sonido de error programado');
+      
+      // Esperar a que termine el sonido
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log('🔊 Sonido de error completado');
+          resolve();
+        }, duration * 1000 + 50);
+      });
+      
     } catch (error) {
       console.error('❌ Error al reproducir sonido de error:', error);
     }
@@ -74,9 +114,11 @@ export function useScannerSounds() {
 
   // Función para limpiar recursos
   const cleanup = useCallback(() => {
+    console.log('🎵 Limpiando recursos de audio...');
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
       audioContextRef.current = null;
+      console.log('🎵 AudioContext cerrado');
     }
   }, []);
 

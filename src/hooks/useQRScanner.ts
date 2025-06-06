@@ -18,13 +18,14 @@ export function useQRScanner() {
     videoRef,
     streamRef,
     startVideoStream,
-    cleanup
+    cleanup: cleanupVideo
   } = useCameraStream();
 
   const {
     isScanning,
     startScanning: startBarcodeScanning,
-    stopScanning
+    stopScanning,
+    cleanup: cleanupScanner
   } = useBarcodeScanner();
 
   const switchCamera = async () => {
@@ -63,6 +64,12 @@ export function useQRScanner() {
     }
   };
 
+  // Cleanup function that properly handles all resources
+  const cleanup = () => {
+    cleanupScanner();
+    cleanupVideo();
+  };
+
   // Start video stream when camera changes
   useEffect(() => {
     if (availableCameras.length > 0 && hasPermission) {
@@ -75,6 +82,13 @@ export function useQRScanner() {
       }
     }
   }, [currentCameraIndex, availableCameras, hasPermission]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   return {
     hasPermission,

@@ -25,8 +25,8 @@ export function usePackagePaymentsByTrip(tripId: string) {
 
       const packageIds = packages.map(pkg => pkg.id);
 
-      // Obtener pagos realizados para estos paquetes
-      const { data: deliveryPayments, error: paymentsError } = await supabase
+      // Obtener pagos realizados para estos paquetes desde delivery_payments
+      const { data: deliveryPayments, error: deliveryPaymentsError } = await supabase
         .from('delivery_payments')
         .select(`
           amount,
@@ -36,15 +36,38 @@ export function usePackagePaymentsByTrip(tripId: string) {
         `)
         .in('package_deliveries.package_id', packageIds);
 
-      if (paymentsError) {
-        console.error('❌ Error fetching payments:', paymentsError);
-        throw paymentsError;
+      if (deliveryPaymentsError) {
+        console.error('❌ Error fetching delivery payments:', deliveryPaymentsError);
+        throw deliveryPaymentsError;
+      }
+
+      // Obtener pagos adicionales desde package_payments
+      const { data: packagePayments, error: packagePaymentsError } = await supabase
+        .from('package_payments')
+        .select('amount, package_id')
+        .in('package_id', packageIds);
+
+      if (packagePaymentsError) {
+        console.error('❌ Error fetching package payments:', packagePaymentsError);
+        throw packagePaymentsError;
       }
 
       // Calcular montos cobrados por moneda
       const collectedByCurrency: Record<string, number> = {};
+
+      // Sumar pagos de delivery_payments
       (deliveryPayments || []).forEach(payment => {
         const currency = payment.currency || 'COP';
+        if (!collectedByCurrency[currency]) {
+          collectedByCurrency[currency] = 0;
+        }
+        collectedByCurrency[currency] += payment.amount;
+      });
+
+      // Sumar pagos de package_payments (asumiendo que están en la misma moneda del paquete)
+      (packagePayments || []).forEach(payment => {
+        const packageData = packages.find(pkg => pkg.id === payment.package_id);
+        const currency = packageData?.currency || 'COP';
         if (!collectedByCurrency[currency]) {
           collectedByCurrency[currency] = 0;
         }
@@ -61,12 +84,17 @@ export function usePackagePaymentsByTrip(tripId: string) {
           }
           
           // Obtener cuánto se ha pagado de este paquete específico
-          const packagePayments = (deliveryPayments || [])
+          const deliveryPaymentsForPackage = (deliveryPayments || [])
             .filter(payment => payment.package_deliveries?.package_id === pkg.id);
           
-          const totalPaid = packagePayments.reduce((sum, payment) => sum + payment.amount, 0);
-          const pending = Math.max(0, pkg.amount_to_collect - totalPaid);
+          const packagePaymentsForPackage = (packagePayments || [])
+            .filter(payment => payment.package_id === pkg.id);
           
+          const totalPaidFromDelivery = deliveryPaymentsForPackage.reduce((sum, payment) => sum + payment.amount, 0);
+          const totalPaidFromPackage = packagePaymentsForPackage.reduce((sum, payment) => sum + payment.amount, 0);
+          const totalPaid = totalPaidFromDelivery + totalPaidFromPackage;
+          
+          const pending = Math.max(0, pkg.amount_to_collect - totalPaid);
           pendingByCurrency[currency] += pending;
         }
       });

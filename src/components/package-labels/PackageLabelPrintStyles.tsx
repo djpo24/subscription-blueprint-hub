@@ -23,16 +23,17 @@ export function PackageLabelPrintStyles() {
         }
         
         .print-container, .print-container * {
-          visibility: visible;
+          visibility: visible !important;
         }
         
         .print-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          display: block;
+          position: static !important;
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
         }
         
         .screen-only {

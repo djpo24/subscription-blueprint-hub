@@ -23,7 +23,10 @@ export interface LabelData {
 }
 
 export async function generateLabelData(pkg: Package): Promise<LabelData> {
-  // Generate QR Code usando el mismo formato del QR de prueba
+  console.log('🏷️ Generating FRESH label data for package:', pkg.id);
+  console.log('📝 Using updated format consistent with mobile QR test');
+  
+  // Generate QR Code usando el MISMO formato exacto del QR de prueba móvil
   const qrData = {
     id: pkg.id,
     tracking: pkg.tracking_number,
@@ -31,6 +34,8 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     status: pkg.status,
     action: 'package_scan'
   };
+
+  console.log('📱 QR Data for package', pkg.id, ':', qrData);
 
   const qrDataString = JSON.stringify(qrData);
   const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -41,6 +46,8 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
       light: '#FFFFFF'
     }
   });
+
+  console.log('✅ QR Code generated for package', pkg.id, 'Size:', qrCodeUrl.length, 'chars');
 
   // Generate Barcode
   const canvas = document.createElement('canvas');
@@ -54,6 +61,8 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
   });
   const barcodeUrl = canvas.toDataURL();
 
+  console.log('✅ Barcode generated for package', pkg.id, 'Size:', barcodeUrl.length, 'chars');
+
   return {
     qrCodeDataUrl: qrCodeUrl,
     barcodeDataUrl: barcodeUrl
@@ -61,16 +70,20 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
 }
 
 export async function generateAllLabelsData(packages: Package[]): Promise<Map<string, LabelData>> {
+  console.log('🔄 Starting FRESH generation for', packages.length, 'packages');
   const labelsData = new Map<string, LabelData>();
 
   for (const pkg of packages) {
     try {
+      console.log('🏷️ Processing package', pkg.id, '- Tracking:', pkg.tracking_number);
       const labelData = await generateLabelData(pkg);
       labelsData.set(pkg.id, labelData);
+      console.log('✅ Label data stored for package', pkg.id);
     } catch (error) {
-      console.error(`Error generating codes for package ${pkg.id}:`, error);
+      console.error(`❌ Error generating codes for package ${pkg.id}:`, error);
     }
   }
 
+  console.log('🎯 FRESH labels generation completed:', labelsData.size, 'labels generated');
   return labelsData;
 }

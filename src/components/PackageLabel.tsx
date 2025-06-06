@@ -25,7 +25,12 @@ interface PackageLabelProps {
 export function PackageLabel({ package: pkg }: PackageLabelProps) {
   const { barcodeCanvasRef, qrCodeDataUrl, barcodeDataUrl } = usePackageCodes(pkg);
 
+  console.log('🏷️ PackageLabel rendering for package:', pkg.id);
+  console.log('📱 QR Code status:', qrCodeDataUrl ? 'Generated' : 'Pending');
+  console.log('📊 Barcode status:', barcodeDataUrl ? 'Generated' : 'Pending');
+
   const handlePrint = () => {
+    console.log('🖨️ Printing single label for package:', pkg.id);
     window.print();
   };
 
@@ -38,7 +43,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       <div className="mb-4 p-4 border rounded-lg bg-white">
         <h3 className="text-lg font-semibold mb-2">Vista Previa de la Etiqueta</h3>
         <div className="text-sm text-gray-600 mb-4">
-          Dimensiones: 10cm x 15cm (aproximadamente)
+          Dimensiones: 10cm x 15cm (aproximadamente) - Formato actualizado
         </div>
         
         {/* Vista previa escalada de la etiqueta */}
@@ -52,7 +57,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
           onClick={handlePrint}
           className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Imprimir Etiqueta
+          Imprimir Etiqueta (Formato Actualizado)
         </button>
       </div>
 

@@ -26,7 +26,9 @@ export function usePackageCodes(pkg: Package) {
   useEffect(() => {
     const generateQRCode = async () => {
       try {
-        // Usar el mismo formato que el QR de prueba para móvil
+        console.log('🔄 Generating FRESH QR code for package:', pkg.id);
+        
+        // Usar el MISMO formato exacto que el QR de prueba para móvil
         const qrData = {
           id: pkg.id,
           tracking: pkg.tracking_number,
@@ -34,6 +36,8 @@ export function usePackageCodes(pkg: Package) {
           status: pkg.status,
           action: 'package_scan'
         };
+
+        console.log('📱 QR Data for individual package:', qrData);
 
         const qrDataString = JSON.stringify(qrData);
         const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -45,14 +49,17 @@ export function usePackageCodes(pkg: Package) {
           }
         });
         
+        console.log('✅ Individual QR code generated, size:', qrCodeUrl.length, 'chars');
         setQrCodeDataUrl(qrCodeUrl);
       } catch (error) {
-        console.error('Error generating QR code:', error);
+        console.error('❌ Error generating individual QR code:', error);
       }
     };
 
     const generateBarcode = () => {
       try {
+        console.log('🔄 Generating FRESH barcode for package:', pkg.id);
+        
         if (barcodeCanvasRef.current) {
           JsBarcode(barcodeCanvasRef.current, pkg.tracking_number, {
             format: "CODE128",
@@ -64,13 +71,18 @@ export function usePackageCodes(pkg: Package) {
           });
           
           const barcodeUrl = barcodeCanvasRef.current.toDataURL();
+          console.log('✅ Individual barcode generated, size:', barcodeUrl.length, 'chars');
           setBarcodeDataUrl(barcodeUrl);
         }
       } catch (error) {
-        console.error('Error generating barcode:', error);
+        console.error('❌ Error generating individual barcode:', error);
       }
     };
 
+    // Limpiar estados anteriores para forzar regeneración
+    setQrCodeDataUrl('');
+    setBarcodeDataUrl('');
+    
     generateQRCode();
     generateBarcode();
   }, [pkg]);

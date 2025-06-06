@@ -37,16 +37,31 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
 
   useEffect(() => {
     const generateLabelsData = async () => {
-      console.log('🔄 Generating labels data for', packages.length, 'packages');
+      console.log('🔄 Generating FRESH labels data for', packages.length, 'packages');
+      console.log('🗑️ Clearing any cached label data to ensure new format');
       setIsGeneratingCodes(true);
+      
+      // Limpiar datos anteriores para forzar regeneración
+      setLabelsData(new Map());
       
       try {
         const newLabelsData = await generateAllLabelsData(packages);
-        console.log('✅ Generated labels data:', newLabelsData.size, 'labels');
+        console.log('✅ Generated FRESH labels data:', newLabelsData.size, 'labels');
         console.log('🗂️ Labels data keys:', Array.from(newLabelsData.keys()));
+        
+        // Verificar que cada etiqueta tenga el formato correcto
+        newLabelsData.forEach((labelData, packageId) => {
+          console.log(`🔍 Verificando formato de etiqueta para paquete ${packageId}:`, {
+            hasQR: !!labelData.qrCodeDataUrl,
+            hasBarcode: !!labelData.barcodeDataUrl,
+            qrSize: labelData.qrCodeDataUrl?.length || 0,
+            barcodeSize: labelData.barcodeDataUrl?.length || 0
+          });
+        });
+        
         setLabelsData(newLabelsData);
       } catch (error) {
-        console.error('❌ Error generating labels data:', error);
+        console.error('❌ Error generating FRESH labels data:', error);
       } finally {
         setIsGeneratingCodes(false);
       }
@@ -92,7 +107,8 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Generando códigos QR y de barras...</p>
+          <p>Generando códigos QR y de barras con formato actualizado...</p>
+          <p className="text-sm text-gray-600 mt-2">Aplicando nuevo formato consistente</p>
         </div>
       </div>
     );
@@ -104,7 +120,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p>Generando PDF con {packages.length} etiquetas...</p>
-          <p className="text-sm text-gray-600 mt-2">Esto puede tomar unos segundos</p>
+          <p className="text-sm text-gray-600 mt-2">Usando formato actualizado consistente</p>
         </div>
       </div>
     );

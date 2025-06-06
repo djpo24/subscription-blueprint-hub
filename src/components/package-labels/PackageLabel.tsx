@@ -24,10 +24,10 @@ interface PackageLabelProps {
 }
 
 export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
+  // Set dimensions to exactly 10cm x 15cm
   const baseStyles = {
-    width: isPrintMode ? 'auto' : '10cm',
-    height: isPrintMode ? 'auto' : '15cm',
-    maxWidth: isPrintMode ? '6in' : '10cm',
+    width: '10cm',
+    height: '15cm',
     backgroundColor: 'white',
     color: 'black',
     fontSize: isPrintMode ? '14px' : '12px',
@@ -41,7 +41,7 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
   };
 
   return (
-    <div style={baseStyles}>
+    <div style={baseStyles} data-package-id={pkg.id}>
       {/* Header superior */}
       <div style={{ 
         backgroundColor: 'white', 
@@ -147,7 +147,7 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
             <img 
               src={labelData.qrCodeDataUrl} 
               alt="QR Code" 
-              style={{ width: isPrintMode ? '60px' : '50px', height: isPrintMode ? '60px' : '50px', marginBottom: '2px' }}
+              style={{ width: isPrintMode ? '75px' : '65px', height: isPrintMode ? '75px' : '65px', marginBottom: '2px' }}
             />
             <div style={{ fontSize: isPrintMode ? '8px' : '6px' }}>Gestión digital</div>
           </div>

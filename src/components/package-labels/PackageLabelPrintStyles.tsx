@@ -27,10 +27,11 @@ export function PackageLabelPrintStyles() {
         }
         
         .print-container {
-          position: static !important;
-          display: block !important;
-          width: 100% !important;
-          height: auto !important;
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 10cm !important;
+          height: 15cm !important;
           margin: 0 !important;
           padding: 0 !important;
           background: white !important;
@@ -42,13 +43,13 @@ export function PackageLabelPrintStyles() {
         }
         
         @page {
-          size: letter;
-          margin: 0.5in;
+          size: 10cm 15cm !important;
+          margin: 0 !important;
         }
         
         .label-page {
-          width: 100% !important;
-          height: 100vh !important;
+          width: 10cm !important;
+          height: 15cm !important;
           margin: 0 !important;
           padding: 0 !important;
           display: flex !important;
@@ -67,10 +68,6 @@ export function PackageLabelPrintStyles() {
           break-after: page !important;
           break-before: auto !important;
           break-inside: avoid !important;
-          
-          /* Asegurar que cada página tenga el tamaño correcto */
-          min-height: 100vh !important;
-          max-height: 100vh !important;
         }
         
         .label-page:first-child {
@@ -84,10 +81,10 @@ export function PackageLabelPrintStyles() {
         }
         
         .label-content {
-          width: auto !important;
-          height: auto !important;
-          margin: 0 auto !important;
-          padding: 40px !important;
+          width: 10cm !important;
+          height: 15cm !important;
+          margin: 0 !important;
+          padding: 0 !important;
           display: flex !important;
           justify-content: center !important;
           align-items: center !important;
@@ -102,20 +99,22 @@ export function PackageLabelPrintStyles() {
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
-          width: auto !important;
-          height: auto !important;
+          width: 10cm !important;
+          height: 15cm !important;
+          box-sizing: border-box !important;
+          page-break-after: always !important;
+          break-after: page !important;
         }
         
         /* Asegurar que las etiquetas individuales sean visibles */
-        .label-page [style*="width"][style*="height"] {
+        .label-print {
           display: flex !important;
           visibility: visible !important;
-        }
-        
-        /* Forzar recálculo del layout para múltiples páginas */
-        .print-container .label-page:nth-child(n+4) {
-          page-break-before: always !important;
-          break-before: page !important;
+          width: 10cm !important;
+          height: 15cm !important;
+          page-break-after: always !important;
+          break-after: page !important;
+          box-sizing: border-box !important;
         }
       }
     `}</style>

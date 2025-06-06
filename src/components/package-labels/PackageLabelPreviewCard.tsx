@@ -24,14 +24,14 @@ interface PackageLabelPreviewCardProps {
 
 export function PackageLabelPreviewCard({ package: pkg, qrCodeDataUrl, barcodeDataUrl }: PackageLabelPreviewCardProps) {
   return (
-    <div className="label-preview border-2 border-gray-300 bg-white p-3" style={{ 
+    <div className="label-preview border-2 border-gray-300 bg-white" style={{ 
       width: '200px', 
       height: '300px',
       transform: 'scale(0.67)',
       transformOrigin: 'top left'
     }}>
       <div className="h-full flex flex-col border border-black">
-        {/* Header superior estilo USPS */}
+        {/* Header superior */}
         <div className="bg-white p-2 border-b border-black">
           <div className="flex justify-between items-start text-xs">
             <div>
@@ -49,7 +49,7 @@ export function PackageLabelPreviewCard({ package: pkg, qrCodeDataUrl, barcodeDa
 
         {/* Sección de servicio */}
         <div className="bg-white p-2 border-b border-black">
-          <div className="text-sm font-bold">ENCOMIENDA EXPRESS</div>
+          <div className="text-sm font-bold text-center">ENCOMIENDA EXPRESS</div>
         </div>
 
         {/* Información del remitente y destinatario */}
@@ -67,7 +67,7 @@ export function PackageLabelPreviewCard({ package: pkg, qrCodeDataUrl, barcodeDa
 
           <div className="mb-2">
             <div className="text-xs font-bold">DESCRIPCIÓN:</div>
-            <div className="text-xs">{pkg.description}</div>
+            <div className="text-xs overflow-hidden" style={{ maxHeight: '30px' }}>{pkg.description}</div>
           </div>
 
           {pkg.weight && (

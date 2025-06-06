@@ -24,7 +24,7 @@ interface PackageLabelPrintProps {
 
 export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl }: PackageLabelPrintProps) {
   return (
-    <div className="label-print" style={{
+    <div className="label-print print-container" style={{
       width: '10cm',
       height: '15cm',
       backgroundColor: 'white',
@@ -33,8 +33,11 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
       fontFamily: 'Arial, sans-serif',
       display: 'flex',
       flexDirection: 'column',
-      border: '2px solid #000'
-    }}>
+      border: '2px solid #000',
+      boxSizing: 'border-box',
+      margin: '0 auto',
+      pageBreakAfter: 'always'
+    }} data-package-id={pkg.id}>
       {/* Header superior */}
       <div style={{ 
         backgroundColor: 'white', 
@@ -62,15 +65,18 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
         padding: '8px', 
         borderBottom: '2px solid #000'
       }}>
-        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ENCOMIENDA EXPRESS</div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>ENCOMIENDA EXPRESS</div>
       </div>
 
       {/* Información del remitente y destinatario */}
       <div style={{ 
         backgroundColor: 'white', 
-        padding: '8px', 
+        padding: '10px', 
         borderBottom: '2px solid #000',
-        flexGrow: 1
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }}>
         <div style={{ marginBottom: '8px' }}>
           <div style={{ fontSize: '10px', fontWeight: 'bold' }}>DESDE:</div>
@@ -79,7 +85,7 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
         
         <div style={{ marginBottom: '8px' }}>
           <div style={{ fontSize: '10px', fontWeight: 'bold' }}>PARA:</div>
-          <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{pkg.customers?.name || 'CLIENTE'}</div>
+          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{pkg.customers?.name || 'CLIENTE'}</div>
           <div style={{ fontSize: '11px' }}>{pkg.destination}</div>
         </div>
 
@@ -100,14 +106,18 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
         backgroundColor: 'white', 
         padding: '8px', 
         borderBottom: '2px solid #000',
-        textAlign: 'center'
+        textAlign: 'center',
+        minHeight: '80px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}>
         <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>TRACKING #</div>
         {barcodeDataUrl && (
           <img 
             src={barcodeDataUrl} 
             alt="Barcode" 
-            style={{ width: '100%', height: '50px', objectFit: 'contain' }}
+            style={{ width: '100%', height: '60px', objectFit: 'contain' }}
           />
         )}
       </div>
@@ -118,14 +128,15 @@ export function PackageLabelPrint({ package: pkg, qrCodeDataUrl, barcodeDataUrl 
         padding: '8px',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        minHeight: '90px'
       }}>
         {qrCodeDataUrl && (
           <div style={{ textAlign: 'center' }}>
             <img 
               src={qrCodeDataUrl} 
               alt="QR Code" 
-              style={{ width: '60px', height: '60px', marginBottom: '4px' }}
+              style={{ width: '75px', height: '75px', marginBottom: '4px' }}
             />
             <div style={{ fontSize: '8px' }}>Gestión digital</div>
           </div>

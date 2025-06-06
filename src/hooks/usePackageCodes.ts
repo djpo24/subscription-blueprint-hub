@@ -26,9 +26,9 @@ export function usePackageCodes(pkg: Package) {
   useEffect(() => {
     const generateQRCode = async () => {
       try {
-        console.log('🔄 Generating FRESH QR code for package:', pkg.id);
+        console.log('🔄 Generating QR code for package:', pkg.id);
         
-        // Usar el MISMO formato exacto que el QR de prueba para móvil
+        // Use the EXACT SAME format as the QR test image
         const qrData = {
           id: pkg.id,
           tracking: pkg.tracking_number,
@@ -37,7 +37,7 @@ export function usePackageCodes(pkg: Package) {
           action: 'package_scan'
         };
 
-        console.log('📱 QR Data for individual package:', qrData);
+        console.log('📱 QR Data structure:', JSON.stringify(qrData));
 
         const qrDataString = JSON.stringify(qrData);
         const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -46,19 +46,20 @@ export function usePackageCodes(pkg: Package) {
           color: {
             dark: '#000000',
             light: '#FFFFFF'
-          }
+          },
+          errorCorrectionLevel: 'H' // Using high error correction for better scanning
         });
         
-        console.log('✅ Individual QR code generated, size:', qrCodeUrl.length, 'chars');
+        console.log('✅ QR code generated with updated format, size:', qrCodeUrl.length, 'chars');
         setQrCodeDataUrl(qrCodeUrl);
       } catch (error) {
-        console.error('❌ Error generating individual QR code:', error);
+        console.error('❌ Error generating QR code:', error);
       }
     };
 
     const generateBarcode = () => {
       try {
-        console.log('🔄 Generating FRESH barcode for package:', pkg.id);
+        console.log('🔄 Generating barcode for package:', pkg.id);
         
         if (barcodeCanvasRef.current) {
           JsBarcode(barcodeCanvasRef.current, pkg.tracking_number, {
@@ -71,15 +72,15 @@ export function usePackageCodes(pkg: Package) {
           });
           
           const barcodeUrl = barcodeCanvasRef.current.toDataURL();
-          console.log('✅ Individual barcode generated, size:', barcodeUrl.length, 'chars');
+          console.log('✅ Barcode generated with updated format, size:', barcodeUrl.length, 'chars');
           setBarcodeDataUrl(barcodeUrl);
         }
       } catch (error) {
-        console.error('❌ Error generating individual barcode:', error);
+        console.error('❌ Error generating barcode:', error);
       }
     };
 
-    // Limpiar estados anteriores para forzar regeneración
+    // Clear previous states to force regeneration
     setQrCodeDataUrl('');
     setBarcodeDataUrl('');
     

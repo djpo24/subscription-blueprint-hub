@@ -2,6 +2,7 @@
 import { usePackageCodes } from '@/hooks/usePackageCodes';
 import { PackageLabelPreviewCard } from './package-labels/PackageLabelPreviewCard';
 import { PackageLabelPrint } from './package-labels/PackageLabelPrint';
+import { PackageLabelPrintStyles } from './package-labels/PackageLabelPrintStyles';
 
 interface Package {
   id: string;
@@ -31,6 +32,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
 
   const handlePrint = () => {
     console.log('🖨️ Printing single label for package:', pkg.id);
+    console.log('📐 Print size: 10cm x 15cm');
     window.print();
   };
 
@@ -40,10 +42,10 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       <canvas ref={barcodeCanvasRef} style={{ display: 'none' }} />
       
       {/* Contenido visible en pantalla */}
-      <div className="mb-4 p-4 border rounded-lg bg-white">
+      <div className="mb-4 p-4 border rounded-lg bg-white screen-only">
         <h3 className="text-lg font-semibold mb-2">Vista Previa de la Etiqueta</h3>
         <div className="text-sm text-gray-600 mb-4">
-          Dimensiones: 10cm x 15cm (aproximadamente) - Formato actualizado
+          Dimensiones: 10cm x 15cm - Formato actualizado
         </div>
         
         {/* Vista previa escalada de la etiqueta */}
@@ -57,7 +59,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
           onClick={handlePrint}
           className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Imprimir Etiqueta (Formato Actualizado)
+          Imprimir Etiqueta (10cm × 15cm)
         </button>
       </div>
 
@@ -70,32 +72,8 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
         />
       </div>
 
-      {/* CSS para impresión */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-only, .print-only * {
-            visibility: visible;
-          }
-          .print-only {
-            position: absolute;
-            left: 0;
-            top: 0;
-          }
-          @page {
-            size: 10cm 15cm;
-            margin: 0;
-          }
-        }
-        .package-label-container {
-          max-width: 400px;
-        }
-        .label-preview {
-          font-size: 8px;
-        }
-      `}</style>
+      {/* Estilos para impresión */}
+      <PackageLabelPrintStyles />
     </div>
   );
 }

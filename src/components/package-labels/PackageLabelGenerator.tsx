@@ -24,9 +24,9 @@ export interface LabelData {
 
 export async function generateLabelData(pkg: Package): Promise<LabelData> {
   console.log('🏷️ Generating FRESH label data for package:', pkg.id);
-  console.log('📝 Using updated format consistent with mobile QR test');
+  console.log('📝 Using updated format to match mobile QR test exactly');
   
-  // Generate QR Code usando el MISMO formato exacto del QR de prueba móvil
+  // Generate QR Code using the EXACT format from the QR test image
   const qrData = {
     id: pkg.id,
     tracking: pkg.tracking_number,
@@ -35,7 +35,7 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     action: 'package_scan'
   };
 
-  console.log('📱 QR Data for package', pkg.id, ':', qrData);
+  console.log('📱 QR Data structure for package', pkg.id, ':', JSON.stringify(qrData));
 
   const qrDataString = JSON.stringify(qrData);
   const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
@@ -44,7 +44,8 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     color: {
       dark: '#000000',
       light: '#FFFFFF'
-    }
+    },
+    errorCorrectionLevel: 'H' // Using high error correction for better scanning
   });
 
   console.log('✅ QR Code generated for package', pkg.id, 'Size:', qrCodeUrl.length, 'chars');
@@ -70,7 +71,7 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
 }
 
 export async function generateAllLabelsData(packages: Package[]): Promise<Map<string, LabelData>> {
-  console.log('🔄 Starting FRESH generation for', packages.length, 'packages');
+  console.log('🔄 Starting batch generation for', packages.length, 'packages with updated format');
   const labelsData = new Map<string, LabelData>();
 
   for (const pkg of packages) {
@@ -84,6 +85,6 @@ export async function generateAllLabelsData(packages: Package[]): Promise<Map<st
     }
   }
 
-  console.log('🎯 FRESH labels generation completed:', labelsData.size, 'labels generated');
+  console.log('🎯 Labels generation completed:', labelsData.size, 'labels generated with updated format');
   return labelsData;
 }

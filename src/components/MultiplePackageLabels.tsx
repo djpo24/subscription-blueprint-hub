@@ -157,7 +157,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
           Formato actualizado que coincide exactamente con la imagen de ejemplo
         </div>
         
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-4 overflow-y-auto">
           {packagesWithTripData.map((pkg, index) => {
             const labelData = labelsData.get(pkg.id);
             

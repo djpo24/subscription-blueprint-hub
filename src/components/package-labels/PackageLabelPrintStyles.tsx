@@ -46,7 +46,7 @@ export function PackageLabelPrintStyles() {
         }
         
         .label-page {
-          width: 100vw !important;
+          width: 100% !important;
           height: 100vh !important;
           margin: 0 !important;
           padding: 0 !important;
@@ -54,12 +54,20 @@ export function PackageLabelPrintStyles() {
           justify-content: center !important;
           align-items: center !important;
           position: relative !important;
-          page-break-after: always !important;
-          page-break-inside: avoid !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
           background: white !important;
+          page-break-after: always !important;
+          page-break-before: auto !important;
+          page-break-inside: avoid !important;
           break-after: page !important;
+          break-before: auto !important;
+          break-inside: avoid !important;
+        }
+        
+        .label-page:first-child {
+          page-break-before: avoid !important;
+          break-before: avoid !important;
         }
         
         .label-page:last-child {
@@ -75,12 +83,7 @@ export function PackageLabelPrintStyles() {
           border: 2px solid #000 !important;
           box-sizing: border-box !important;
           background: white !important;
-        }
-        
-        /* Forzar salto de página entre etiquetas */
-        .label-page + .label-page {
-          page-break-before: always !important;
-          break-before: page !important;
+          position: relative !important;
         }
       }
     `}</style>

@@ -28,17 +28,21 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
 
+  console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
+  console.log('🏷️ MultiplePackageLabels - Package IDs:', packages.map(p => p.id));
+
   useEffect(() => {
     const generateLabelsData = async () => {
-      console.log('Generating labels data for', packages.length, 'packages');
+      console.log('🔄 Generating labels data for', packages.length, 'packages');
       setIsGeneratingCodes(true);
       
       try {
         const newLabelsData = await generateAllLabelsData(packages);
-        console.log('Generated labels data:', newLabelsData.size, 'labels');
+        console.log('✅ Generated labels data:', newLabelsData.size, 'labels');
+        console.log('🗂️ Labels data keys:', Array.from(newLabelsData.keys()));
         setLabelsData(newLabelsData);
       } catch (error) {
-        console.error('Error generating labels data:', error);
+        console.error('❌ Error generating labels data:', error);
       } finally {
         setIsGeneratingCodes(false);
       }
@@ -50,17 +54,19 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
   }, [packages]);
 
   const handlePrint = () => {
-    console.log('Starting print process for', packages.length, 'labels');
+    console.log('🖨️ Starting print process for', packages.length, 'labels');
+    console.log('🔍 Labels data available:', labelsData.size);
     
     // Asegurarse de que los códigos estén generados antes de imprimir
     if (isGeneratingCodes) {
-      console.log('Still generating codes, waiting...');
+      console.log('⏳ Still generating codes, waiting...');
       return;
     }
 
     // Mostrar el contenedor de impresión temporalmente
     const printContainer = document.querySelector('.print-container') as HTMLElement;
     if (printContainer) {
+      console.log('📄 Showing print container with', packages.length, 'labels');
       printContainer.style.display = 'block';
       printContainer.style.position = 'fixed';
       printContainer.style.top = '0';
@@ -69,17 +75,25 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       printContainer.style.width = '100vw';
       printContainer.style.height = '100vh';
       
+      // Verificar que todas las etiquetas están presentes
+      const labelPages = printContainer.querySelectorAll('.label-page');
+      console.log('📋 Label pages found in print container:', labelPages.length);
+      
       // Dar tiempo para que el DOM se actualice y luego imprimir
       setTimeout(() => {
+        console.log('🖨️ Executing window.print()');
         window.print();
         
         // Ocultar el contenedor después de imprimir
         setTimeout(() => {
           if (printContainer) {
             printContainer.style.display = 'none';
+            console.log('✅ Print container hidden');
           }
         }, 1000);
       }, 500);
+    } else {
+      console.error('❌ Print container not found');
     }
   };
 
@@ -94,6 +108,8 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     );
   }
 
+  console.log('🎨 Rendering MultiplePackageLabels with', packages.length, 'packages');
+
   return (
     <div className="multiple-labels-container">
       {/* Vista previa en pantalla */}
@@ -103,7 +119,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         onPrint={handlePrint}
       />
 
-      {/* Contenedor de impresión - inicialmente oculto pero con estructura completa */}
+      {/* Contenedor de impresión - cada etiqueta en su propia página */}
       <div className="print-container" style={{ 
         display: 'none',
         position: 'fixed',
@@ -116,10 +132,13 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       }}>
         {packages.map((pkg, index) => {
           const labelData = labelsData.get(pkg.id);
-          console.log(`Rendering label ${index + 1} for package ${pkg.id}`, { hasLabelData: !!labelData });
+          console.log(`📄 Rendering page ${index + 1}/${packages.length} for package ${pkg.id}`, { 
+            hasLabelData: !!labelData,
+            trackingNumber: pkg.tracking_number 
+          });
           
           return (
-            <div key={pkg.id} className="label-page">
+            <div key={`${pkg.id}-${index}`} className="label-page">
               <div className="label-content">
                 <PackageLabel 
                   package={pkg} 

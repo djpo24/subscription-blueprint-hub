@@ -9,7 +9,7 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
     queryFn: async (): Promise<PackageInDispatch | null> => {
       if (!trackingNumber) return null;
 
-      console.log('🔍 Buscando paquete con tracking number:', trackingNumber);
+      console.log('🔍 [usePackageByTrackingNumber] Buscando paquete con tracking number:', trackingNumber);
       
       // Buscar el paquete en la base de datos
       const { data: packageData, error: packageError } = await supabase
@@ -19,7 +19,7 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         .single();
 
       if (packageError) {
-        console.error('❌ Error buscando paquete:', packageError);
+        console.error('❌ [usePackageByTrackingNumber] Error buscando paquete:', packageError);
         throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
       }
 
@@ -27,7 +27,7 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
       }
 
-      console.log('📦 Paquete encontrado:', packageData);
+      console.log('📦 [usePackageByTrackingNumber] Paquete encontrado:', packageData);
 
       // Buscar los datos del cliente
       const { data: customerData, error: customerError } = await supabase
@@ -37,7 +37,7 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         .single();
 
       if (customerError) {
-        console.error('⚠️ Error buscando cliente:', customerError);
+        console.error('⚠️ [usePackageByTrackingNumber] Error buscando cliente:', customerError);
       }
 
       // Crear el objeto PackageInDispatch con los datos reales
@@ -62,11 +62,12 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         }
       };
       
-      console.log('✅ Paquete con datos completos:', realPackage);
+      console.log('✅ [usePackageByTrackingNumber] Paquete con datos completos:', realPackage);
       return realPackage;
     },
     enabled: !!trackingNumber,
     retry: false, // No reintentar si no se encuentra el paquete
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 0, // Always refetch when trackingNumber changes
+    gcTime: 0, // Don't cache results - always fresh data for new scans
   });
 }

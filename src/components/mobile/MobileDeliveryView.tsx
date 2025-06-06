@@ -29,27 +29,26 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
   const { data: packageData, error: packageError, isLoading: packageLoading } = usePackageByTrackingNumber(scannedTrackingNumber);
 
   const handleBarcodeScanned = async (barcodeData: string) => {
+    console.log('📊 [MobileDeliveryView] Código de barras escaneado:', barcodeData);
     setIsLoading(true);
+    
     try {
-      console.log('📊 Código de barras escaneado:', barcodeData);
-      
       // El código de barras debería contener el tracking number directamente
       const trackingNumber = barcodeData.trim();
       
       if (trackingNumber) {
-        console.log('🔍 Buscando paquete con tracking number:', trackingNumber);
+        console.log('🔍 [MobileDeliveryView] Buscando paquete con tracking number:', trackingNumber);
         setScannedTrackingNumber(trackingNumber);
       } else {
         throw new Error('Código de barras no válido o vacío');
       }
     } catch (error) {
-      console.error('❌ Error procesando código de barras:', error);
+      console.error('❌ [MobileDeliveryView] Error procesando código de barras:', error);
       
       // Reproducir sonido de error
       await playErrorBeep();
       
       alert(`Error: ${error instanceof Error ? error.message : 'Código de barras no válido o no se pudo procesar'}`);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -57,7 +56,8 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
   // Manejar cuando se obtienen los datos del paquete
   useEffect(() => {
     if (packageData && scannedTrackingNumber) {
-      console.log('✅ Paquete cargado exitosamente:', packageData);
+      console.log('✅ [MobileDeliveryView] Paquete cargado exitosamente:', packageData);
+      setIsLoading(false);
       setViewMode('delivery');
     }
   }, [packageData, scannedTrackingNumber]);
@@ -65,25 +65,42 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
   // Manejar errores al cargar el paquete
   useEffect(() => {
     if (packageError && scannedTrackingNumber) {
-      console.error('❌ Error cargando paquete:', packageError);
+      console.error('❌ [MobileDeliveryView] Error cargando paquete:', packageError);
       
       // Reproducir sonido de error
       playErrorBeep();
       
       alert(`Error: No se encontró el paquete con tracking number: ${scannedTrackingNumber}`);
+      
+      // Reset state completely for new scan
       setScannedTrackingNumber(null);
-      setViewMode('menu');
+      setIsLoading(false);
+      setViewMode('scanner'); // Stay in scanner mode to try again
     }
   }, [packageError, scannedTrackingNumber, playErrorBeep]);
 
   const handleDeliveryComplete = () => {
+    console.log('🏁 [MobileDeliveryView] Entrega completada, reseteando estado...');
+    // Reset all state when delivery is complete
     setScannedTrackingNumber(null);
+    setIsLoading(false);
     setViewMode('menu');
   };
 
   const handleBackToMenu = () => {
+    console.log('🔙 [MobileDeliveryView] Regresando al menú, reseteando estado...');
+    // Reset all state when going back to menu
     setScannedTrackingNumber(null);
+    setIsLoading(false);
     setViewMode('menu');
+  };
+
+  const handleStartNewScan = () => {
+    console.log('🔄 [MobileDeliveryView] Iniciando nuevo escaneo, reseteando estado...');
+    // Reset all state before starting new scan
+    setScannedTrackingNumber(null);
+    setIsLoading(false);
+    setViewMode('scanner');
   };
 
   return (
@@ -134,7 +151,7 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
                   Escanea el código de barras del paquete para iniciar el proceso de entrega
                 </p>
                 <Button 
-                  onClick={() => setViewMode('scanner')}
+                  onClick={handleStartNewScan}
                   className="w-full"
                   size="lg"
                 >
@@ -163,7 +180,7 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
         {viewMode === 'scanner' && (
           <QRScanner
             onQRCodeScanned={handleBarcodeScanned}
-            onCancel={() => setViewMode('menu')}
+            onCancel={handleBackToMenu}
             isLoading={isLoading || packageLoading}
           />
         )}
@@ -172,7 +189,7 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
           <MobileDeliveryForm
             package={packageData}
             onDeliveryComplete={handleDeliveryComplete}
-            onCancel={() => setViewMode('menu')}
+            onCancel={handleBackToMenu}
           />
         )}
       </div>

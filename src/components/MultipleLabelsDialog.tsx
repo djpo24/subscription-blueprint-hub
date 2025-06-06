@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MultiplePackageSelector } from './MultiplePackageSelector';
 import { MultiplePackageLabels } from './MultiplePackageLabels';
@@ -32,6 +32,15 @@ export function MultipleLabelsDialog({ open, onOpenChange, packages }: MultipleL
   console.log('MultipleLabelsDialog - Total packages received:', packages.length);
   console.log('MultipleLabelsDialog - Selected packages:', selectedPackages.length);
   console.log('MultipleLabelsDialog - Show labels:', showLabels);
+
+  // Si ya hay paquetes pre-seleccionados, ir directamente a las etiquetas
+  useEffect(() => {
+    if (open && packages.length > 0) {
+      console.log('MultipleLabelsDialog - Auto-selecting pre-selected packages:', packages.length);
+      setSelectedPackages(packages);
+      setShowLabels(true);
+    }
+  }, [open, packages]);
 
   const handlePrintSelected = (packages: Package[]) => {
     console.log('MultipleLabelsDialog - handlePrintSelected called with packages:', packages.length);
@@ -69,12 +78,15 @@ export function MultipleLabelsDialog({ open, onOpenChange, packages }: MultipleL
         
         {showLabels ? (
           <div>
-            <button
-              onClick={handleBackToSelection}
-              className="mb-4 text-blue-600 hover:text-blue-800 underline"
-            >
-              ← Volver a la selección
-            </button>
+            {/* Solo mostrar el botón de volver si no hay paquetes pre-seleccionados */}
+            {packages.length === 0 && (
+              <button
+                onClick={handleBackToSelection}
+                className="mb-4 text-blue-600 hover:text-blue-800 underline"
+              >
+                ← Volver a la selección
+              </button>
+            )}
             <MultiplePackageLabels packages={selectedPackages} />
           </div>
         ) : (

@@ -57,23 +57,22 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
     console.log('🖨️ Starting print process for', packages.length, 'labels');
     console.log('🔍 Labels data available:', labelsData.size);
     
-    // Asegurarse de que los códigos estén generados antes de imprimir
     if (isGeneratingCodes) {
       console.log('⏳ Still generating codes, waiting...');
       return;
     }
 
-    // Verificar que tengamos datos para todas las etiquetas
     const missingLabels = packages.filter(pkg => !labelsData.has(pkg.id));
     if (missingLabels.length > 0) {
       console.error('❌ Missing label data for packages:', missingLabels.map(p => p.id));
       return;
     }
 
-    // Mostrar el contenedor de impresión temporalmente
     const printContainer = document.querySelector('.print-container') as HTMLElement;
     if (printContainer) {
-      console.log('📄 Showing print container with', packages.length, 'labels');
+      console.log('📄 Preparing print container with', packages.length, 'labels');
+      
+      // Configurar el contenedor para impresión
       printContainer.style.display = 'block';
       printContainer.style.position = 'fixed';
       printContainer.style.top = '0';
@@ -82,37 +81,35 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
       printContainer.style.width = '100vw';
       printContainer.style.height = '100vh';
       printContainer.style.backgroundColor = 'white';
+      printContainer.style.overflow = 'visible';
       
-      // Verificar que todas las etiquetas están presentes en el DOM
-      const labelPages = printContainer.querySelectorAll('.label-page');
-      console.log('📋 Label pages found in print container:', labelPages.length);
-      console.log('📋 Expected pages:', packages.length);
-      
-      // Verificar que cada página tiene contenido
-      labelPages.forEach((page, index) => {
-        const labelContent = page.querySelector('.label-content');
-        const packageLabel = labelContent?.querySelector('[data-package-id]');
-        console.log(`📄 Page ${index + 1}: has content =`, !!labelContent, 'has package label =', !!packageLabel);
-      });
-      
-      // Dar más tiempo para que el DOM se actualice completamente
+      // Dar tiempo extra para que el DOM se estabilice completamente
       setTimeout(() => {
-        console.log('🖨️ Executing window.print()');
+        const labelPages = printContainer.querySelectorAll('.label-page');
+        console.log('📊 Final verification before print:');
+        console.log('  - Expected pages:', packages.length);
+        console.log('  - Found pages:', labelPages.length);
+        console.log('  - All pages have content:', Array.from(labelPages).every(page => 
+          page.querySelector('[data-package-id]') !== null
+        ));
         
-        // Verificar una vez más antes de imprimir
-        const finalLabelPages = printContainer.querySelectorAll('.label-page');
-        console.log('🔍 Final check - Label pages before print:', finalLabelPages.length);
+        // Verificar que cada página tiene la estructura correcta
+        labelPages.forEach((page, index) => {
+          const packageElement = page.querySelector('[data-package-id]');
+          const packageId = packageElement?.getAttribute('data-package-id');
+          console.log(`  📄 Page ${index + 1}: Package ID = ${packageId || 'MISSING'}`);
+        });
         
+        console.log('🖨️ Executing window.print() with', labelPages.length, 'pages');
         window.print();
         
-        // Ocultar el contenedor después de imprimir
         setTimeout(() => {
           if (printContainer) {
             printContainer.style.display = 'none';
             console.log('✅ Print container hidden');
           }
         }, 1000);
-      }, 1000); // Aumentado el tiempo de espera
+      }, 1500); // Tiempo aumentado para estabilidad
     } else {
       console.error('❌ Print container not found');
     }
@@ -140,7 +137,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         onPrint={handlePrint}
       />
 
-      {/* Contenedor de impresión - cada etiqueta en su propia página */}
+      {/* Contenedor de impresión optimizado */}
       <div className="print-container" style={{ 
         display: 'none',
         position: 'fixed',
@@ -149,21 +146,17 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         width: '100vw',
         height: '100vh',
         zIndex: 9999,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        overflow: 'visible'
       }}>
         {packages.map((pkg, index) => {
           const labelData = labelsData.get(pkg.id);
-          console.log(`📄 Rendering page ${index + 1}/${packages.length} for package ${pkg.id}`, { 
-            hasLabelData: !!labelData,
-            trackingNumber: pkg.tracking_number,
-            qrCode: !!labelData?.qrCodeDataUrl,
-            barcode: !!labelData?.barcodeDataUrl
-          });
+          console.log(`📄 Creating page ${index + 1}/${packages.length} for package ${pkg.id}`);
           
           return (
-            <div key={`${pkg.id}-${index}`} className="label-page">
+            <div key={`print-page-${pkg.id}`} className="label-page">
               <div className="label-content">
-                <div data-package-id={pkg.id}>
+                <div data-package-id={pkg.id} data-page-number={index + 1}>
                   <PackageLabel 
                     package={pkg} 
                     labelData={labelData}
@@ -176,7 +169,6 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
         })}
       </div>
 
-      {/* CSS para impresión */}
       <PackageLabelPrintStyles />
     </div>
   );

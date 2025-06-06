@@ -98,21 +98,37 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
 
   return (
     <div style={baseStyles} data-package-id={pkg.id} data-trip-date={pkg.trip?.trip_date || 'none'}>
-      {/* Header - Ahora "ENVIOS OJITO" */}
+      {/* Header - "ENVIOS OJITO" con tracking number a la derecha */}
       <div style={{
         textAlign: 'center',
         padding: '20px 10px 10px 10px',
         borderBottom: '1px solid #eee'
       }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          margin: '0 0 5px 0',
-          color: '#333'
+        {/* Línea con ENVIOS OJITO y tracking number */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '5px'
         }}>
-          ENVIOS OJITO
-        </h1>
-        {/* Nombre del cliente y fecha del viaje en la misma línea */}
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            margin: '0',
+            color: '#333'
+          }}>
+            ENVIOS OJITO
+          </h1>
+          <span style={{
+            fontSize: '16px',
+            fontWeight: 'normal',
+            color: '#666'
+          }}>
+            {pkg.tracking_number}
+          </span>
+        </div>
+        
+        {/* Nombre del cliente y fecha del viaje en la siguiente línea */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -169,9 +185,6 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         fontSize: '16px',
         lineHeight: '1.5'
       }}>
-        <div style={{ marginBottom: '8px' }}>
-          <strong>Tracking:</strong> {pkg.tracking_number}
-        </div>
         {/* Peso a la izquierda y monto a cobrar a la derecha */}
         <div style={{ 
           display: 'flex',

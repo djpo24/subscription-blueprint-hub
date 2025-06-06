@@ -115,8 +115,8 @@ export function useMultipleLabelsPDF() {
 
       currentY += 18;
 
-      // QR Code centrado con marco
-      const qrSize = 35;
+      // QR Code centrado con marco - aumentado de 35mm a 42mm (aproximadamente 7mm más, equivalente a 20px)
+      const qrSize = 42;
       const qrX = startX + (labelWidth - qrSize) / 2;
       
       // Marco del QR

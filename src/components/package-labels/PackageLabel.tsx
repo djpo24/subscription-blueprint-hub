@@ -95,7 +95,7 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* QR Code centrado con marco */}
+      {/* QR Code centrado con marco - aumentado 20px */}
       <div style={{ 
         display: 'flex',
         justifyContent: 'center',
@@ -111,8 +111,8 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
             src={labelData.qrCodeDataUrl} 
             alt="QR Code" 
             style={{ 
-              width: isPrintMode ? '160px' : '140px', 
-              height: isPrintMode ? '160px' : '140px'
+              width: isPrintMode ? '180px' : '160px', 
+              height: isPrintMode ? '180px' : '160px'
             }}
           />
         )}

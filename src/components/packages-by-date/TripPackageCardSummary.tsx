@@ -44,9 +44,9 @@ export function TripPackageCardSummary({
   const safePendingAmounts = pendingAmountByCurrency || {};
   const safeCollectedAmounts = collectedAmountByCurrency || {};
 
-  // Verificar si hay algún monto cobrado
-  const hasPendingAmounts = Object.values(safePendingAmounts).some(amount => amount > 0);
-  const hasCollectedAmounts = Object.values(safeCollectedAmounts).some(amount => amount > 0);
+  // Verificar si hay algún monto cobrado - fix TypeScript error by properly typing the values
+  const hasPendingAmounts = Object.values(safePendingAmounts).some((amount: number) => amount > 0);
+  const hasCollectedAmounts = Object.values(safeCollectedAmounts).some((amount: number) => amount > 0);
 
   console.log('📊 Summary rendering data:', {
     pendingAmountByCurrency,

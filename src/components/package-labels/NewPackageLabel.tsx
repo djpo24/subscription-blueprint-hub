@@ -1,4 +1,3 @@
-
 import { format } from 'date-fns';
 
 interface Package {
@@ -115,14 +114,16 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
             fontSize: '24px',
             fontWeight: 'bold',
             margin: '0',
-            color: '#333'
+            color: '#333',
+            lineHeight: '1.2'
           }}>
             ENVIOS OJITO
           </h1>
           <span style={{
             fontSize: '16px',
             fontWeight: 'normal',
-            color: '#666'
+            color: '#666',
+            lineHeight: '1.2'
           }}>
             {pkg.tracking_number}
           </span>
@@ -135,7 +136,8 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
           alignItems: 'center',
           fontSize: '18px',
           margin: '5px 0',
-          color: '#666'
+          color: '#666',
+          lineHeight: '1.2'
         }}>
           <span style={{ fontWeight: 'normal' }}>
             {pkg.customers?.name || 'CLIENTE'}
@@ -183,7 +185,7 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         padding: '15px 20px',
         borderTop: '1px solid #eee',
         fontSize: '16px',
-        lineHeight: '1.5'
+        lineHeight: '1.2'
       }}>
         {/* Peso a la izquierda y monto a cobrar a la derecha */}
         <div style={{ 
@@ -191,7 +193,8 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '8px',
-          fontSize: '16px'
+          fontSize: '16px',
+          lineHeight: '1.2'
         }}>
           <span style={{ textAlign: 'left' }}>
             {formatWeight()}
@@ -207,20 +210,21 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
           textAlign: 'center', 
           marginBottom: '12px', 
           fontWeight: 'bold',
-          fontSize: '13px' 
+          fontSize: '13px',
+          lineHeight: '1.1'
         }}>
           Toda encomienda debe ser verificada en el local al momento de la entrega. Una vez entregada, no se aceptan reclamos.
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
           Dirección en B/QUILLA: Calle 45B # 22 - 124
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
           Tel: +573127271746
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
           Dirección Curacao: Jo corsenstraat 48 brievengat
         </div>
-        <div style={{ fontSize: '13px' }}>
+        <div style={{ fontSize: '13px', lineHeight: '1.1' }}>
           Tel: +599 9 6964306
         </div>
       </div>

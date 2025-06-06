@@ -41,7 +41,8 @@ export function usePackagesByDate(selectedDate: Date) {
 
       const tripIds = trips.map(trip => trip.id);
 
-      // Obtener paquetes de estos viajes, excluyendo los ya despachados o entregados
+      // Obtener TODAS las encomiendas de estos viajes (sin filtrar por estado)
+      // La vista de viajes debe mostrar todas las encomiendas del viaje
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select(`
@@ -61,7 +62,6 @@ export function usePackagesByDate(selectedDate: Date) {
           )
         `)
         .in('trip_id', tripIds)
-        .not('status', 'in', '(procesado,delivered,in_transit)') // Excluir estados que no deben despacharse
         .order('created_at', { ascending: false });
 
       if (packagesError) {
@@ -69,29 +69,10 @@ export function usePackagesByDate(selectedDate: Date) {
         throw packagesError;
       }
 
-      // Obtener IDs de paquetes que ya están en algún despacho
-      const { data: dispatchedPackages, error: dispatchError } = await supabase
-        .from('dispatch_packages')
-        .select('package_id')
-        .in('package_id', (packages || []).map(p => p.id));
-
-      if (dispatchError) {
-        console.error('❌ Error fetching dispatched packages:', dispatchError);
-      }
-
-      const dispatchedPackageIds = new Set(
-        (dispatchedPackages || []).map(dp => dp.package_id)
-      );
-
-      // Filtrar paquetes que ya están despachados
-      const availablePackages = (packages || []).filter(
-        pkg => !dispatchedPackageIds.has(pkg.id)
-      );
-
-      // Agrupar paquetes por viaje
+      // Agrupar paquetes por viaje (mostrando TODAS las encomiendas)
       const tripsWithPackages = trips.map(trip => ({
         ...trip,
-        packages: availablePackages.filter(pkg => pkg.trip_id === trip.id)
+        packages: (packages || []).filter(pkg => pkg.trip_id === trip.id)
       }));
 
       // Obtener despachos para la fecha
@@ -107,7 +88,7 @@ export function usePackagesByDate(selectedDate: Date) {
 
       console.log('✅ Packages by date loaded:', {
         trips: tripsWithPackages.length,
-        totalPackages: availablePackages.length,
+        totalPackages: (packages || []).length,
         dispatches: dispatches?.length || 0
       });
 

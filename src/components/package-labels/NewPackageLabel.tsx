@@ -215,16 +215,16 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         }}>
           Toda encomienda debe ser verificada en el local al momento de la entrega. Una vez entregada, no se aceptan reclamos.
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1', textAlign: 'center' }}>
           Dirección en B/QUILLA: Calle 45B # 22 - 124
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1', textAlign: 'center' }}>
           Tel: +573127271746
         </div>
-        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: '1.1', textAlign: 'center' }}>
           Dirección Curacao: Jo corsenstraat 48 brievengat
         </div>
-        <div style={{ fontSize: '13px', lineHeight: '1.1' }}>
+        <div style={{ fontSize: '13px', lineHeight: '1.1', textAlign: 'center' }}>
           Tel: +599 9 6964306
         </div>
       </div>

@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Camera, ArrowLeft, Smartphone } from 'lucide-react';
+import { Package, Camera, ArrowLeft, Smartphone, BarChart3 } from 'lucide-react';
 import { QRScanner } from './QRScanner';
 import { MobileDeliveryForm } from './MobileDeliveryForm';
 import type { PackageInDispatch } from '@/types/dispatch';
@@ -20,41 +21,44 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
   // Check if device is mobile
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  const handleQRCodeScanned = async (qrData: string) => {
+  const handleBarcodeScanned = async (barcodeData: string) => {
     setIsLoading(true);
     try {
-      // Parse QR code data
-      const packageData = JSON.parse(qrData);
+      console.log('📊 Código de barras escaneado:', barcodeData);
       
-      if (packageData.action === 'package_scan' && packageData.id) {
-        // Here you would typically fetch the full package data from the API
-        // For now, we'll simulate the package data
+      // El código de barras debería contener el tracking number directamente
+      const trackingNumber = barcodeData.trim();
+      
+      if (trackingNumber) {
+        // Aquí normalmente harías una consulta a la API para obtener los datos del paquete
+        // Por ahora, simularemos los datos del paquete usando el tracking number
         const mockPackage: PackageInDispatch = {
-          id: packageData.id,
-          tracking_number: packageData.tracking,
+          id: `package-${trackingNumber}`,
+          tracking_number: trackingNumber,
           origin: 'Bogotá',
           destination: 'Aruba',
           status: 'en_destino',
-          description: 'Paquete de prueba',
+          description: `Paquete escaneado: ${trackingNumber}`,
           weight: 2.5,
           freight: 50000,
           amount_to_collect: 100000,
-          currency: 'AWG', // Add currency property
+          currency: 'AWG',
           trip_id: 'trip-123',
           customers: {
-            name: packageData.customer || 'Cliente Test',
+            name: `Cliente ${trackingNumber}`,
             email: 'cliente@example.com'
           }
         };
         
+        console.log('📦 Paquete simulado creado:', mockPackage);
         setScannedPackage(mockPackage);
         setViewMode('delivery');
       } else {
-        throw new Error('Código QR no válido para entrega de paquetes');
+        throw new Error('Código de barras no válido o vacío');
       }
     } catch (error) {
-      console.error('Error processing QR code:', error);
-      alert('Error: Código QR no válido o no se pudo procesar');
+      console.error('❌ Error procesando código de barras:', error);
+      alert('Error: Código de barras no válido o no se pudo procesar');
     } finally {
       setIsLoading(false);
     }
@@ -109,21 +113,21 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+                  <BarChart3 className="h-5 w-5" />
                   Entregar Paquete
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-gray-600">
-                  Escanea el código QR del paquete para iniciar el proceso de entrega
+                  Escanea el código de barras del paquete para iniciar el proceso de entrega
                 </p>
                 <Button 
                   onClick={() => setViewMode('scanner')}
                   className="w-full"
                   size="lg"
                 >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Escanear Código QR
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Escanear Código de Barras
                 </Button>
               </CardContent>
             </Card>
@@ -132,9 +136,9 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
               <CardContent className="p-4">
                 <h3 className="font-medium mb-2">¿Cómo funciona?</h3>
                 <ol className="text-sm text-gray-600 space-y-1">
-                  <li>1. Haz clic en "Escanear Código QR"</li>
+                  <li>1. Haz clic en "Escanear Código de Barras"</li>
                   <li>2. Permite el acceso a la cámara</li>
-                  <li>3. Apunta la cámara al código QR del paquete</li>
+                  <li>3. Apunta la cámara al código de barras del paquete</li>
                   <li>4. Completa la información de entrega</li>
                   <li>5. Confirma la entrega</li>
                 </ol>
@@ -145,7 +149,7 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
 
         {viewMode === 'scanner' && (
           <QRScanner
-            onQRCodeScanned={handleQRCodeScanned}
+            onQRCodeScanned={handleBarcodeScanned}
             onCancel={() => setViewMode('menu')}
             isLoading={isLoading}
           />

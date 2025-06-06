@@ -32,9 +32,15 @@ const INELIGIBLE_STATES = [
   'in_transit',   // Ya está en tránsito
 ] as const;
 
-export function useDispatchEligiblePackages(trips: Trip[]) {
+export function useDispatchEligiblePackages(trips: Trip[] = []) {
   return useMemo(() => {
     console.log('🔍 Filtering dispatch-eligible packages...');
+    
+    // Add safety check for trips parameter
+    if (!trips || !Array.isArray(trips)) {
+      console.log('⚠️ No trips provided or trips is not an array');
+      return [];
+    }
     
     const eligiblePackages = trips.flatMap(trip => 
       trip.packages

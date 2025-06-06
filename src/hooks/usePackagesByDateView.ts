@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -5,7 +6,7 @@ import { usePackagesByDate } from '@/hooks/usePackagesByDate';
 import { useDispatchRelations } from '@/hooks/useDispatchRelations';
 
 export function usePackagesByDateView(selectedDate: Date) {
-  const { data: tripsData = [], isLoading } = usePackagesByDate(selectedDate);
+  const { data, isLoading } = usePackagesByDate(selectedDate);
   const { data: dispatches = [] } = useDispatchRelations(selectedDate);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [selectedTripId, setSelectedTripId] = useState<string>('');
@@ -15,6 +16,9 @@ export function usePackagesByDateView(selectedDate: Date) {
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
   const [createDispatchDialogOpen, setCreateDispatchDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  // Safely extract trips from the data object
+  const tripsData = data?.trips || [];
 
   // Transform the data to match the expected Trip interface
   const trips = tripsData.map(trip => ({

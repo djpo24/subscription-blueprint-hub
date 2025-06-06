@@ -119,12 +119,15 @@ export function useMultipleLabelsPDF() {
 
       currentY += 6;
 
-      // QR Code centrado con marco - tamaño aumentado 40px y padding 20px
-      const qrSize = 52; // Aumentado de 42 a 52 (40px más en escala PDF)
-      const qrPadding = 7; // 20px convertido a escala PDF
+      // Agregar margen superior de 15px (convertido a mm)
+      currentY += 5.5; // 15px ≈ 5.5mm
+
+      // QR Code centrado con marco - padding reducido a 10px y márgenes de 15px
+      const qrSize = 52;
+      const qrPadding = 3.5; // 10px convertido a escala PDF (10px ≈ 3.5mm)
       const qrX = startX + (labelWidth - qrSize) / 2;
       
-      // Marco del QR con padding aumentado
+      // Marco del QR con padding reducido
       pdf.setFillColor(249, 249, 249);
       pdf.setDrawColor(220, 220, 220);
       pdf.setLineWidth(0.3);
@@ -144,7 +147,10 @@ export function useMultipleLabelsPDF() {
         console.error('Error agregando QR code:', error);
       }
 
-      currentY += qrSize + qrPadding + 6;
+      currentY += qrSize + qrPadding;
+      
+      // Agregar margen inferior de 15px (convertido a mm)
+      currentY += 5.5; // 15px ≈ 5.5mm
 
       // Peso y Total en la misma línea - peso izquierda, total derecha
       pdf.setFontSize(11);

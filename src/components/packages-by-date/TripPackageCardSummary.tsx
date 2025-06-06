@@ -23,8 +23,8 @@ export function TripPackageCardSummary({
   const isMobile = useIsMobile();
 
   // Función para renderizar los montos por moneda
-  const renderAmounts = (amountsByCurrency: Record<Currency, number>, showZero: boolean = false) => {
-    const entries = Object.entries(amountsByCurrency).filter(([, amount]) => amount > 0);
+  const renderAmounts = (amountsByCurrency: Record<string, number>, showZero: boolean = false) => {
+    const entries = Object.entries(amountsByCurrency).filter(([_, amount]) => amount > 0);
     
     if (entries.length === 0) {
       if (showZero) {
@@ -40,17 +40,15 @@ export function TripPackageCardSummary({
     ));
   };
 
-  // Provide default empty currency records to ensure proper typing
-  const defaultCurrencyRecord: Record<Currency, number> = { COP: 0, AWG: 0 };
-  
-  const safePendingAmounts = pendingAmountByCurrency || defaultCurrencyRecord;
-  const safeCollectedAmounts = collectedAmountByCurrency || defaultCurrencyRecord;
+  // Asegurar que los datos existan con valores por defecto
+  const safePendingAmounts = pendingAmountByCurrency || {};
+  const safeCollectedAmounts = collectedAmountByCurrency || {};
 
   // Verificar si hay algún monto cobrado
   const hasPendingAmounts = Object.values(safePendingAmounts).some(amount => amount > 0);
   const hasCollectedAmounts = Object.values(safeCollectedAmounts).some(amount => amount > 0);
 
-  console.log('📊 Summary data:', {
+  console.log('📊 Summary rendering data:', {
     pendingAmountByCurrency,
     collectedAmountByCurrency,
     safePendingAmounts,

@@ -23,7 +23,7 @@ export function usePackagePaymentsByTrip(tripId: string) {
 
       if (!packages || packages.length === 0) {
         console.log('📭 No packages found for trip');
-        return { collected: {}, pending: {} };
+        return { collected: { COP: 0, AWG: 0 }, pending: { COP: 0, AWG: 0 } };
       }
 
       const packageIds = packages.map(pkg => pkg.id);
@@ -62,14 +62,16 @@ export function usePackagePaymentsByTrip(tripId: string) {
 
       console.log('💰 Package payments found:', packagePayments?.length || 0, packagePayments);
 
-      // Calcular montos cobrados por moneda
-      const collectedByCurrency: Record<string, number> = {};
-      const pendingByCurrency: Record<string, number> = {};
+      // Inicializar contadores por moneda
+      const collectedByCurrency: Record<string, number> = { COP: 0, AWG: 0 };
+      const pendingByCurrency: Record<string, number> = { COP: 0, AWG: 0 };
 
       // Procesar cada paquete
       packages.forEach(pkg => {
         const currency = pkg.currency || 'COP';
         const amountToCollect = pkg.amount_to_collect || 0;
+        
+        console.log(`📝 Processing package ${pkg.id}: amount_to_collect=${amountToCollect}, currency=${currency}`);
         
         let totalPaidForPackage = 0;
 
@@ -78,15 +80,24 @@ export function usePackagePaymentsByTrip(tripId: string) {
         if (delivery?.delivery_payments && Array.isArray(delivery.delivery_payments)) {
           delivery.delivery_payments.forEach(payment => {
             const amount = Number(payment.amount) || 0;
+            const paymentCurrency = payment.currency || currency;
             totalPaidForPackage += amount;
             
-            if (!collectedByCurrency[currency]) {
-              collectedByCurrency[currency] = 0;
-            }
-            collectedByCurrency[currency] += amount;
+            collectedByCurrency[paymentCurrency] = (collectedByCurrency[paymentCurrency] || 0) + amount;
             
-            console.log(`💳 Delivery payment: ${amount} ${currency} for package ${pkg.id}`);
+            console.log(`💳 Delivery payment: ${amount} ${paymentCurrency} for package ${pkg.id}`);
           });
+        }
+
+        // Sumar el total_amount_collected de la entrega si existe
+        if (delivery?.total_amount_collected) {
+          const deliveryAmount = Number(delivery.total_amount_collected) || 0;
+          // Solo sumar si no hay delivery_payments individuales para evitar duplicar
+          if (!delivery.delivery_payments || delivery.delivery_payments.length === 0) {
+            totalPaidForPackage += deliveryAmount;
+            collectedByCurrency[currency] = (collectedByCurrency[currency] || 0) + deliveryAmount;
+            console.log(`💰 Total delivery amount: ${deliveryAmount} ${currency} for package ${pkg.id}`);
+          }
         }
 
         // Sumar pagos desde package_payments
@@ -95,37 +106,44 @@ export function usePackagePaymentsByTrip(tripId: string) {
           const amount = Number(payment.amount) || 0;
           totalPaidForPackage += amount;
           
-          if (!collectedByCurrency[currency]) {
-            collectedByCurrency[currency] = 0;
-          }
-          collectedByCurrency[currency] += amount;
+          collectedByCurrency[currency] = (collectedByCurrency[currency] || 0) + amount;
           
           console.log(`💰 Package payment: ${amount} ${currency} for package ${pkg.id}`);
         });
 
         // Calcular monto pendiente
         if (amountToCollect > 0) {
-          const pending = Math.max(0, amountToCollect - totalPaidForPackage);
+          pendingByCurrency[currency] = (pendingByCurrency[currency] || 0) + amountToCollect;
           
-          if (!pendingByCurrency[currency]) {
-            pendingByCurrency[currency] = 0;
+          // Restar lo que ya se ha pagado del pendiente
+          if (totalPaidForPackage > 0) {
+            const amountToDeduce = Math.min(totalPaidForPackage, amountToCollect);
+            pendingByCurrency[currency] = Math.max(0, pendingByCurrency[currency] - amountToDeduce);
           }
-          pendingByCurrency[currency] += pending;
           
-          console.log(`📊 Package ${pkg.id}: amount_to_collect=${amountToCollect}, paid=${totalPaidForPackage}, pending=${pending}`);
+          console.log(`📊 Package ${pkg.id}: amount_to_collect=${amountToCollect}, paid=${totalPaidForPackage}, pending=${pendingByCurrency[currency]}`);
         }
       });
 
+      // Limpiar valores cero para el display
+      const finalCollected = Object.fromEntries(
+        Object.entries(collectedByCurrency).filter(([_, amount]) => amount > 0)
+      );
+      
+      const finalPending = Object.fromEntries(
+        Object.entries(pendingByCurrency).filter(([_, amount]) => amount > 0)
+      );
+
       console.log('✅ Package payments calculated:', {
-        collected: collectedByCurrency,
-        pending: pendingByCurrency,
+        collected: finalCollected,
+        pending: finalPending,
         totalDeliveries: deliveries?.length || 0,
         totalPackagePayments: packagePayments?.length || 0
       });
 
       return {
-        collected: collectedByCurrency,
-        pending: pendingByCurrency
+        collected: finalCollected,
+        pending: finalPending
       };
     },
     enabled: !!tripId,

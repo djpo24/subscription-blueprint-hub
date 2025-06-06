@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Camera, ArrowLeft, Smartphone, BarChart3 } from 'lucide-react';
 import { QRScanner } from './QRScanner';
 import { MobileDeliveryForm } from './MobileDeliveryForm';
+import { supabase } from '@/integrations/supabase/client';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 type ViewMode = 'menu' | 'scanner' | 'delivery';
@@ -30,35 +31,68 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
       const trackingNumber = barcodeData.trim();
       
       if (trackingNumber) {
-        // Aquí normalmente harías una consulta a la API para obtener los datos del paquete
-        // Por ahora, simularemos los datos del paquete usando el tracking number
-        const mockPackage: PackageInDispatch = {
-          id: `package-${trackingNumber}`,
-          tracking_number: trackingNumber,
-          origin: 'Bogotá',
-          destination: 'Aruba',
-          status: 'en_destino',
-          description: `Paquete escaneado: ${trackingNumber}`,
-          weight: 2.5,
-          freight: 50000,
-          amount_to_collect: 100000,
-          currency: 'AWG',
-          trip_id: 'trip-123',
-          customers: {
-            name: `Cliente ${trackingNumber}`,
-            email: 'cliente@example.com'
+        console.log('🔍 Buscando paquete con tracking number:', trackingNumber);
+        
+        // Buscar el paquete en la base de datos usando el tracking number
+        const { data: packageData, error: packageError } = await supabase
+          .from('packages')
+          .select('*')
+          .eq('tracking_number', trackingNumber)
+          .single();
+
+        if (packageError) {
+          console.error('❌ Error buscando paquete:', packageError);
+          throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
+        }
+
+        if (!packageData) {
+          throw new Error(`No se encontró el paquete con tracking number: ${trackingNumber}`);
+        }
+
+        console.log('📦 Paquete encontrado:', packageData);
+
+        // Buscar los datos del cliente
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('name, email')
+          .eq('id', packageData.customer_id)
+          .single();
+
+        if (customerError) {
+          console.error('⚠️ Error buscando cliente:', customerError);
+        }
+
+        // Crear el objeto PackageInDispatch con los datos reales
+        const realPackage: PackageInDispatch = {
+          id: packageData.id,
+          tracking_number: packageData.tracking_number,
+          origin: packageData.origin,
+          destination: packageData.destination,
+          status: packageData.status,
+          description: packageData.description,
+          weight: packageData.weight,
+          freight: packageData.freight,
+          amount_to_collect: packageData.amount_to_collect,
+          currency: packageData.currency,
+          trip_id: packageData.trip_id,
+          customers: customerData ? {
+            name: customerData.name,
+            email: customerData.email
+          } : {
+            name: 'Cliente no encontrado',
+            email: 'N/A'
           }
         };
         
-        console.log('📦 Paquete simulado creado:', mockPackage);
-        setScannedPackage(mockPackage);
+        console.log('✅ Paquete con datos completos:', realPackage);
+        setScannedPackage(realPackage);
         setViewMode('delivery');
       } else {
         throw new Error('Código de barras no válido o vacío');
       }
     } catch (error) {
       console.error('❌ Error procesando código de barras:', error);
-      alert('Error: Código de barras no válido o no se pudo procesar');
+      alert(`Error: ${error instanceof Error ? error.message : 'Código de barras no válido o no se pudo procesar'}`);
     } finally {
       setIsLoading(false);
     }

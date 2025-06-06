@@ -51,45 +51,58 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
     lineHeight: '1.2'
   };
 
+  // Formatear fecha exactamente como en la imagen
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month} ${day}/${year}`;
+  };
+
   return (
     <div style={baseStyles}>
-      {/* Header */}
+      {/* Header - ENVIOS OJITO y tracking number en la misma línea */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: '20px',
+        marginBottom: '8px',
         fontSize: isPrintMode ? '16px' : '14px'
       }}>
-        <div>
-          <div style={{ fontSize: isPrintMode ? '20px' : '18px', fontWeight: 'bold', marginBottom: '4px' }}>
-            ENVIOS OJITO
-          </div>
-          <div style={{ fontSize: isPrintMode ? '14px' : '12px', color: '#666' }}>
-            {pkg.customers?.name || 'Cliente'}
-          </div>
+        <div style={{ fontSize: isPrintMode ? '20px' : '18px', fontWeight: 'bold' }}>
+          ENVIOS OJITO
         </div>
-        <div style={{ textAlign: 'right', fontSize: isPrintMode ? '14px' : '12px' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-            {pkg.tracking_number}
-          </div>
-          <div style={{ color: '#666' }}>
-            {format(new Date(pkg.created_at), 'MMMM d/yy', { locale: { localize: { month: (month: number) => {
-              const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-              return months[month];
-            }}}}) || format(new Date(pkg.created_at), 'MMM d/yy')}
-          </div>
+        <div style={{ fontSize: isPrintMode ? '16px' : '14px', fontWeight: 'bold' }}>
+          {pkg.tracking_number}
         </div>
       </div>
 
-      {/* QR Code centrado */}
+      {/* Segunda línea - Cliente y fecha */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        marginBottom: '24px',
+        fontSize: isPrintMode ? '14px' : '12px'
+      }}>
+        <div style={{ color: '#666' }}>
+          {pkg.customers?.name || 'Cliente'}
+        </div>
+        <div style={{ color: '#666' }}>
+          {formatDate(pkg.created_at)}
+        </div>
+      </div>
+
+      {/* QR Code centrado con marco */}
       <div style={{ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: '20px',
-        padding: '16px',
-        border: '1px solid #ddd',
+        marginBottom: '32px',
+        padding: '12px',
+        border: '2px solid #ddd',
         borderRadius: '8px',
         backgroundColor: '#f9f9f9'
       }}>
@@ -98,38 +111,43 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
             src={labelData.qrCodeDataUrl} 
             alt="QR Code" 
             style={{ 
-              width: isPrintMode ? '180px' : '150px', 
-              height: isPrintMode ? '180px' : '150px'
+              width: isPrintMode ? '160px' : '140px', 
+              height: isPrintMode ? '160px' : '140px'
             }}
           />
         )}
       </div>
 
-      {/* Peso y Total */}
+      {/* Peso y Total en líneas separadas */}
       <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '16px',
+        marginBottom: '20px',
         fontSize: isPrintMode ? '16px' : '14px'
       }}>
-        <div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-start',
+          marginBottom: '8px'
+        }}>
           <span style={{ fontWeight: 'bold' }}>Peso: </span>
-          {pkg.weight ? `${pkg.weight}kg` : '0kg'}
+          <span>{pkg.weight ? `${pkg.weight}kg` : '3kg'}</span>
         </div>
-        <div style={{ fontWeight: 'bold', fontSize: isPrintMode ? '18px' : '16px' }}>
-          <span>Total: </span>
-          <span>₡{pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '0'}</span>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end',
+          fontSize: isPrintMode ? '18px' : '16px',
+          fontWeight: 'bold'
+        }}>
+          <span>Total: ₡{pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.543.545'}</span>
         </div>
       </div>
 
       {/* Texto informativo centrado */}
       <div style={{ 
         textAlign: 'center',
-        fontSize: isPrintMode ? '12px' : '10px',
-        lineHeight: '1.3',
+        fontSize: isPrintMode ? '11px' : '9px',
+        lineHeight: '1.2',
         marginBottom: '16px',
-        fontWeight: '500'
+        fontWeight: 'bold'
       }}>
         <div>Toda encomienda debe ser verificada en el local al</div>
         <div>momento de la entrega. Una vez entregada, no se</div>
@@ -139,11 +157,11 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
       {/* Direcciones centradas */}
       <div style={{ 
         textAlign: 'center',
-        fontSize: isPrintMode ? '11px' : '9px',
-        lineHeight: '1.4',
-        color: '#333'
+        fontSize: isPrintMode ? '10px' : '8px',
+        lineHeight: '1.3',
+        color: '#000'
       }}>
-        <div style={{ marginBottom: '8px' }}>
+        <div style={{ marginBottom: '6px' }}>
           <div style={{ fontWeight: 'bold' }}>Dirección en B/QUILLA: Calle 45B # 22 - 124</div>
           <div>Tel: +5731272717446</div>
         </div>

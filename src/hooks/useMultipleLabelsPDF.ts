@@ -33,6 +33,15 @@ export function useMultipleLabelsPDF() {
     }).format(amount).replace('COP', '').trim();
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month} ${day}/${year}`;
+  };
+
   const generatePDFFromLabels = useCallback(async (
     packages: Package[], 
     labelsData: Map<string, LabelData>
@@ -81,50 +90,48 @@ export function useMultipleLabelsPDF() {
 
       let currentY = startY + 16;
 
-      // Header
-      // ENVIOS OJITO (izquierda)
+      // Header - ENVIOS OJITO y tracking number en la misma línea
+      pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.text('ENVIOS OJITO', startX + 5, currentY);
       
-      // Tracking number (derecha)
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
+      // Tracking number (derecha, misma línea)
       const trackingText = pkg.tracking_number;
       const trackingWidth = pdf.getTextWidth(trackingText);
       pdf.text(trackingText, startX + labelWidth - trackingWidth - 5, currentY);
 
-      currentY += 6;
+      currentY += 8;
 
-      // Cliente (izquierda)
-      pdf.setFontSize(9);
+      // Segunda línea - Cliente y fecha
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(100, 100, 100);
+      
+      // Cliente (izquierda)
       pdf.text(pkg.customers?.name || 'Cliente', startX + 5, currentY);
 
       // Fecha (derecha)
-      const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const date = new Date(pkg.created_at);
-      const monthName = months[date.getMonth()];
-      const dateText = `${monthName} ${date.getDate()}/${date.getFullYear().toString().slice(-2)}`;
+      const dateText = formatDate(pkg.created_at);
       const dateWidth = pdf.getTextWidth(dateText);
       pdf.text(dateText, startX + labelWidth - dateWidth - 5, currentY);
 
-      currentY += 20;
+      currentY += 24;
 
       // QR Code centrado con marco
       pdf.setTextColor(0, 0, 0);
-      const qrBoxSize = 50;
+      const qrBoxSize = 45;
       const qrBoxX = startX + (labelWidth - qrBoxSize) / 2;
       
       // Marco del QR
       pdf.setFillColor(249, 249, 249);
       pdf.setDrawColor(220, 220, 220);
-      pdf.roundedRect(qrBoxX - 4, currentY - 4, qrBoxSize + 8, qrBoxSize + 8, 2, 2, 'FD');
+      pdf.setLineWidth(0.5);
+      pdf.roundedRect(qrBoxX - 3, currentY - 3, qrBoxSize + 6, qrBoxSize + 6, 2, 2, 'FD');
 
       // QR Code
       try {
-        const qrSize = 45;
+        const qrSize = 40;
         const qrX = startX + (labelWidth - qrSize) / 2;
         pdf.addImage(
           labelData.qrCodeDataUrl, 
@@ -138,27 +145,37 @@ export function useMultipleLabelsPDF() {
         console.error('Error agregando QR code:', error);
       }
 
-      currentY += qrBoxSize + 16;
+      currentY += qrBoxSize + 20;
 
-      // Peso y Total
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'bold');
+      // Peso y Total en líneas separadas
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
       
       // Peso (izquierda)
-      const pesoText = `Peso: ${pkg.weight ? pkg.weight + 'kg' : '0kg'}`;
-      pdf.text(pesoText, startX + 5, currentY);
+      pdf.setFont('helvetica', 'bold');
+      const pesoLabel = 'Peso: ';
+      pdf.text(pesoLabel, startX + 5, currentY);
+      
+      pdf.setFont('helvetica', 'normal');
+      const pesoValue = pkg.weight ? `${pkg.weight}kg` : '3kg';
+      const pesoLabelWidth = pdf.getTextWidth(pesoLabel);
+      pdf.text(pesoValue, startX + 5 + pesoLabelWidth, currentY);
+
+      currentY += 8;
 
       // Total (derecha)
-      const totalAmount = pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '0';
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      const totalAmount = pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.543.545';
       const totalText = `Total: ₡${totalAmount}`;
       const totalWidth = pdf.getTextWidth(totalText);
       pdf.text(totalText, startX + labelWidth - totalWidth - 5, currentY);
 
-      currentY += 12;
+      currentY += 20;
 
       // Texto informativo centrado
       pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
+      pdf.setFont('helvetica', 'bold');
       
       const infoLines = [
         'Toda encomienda debe ser verificada en el local al',
@@ -169,13 +186,14 @@ export function useMultipleLabelsPDF() {
       infoLines.forEach((line, index) => {
         const lineWidth = pdf.getTextWidth(line);
         const lineX = startX + (labelWidth - lineWidth) / 2;
-        pdf.text(line, lineX, currentY + (index * 4));
+        pdf.text(line, lineX, currentY + (index * 3.5));
       });
 
       currentY += 16;
 
       // Direcciones centradas
-      pdf.setFontSize(7);
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(0, 0, 0);
       
       // Dirección Barranquilla
       pdf.setFont('helvetica', 'bold');

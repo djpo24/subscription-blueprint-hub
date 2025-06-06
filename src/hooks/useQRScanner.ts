@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef } from 'react';
-import { BrowserQRCodeReader, BarcodeFormat } from '@zxing/browser';
+import { BrowserQRCodeReader, BrowserMultiFormatReader } from '@zxing/browser';
 
 export function useQRScanner() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -9,14 +8,15 @@ export function useQRScanner() {
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
+  const qrCodeReaderRef = useRef<BrowserQRCodeReader | null>(null);
+  const barcodeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanningAbortController = useRef<AbortController | null>(null);
   const continuousScanRef = useRef<boolean>(false);
 
   const initCamera = async () => {
     try {
-      console.log('Initializing camera for Beeprt CC450 CPCL QR scanning...');
+      console.log('Initializing camera for Beeprt CC450 CPCL QR/Barcode scanning...');
       
       // Check if camera is available and get camera list
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -48,11 +48,11 @@ export function useQRScanner() {
       setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
       setHasPermission(true);
       
-      console.log('Camera initialized for thermal printer QR detection. Default camera:', sortedCameras[0]?.label || 'Unknown');
+      console.log('Camera initialized for thermal printer QR/Barcode detection. Default camera:', sortedCameras[0]?.label || 'Unknown');
     } catch (err) {
       console.error('Camera permission denied:', err);
       setHasPermission(false);
-      setError('Se requiere acceso a la cámara para escanear códigos QR');
+      setError('Se requiere acceso a la cámara para escanear códigos QR y códigos de barras');
     }
   };
 
@@ -71,7 +71,7 @@ export function useQRScanner() {
         min: 720,
         max: 2160 
       },
-      // Configuraciones específicas para códigos QR de impresoras térmicas
+      // Configuraciones específicas para códigos QR/Barcode de impresoras térmicas
       focusMode: 'continuous',
       aspectRatio: { ideal: 16/9 },
       frameRate: { ideal: 60, min: 30, max: 60 }, // Aumentar framerate
@@ -86,7 +86,7 @@ export function useQRScanner() {
 
   const startVideoStream = async (deviceId: string) => {
     try {
-      console.log('Starting ultra high-resolution video stream for thermal printer QR codes with device:', deviceId);
+      console.log('Starting ultra high-resolution video stream for thermal printer QR/Barcode codes with device:', deviceId);
       
       // Stop existing stream
       if (streamRef.current) {
@@ -97,7 +97,7 @@ export function useQRScanner() {
       // Get optimal constraints for the device
       const videoConstraints = getOptimalVideoConstraints(deviceId);
       
-      console.log('Video constraints for thermal printer QR:', videoConstraints);
+      console.log('Video constraints for thermal printer QR/Barcode:', videoConstraints);
 
       const constraints = {
         video: videoConstraints,
@@ -120,7 +120,7 @@ export function useQRScanner() {
         // Log de la resolución actual del stream
         const track = stream.getVideoTracks()[0];
         const settings = track.getSettings();
-        console.log('Actual video settings for thermal printer QR:', {
+        console.log('Actual video settings for thermal printer QR/Barcode:', {
           width: settings.width,
           height: settings.height,
           frameRate: settings.frameRate,
@@ -128,7 +128,7 @@ export function useQRScanner() {
           deviceId: settings.deviceId
         });
         
-        console.log('Ultra high-resolution video stream started for thermal printer QR detection');
+        console.log('Ultra high-resolution video stream started for thermal printer QR/Barcode detection');
       }
 
       return stream;
@@ -137,7 +137,7 @@ export function useQRScanner() {
       
       // Fallback to high resolution if ultra high resolution fails
       try {
-        console.log('Trying high resolution fallback for thermal printer QR...');
+        console.log('Trying high resolution fallback for thermal printer QR/Barcode...');
         const fallbackConstraints = {
           video: {
             deviceId: { exact: deviceId },
@@ -189,41 +189,44 @@ export function useQRScanner() {
     }
   };
 
-  // Función para escaneo continuo optimizado para impresoras térmicas
-  const continuousQRScan = async (onQRCodeScanned: (qrData: string) => void, codeReader: BrowserQRCodeReader, deviceId: string) => {
+  // Función para escaneo continuo con QR y Barcode para impresoras térmicas
+  const continuousCodeScan = async (onCodeScanned: (codeData: string) => void, qrReader: BrowserQRCodeReader, barcodeReader: BrowserMultiFormatReader, deviceId: string) => {
     if (!videoRef.current || !continuousScanRef.current) return;
 
     try {
       console.log('Attempting thermal printer QR scan...');
-      const result = await codeReader.decodeOnceFromVideoDevice(deviceId, videoRef.current);
+      const qrResult = await qrReader.decodeOnceFromVideoDevice(deviceId, videoRef.current);
       
-      if (result && continuousScanRef.current) {
-        console.log('Thermal printer QR Code successfully detected:', result.getText());
-        onQRCodeScanned(result.getText());
+      if (qrResult && continuousScanRef.current) {
+        console.log('Thermal printer QR Code successfully detected:', qrResult.getText());
+        onCodeScanned(qrResult.getText());
         stopScanning();
         return;
       }
-    } catch (scanError: any) {
-      // Continuar intentando si no se detectó código o hay errores menores
-      if (scanError.name === 'NotFoundException') {
-        // No se encontró código QR, continuar escaneando
-        if (continuousScanRef.current) {
-          setTimeout(() => {
-            continuousQRScan(onQRCodeScanned, codeReader, deviceId);
-          }, 50); // Escanear cada 50ms para mayor frecuencia
+    } catch (qrError: any) {
+      // Si falla QR, intentar con código de barras
+      try {
+        console.log('QR failed, attempting thermal printer Barcode scan...');
+        const barcodeResult = await barcodeReader.decodeOnceFromVideoDevice(deviceId, videoRef.current);
+        
+        if (barcodeResult && continuousScanRef.current) {
+          console.log('Thermal printer Barcode successfully detected:', barcodeResult.getText());
+          onCodeScanned(barcodeResult.getText());
+          stopScanning();
+          return;
         }
-      } else {
-        console.error('Thermal printer QR scan error:', scanError);
+      } catch (barcodeError: any) {
+        // Continuar intentando si no se detectó ningún código
         if (continuousScanRef.current) {
           setTimeout(() => {
-            continuousQRScan(onQRCodeScanned, codeReader, deviceId);
-          }, 100);
+            continuousCodeScan(onCodeScanned, qrReader, barcodeReader, deviceId);
+          }, 25); // Escanear cada 25ms para mayor frecuencia
         }
       }
     }
   };
 
-  const startScanning = async (onQRCodeScanned: (qrData: string) => void) => {
+  const startScanning = async (onCodeScanned: (codeData: string) => void) => {
     if (!videoRef.current || availableCameras.length === 0) {
       console.error('Video element or cameras not available');
       return;
@@ -235,7 +238,7 @@ export function useQRScanner() {
       continuousScanRef.current = true;
       
       const selectedCamera = availableCameras[currentCameraIndex];
-      console.log('Starting thermal printer QR scan with camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+      console.log('Starting thermal printer QR/Barcode scan with camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
 
       // Start video stream if not already started
       if (!streamRef.current) {
@@ -247,28 +250,33 @@ export function useQRScanner() {
       scanningAbortController.current = abortController;
 
       // Configurar QR code reader optimizado para impresoras térmicas
-      const codeReader = new BrowserQRCodeReader(undefined, {
-        delayBetweenScanAttempts: 50, // Reducir delay significativamente para escaneo más agresivo
-        delayBetweenScanSuccess: 300, // Reducir delay después de escaneo exitoso
-        // Usar formatos específicos para mejor detección
-        formats: [BarcodeFormat.QR_CODE]
+      const qrCodeReader = new BrowserQRCodeReader(undefined, {
+        delayBetweenScanAttempts: 25, // Reducir delay significativamente para escaneo más agresivo
+        delayBetweenScanSuccess: 300 // Reducir delay después de escaneo exitoso
       });
-      codeReaderRef.current = codeReader;
+      qrCodeReaderRef.current = qrCodeReader;
 
-      // Iniciar escaneo continuo
-      console.log('Starting continuous thermal printer QR decode...');
-      continuousQRScan(onQRCodeScanned, codeReader, selectedCamera.deviceId);
+      // Configurar Multi-format reader para códigos de barras (incluyendo Code128, Code39, etc.)
+      const barcodeReader = new BrowserMultiFormatReader(undefined, {
+        delayBetweenScanAttempts: 25,
+        delayBetweenScanSuccess: 300
+      });
+      barcodeReaderRef.current = barcodeReader;
+
+      // Iniciar escaneo continuo con ambos lectores
+      console.log('Starting continuous thermal printer QR/Barcode decode...');
+      continuousCodeScan(onCodeScanned, qrCodeReader, barcodeReader, selectedCamera.deviceId);
       
     } catch (err) {
-      console.error('Error starting thermal printer QR scan:', err);
-      setError('Error al inicializar el escáner para códigos QR de impresora térmica');
+      console.error('Error starting thermal printer QR/Barcode scan:', err);
+      setError('Error al inicializar el escáner para códigos QR y códigos de barras de impresora térmica');
       setIsScanning(false);
       continuousScanRef.current = false;
     }
   };
 
   const stopScanning = () => {
-    console.log('Stopping thermal printer QR scanning...');
+    console.log('Stopping thermal printer QR/Barcode scanning...');
     
     // Detener escaneo continuo
     continuousScanRef.current = false;
@@ -279,14 +287,15 @@ export function useQRScanner() {
       scanningAbortController.current = null;
     }
     
-    // Clear the code reader reference
-    codeReaderRef.current = null;
+    // Clear the code reader references
+    qrCodeReaderRef.current = null;
+    barcodeReaderRef.current = null;
     
     setIsScanning(false);
   };
 
   const cleanup = () => {
-    console.log('Cleaning up thermal printer QR scanner resources...');
+    console.log('Cleaning up thermal printer QR/Barcode scanner resources...');
     
     // Stop scanning
     stopScanning();

@@ -170,7 +170,7 @@ export function useMultipleLabelsPDF() {
 
       currentY += 10;
 
-      // Texto informativo centrado - tamaño aumentado en 3pt
+      // Texto informativo centrado - tamaño aumentado en 3pt y espaciado aumentado en 2pt
       pdf.setFontSize(10); // Aumentado de 7 a 10 (3pt más)
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 0, 0);
@@ -182,18 +182,18 @@ export function useMultipleLabelsPDF() {
       let infoWidth = pdf.getTextWidth(infoText);
       pdf.text(infoText, startX + (labelWidth - infoWidth) / 2, currentY);
       
-      currentY += 3;
+      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
       infoWidth = pdf.getTextWidth(infoText2);
       pdf.text(infoText2, startX + (labelWidth - infoWidth) / 2, currentY);
       
-      currentY += 3;
+      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
       infoWidth = pdf.getTextWidth(infoText3);
       pdf.text(infoText3, startX + (labelWidth - infoWidth) / 2, currentY);
 
       currentY += 10;
 
-      // Direcciones centradas - reducido espacio superior
-      pdf.setFontSize(6.5);
+      // Direcciones centradas - tamaño aumentado en 3pt y espaciado aumentado en 2pt
+      pdf.setFontSize(9.5); // Aumentado de 6.5 a 9.5 (3pt más)
       pdf.setTextColor(0, 0, 0);
       
       // Dirección Barranquilla
@@ -202,13 +202,13 @@ export function useMultipleLabelsPDF() {
       let addressWidth = pdf.getTextWidth(addressLine);
       pdf.text(addressLine, startX + (labelWidth - addressWidth) / 2, currentY);
       
-      currentY += 3;
+      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
       pdf.setFont('helvetica', 'normal');
       let phoneLine = 'Tel: +5731272717446';
       let phoneWidth = pdf.getTextWidth(phoneLine);
       pdf.text(phoneLine, startX + (labelWidth - phoneWidth) / 2, currentY);
 
-      currentY += 5;
+      currentY += 5.5; // Aumentado de 5 a 5.5 (2pt más de espaciado)
 
       // Dirección Curacao
       pdf.setFont('helvetica', 'bold');
@@ -216,7 +216,7 @@ export function useMultipleLabelsPDF() {
       addressWidth = pdf.getTextWidth(addressLine);
       pdf.text(addressLine, startX + (labelWidth - addressWidth) / 2, currentY);
       
-      currentY += 3;
+      currentY += 3.5; // Aumentado de 3 a 3.5 (2pt más de espaciado)
       pdf.setFont('helvetica', 'normal');
       phoneLine = 'Tel: +599 9 6964306';
       phoneWidth = pdf.getTextWidth(phoneLine);

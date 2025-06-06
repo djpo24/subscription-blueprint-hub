@@ -139,11 +139,11 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         </div>
       </div>
 
-      {/* Texto informativo centrado - tamaño aumentado en 3pt */}
+      {/* Texto informativo centrado - tamaño aumentado en 3pt y espaciado aumentado en 2pt */}
       <div style={{ 
         textAlign: 'center',
         fontSize: isPrintMode ? '14px' : '12px', // Aumentado de 11px/9px a 14px/12px (3pt más)
-        lineHeight: '1.2',
+        lineHeight: '1.4', // Aumentado de 1.2 a 1.4 (2pt más de espaciado)
         marginBottom: '12px',
         fontWeight: 'bold'
       }}>
@@ -152,11 +152,11 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
         <div>aceptan reclamos.</div>
       </div>
 
-      {/* Direcciones centradas */}
+      {/* Direcciones centradas - tamaño aumentado en 3pt y espaciado aumentado en 2pt */}
       <div style={{ 
         textAlign: 'center',
-        fontSize: isPrintMode ? '10px' : '8px',
-        lineHeight: '1.3',
+        fontSize: isPrintMode ? '13px' : '11px', // Aumentado de 10px/8px a 13px/11px (3pt más)
+        lineHeight: '1.5', // Aumentado de 1.3 a 1.5 (2pt más de espaciado)
         color: '#000'
       }}>
         <div style={{ marginBottom: '6px' }}>

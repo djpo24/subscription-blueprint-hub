@@ -15,7 +15,7 @@ export function useQRScanner() {
 
   const initCamera = async () => {
     try {
-      console.log('Initializing camera...');
+      console.log('Initializing camera with high resolution...');
       
       // Check if camera is available and get camera list
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -55,9 +55,35 @@ export function useQRScanner() {
     }
   };
 
+  const getOptimalVideoConstraints = (deviceId: string) => {
+    return {
+      deviceId: { exact: deviceId },
+      facingMode: 'environment',
+      // Configuración para máxima resolución y calidad
+      width: { 
+        ideal: 1920, 
+        min: 640,
+        max: 4096 
+      },
+      height: { 
+        ideal: 1080, 
+        min: 480,
+        max: 2160 
+      },
+      // Enfocar específicamente para lectura de cerca
+      focusMode: 'continuous',
+      // Configuraciones adicionales para mejor calidad
+      aspectRatio: { ideal: 16/9 },
+      frameRate: { ideal: 30, min: 15, max: 60 },
+      // Configuraciones específicas para dispositivos móviles
+      exposureMode: 'continuous',
+      whiteBalanceMode: 'continuous'
+    };
+  };
+
   const startVideoStream = async (deviceId: string) => {
     try {
-      console.log('Starting video stream with device:', deviceId);
+      console.log('Starting high-resolution video stream with device:', deviceId);
       
       // Stop existing stream
       if (streamRef.current) {
@@ -65,12 +91,14 @@ export function useQRScanner() {
         streamRef.current = null;
       }
 
-      // Start new stream with selected camera
+      // Get optimal constraints for the device
+      const videoConstraints = getOptimalVideoConstraints(deviceId);
+      
+      console.log('Video constraints:', videoConstraints);
+
       const constraints = {
-        video: {
-          deviceId: { exact: deviceId },
-          facingMode: 'environment' // Try to use rear camera
-        }
+        video: videoConstraints,
+        audio: false // No necesitamos audio para QR scanning
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -78,14 +106,59 @@ export function useQRScanner() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        
+        // Configurar el elemento video para mejor calidad
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('autoplay', 'true');
+        videoRef.current.setAttribute('muted', 'true');
+        
         await videoRef.current.play();
-        console.log('Video stream started successfully');
+        
+        // Log de la resolución actual del stream
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        console.log('Actual video settings:', {
+          width: settings.width,
+          height: settings.height,
+          frameRate: settings.frameRate,
+          facingMode: settings.facingMode,
+          deviceId: settings.deviceId
+        });
+        
+        console.log('High-resolution video stream started successfully');
       }
 
       return stream;
     } catch (err) {
-      console.error('Error starting video stream:', err);
-      throw err;
+      console.error('Error starting high-resolution video stream:', err);
+      
+      // Fallback to lower resolution if high resolution fails
+      try {
+        console.log('Trying fallback resolution...');
+        const fallbackConstraints = {
+          video: {
+            deviceId: { exact: deviceId },
+            facingMode: 'environment',
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 }
+          },
+          audio: false
+        };
+        
+        const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        streamRef.current = fallbackStream;
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          await videoRef.current.play();
+          console.log('Fallback video stream started');
+        }
+        
+        return fallbackStream;
+      } catch (fallbackErr) {
+        console.error('Fallback video stream also failed:', fallbackErr);
+        throw fallbackErr;
+      }
     }
   };
 
@@ -123,7 +196,7 @@ export function useQRScanner() {
       setError(null);
       
       const selectedCamera = availableCameras[currentCameraIndex];
-      console.log('Starting scan with camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+      console.log('Starting QR scan with high-resolution camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
 
       // Start video stream if not already started
       if (!streamRef.current) {
@@ -134,39 +207,59 @@ export function useQRScanner() {
       const abortController = new AbortController();
       scanningAbortController.current = abortController;
 
-      const codeReader = new BrowserQRCodeReader();
+      // Configurar QR code reader con mejores opciones
+      const codeReader = new BrowserQRCodeReader(undefined, {
+        delayBetweenScanAttempts: 100, // Reducir delay para scanning más rápido
+        delayBetweenScanSuccess: 500, // Delay después de escaneo exitoso
+        tryHarder: true // Intentar más duro para detectar códigos
+      });
       codeReaderRef.current = codeReader;
 
       // Start scanning from the video element
       try {
+        console.log('Starting QR decode with enhanced settings...');
         const result = await codeReader.decodeOnceFromVideoDevice(selectedCamera.deviceId, videoRef.current);
         
         // Check if scanning was aborted
         if (abortController.signal.aborted) {
+          console.log('QR scanning was aborted');
           return;
         }
         
         if (result) {
-          console.log('QR Code scanned:', result.getText());
+          console.log('QR Code successfully scanned:', result.getText());
           onQRCodeScanned(result.getText());
           stopScanning();
         }
-      } catch (scanError) {
+      } catch (scanError: any) {
         // Check if scanning was aborted
         if (abortController.signal.aborted) {
+          console.log('QR scanning was aborted during decode');
           return;
         }
-        throw scanError;
+        
+        console.error('QR scan error:', scanError);
+        
+        // Provide more specific error messages
+        if (scanError.name === 'NotFoundError') {
+          setError('No se pudo detectar un código QR. Asegúrate de que esté bien iluminado y enfocado.');
+        } else if (scanError.name === 'NotReadableError') {
+          setError('Error de lectura de la cámara. Intenta cambiar de cámara.');
+        } else {
+          setError('Error al escanear. Intenta nuevamente o cambia de cámara.');
+        }
+        
+        setIsScanning(false);
       }
     } catch (err) {
-      console.error('Error scanning QR code:', err);
-      setError('Error al escanear. Intenta nuevamente.');
+      console.error('Error starting QR scan:', err);
+      setError('Error al inicializar el escáner. Verifica los permisos de la cámara.');
       setIsScanning(false);
     }
   };
 
   const stopScanning = () => {
-    console.log('Stopping scanning...');
+    console.log('Stopping QR scanning...');
     
     // Abort any ongoing scanning
     if (scanningAbortController.current) {
@@ -210,7 +303,7 @@ export function useQRScanner() {
       if (selectedCamera) {
         startVideoStream(selectedCamera.deviceId).catch(err => {
           console.error('Error starting video stream on camera change:', err);
-          setError('Error al inicializar la cámara');
+          setError('Error al inicializar la cámara con alta resolución');
         });
       }
     }

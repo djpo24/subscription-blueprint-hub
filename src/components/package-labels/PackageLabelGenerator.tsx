@@ -23,19 +23,19 @@ export interface LabelData {
 }
 
 export async function generateLabelData(pkg: Package): Promise<LabelData> {
-  // Generate QR Code
+  // Generate QR Code usando el mismo formato del QR de prueba
   const qrData = {
     id: pkg.id,
     tracking: pkg.tracking_number,
-    customer: pkg.customers?.name || 'N/A',
+    customer: pkg.customers?.name || 'CLIENTE',
     status: pkg.status,
     action: 'package_scan'
   };
 
   const qrDataString = JSON.stringify(qrData);
   const qrCodeUrl = await QRCode.toDataURL(qrDataString, {
-    width: 120,
-    margin: 1,
+    width: 300,
+    margin: 2,
     color: {
       dark: '#000000',
       light: '#FFFFFF'

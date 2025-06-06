@@ -120,7 +120,7 @@ export function useMultipleLabelsPDF() {
       
       infoY += 15;
       
-      // PARA
+      // PARA - usar el mismo formato que el QR de prueba
       pdf.setFontSize(6);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PARA:', startX + 5, infoY);

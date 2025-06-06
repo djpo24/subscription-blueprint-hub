@@ -3,6 +3,7 @@ import { CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
 import { PackageItem } from './PackageItem';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePackageDispatchInfo } from '@/hooks/usePackageDispatchInfo';
 
 type Currency = 'COP' | 'AWG';
 
@@ -38,6 +39,10 @@ export function TripPackageCardContent({
   disableChat = false
 }: TripPackageCardContentProps) {
   const isMobile = useIsMobile();
+  
+  // Obtener información de despachos para todos los paquetes
+  const packageIds = packages.map(pkg => pkg.id);
+  const { data: dispatchInfo = {} } = usePackageDispatchInfo(packageIds);
 
   return (
     <CardContent className={`${isMobile ? 'px-4 pb-3' : 'px-6 pb-4'}`}>
@@ -56,6 +61,7 @@ export function TripPackageCardContent({
               onOpenChat={onOpenChat}
               previewRole={previewRole}
               disableChat={disableChat}
+              dispatchInfo={dispatchInfo[pkg.id]}
             />
           ))}
         </div>

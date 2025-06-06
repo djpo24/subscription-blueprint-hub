@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import jsPDF from 'jspdf';
 
@@ -25,13 +24,12 @@ interface LabelData {
 }
 
 export function useMultipleLabelsPDF() {
-  const formatCurrency = (amount: number) => {
+  const formatAmount = (amount: number, currency?: string) => {
+    // Solo formatear el número sin símbolo de moneda
     return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount).replace('COP', '').trim();
+    }).format(amount);
   };
 
   const getCurrencySymbol = (currency?: string) => {
@@ -156,7 +154,7 @@ export function useMultipleLabelsPDF() {
       pdf.text(pesoText, startX + 5, currentY);
       
       // Total (derecha)
-      const totalAmount = pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.354.435';
+      const totalAmount = pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.354.435';
       const currencySymbol = getCurrencySymbol(pkg.currency);
       const totalText = `Total: ${currencySymbol}${totalAmount}`;
       const totalWidth = pdf.getTextWidth(totalText);

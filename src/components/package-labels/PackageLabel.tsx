@@ -1,4 +1,3 @@
-
 import { format } from 'date-fns';
 import { LabelData } from './PackageLabelGenerator';
 
@@ -26,13 +25,12 @@ interface PackageLabelProps {
 }
 
 export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
-  const formatCurrency = (amount: number) => {
+  const formatAmount = (amount: number, currency?: string) => {
+    // Solo formatear el número sin símbolo de moneda
     return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount).replace('COP', '').trim();
+    }).format(amount);
   };
 
   const getCurrencySymbol = (currency?: string) => {
@@ -135,7 +133,7 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
           Peso: {pkg.weight ? `${pkg.weight}kg` : '3kg'}
         </div>
         <div style={{ fontWeight: 'bold' }}>
-          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatCurrency(pkg.amount_to_collect) : '34.543.545'}
+          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.543.545'}
         </div>
       </div>
 

@@ -1,9 +1,8 @@
 
 import { Button } from '@/components/ui/button';
-import { CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Truck, Package, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Truck } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PackagesByDateHeaderProps {
@@ -13,6 +12,7 @@ interface PackagesByDateHeaderProps {
   dispatchCount: number;
   onBack: () => void;
   onCreateDispatch: () => void;
+  onOpenLabelsDialog: () => void;
 }
 
 export function PackagesByDateHeader({
@@ -21,45 +21,65 @@ export function PackagesByDateHeader({
   totalTrips,
   dispatchCount,
   onBack,
-  onCreateDispatch
+  onCreateDispatch,
+  onOpenLabelsDialog
 }: PackagesByDateHeaderProps) {
   const isMobile = useIsMobile();
 
-  const formatDate = (date: Date) => {
-    return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
-  };
-
   return (
-    <>
-      <div className="flex items-center gap-2 mb-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onBack}
+          className="flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
+          <span className={isMobile ? 'text-xs' : ''}>Volver al Calendario</span>
         </Button>
-        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
-          <Calendar className="h-5 w-5" />
-          <span className={isMobile ? 'text-sm' : ''}>Encomiendas del {formatDate(selectedDate)}</span>
-        </CardTitle>
       </div>
-      <div className={`${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
-        <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600`}>
-          {totalPackages} encomienda{totalPackages !== 1 ? 's' : ''} en {totalTrips} viaje{totalTrips !== 1 ? 's' : ''}
-          {dispatchCount > 0 && (
-            <span className="ml-2 text-blue-600">
-              • {dispatchCount} despacho{dispatchCount !== 1 ? 's' : ''} creado{dispatchCount !== 1 ? 's' : ''}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold">
+            Encomiendas - {format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: es })}
+          </h2>
+          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+            <span className="flex items-center gap-1">
+              <Package className="h-4 w-4" />
+              {totalPackages} encomiendas
             </span>
-          )}
+            <span>•</span>
+            <span>{totalTrips} viajes</span>
+            {dispatchCount > 0 && (
+              <>
+                <span>•</span>
+                <span>{dispatchCount} despachos</span>
+              </>
+            )}
+          </div>
         </div>
-        {totalPackages > 0 && (
+
+        <div className="flex gap-2">
+          <Button
+            onClick={onOpenLabelsDialog}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Printer className="h-4 w-4" />
+            <span className={isMobile ? 'text-xs' : ''}>Gestionar Etiquetas</span>
+          </Button>
+
           <Button
             onClick={onCreateDispatch}
-            className={`${isMobile ? 'w-full' : ''} flex items-center gap-2`}
-            size={isMobile ? "sm" : "default"}
+            className="flex items-center gap-2"
           >
             <Truck className="h-4 w-4" />
-            Crear Despacho
+            <span className={isMobile ? 'text-xs' : ''}>Crear Despacho</span>
           </Button>
-        )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

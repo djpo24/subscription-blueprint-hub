@@ -5,6 +5,7 @@ import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
 import { PackagesByDateContent, getAllPackagesFromTrips } from './packages-by-date/PackagesByDateContent';
 import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
+import { PackageLabelsDialog } from './PackageLabelsDialog';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -35,6 +36,8 @@ export function PackagesByDateView({
     selectedCustomerName,
     createDispatchDialogOpen,
     setCreateDispatchDialogOpen,
+    labelsDialogOpen,
+    setLabelsDialogOpen,
     totalPackages,
     totalWeight,
     totalFreight,
@@ -43,6 +46,7 @@ export function PackagesByDateView({
     handleOpenChat,
     handlePackageEditSuccess,
     handleCreateDispatch,
+    handleOpenLabelsDialog,
     handleCreateDispatchSuccess
   } = usePackagesByDateView(selectedDate);
 
@@ -82,6 +86,7 @@ export function PackagesByDateView({
         onPackageClick={handlePackageClick}
         onOpenChat={handleOpenChat}
         onCreateDispatch={handleCreateDispatch}
+        onOpenLabelsDialog={handleOpenLabelsDialog}
         previewRole={previewRole}
         disableChat={disableChat}
       />
@@ -98,13 +103,19 @@ export function PackagesByDateView({
         selectedCustomerName={selectedCustomerName}
       />
 
-      {/* Pasar trips en lugar de packages procesados */}
       <CreateDispatchDialog
         open={createDispatchDialogOpen}
         onOpenChange={setCreateDispatchDialogOpen}
         tripDate={selectedDate}
         trips={trips}
         onSuccess={handleCreateDispatchSuccess}
+      />
+
+      <PackageLabelsDialog
+        open={labelsDialogOpen}
+        onOpenChange={setLabelsDialogOpen}
+        tripDate={selectedDate}
+        trips={trips}
       />
     </>
   );

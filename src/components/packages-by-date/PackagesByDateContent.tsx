@@ -1,3 +1,4 @@
+
 import { PackagesByDateHeader } from './PackagesByDateHeader';
 import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
@@ -46,6 +47,7 @@ interface PackagesByDateContentProps {
   onPackageClick: (pkg: Package, tripId: string) => void;
   onOpenChat: (customerId: string, customerName?: string) => void;
   onCreateDispatch: () => void;
+  onOpenLabelsDialog: () => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
 }
@@ -114,6 +116,7 @@ export function PackagesByDateContent({
   onPackageClick,
   onOpenChat,
   onCreateDispatch,
+  onOpenLabelsDialog,
   previewRole,
   disableChat = false
 }: PackagesByDateContentProps) {
@@ -158,6 +161,7 @@ export function PackagesByDateContent({
         dispatchCount={dispatches.length}
         onBack={onBack}
         onCreateDispatch={onCreateDispatch}
+        onOpenLabelsDialog={onOpenLabelsDialog}
       />
 
       {trips.length === 0 ? (

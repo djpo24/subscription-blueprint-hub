@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ export function usePackagesByDateView(selectedDate: Date) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
   const [createDispatchDialogOpen, setCreateDispatchDialogOpen] = useState(false);
+  const [labelsDialogOpen, setLabelsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Safely extract trips from the data object with robust type checking
@@ -85,6 +87,11 @@ export function usePackagesByDateView(selectedDate: Date) {
     setCreateDispatchDialogOpen(true);
   };
 
+  const handleOpenLabelsDialog = () => {
+    console.log('Open labels dialog for date:', selectedDate);
+    setLabelsDialogOpen(true);
+  };
+
   const handleCreateDispatchSuccess = () => {
     setCreateDispatchDialogOpen(false);
     
@@ -126,6 +133,8 @@ export function usePackagesByDateView(selectedDate: Date) {
     selectedCustomerName,
     createDispatchDialogOpen,
     setCreateDispatchDialogOpen,
+    labelsDialogOpen,
+    setLabelsDialogOpen,
     totalPackages,
     totalWeight,
     totalFreight,
@@ -134,6 +143,7 @@ export function usePackagesByDateView(selectedDate: Date) {
     handleOpenChat,
     handlePackageEditSuccess,
     handleCreateDispatch,
+    handleOpenLabelsDialog,
     handleCreateDispatchSuccess,
     queryClient
   };

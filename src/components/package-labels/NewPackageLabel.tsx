@@ -156,7 +156,7 @@ export function NewPackageLabel({ package: pkg, qrCodeDataUrl, barcodeDataUrl, i
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '30px',
+        padding: '10px 30px',
         flexGrow: 1,
         minHeight: '300px'
       }}>

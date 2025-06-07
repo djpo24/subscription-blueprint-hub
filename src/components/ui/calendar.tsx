@@ -6,7 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export interface CalendarProps extends Omit<DatePickerProps, 'onChange'> {
+export interface CalendarProps extends Omit<DatePickerProps, 'onChange' | 'disabled'> {
   mode?: 'single' | 'multiple' | 'range';
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;

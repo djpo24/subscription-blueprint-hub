@@ -45,7 +45,7 @@ function Calendar({
 
   return (
     <div className={cn("p-3 pointer-events-auto", className)}>
-      <style jsx global>{`
+      <style>{`
         .react-datepicker {
           border: none !important;
           box-shadow: none !important;

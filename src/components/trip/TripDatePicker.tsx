@@ -51,13 +51,12 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
-            disabled={(date) => {
+            disabled={(dateToCheck) => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              return date < today;
+              return dateToCheck < today;
             }}
             initialFocus
-            locale={es}
             weekStartsOn={0}
             className="pointer-events-auto"
           />

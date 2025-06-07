@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['react-day-picker', 'date-fns', 'react-datepicker']
+    include: ['react-datepicker', 'date-fns']
   },
   build: {
     target: 'esnext',

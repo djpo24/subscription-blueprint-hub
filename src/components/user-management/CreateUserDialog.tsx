@@ -29,31 +29,31 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      // Call the Edge Function to create user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: userData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      if (authError) throw authError;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: authData.user.id,
-          email: userData.email,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          phone: userData.phone || null,
-          role: userData.role,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        });
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
-      if (profileError) throw profileError;
-
-      return authData;
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -70,13 +70,30 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         role: 'employee'
       });
       
+      onOpenChange(false);
       onSuccess();
     },
     onError: (error: any) => {
       console.error('Error creating user:', error);
+      let errorMessage = "No se pudo crear el usuario";
+      
+      if (error.message) {
+        if (error.message.includes('User already registered')) {
+          errorMessage = "Este email ya está registrado";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "Email inválido";
+        } else if (error.message.includes('Insufficient permissions')) {
+          errorMessage = "No tienes permisos suficientes para crear usuarios";
+        } else if (error.message.includes('Unauthorized')) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "No se pudo crear el usuario",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -89,6 +106,15 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       toast({
         title: "Error",
         description: "Por favor completa todos los campos obligatorios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
         variant: "destructive"
       });
       return;
@@ -155,8 +181,9 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
               type="password"
               value={formData.password}
               onChange={(e) => updateFormData('password', e.target.value)}
-              placeholder="Contraseña temporal"
+              placeholder="Mínimo 6 caracteres"
               required
+              minLength={6}
             />
           </div>
 
@@ -189,6 +216,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
               type="button" 
               variant="secondary" 
               onClick={() => onOpenChange(false)}
+              disabled={createUserMutation.isPending}
             >
               Cancelar
             </Button>

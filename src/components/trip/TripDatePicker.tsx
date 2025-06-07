@@ -18,11 +18,20 @@ interface TripDatePickerProps {
 export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  console.log('TripDatePicker rendering with date:', date);
+
   const handleDateSelect = (selectedDate: Date | undefined) => {
+    console.log('Date selected:', selectedDate);
     onDateChange(selectedDate);
     if (selectedDate) {
       setIsCalendarOpen(false);
     }
+  };
+
+  const isDateDisabled = (dateToCheck: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
   };
 
   return (
@@ -48,15 +57,10 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
-            disabled={(date) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return date < today;
-            }}
+            disabled={isDateDisabled}
             initialFocus
-            locale={es}
             weekStartsOn={0}
-            className="p-3 pointer-events-auto"
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

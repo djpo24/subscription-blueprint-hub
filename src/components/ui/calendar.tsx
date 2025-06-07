@@ -1,67 +1,156 @@
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker, type DayPickerProps } from "react-day-picker";
-
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 
-export type CalendarProps = DayPickerProps;
+interface CalendarProps {
+  mode?: 'single';
+  selected?: Date;
+  onSelect?: (date: Date | undefined) => void;
+  disabled?: (date: Date) => boolean;
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  className?: string;
+  initialFocus?: boolean;
+}
 
 function Calendar({
   className,
-  classNames,
-  showOutsideDays = true,
-  ...props
+  selected,
+  onSelect,
+  disabled,
+  weekStartsOn = 0,
+  initialFocus,
 }: CalendarProps) {
+  const handleDateChange = (date: Date | null) => {
+    if (onSelect) {
+      onSelect(date || undefined);
+    }
+  };
+
+  const isDateDisabled = (date: Date) => {
+    if (disabled) {
+      return disabled(date);
+    }
+    return false;
+  };
+
   return (
-    <DayPicker
-      showOutsideDays={showOutsideDays}
-      className={cn("p-3 pointer-events-auto", className)}
-      classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
-        ),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
-        ...classNames,
-      }}
-      components={{
-        Chevron: ({ orientation }) => {
-          const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
-          return <Icon className="h-4 w-4" />;
-        },
-      }}
-      {...props}
-    />
+    <div className={cn("p-3", className)}>
+      <style>{`
+        .react-datepicker {
+          border: none !important;
+          box-shadow: none !important;
+          font-family: inherit !important;
+        }
+        .react-datepicker__header {
+          background-color: transparent !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          padding: 0.75rem !important;
+        }
+        .react-datepicker__current-month {
+          font-size: 0.875rem !important;
+          font-weight: 500 !important;
+          color: #111827 !important;
+        }
+        .react-datepicker__day-names {
+          margin-bottom: 0.5rem !important;
+        }
+        .react-datepicker__day-name {
+          color: #6b7280 !important;
+          font-size: 0.8rem !important;
+          font-weight: normal !important;
+          width: 2.25rem !important;
+          height: 2.25rem !important;
+          line-height: 2.25rem !important;
+        }
+        .react-datepicker__month {
+          margin: 0.25rem !important;
+        }
+        .react-datepicker__week {
+          display: flex !important;
+        }
+        .react-datepicker__day {
+          width: 2.25rem !important;
+          height: 2.25rem !important;
+          line-height: 2.25rem !important;
+          text-align: center !important;
+          font-size: 0.875rem !important;
+          font-weight: normal !important;
+          color: #111827 !important;
+          border-radius: 0.375rem !important;
+          margin: 0.125rem !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+        }
+        .react-datepicker__day:hover {
+          background-color: #f3f4f6 !important;
+          color: #111827 !important;
+        }
+        .react-datepicker__day--selected {
+          background-color: #111827 !important;
+          color: #ffffff !important;
+        }
+        .react-datepicker__day--selected:hover {
+          background-color: #111827 !important;
+          color: #ffffff !important;
+        }
+        .react-datepicker__day--today {
+          background-color: #f3f4f6 !important;
+          color: #111827 !important;
+          font-weight: 500 !important;
+        }
+        .react-datepicker__day--outside-month {
+          color: #9ca3af !important;
+          opacity: 0.5 !important;
+        }
+        .react-datepicker__day--disabled {
+          color: #9ca3af !important;
+          opacity: 0.5 !important;
+          cursor: not-allowed !important;
+        }
+        .react-datepicker__day--disabled:hover {
+          background-color: transparent !important;
+        }
+        .react-datepicker__navigation {
+          top: 0.75rem !important;
+          width: 1.75rem !important;
+          height: 1.75rem !important;
+          background: transparent !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 0.375rem !important;
+          opacity: 0.5 !important;
+          transition: opacity 0.2s ease !important;
+        }
+        .react-datepicker__navigation:hover {
+          opacity: 1 !important;
+        }
+        .react-datepicker__navigation--previous {
+          left: 0.25rem !important;
+        }
+        .react-datepicker__navigation--next {
+          right: 0.25rem !important;
+        }
+        .react-datepicker__navigation-icon::before {
+          border-color: #6b7280 !important;
+          border-width: 2px 2px 0 0 !important;
+          width: 6px !important;
+          height: 6px !important;
+          top: 9px !important;
+        }
+      `}</style>
+      <DatePicker
+        selected={selected}
+        onChange={handleDateChange}
+        inline
+        calendarStartDay={weekStartsOn}
+        filterDate={(date) => !isDateDisabled(date)}
+        autoFocus={initialFocus}
+      />
+    </div>
   );
 }
+
 Calendar.displayName = "Calendar";
 
 export { Calendar };

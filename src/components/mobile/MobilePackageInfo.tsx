@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, User, MapPin, FileText, DollarSign } from 'lucide-react';
+import { Package, MapPin, User, FileText, DollarSign, Coins, CheckCircle } from 'lucide-react';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface MobilePackageInfoProps {
@@ -44,83 +44,135 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
     return label;
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'Entregado';
+      case 'en_destino':
+        return 'En Destino';
+      case 'procesado':
+        return 'Procesado';
+      case 'in_transit':
+        return 'En Tránsito';
+      case 'arrived':
+        return 'Arribado';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  // Formatear descripción - máximo 2 items, si hay más, mostrar el tercero truncado
+  const formatDescription = (description: string) => {
+    if (!description) return 'N/A';
+    
+    const items = description.split(',').map(item => item.trim());
+    if (items.length <= 2) {
+      return items.join(', ');
+    } else if (items.length === 3) {
+      return `${items[0]}, ${items[1]}, ${items[2].substring(0, 4)}...`;
+    } else {
+      return `${items[0]}, ${items[1]}, ${items[2].substring(0, 4)}...`;
+    }
+  };
+
   return (
     <Card className="border-blue-200 bg-blue-50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-800">
-          <Package className="h-5 w-5" />
-          Información del Paquete
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-blue-800">
+          <div className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Encomiendas
+          </div>
+          <button className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full">
+            Ver todos
+          </button>
         </CardTitle>
       </CardHeader>
+      
       <CardContent className="space-y-4">
-        {/* Tracking Number */}
-        <div className="p-3 bg-white rounded-lg border">
+        {/* Stats Section */}
+        <div className="flex justify-between items-center bg-white rounded-lg p-3 border">
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">Número de Tracking</p>
-            <p className="text-lg font-bold text-blue-600">{pkg.tracking_number}</p>
+            <div className="text-gray-400 text-sm">Cobrado</div>
+            <div className="text-lg font-semibold">
+              {requiresPayment ? currencySymbol + '0' : 'N/A'}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-gray-800 text-sm">Entregados</div>
+            <div className="text-lg font-bold">1</div>
           </div>
         </div>
 
-        {/* Información del Cliente */}
-        <div className="grid grid-cols-1 gap-3">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <User className="h-5 w-5 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-600">Cliente</p>
-              <p className="font-medium">{pkg.customers?.name || 'N/A'}</p>
-            </div>
+        {/* Package Details */}
+        <div className="bg-white rounded-lg border">
+          <div className="p-3 border-b">
+            <h3 className="font-semibold text-gray-900">Detalles de entrega</h3>
           </div>
-
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <MapPin className="h-5 w-5 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-600">Destino</p>
-              <p className="font-medium">{pkg.destination}</p>
+          
+          <div className="p-3 space-y-3">
+            {/* Package Number */}
+            <div className="flex items-center gap-3">
+              <Package className="h-4 w-4 text-gray-500" />
+              <span className="font-semibold text-blue-600">{pkg.tracking_number}</span>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <FileText className="h-5 w-5 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-600">Descripción</p>
-              <p className="font-medium">{pkg.description}</p>
+            {/* Package Name */}
+            <div className="flex items-center gap-3">
+              <FileText className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">Encomienda {pkg.tracking_number}</span>
             </div>
-          </div>
 
-          {requiresPayment && (
-            <>
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <DollarSign className="h-5 w-5 text-green-600" />
-                <div className="flex-1">
-                  <p className="text-sm text-green-700">Monto a cobrar</p>
-                  <p className="font-bold text-green-600 text-lg">
-                    {currencySymbol}{pkg.amount_to_collect?.toLocaleString('es-CO')} {packageCurrency}
-                  </p>
-                </div>
+            {/* Destination */}
+            <div className="flex items-center gap-3">
+              <MapPin className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-700">{pkg.destination}</span>
+            </div>
+
+            {/* Customer Name */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <User className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{pkg.customers?.name || 'Cliente no especificado'}</span>
               </div>
-              
-              <div className="p-3 bg-white rounded-lg border">
-                <p className="text-sm text-gray-600 mb-1">Moneda</p>
-                <div className="inline-block bg-blue-100 px-3 py-1 rounded-full">
-                  <span className="text-sm font-medium text-blue-800">
-                    {getCurrencyLabel(packageCurrency)}
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
+              <button className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                Ver chat
+              </button>
+            </div>
 
-          {/* Estado del paquete */}
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-sm text-gray-600 mb-1">Estado</p>
-            <div className="inline-block">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                pkg.status === 'entregado' ? 'bg-green-100 text-green-800' :
+            {/* Description */}
+            <div className="pl-7">
+              <span className="text-sm text-gray-600">
+                {formatDescription(pkg.description)}
+              </span>
+            </div>
+
+            {/* Amount to Collect */}
+            {requiresPayment && (
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-green-700">
+                  Monto a cobrar: {currencySymbol}{pkg.amount_to_collect?.toLocaleString('es-CO')}
+                </span>
+              </div>
+            )}
+
+            {/* Currency */}
+            <div className="flex items-center gap-3">
+              <Coins className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-700">{getCurrencyLabel(packageCurrency)}</span>
+            </div>
+
+            {/* Package Status */}
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-4 w-4 text-gray-500" />
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                pkg.status === 'delivered' ? 'bg-green-100 text-green-800' :
                 pkg.status === 'en_destino' ? 'bg-blue-100 text-blue-800' :
-                pkg.status === 'en_transito' ? 'bg-yellow-100 text-yellow-800' :
+                pkg.status === 'in_transit' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
-                {pkg.status.replace('_', ' ').toUpperCase()}
+                {getStatusLabel(pkg.status)}
               </span>
             </div>
           </div>

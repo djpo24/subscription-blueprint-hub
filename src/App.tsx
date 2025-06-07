@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 
@@ -41,22 +42,28 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Si no hay usuario, mostrar página de auth */}
-      <Route 
-        path="/auth" 
-        element={user ? <Navigate to="/" replace /> : <Auth />} 
-      />
-      
-      {/* Página principal protegida */}
+      {/* Landing page cuando no hay usuario */}
       <Route 
         path="/" 
+        element={user ? <Navigate to="/dashboard" replace /> : <Landing />} 
+      />
+      
+      {/* Página de autenticación */}
+      <Route 
+        path="/auth" 
+        element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
+      />
+      
+      {/* Dashboard principal protegido */}
+      <Route 
+        path="/dashboard" 
         element={
           user ? (
             <ProtectedRoute>
               <Index />
             </ProtectedRoute>
           ) : (
-            <Navigate to="/auth" replace />
+            <Navigate to="/" replace />
           )
         } 
       />
@@ -68,7 +75,7 @@ function AppRoutes() {
           user ? (
             <NotFound />
           ) : (
-            <Navigate to="/auth" replace />
+            <Navigate to="/" replace />
           )
         } 
       />

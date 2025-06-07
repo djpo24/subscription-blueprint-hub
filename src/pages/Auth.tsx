@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Package, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -71,70 +72,91 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">
-            {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {isLogin 
-              ? 'Ingresa tus credenciales para acceder' 
-              : 'Crea una nueva cuenta para comenzar'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                required
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="uber-header">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Package className="h-8 w-8 text-white" />
+              <h1 className="text-2xl font-bold text-white">Envíos Ojitos</h1>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Tu contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
-            </Button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-blue-600 hover:underline"
-              disabled={loading}
-            >
-              {isLogin 
-                ? '¿No tienes cuenta? Crear una'
-                : '¿Ya tienes cuenta? Iniciar sesión'
-              }
-            </button>
+            <Link to="/">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </header>
+
+      {/* Auth Form */}
+      <div className="flex items-center justify-center px-4 py-16">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">
+              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isLogin 
+                ? 'Ingresa tus credenciales para acceder' 
+                : 'Crea una nueva cuenta para comenzar'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Tu contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              </Button>
+            </form>
+            
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-blue-600 hover:underline"
+                disabled={loading}
+              >
+                {isLogin 
+                  ? '¿No tienes cuenta? Crear una'
+                  : '¿Ya tienes cuenta? Iniciar sesión'
+                }
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

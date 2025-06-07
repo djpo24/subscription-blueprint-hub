@@ -7,6 +7,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   // Configurar base path para GitHub Pages
+  // Reemplaza 'your-repo-name' con el nombre real de tu repositorio
   base: process.env.NODE_ENV === 'production' ? '/subscription-blueprint-hub/' : '/',
   server: {
     host: "::",
@@ -21,25 +22,5 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  optimizeDeps: {
-    include: ['react-datepicker', 'date-fns']
-  },
-  build: {
-    target: 'esnext',
-    minify: 'esbuild',
-    rollupOptions: {
-      external: [],
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-toast'],
-          supabase: ['@supabase/supabase-js'],
-          utils: ['date-fns', 'clsx', 'tailwind-merge']
-        }
-      }
-    },
-    chunkSizeWarningLimit: 1000,
-    sourcemap: false
   },
 }));

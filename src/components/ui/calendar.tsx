@@ -1,12 +1,12 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import DatePicker, { ReactDatePickerProps } from "react-datepicker";
+import DatePicker, { DatePickerProps } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export interface CalendarProps extends Omit<ReactDatePickerProps, 'onChange'> {
+export interface CalendarProps extends Omit<DatePickerProps, 'onChange'> {
   mode?: 'single' | 'multiple' | 'range';
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;

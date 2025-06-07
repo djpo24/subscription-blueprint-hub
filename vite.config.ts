@@ -6,8 +6,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Use root path for all deployments except GitHub Pages
-  base: "/",
+  // Configurar base path - usar variable de entorno para flexibilidad
+  base: process.env.VITE_BASE_PATH || (mode === 'production' && process.env.GITHUB_PAGES ? '/subscription-blueprint-hub/' : '/'),
   server: {
     host: "::",
     port: 8080,

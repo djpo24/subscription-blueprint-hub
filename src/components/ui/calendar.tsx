@@ -30,7 +30,7 @@ function Calendar({
   initialFocus,
   ...props
 }: CalendarProps) {
-  const handleDateChange = (date: Date | null) => {
+  const handleDateChange = (date: Date | null, event?: React.SyntheticEvent<any, Event>) => {
     if (onSelect) {
       onSelect(date || undefined);
     }

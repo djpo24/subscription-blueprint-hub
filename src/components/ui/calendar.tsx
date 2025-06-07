@@ -1,34 +1,24 @@
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 
-export interface CalendarProps {
-  mode?: 'single' | 'multiple' | 'range';
+interface CalendarProps {
+  mode?: 'single';
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  showOutsideDays?: boolean;
   className?: string;
-  classNames?: any;
   initialFocus?: boolean;
 }
 
 function Calendar({
   className,
-  classNames,
-  showOutsideDays = true,
-  mode = 'single',
   selected,
   onSelect,
   disabled,
-  weekStartsOn = 0,
   initialFocus,
-  ...props
 }: CalendarProps) {
   const handleDateChange = (date: Date | null) => {
     if (onSelect) {
@@ -44,7 +34,7 @@ function Calendar({
   };
 
   return (
-    <div className={cn("p-3 pointer-events-auto", className)}>
+    <div className={cn("p-3", className)}>
       <style>{`
         .react-datepicker {
           border: none !important;
@@ -151,7 +141,6 @@ function Calendar({
         selected={selected}
         onChange={handleDateChange}
         inline
-        calendarStartDay={weekStartsOn}
         filterDate={(date) => !isDateDisabled(date)}
         autoFocus={initialFocus}
       />

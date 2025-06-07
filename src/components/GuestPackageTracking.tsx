@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,13 +67,19 @@ export function GuestPackageTracking() {
                 disabled={loading}
                 className="flex-1"
               />
-              <Button type="submit" disabled={loading || !trackingNumber.trim()}>
+              <Button 
+                type="submit" 
+                disabled={loading || !trackingNumber.trim()}
+                className="shrink-0"
+              >
                 {loading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                 ) : (
                   <Search className="h-4 w-4" />
                 )}
-                {loading ? 'Consultando...' : 'Buscar'}
+                <span className="ml-2 hidden sm:inline">
+                  {loading ? 'Consultando...' : 'Buscar'}
+                </span>
               </Button>
             </div>
           </div>

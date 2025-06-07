@@ -57,6 +57,8 @@ serve(async (req) => {
     // Parse request body
     const { email, password, first_name, last_name, phone, role } = await req.json()
 
+    console.log('Creating user with role:', role)
+
     // Create user with admin client
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -98,6 +100,28 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to create user profile' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // If the user role is 'traveler', automatically create a traveler record
+    if (role === 'traveler') {
+      console.log('Creating traveler record for user:', authData.user.id)
+      
+      const { error: travelerError } = await supabaseAdmin
+        .from('travelers')
+        .insert({
+          user_id: authData.user.id,
+          first_name: first_name,
+          last_name: last_name,
+          phone: phone || ''
+        })
+
+      if (travelerError) {
+        console.error('Error creating traveler record:', travelerError)
+        // Log the error but don't fail the entire operation
+        // The user and profile were created successfully
+      } else {
+        console.log('Traveler record created successfully')
+      }
     }
 
     return new Response(

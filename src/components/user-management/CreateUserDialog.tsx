@@ -53,6 +53,28 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         throw new Error(data.error);
       }
 
+      // If the user role is 'traveler', automatically create a traveler record
+      if (userData.role === 'traveler' && data.user?.id) {
+        console.log('Creating traveler record for new user:', data.user.id);
+        
+        const { error: travelerError } = await supabase
+          .from('travelers')
+          .insert({
+            user_id: data.user.id,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            phone: userData.phone || ''
+          });
+
+        if (travelerError) {
+          console.error('Error creating traveler record:', travelerError);
+          // We don't throw here as the user was created successfully
+          // Just log the error for now
+        } else {
+          console.log('Traveler record created successfully');
+        }
+      }
+
       return data;
     },
     onSuccess: () => {

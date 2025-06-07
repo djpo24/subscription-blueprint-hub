@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   // Configurar base path para GitHub Pages
-  base: process.env.NODE_ENV === 'production' ? '/subscription-blueprint-hub/' : '/',
+  base: mode === 'production' ? '/subscription-blueprint-hub/' : '/',
   server: {
     host: "::",
     port: 8080,
@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => ({
       }
     },
     chunkSizeWarningLimit: 1000,
-    sourcemap: false
+    sourcemap: false,
+    assetsDir: 'assets'
   },
 }));

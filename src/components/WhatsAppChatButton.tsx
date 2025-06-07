@@ -10,8 +10,8 @@ interface WhatsAppChatButtonProps {
 }
 
 export function WhatsAppChatButton({ 
-  phoneNumber = "50760123456", // Número por defecto - cambiar por el real
-  message = "Hola! Me interesa saber más sobre sus servicios de envíos.",
+  phoneNumber = "573001513792", // Tu número de WhatsApp
+  message = "¡Hola! Me interesa conocer más sobre sus servicios de envíos. ¿Podrían proporcionarme información sobre tarifas y tiempos de entrega?",
   variant = 'default',
   size = 'default'
 }: WhatsAppChatButtonProps) {

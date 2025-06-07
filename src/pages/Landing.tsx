@@ -39,7 +39,7 @@ export default function Landing() {
           <div className="flex gap-4 justify-center flex-wrap">
             <WhatsAppChatButton 
               size="lg"
-              message="Hola! Me interesa conocer más sobre sus servicios de envíos y cómo puedo enviar mis paquetes."
+              message="¡Hola! Me gustaría solicitar información sobre sus servicios de envíos. ¿Podrían ayudarme con las tarifas y proceso para enviar un paquete?"
             />
           </div>
         </div>
@@ -161,7 +161,7 @@ export default function Landing() {
           </p>
           <WhatsAppChatButton 
             size="lg"
-            message="Hola! Tengo algunas preguntas sobre sus servicios de envíos. ¿Podrían ayudarme?"
+            message="¡Hola! Tengo algunas consultas sobre sus servicios de envíos. ¿Podrían brindarme información sobre horarios de atención y proceso de envío?"
           />
         </div>
       </section>

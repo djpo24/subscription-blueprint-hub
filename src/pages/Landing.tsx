@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Package, Truck, MapPin, Clock, Shield, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GuestPackageTracking } from '@/components/GuestPackageTracking';
+import { WhatsAppChatButton } from '@/components/WhatsAppChatButton';
 
 export default function Landing() {
   return (
@@ -36,14 +37,10 @@ export default function Landing() {
             rutas optimizadas y entrega confiable.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link to="/auth">
-              <Button size="lg" className="uber-button-primary">
-                Acceder al Sistema
-              </Button>
-            </Link>
-            <Button variant="outline" size="lg">
-              Ver Demo
-            </Button>
+            <WhatsAppChatButton 
+              size="lg"
+              message="Hola! Me interesa conocer más sobre sus servicios de envíos y cómo puedo enviar mis paquetes."
+            />
           </div>
         </div>
       </section>
@@ -158,17 +155,19 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-black text-white">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-6">¿Necesitas acceso al sistema?</h2>
+          <h2 className="text-3xl font-bold mb-6">¿Tienes preguntas sobre nuestros servicios?</h2>
           <p className="text-xl mb-8 text-gray-300">
-            Contacta con el administrador para obtener credenciales de acceso.
+            Contáctanos por WhatsApp y te ayudaremos con toda la información que necesites.
           </p>
-          <Link to="/auth">
-            <Button size="lg" variant="secondary">
-              Iniciar Sesión
-            </Button>
-          </Link>
+          <WhatsAppChatButton 
+            size="lg"
+            message="Hola! Tengo algunas preguntas sobre sus servicios de envíos. ¿Podrían ayudarme?"
+          />
         </div>
       </section>
+
+      {/* Floating WhatsApp Button */}
+      <WhatsAppChatButton variant="floating" />
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-gray-100">

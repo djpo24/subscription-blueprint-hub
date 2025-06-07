@@ -28,6 +28,12 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
     }
   };
 
+  const isDateDisabled = (dateToCheck: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="trip_date" className="text-sm font-medium text-black">
@@ -51,11 +57,7 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
-            disabled={(dateToCheck) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return dateToCheck < today;
-            }}
+            disabled={isDateDisabled}
             initialFocus
             weekStartsOn={0}
             className="pointer-events-auto"

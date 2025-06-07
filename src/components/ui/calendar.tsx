@@ -30,9 +30,11 @@ function Calendar({
   initialFocus,
   ...props
 }: CalendarProps) {
-  const handleDateChange = (date: Date | null, event?: React.SyntheticEvent<any, Event>) => {
+  const handleDateChange = (date: Date | Date[] | null, event?: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => {
     if (onSelect) {
-      onSelect(date || undefined);
+      // Handle single date selection - react-datepicker returns Date | null for single mode
+      const selectedDate = Array.isArray(date) ? date[0] : date;
+      onSelect(selectedDate || undefined);
     }
   };
 

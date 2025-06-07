@@ -8,7 +8,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   // Configurar base path para GitHub Pages
   // Reemplaza 'your-repo-name' con el nombre real de tu repositorio
-  base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
+  base: process.env.NODE_ENV === 'production' ? '/subscription-blueprint-hub/' : '/',
   server: {
     host: "::",
     port: 8080,

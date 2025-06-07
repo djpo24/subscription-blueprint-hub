@@ -56,7 +56,7 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             initialFocus
             locale={es}
             weekStartsOn={0}
-            className="p-3 pointer-events-auto"
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

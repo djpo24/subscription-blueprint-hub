@@ -9,6 +9,7 @@ interface CalendarProps {
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   className?: string;
   initialFocus?: boolean;
 }
@@ -18,6 +19,7 @@ function Calendar({
   selected,
   onSelect,
   disabled,
+  weekStartsOn = 0,
   initialFocus,
 }: CalendarProps) {
   const handleDateChange = (date: Date | null) => {
@@ -141,6 +143,7 @@ function Calendar({
         selected={selected}
         onChange={handleDateChange}
         inline
+        calendarStartDay={weekStartsOn}
         filterDate={(date) => !isDateDisabled(date)}
         autoFocus={initialFocus}
       />

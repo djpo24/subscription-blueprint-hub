@@ -77,6 +77,7 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
       });
       
       queryClient.invalidateQueries({ queryKey: ['travelers'] });
+      queryClient.invalidateQueries({ queryKey: ['available-travelers'] });
       
       // Reset form
       setFormData({ 

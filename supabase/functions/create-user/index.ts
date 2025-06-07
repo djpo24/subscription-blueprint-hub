@@ -102,7 +102,7 @@ serve(async (req) => {
       )
     }
 
-    // If the user role is 'traveler', automatically create a traveler record
+    // If the user role is 'traveler', automatically create a traveler record linked to the user
     if (role === 'traveler') {
       console.log('Creating traveler record for user:', authData.user.id)
       

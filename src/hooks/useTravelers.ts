@@ -10,7 +10,7 @@ export function useTravelers() {
         .from('travelers')
         .select(`
           *,
-          user_profiles!inner(
+          user_profiles!fk_travelers_user_profiles(
             user_id,
             email,
             role,
@@ -34,7 +34,7 @@ export function useAvailableTravelers() {
         .from('travelers')
         .select(`
           *,
-          user_profiles(
+          user_profiles!fk_travelers_user_profiles(
             user_id,
             email,
             role,

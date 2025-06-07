@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Phone } from 'lucide-react';
 
 interface WhatsAppChatButtonProps {
   phoneNumber?: string;
@@ -10,8 +10,8 @@ interface WhatsAppChatButtonProps {
 }
 
 export function WhatsAppChatButton({ 
-  phoneNumber = "573001513792", // Número real de Envíos Ojitos
-  message = "¡Hola! Me interesa conocer más sobre sus servicios de envíos. ¿Podrían ayudarme con información?",
+  phoneNumber = "50760123456", // Número por defecto - cambiar por el real
+  message = "Hola! Me interesa saber más sobre sus servicios de envíos.",
   variant = 'default',
   size = 'default'
 }: WhatsAppChatButtonProps) {
@@ -24,13 +24,13 @@ export function WhatsAppChatButton({
 
   if (variant === 'floating') {
     return (
-      <div className="fixed bottom-4 right-4 z-50 md:bottom-6 md:right-6">
+      <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={handleWhatsAppClick}
           size="icon"
-          className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl transition-all duration-300"
+          className="h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl transition-all duration-300"
         >
-          <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-white" />
+          <MessageCircle className="h-6 w-6 text-white" />
           <span className="sr-only">Contactar por WhatsApp</span>
         </Button>
       </div>
@@ -41,11 +41,10 @@ export function WhatsAppChatButton({
     <Button
       onClick={handleWhatsAppClick}
       size={size}
-      className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2 text-sm md:text-base px-4 py-2 md:px-6 md:py-3"
+      className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2"
     >
       <MessageCircle className="h-4 w-4" />
-      <span className="hidden sm:inline">Contactar por WhatsApp</span>
-      <span className="sm:hidden">WhatsApp</span>
+      Contactar por WhatsApp
     </Button>
   );
 }

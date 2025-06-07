@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -26,6 +26,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
   });
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
@@ -53,28 +54,6 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         throw new Error(data.error);
       }
 
-      // If the user role is 'traveler', automatically create a traveler record
-      if (userData.role === 'traveler' && data.user?.id) {
-        console.log('Creating traveler record for new user:', data.user.id);
-        
-        const { error: travelerError } = await supabase
-          .from('travelers')
-          .insert({
-            user_id: data.user.id,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            phone: userData.phone || ''
-          });
-
-        if (travelerError) {
-          console.error('Error creating traveler record:', travelerError);
-          // We don't throw here as the user was created successfully
-          // Just log the error for now
-        } else {
-          console.log('Traveler record created successfully');
-        }
-      }
-
       return data;
     },
     onSuccess: () => {
@@ -82,6 +61,13 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente",
       });
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['user-profiles'] });
+      if (formData.role === 'traveler') {
+        queryClient.invalidateQueries({ queryKey: ['travelers'] });
+        queryClient.invalidateQueries({ queryKey: ['available-travelers'] });
+      }
       
       setFormData({
         email: '',
@@ -156,6 +142,11 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
           <DialogTitle>Crear Nuevo Usuario</DialogTitle>
           <DialogDescription>
             Completa la información para crear un nuevo usuario del sistema.
+            {formData.role === 'traveler' && (
+              <span className="block mt-1 text-blue-600">
+                Se creará automáticamente un registro de viajero vinculado a este usuario.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         

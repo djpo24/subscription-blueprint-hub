@@ -2,7 +2,7 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, User, UserCheck } from 'lucide-react';
+import { Plus, UserCheck } from 'lucide-react';
 import { useAvailableTravelers } from '@/hooks/useTravelers';
 
 interface TravelerSelectorProps {
@@ -30,11 +30,7 @@ export function TravelerSelector({ selectedTravelerId, onTravelerChange, onAddNe
             {travelers.map((traveler) => (
               <SelectItem key={traveler.id} value={traveler.id}>
                 <div className="flex items-center gap-2">
-                  {traveler.user_profiles ? (
-                    <UserCheck className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <User className="h-3 w-3 text-gray-400" />
-                  )}
+                  <UserCheck className="h-3 w-3 text-green-600" />
                   <span>
                     {traveler.first_name} {traveler.last_name} - {traveler.phone}
                     {traveler.user_profiles && (
@@ -59,14 +55,10 @@ export function TravelerSelector({ selectedTravelerId, onTravelerChange, onAddNe
         </Button>
       </div>
       {travelers.length > 0 && (
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className="text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <UserCheck className="h-3 w-3 text-green-600" />
-            <span>Viajero vinculado a usuario del sistema</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <User className="h-3 w-3 text-gray-400" />
-            <span>Viajero independiente</span>
+            <span>Todos los viajeros están vinculados a usuarios del sistema</span>
           </div>
         </div>
       )}

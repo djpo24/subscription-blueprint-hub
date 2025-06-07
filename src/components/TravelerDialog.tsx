@@ -18,11 +18,8 @@ interface TravelerDialogProps {
 
 export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialogProps) {
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    phone: '',
-    user_id: '', // New field for linking to user
-    create_new_user: false // Toggle for creating new standalone traveler
+    user_id: '',
+    phone: ''
   });
 
   const queryClient = useQueryClient();
@@ -36,33 +33,22 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
 
   const createTravelerMutation = useMutation({
     mutationFn: async (travelerData: typeof formData) => {
-      // If linking to existing user, use user's data
-      if (travelerData.user_id && !travelerData.create_new_user) {
-        const selectedUser = availableUsers.find(u => u.user_id === travelerData.user_id);
-        if (selectedUser) {
-          const { data, error } = await supabase
-            .from('travelers')
-            .insert({
-              user_id: travelerData.user_id,
-              first_name: selectedUser.first_name,
-              last_name: selectedUser.last_name,
-              phone: selectedUser.phone || travelerData.phone
-            })
-            .select()
-            .single();
-          
-          if (error) throw error;
-          return data;
-        }
+      if (!travelerData.user_id) {
+        throw new Error('Debe seleccionar un usuario');
       }
 
-      // Create standalone traveler (without user link)
+      const selectedUser = availableUsers.find(u => u.user_id === travelerData.user_id);
+      if (!selectedUser) {
+        throw new Error('Usuario no encontrado');
+      }
+
       const { data, error } = await supabase
         .from('travelers')
         .insert({
-          first_name: travelerData.first_name,
-          last_name: travelerData.last_name,
-          phone: travelerData.phone
+          user_id: travelerData.user_id,
+          first_name: selectedUser.first_name,
+          last_name: selectedUser.last_name,
+          phone: travelerData.phone || selectedUser.phone || ''
         })
         .select()
         .single();
@@ -73,7 +59,7 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
     onSuccess: (data) => {
       toast({
         title: "Viajero creado",
-        description: "El viajero ha sido creado exitosamente",
+        description: "El viajero ha sido vinculado exitosamente",
       });
       
       queryClient.invalidateQueries({ queryKey: ['travelers'] });
@@ -81,11 +67,8 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
       
       // Reset form
       setFormData({ 
-        first_name: '', 
-        last_name: '', 
-        phone: '', 
         user_id: '',
-        create_new_user: false
+        phone: ''
       });
       onSuccess(data.id);
       onOpenChange(false);
@@ -109,20 +92,10 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation for standalone traveler
-    if (formData.create_new_user || !formData.user_id) {
-      if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.phone.trim()) {
-        toast({
-          title: "Error",
-          description: "Todos los campos son obligatorios para crear un viajero independiente",
-          variant: "destructive"
-        });
-        return;
-      }
-    } else if (!formData.user_id) {
+    if (!formData.user_id) {
       toast({
         title: "Error",
-        description: "Debe seleccionar un usuario o crear un viajero independiente",
+        description: "Debe seleccionar un usuario",
         variant: "destructive"
       });
       return;
@@ -131,7 +104,7 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
     createTravelerMutation.mutate(formData);
   };
 
-  const updateFormData = (field: keyof typeof formData, value: string | boolean) => {
+  const updateFormData = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -143,89 +116,38 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
         <DialogHeader>
           <DialogTitle>Nuevo Viajero</DialogTitle>
           <DialogDescription>
-            Crea un nuevo viajero asignándolo a un usuario existente o como registro independiente.
+            Vincula un usuario existente con rol de viajero para crear un nuevo registro de viajero.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="create_new_user"
-                checked={formData.create_new_user}
-                onChange={(e) => updateFormData('create_new_user', e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="create_new_user" className="text-sm">
-                Crear viajero independiente (sin vincular a usuario del sistema)
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="user_id">Usuario con rol de viajero *</Label>
+              <Select 
+                value={formData.user_id} 
+                onValueChange={(value) => updateFormData('user_id', value)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar usuario viajero" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.map((user) => (
+                    <SelectItem key={user.user_id} value={user.user_id}>
+                      {user.first_name} {user.last_name} - {user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableUsers.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  No hay usuarios con rol de viajero disponibles
+                </p>
+              )}
             </div>
 
-            {!formData.create_new_user && (
-              <div className="space-y-2">
-                <Label htmlFor="user_id">Usuario con rol de viajero</Label>
-                <Select 
-                  value={formData.user_id} 
-                  onValueChange={(value) => updateFormData('user_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar usuario viajero" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name} {user.last_name} - {user.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {availableUsers.length === 0 && (
-                  <p className="text-sm text-gray-500">
-                    No hay usuarios con rol de viajero disponibles
-                  </p>
-                )}
-              </div>
-            )}
-
-            {(formData.create_new_user || !selectedUser) && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="first_name">Nombre</Label>
-                  <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => updateFormData('first_name', e.target.value)}
-                    placeholder="Nombre del viajero"
-                    required={formData.create_new_user || !formData.user_id}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="last_name">Apellido</Label>
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => updateFormData('last_name', e.target.value)}
-                    placeholder="Apellido del viajero"
-                    required={formData.create_new_user || !formData.user_id}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => updateFormData('phone', e.target.value)}
-                    placeholder="+57 300 123 4567"
-                    required={formData.create_new_user || !formData.user_id}
-                  />
-                </div>
-              </>
-            )}
-
-            {selectedUser && !formData.create_new_user && (
+            {selectedUser && (
               <div className="p-4 bg-gray-50 rounded-lg space-y-2">
                 <h4 className="font-medium text-gray-900">Datos del usuario seleccionado:</h4>
                 <p className="text-sm text-gray-600">

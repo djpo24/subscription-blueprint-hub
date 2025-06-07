@@ -18,7 +18,10 @@ interface TripDatePickerProps {
 export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  console.log('TripDatePicker rendering with date:', date);
+
   const handleDateSelect = (selectedDate: Date | undefined) => {
+    console.log('Date selected:', selectedDate);
     onDateChange(selectedDate);
     if (selectedDate) {
       setIsCalendarOpen(false);

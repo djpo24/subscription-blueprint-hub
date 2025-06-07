@@ -15,11 +15,13 @@ export default function Landing() {
               <Package className="h-8 w-8 text-white" />
               <h1 className="text-2xl font-bold text-white">Envíos Ojitos</h1>
             </div>
-            <Link to="/auth">
-              <Button variant="secondary" size="sm">
-                Iniciar Sesión
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link to="/auth">
+                <Button variant="secondary" size="sm">
+                  Iniciar Sesión
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

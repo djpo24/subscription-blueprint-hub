@@ -1,12 +1,12 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import DatePicker, { DatePickerProps } from "react-datepicker";
+import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export interface CalendarProps extends Omit<DatePickerProps, 'onChange' | 'disabled'> {
+export interface CalendarProps {
   mode?: 'single' | 'multiple' | 'range';
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
@@ -30,11 +30,9 @@ function Calendar({
   initialFocus,
   ...props
 }: CalendarProps) {
-  const handleDateChange = (date: Date | Date[] | null, event?: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => {
+  const handleDateChange = (date: Date | null) => {
     if (onSelect) {
-      // Handle single date selection - react-datepicker returns Date | null for single mode
-      const selectedDate = Array.isArray(date) ? date[0] : date;
-      onSelect(selectedDate || undefined);
+      onSelect(date || undefined);
     }
   };
 
@@ -156,7 +154,6 @@ function Calendar({
         calendarStartDay={weekStartsOn}
         filterDate={(date) => !isDateDisabled(date)}
         autoFocus={initialFocus}
-        {...props}
       />
     </div>
   );

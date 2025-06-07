@@ -37,7 +37,7 @@ export default function Landing() {
           <div className="flex gap-4 justify-center flex-wrap">
             <Link to="/auth">
               <Button size="lg" className="uber-button-primary">
-                Comenzar Ahora
+                Acceder al Sistema
               </Button>
             </Link>
             <Button variant="outline" size="lg">
@@ -142,13 +142,13 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-black text-white">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-6">¿Listo para optimizar tus envíos?</h2>
+          <h2 className="text-3xl font-bold mb-6">¿Necesitas acceso al sistema?</h2>
           <p className="text-xl mb-8 text-gray-300">
-            Únete a cientos de empresas que confían en nosotros para sus encomiendas.
+            Contacta con el administrador para obtener credenciales de acceso.
           </p>
           <Link to="/auth">
             <Button size="lg" variant="secondary">
-              Crear Cuenta Gratuita
+              Iniciar Sesión
             </Button>
           </Link>
         </div>

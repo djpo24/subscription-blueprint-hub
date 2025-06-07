@@ -10,11 +10,10 @@ import { Loader2, Package, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,19 +31,13 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password);
+      const { error } = await signIn(email, password);
 
       if (error) {
         let errorMessage = "Ha ocurrido un error";
         
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = "Credenciales inválidas";
-        } else if (error.message.includes('User already registered')) {
-          errorMessage = "El usuario ya está registrado";
-        } else if (error.message.includes('Password should be at least')) {
-          errorMessage = "La contraseña debe tener al menos 6 caracteres";
         } else if (error.message.includes('Invalid email')) {
           errorMessage = "Email inválido";
         }
@@ -53,11 +46,6 @@ export default function Auth() {
           title: "Error",
           description: errorMessage,
           variant: "destructive"
-        });
-      } else if (!isLogin) {
-        toast({
-          title: "Cuenta creada",
-          description: "Revisa tu email para confirmar tu cuenta",
         });
       }
     } catch (error: any) {
@@ -96,13 +84,10 @@ export default function Auth() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">
-              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              Iniciar Sesión
             </CardTitle>
             <CardDescription className="text-center">
-              {isLogin 
-                ? 'Ingresa tus credenciales para acceder' 
-                : 'Crea una nueva cuenta para comenzar'
-              }
+              Ingresa tus credenciales para acceder al sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -137,22 +122,14 @@ export default function Auth() {
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                Iniciar Sesión
               </Button>
             </form>
             
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-blue-600 hover:underline"
-                disabled={loading}
-              >
-                {isLogin 
-                  ? '¿No tienes cuenta? Crear una'
-                  : '¿Ya tienes cuenta? Iniciar sesión'
-                }
-              </button>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                ¿No tienes acceso? Contacta con el administrador para obtener credenciales.
+              </p>
             </div>
           </CardContent>
         </Card>

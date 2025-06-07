@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Truck, MapPin, Clock, Shield, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { GuestPackageTracking } from '@/components/GuestPackageTracking';
 
 export default function Landing() {
   return (
@@ -43,6 +44,21 @@ export default function Landing() {
             <Button variant="outline" size="lg">
               Ver Demo
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Package Tracking Section */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-black mb-4">¿Necesitas rastrear tu encomienda?</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Consulta el estado de tu encomienda en tiempo real usando tu número de rastreo.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <GuestPackageTracking />
           </div>
         </div>
       </section>

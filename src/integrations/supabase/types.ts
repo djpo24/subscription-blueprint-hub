@@ -422,6 +422,33 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_tracking_queries: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown
+          query_timestamp: string
+          tracking_number: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: unknown
+          query_timestamp?: string
+          tracking_number: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          query_timestamp?: string
+          tracking_number?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       incoming_messages: {
         Row: {
           created_at: string
@@ -842,6 +869,50 @@ export type Database = {
         }
         Relationships: []
       }
+      public_package_tracking: {
+        Row: {
+          created_at: string
+          current_status: string
+          destination: string
+          id: string
+          last_updated: string
+          origin: string
+          package_id: string
+          tracking_number: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_status: string
+          destination: string
+          id?: string
+          last_updated?: string
+          origin: string
+          package_id: string
+          tracking_number: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_status?: string
+          destination?: string
+          id?: string
+          last_updated?: string
+          origin?: string
+          package_id?: string
+          tracking_number?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_package_tracking_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sent_messages: {
         Row: {
           created_at: string
@@ -1092,6 +1163,10 @@ export type Database = {
         Args: { debt_start_date: string }
         Returns: number
       }
+      check_guest_query_limit: {
+        Args: { p_ip_address: unknown }
+        Returns: boolean
+      }
       deliver_package_with_payment: {
         Args:
           | {
@@ -1164,6 +1239,17 @@ export type Database = {
           notification_log: Json
         }[]
       }
+      get_package_tracking_for_guest: {
+        Args: { p_tracking_number: string }
+        Returns: {
+          tracking_number: string
+          status: string
+          weight: number
+          origin: string
+          destination: string
+          last_updated: string
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1178,6 +1264,14 @@ export type Database = {
       is_admin_or_employee: {
         Args: { user_uuid: string }
         Returns: boolean
+      }
+      log_guest_tracking_query: {
+        Args: {
+          p_ip_address: unknown
+          p_tracking_number: string
+          p_user_agent?: string
+        }
+        Returns: undefined
       }
       mark_package_as_delivered: {
         Args: { p_package_id: string; p_delivered_by?: string }

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -251,7 +250,6 @@ export function WhatsAppTemplateTest() {
                 <SelectContent>
                   <SelectItem value="en_US">Inglés (en_US)</SelectItem>
                   <SelectItem value="es_CO">Español Colombia (es_CO)</SelectItem>
-                  <SelectItem value="es">Español (es)</SelectItem>
                   <SelectItem value="es_ES">Español España (es_ES)</SelectItem>
                   <SelectItem value="es_MX">Español México (es_MX)</SelectItem>
                 </SelectContent>

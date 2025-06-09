@@ -32,9 +32,9 @@ export function AppSidebar({
   } = useSidebar();
   const isMobile = useIsMobile();
 
-  // Show tabs based on user role - Customers is now available for everyone
+  // Show tabs based on user role - Notifications now available for travelers too
   const showUsersTab = userRole?.role === 'admin';
-  const showNotificationsTab = userRole?.role === 'admin';
+  const showNotificationsTab = userRole?.role === 'admin' || userRole?.role === 'traveler';
   const showSettingsTab = userRole?.role === 'admin';
   const showChatTab = userRole?.role === 'admin';
   const showFinancesTab = userRole?.role === 'admin';

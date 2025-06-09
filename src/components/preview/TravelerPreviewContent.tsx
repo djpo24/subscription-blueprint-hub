@@ -4,6 +4,7 @@ import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
+import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -88,6 +89,7 @@ export function TravelerPreviewContent({
                 {activeTab === 'finances' && 'Finanzas'}
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'notifications' && 'Notificaciones'}
+                {activeTab === 'customers' && 'Clientes'}
                 {activeTab === 'users' && 'Usuarios'}
                 {activeTab === 'settings' && 'Configuración'}
                 {activeTab === 'developer' && 'Preview'}
@@ -122,6 +124,7 @@ export function TravelerPreviewContent({
               <DispatchesTab />
               <FinancesTab />
               <ChatTab />
+              <NotificationsTab />
             </Tabs>
 
             <DialogsContainer

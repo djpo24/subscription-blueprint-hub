@@ -80,7 +80,7 @@ export function TravelerPreviewContent({
         <SidebarInset className="flex-1">
           <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
             <div className="flex items-center gap-2 mb-4">
-              <SidebarTrigger className="uber-button-secondary" />
+              <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-10 w-10" />
               <h2 className="text-xl font-semibold">
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'trips' && 'Viajes'}

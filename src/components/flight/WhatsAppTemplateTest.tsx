@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ interface TemplateConfig {
   category: string;
   hasParameters: boolean;
   parameters?: string[];
+  format?: string;
 }
 
 const AVAILABLE_TEMPLATES: Record<string, TemplateConfig> = {
@@ -46,7 +48,15 @@ const AVAILABLE_TEMPLATES: Record<string, TemplateConfig> = {
     language: 'es',
     category: 'logistics',
     hasParameters: true,
-    parameters: ['Número de tracking', 'Ubicación']
+    parameters: ['Nombre cliente', 'Número tracking', 'Destino', 'Dirección', 'Símbolo moneda', 'Monto'],
+    format: `📦 Hola {{1}}, 
+tu encomienda {{2}} ha llegado a 📍{{3}}.
+
+🏢 Ya puedes recogerla en la dirección: {{4}}.
+
+💰 Te recordamos el valor a pagar: {{5}}{{6}}.
+
+🙏 ¡Gracias por confiar en nosotros!`
   },
   'payment_reminder': {
     name: 'payment_reminder',
@@ -225,6 +235,16 @@ export function WhatsAppTemplateTest() {
                 <p className="text-xs text-gray-500 mt-1">
                   Esta plantilla requiere parámetros: {currentTemplate.parameters?.join(', ') || 'Ninguno'}
                 </p>
+              </div>
+            )}
+
+            {/* Mostrar formato de la plantilla si está disponible */}
+            {currentTemplate?.format && (
+              <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                <h4 className="font-medium text-sm mb-2 text-blue-800">Formato de la plantilla:</h4>
+                <pre className="text-sm text-blue-700 whitespace-pre-wrap font-mono bg-white p-3 rounded border">
+                  {currentTemplate.format}
+                </pre>
               </div>
             )}
 

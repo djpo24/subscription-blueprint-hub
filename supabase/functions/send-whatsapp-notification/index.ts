@@ -142,16 +142,21 @@ serve(async (req) => {
           }
         }
 
+        // Usar el formato exacto especificado:
+        // 📦 Hola {{1}}, tu encomienda {{2}} ha llegado a 📍{{3}}.
+        // 🏢 Ya puedes recogerla en la dirección: {{4}}.
+        // 💰 Te recordamos el valor a pagar: {{5}}{{6}}.
+        // 🙏 ¡Gracias por confiar en nosotros!
         templatePayload.template.components = [
           {
             type: 'body',
             parameters: [
-              { type: 'text', text: templateParameters.customerName },
-              { type: 'text', text: templateParameters.trackingNumber },
-              { type: 'text', text: templateParameters.destination },
-              { type: 'text', text: address },
-              { type: 'text', text: templateParameters.currency },
-              { type: 'text', text: templateParameters.amount }
+              { type: 'text', text: templateParameters.customerName }, // {{1}} - nombre cliente
+              { type: 'text', text: templateParameters.trackingNumber }, // {{2}} - tracking
+              { type: 'text', text: templateParameters.destination }, // {{3}} - destino
+              { type: 'text', text: address }, // {{4}} - dirección
+              { type: 'text', text: templateParameters.currency }, // {{5}} - símbolo moneda
+              { type: 'text', text: templateParameters.amount } // {{6}} - monto
             ]
           }
         ]

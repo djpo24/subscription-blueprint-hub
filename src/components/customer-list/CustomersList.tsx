@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -135,7 +134,6 @@ export function CustomersList() {
                 <TableRow>
                   <TableHead>Nombre Completo</TableHead>
                   <TableHead>Teléfono</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Dirección</TableHead>
                   <TableHead className="text-center">
                     <div className="flex items-center justify-center gap-1">
@@ -155,7 +153,6 @@ export function CustomersList() {
                     <TableCell>
                       <PhoneWithFlag phone={customer.phone} />
                     </TableCell>
-                    <TableCell>{customer.email}</TableCell>
                     <TableCell>
                       {customer.address ? (
                         <span className="text-sm">{customer.address}</span>
@@ -194,7 +191,7 @@ export function CustomersList() {
                 ))}
                 {filteredCustomers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    <TableCell colSpan={5} className="text-center text-gray-500 py-8">
                       {searchCustomerId ? "No se encontró el cliente buscado" : "No hay clientes registrados"}
                     </TableCell>
                   </TableRow>

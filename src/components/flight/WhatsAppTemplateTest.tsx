@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MessageSquare, Send, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 
-const AVAILABLE_TEMPLATES = {
+interface TemplateConfig {
+  name: string;
+  description: string;
+  language: string;
+  category: string;
+  hasParameters: boolean;
+  parameters?: string[];
+}
+
+const AVAILABLE_TEMPLATES: Record<string, TemplateConfig> = {
   'hello_world': {
     name: 'hello_world',
     description: 'Plantilla básica de saludo (preaprobada)',
@@ -58,7 +66,7 @@ export function WhatsAppTemplateTest() {
   const [messageParameters, setMessageParameters] = useState('');
   const { toast } = useToast();
 
-  const currentTemplate = AVAILABLE_TEMPLATES[selectedTemplate as keyof typeof AVAILABLE_TEMPLATES];
+  const currentTemplate = AVAILABLE_TEMPLATES[selectedTemplate];
 
   const sendTemplateMessage = async () => {
     setIsSending(true);
@@ -166,7 +174,7 @@ export function WhatsAppTemplateTest() {
                 </label>
                 <Select value={selectedTemplate} onValueChange={(value) => {
                   setSelectedTemplate(value);
-                  const template = AVAILABLE_TEMPLATES[value as keyof typeof AVAILABLE_TEMPLATES];
+                  const template = AVAILABLE_TEMPLATES[value];
                   setTemplateLanguage(template.language);
                 }}>
                   <SelectTrigger>
@@ -211,11 +219,11 @@ export function WhatsAppTemplateTest() {
                 <Textarea
                   value={messageParameters}
                   onChange={(e) => setMessageParameters(e.target.value)}
-                  placeholder={`Parámetros requeridos: ${currentTemplate.parameters?.join(', ')}`}
+                  placeholder={`Parámetros requeridos: ${currentTemplate.parameters?.join(', ') || ''}`}
                   rows={3}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Esta plantilla requiere parámetros: {currentTemplate.parameters?.join(', ')}
+                  Esta plantilla requiere parámetros: {currentTemplate.parameters?.join(', ') || 'Ninguno'}
                 </p>
               </div>
             )}
@@ -229,7 +237,7 @@ export function WhatsAppTemplateTest() {
                 <p><strong>Categoría:</strong> {currentTemplate?.category}</p>
                 <p><strong>Número destino:</strong> {testPhone}</p>
                 {currentTemplate?.hasParameters && (
-                  <p><strong>Tiene parámetros:</strong> Sí ({currentTemplate.parameters?.length})</p>
+                  <p><strong>Tiene parámetros:</strong> Sí ({currentTemplate.parameters?.length || 0})</p>
                 )}
               </div>
             </div>

@@ -1,4 +1,5 @@
 
+
 export const getMaxPhoneLength = (countryCode: string): number => {
   if (countryCode === '+57') { // Colombia
     return 7;
@@ -8,6 +9,8 @@ export const getMaxPhoneLength = (countryCode: string): number => {
     return 8;
   } else if (countryCode === '+1') { // Estados Unidos
     return 10;
+  } else if (countryCode === '+501') { // Belice
+    return 7;
   }
   return 10; // Default for other countries
 };
@@ -40,6 +43,10 @@ export const formatPhoneNumber = (phone: string, countryCode: string): string =>
     if (limitedNumbers.length <= 3) return limitedNumbers;
     if (limitedNumbers.length <= 6) return `(${limitedNumbers.slice(0, 3)}) ${limitedNumbers.slice(3)}`;
     return `(${limitedNumbers.slice(0, 3)}) ${limitedNumbers.slice(3, 6)}-${limitedNumbers.slice(6, 10)}`;
+  } else if (countryCode === '+501') { // Belice
+    // Format: XXX XXXX (max 7 digits)
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 7)}`;
   }
   
   // Default formatting for other countries
@@ -64,7 +71,10 @@ export const validatePhoneNumber = (phone: string, countryCode: string): boolean
     return numbers.length === 8;
   } else if (countryCode === '+1') { // Estados Unidos
     return numbers.length === 10;
+  } else if (countryCode === '+501') { // Belice
+    return numbers.length === 7;
   }
   
   return numbers.length <= maxLength;
 };
+

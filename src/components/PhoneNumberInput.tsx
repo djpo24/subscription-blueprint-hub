@@ -1,4 +1,5 @@
 
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CountryCodeSelector } from './CountryCodeSelector';
@@ -69,6 +70,8 @@ export function PhoneNumberInput({
       return 'XXX XXXXX (8 dígitos)';
     } else if (countryCode === '+1') {
       return '(XXX) XXX-XXXX (10 dígitos)';
+    } else if (countryCode === '+501') {
+      return 'XXX XXXX (7 dígitos)';
     }
     return placeholder;
   };
@@ -103,3 +106,4 @@ export function PhoneNumberInput({
     </div>
   );
 }
+

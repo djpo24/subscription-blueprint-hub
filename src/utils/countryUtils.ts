@@ -1,4 +1,5 @@
 
+
 export const getCountryFlagByPhone = (phone: string): string => {
   if (!phone) return '';
   
@@ -13,6 +14,8 @@ export const getCountryFlagByPhone = (phone: string): string => {
     return '🇲🇽'; // México
   } else if (normalizedPhone.startsWith('+1')) {
     return '🇺🇸'; // Estados Unidos
+  } else if (normalizedPhone.startsWith('+501')) {
+    return '🇧🇿'; // Belice
   }
   
   return ''; // Sin bandera si no coincide con ningún código conocido
@@ -31,7 +34,10 @@ export const getCountryCodeFromPhone = (phone: string): string => {
     return '+52';
   } else if (normalizedPhone.startsWith('+1')) {
     return '+1';
+  } else if (normalizedPhone.startsWith('+501')) {
+    return '+501';
   }
   
   return '';
 };
+

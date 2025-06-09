@@ -31,11 +31,15 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
   const showChatTab = userRole?.role === 'admin';
   const showFinancesTab = userRole?.role === 'admin';
   
+  // Customers is now visible for ALL users
+  const showCustomersTab = true;
+  
   console.log('MainTabs: showUsersTab:', showUsersTab);
   console.log('MainTabs: showNotificationsTab:', showNotificationsTab);
   console.log('MainTabs: showSettingsTab:', showSettingsTab);
   console.log('MainTabs: showChatTab:', showChatTab);
   console.log('MainTabs: showFinancesTab:', showFinancesTab);
+  console.log('MainTabs: showCustomersTab:', showCustomersTab);
 
   if (isLoading) {
     console.log('MainTabs: Still loading user role...');
@@ -56,6 +60,7 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
     showFinancesTab,
     showChatTab,
     showNotificationsTab,
+    showCustomersTab, // now always visible
     showUsersTab,
     showSettingsTab,
     true // developer (always visible)
@@ -91,6 +96,11 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
         {showNotificationsTab && (
           <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
             {isMobile ? "Notif." : "Notificaciones"}
+          </TabsTrigger>
+        )}
+        {showCustomersTab && (
+          <TabsTrigger value="customers" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
+            {isMobile ? "Clientes" : "Clientes"}
           </TabsTrigger>
         )}
         {showUsersTab && (

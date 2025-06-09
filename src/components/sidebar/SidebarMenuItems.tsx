@@ -50,7 +50,7 @@ export const createMenuItems = (
     items.push({ value: 'notifications', title: 'Notificaciones', icon: Bell });
   }
 
-  // Add the new Customers menu item
+  // Customers tab is now visible for ALL users
   items.push({ value: 'customers', title: 'Clientes', icon: UserCheck });
 
   if (showUsersTab) {

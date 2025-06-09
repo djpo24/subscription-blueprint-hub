@@ -1,14 +1,11 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MessageCircle, Edit, Users, Package } from 'lucide-react';
-import { PhoneWithFlag } from '@/components/PhoneWithFlag';
 import { ChatDialog } from '@/components/chat/ChatDialog';
 import { EditCustomerDialog } from './EditCustomerDialog';
 import { CustomerSearchBar } from './CustomerSearchBar';
+import { CustomersTable } from './CustomersTable';
 import { useToast } from '@/hooks/use-toast';
 
 interface Customer {
@@ -109,98 +106,13 @@ export function CustomersList() {
         onClearSearch={handleClearSearch}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Lista de Clientes
-            {searchCustomerId && (
-              <span className="text-sm font-normal text-muted-foreground">
-                (Mostrando resultado de búsqueda)
-              </span>
-            )}
-          </CardTitle>
-          <div className="text-sm text-muted-foreground">
-            {searchCustomerId 
-              ? `${filteredCustomers.length} cliente${filteredCustomers.length !== 1 ? 's' : ''} encontrado${filteredCustomers.length !== 1 ? 's' : ''}`
-              : `Total de clientes: ${customers.length}`
-            }
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre Completo</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Package className="h-4 w-4" />
-                      Envíos
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-center">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">
-                      {customer.name}
-                    </TableCell>
-                    <TableCell>
-                      <PhoneWithFlag phone={customer.phone} />
-                    </TableCell>
-                    <TableCell>
-                      {customer.address ? (
-                        <span className="text-sm">{customer.address}</span>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Sin dirección</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                          {customer.package_count}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleChatClick(customer.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditClick(customer.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredCustomers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500 py-8">
-                      {searchCustomerId ? "No se encontró el cliente buscado" : "No hay clientes registrados"}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <CustomersTable
+        customers={customers}
+        filteredCustomers={filteredCustomers}
+        searchCustomerId={searchCustomerId}
+        onChatClick={handleChatClick}
+        onEditClick={handleEditClick}
+      />
 
       {selectedCustomer && (
         <>

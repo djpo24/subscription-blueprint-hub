@@ -106,6 +106,7 @@ export function TravelerPreviewContent({
                 filteredPackages={filteredPackages}
                 isLoading={isLoading}
                 onUpdate={onPackagesUpdate}
+                onTabChange={setActiveTab}
               />
               
               <TripsTab 

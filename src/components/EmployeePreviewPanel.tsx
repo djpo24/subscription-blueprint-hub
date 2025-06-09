@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
@@ -144,6 +143,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
             onUpdate={handlePackagesUpdate}
             disableChat={true}
             previewRole="employee"
+            onTabChange={setActiveTab}
           />
           
           <TripsTab 

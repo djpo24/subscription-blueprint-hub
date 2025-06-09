@@ -1,11 +1,12 @@
 
-import { MainTabs } from '@/components/MainTabs';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { Tabs } from '@/components/ui/tabs';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
 
 interface TravelerPreviewContentProps {
@@ -68,53 +69,73 @@ export function TravelerPreviewContent({
   selectedDate,
 }: TravelerPreviewContentProps) {
   return (
-    <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-      <MainTabs 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        unreadCount={unreadCount}
-        previewRole="traveler"
-      />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-8">
-        <DashboardTab
-          packageStats={packageStats}
-          customersCount={customersCount}
-          onNewPackage={onNewPackage}
-          onNewTrip={onNewTrip}
-          onViewNotifications={() => {}}
-          onMobileDelivery={onMobileDelivery}
-          packages={packages}
-          filteredPackages={filteredPackages}
-          isLoading={isLoading}
-          onUpdate={onPackagesUpdate}
+    <SidebarProvider>
+      <div className="min-h-screen bg-gray-50 w-full flex">
+        <AppSidebar 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          unreadCount={unreadCount}
+          previewRole="traveler"
         />
-        
-        <TripsTab 
-          viewingPackagesByDate={viewingPackagesByDate}
-          trips={trips}
-          tripsLoading={tripsLoading}
-          onAddPackage={onAddPackageToTrip}
-          onCreateTrip={onCreateTripFromCalendar}
-          onViewPackagesByDate={onViewPackagesByDate}
-          onBack={onBackToCalendar}
-        />
-        
-        <DispatchesTab />
-        <FinancesTab />
-        <ChatTab />
-      </Tabs>
+        <SidebarInset className="flex-1">
+          <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+            <div className="flex items-center gap-2 mb-4">
+              <SidebarTrigger />
+              <h2 className="text-xl font-semibold">
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'trips' && 'Viajes'}
+                {activeTab === 'dispatches' && 'Despachos'}
+                {activeTab === 'finances' && 'Finanzas'}
+                {activeTab === 'chat' && 'Chat'}
+                {activeTab === 'notifications' && 'Notificaciones'}
+                {activeTab === 'users' && 'Usuarios'}
+                {activeTab === 'settings' && 'Configuración'}
+                {activeTab === 'developer' && 'Preview'}
+              </h2>
+            </div>
 
-      <DialogsContainer
-        packageDialogOpen={packageDialogOpen}
-        setPackageDialogOpen={setPackageDialogOpen}
-        onPackageSuccess={onPackageSuccess}
-        selectedTripId={selectedTripId}
-        tripDialogOpen={tripDialogOpen}
-        onTripDialogChange={onTripDialogChange}
-        onTripSuccess={onTripSuccess}
-        selectedDate={selectedDate}
-      />
-    </main>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <DashboardTab
+                packageStats={packageStats}
+                customersCount={customersCount}
+                onNewPackage={onNewPackage}
+                onNewTrip={onNewTrip}
+                onViewNotifications={() => {}}
+                onMobileDelivery={onMobileDelivery}
+                packages={packages}
+                filteredPackages={filteredPackages}
+                isLoading={isLoading}
+                onUpdate={onPackagesUpdate}
+              />
+              
+              <TripsTab 
+                viewingPackagesByDate={viewingPackagesByDate}
+                trips={trips}
+                tripsLoading={tripsLoading}
+                onAddPackage={onAddPackageToTrip}
+                onCreateTrip={onCreateTripFromCalendar}
+                onViewPackagesByDate={onViewPackagesByDate}
+                onBack={onBackToCalendar}
+              />
+              
+              <DispatchesTab />
+              <FinancesTab />
+              <ChatTab />
+            </Tabs>
+
+            <DialogsContainer
+              packageDialogOpen={packageDialogOpen}
+              setPackageDialogOpen={setPackageDialogOpen}
+              onPackageSuccess={onPackageSuccess}
+              selectedTripId={selectedTripId}
+              tripDialogOpen={tripDialogOpen}
+              onTripDialogChange={onTripDialogChange}
+              onTripSuccess={onTripSuccess}
+              selectedDate={selectedDate}
+            />
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }

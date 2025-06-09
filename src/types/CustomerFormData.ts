@@ -22,5 +22,6 @@ export const initialCustomerFormData: CustomerFormData = {
 export const countryCodes = [
   { code: '+57', flag: '🇨🇴', name: 'Colombia' },
   { code: '+599', flag: '🇨🇼', name: 'Curaçao' },
-  { code: '+52', flag: '🇲🇽', name: 'México' }
+  { code: '+52', flag: '🇲🇽', name: 'México' },
+  { code: '+1', flag: '🇺🇸', name: 'Estados Unidos' }
 ];

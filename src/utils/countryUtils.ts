@@ -11,6 +11,8 @@ export const getCountryFlagByPhone = (phone: string): string => {
     return '🇨🇼'; // Curaçao
   } else if (normalizedPhone.startsWith('+52')) {
     return '🇲🇽'; // México
+  } else if (normalizedPhone.startsWith('+1')) {
+    return '🇺🇸'; // Estados Unidos
   }
   
   return ''; // Sin bandera si no coincide con ningún código conocido
@@ -27,6 +29,8 @@ export const getCountryCodeFromPhone = (phone: string): string => {
     return '+599';
   } else if (normalizedPhone.startsWith('+52')) {
     return '+52';
+  } else if (normalizedPhone.startsWith('+1')) {
+    return '+1';
   }
   
   return '';

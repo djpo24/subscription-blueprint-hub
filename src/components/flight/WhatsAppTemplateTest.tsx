@@ -58,6 +58,17 @@ tu encomienda {{2}} ha llegado a 📍{{3}}.
 
 🙏 ¡Gracias por confiar en nosotros!`
   },
+  'consulta_encomienda': {
+    name: 'consulta_encomienda',
+    description: 'Consulta sobre encomienda del cliente',
+    language: 'es',
+    category: 'customer_service',
+    hasParameters: true,
+    parameters: ['Nombre del cliente'],
+    format: `Hola {{1}}, te saludamos de parte de Envíos Ojito 📦.  
+Tenemos una consulta sobre tu encomienda. 
+¿Podrías atendernos?`
+  },
   'payment_reminder': {
     name: 'payment_reminder',
     description: 'Recordatorio de pago pendiente',
@@ -107,6 +118,30 @@ export function WhatsAppTemplateTest() {
 
       console.log('Notification log created:', notificationData);
 
+      // Preparar parámetros según la plantilla seleccionada
+      let templateParameters = null;
+      
+      if (selectedTemplate === 'package_arrival_notification') {
+        // Parsear parámetros para la plantilla de llegada de paquete
+        const params = messageParameters.split(',').map(p => p.trim());
+        if (params.length >= 6) {
+          templateParameters = {
+            customerName: params[0] || 'Cliente',
+            trackingNumber: params[1] || 'TEST123',
+            destination: params[2] || 'Bogotá',
+            address: params[3] || 'Dirección de prueba',
+            currency: params[4] || '$',
+            amount: params[5] || '0'
+          };
+        }
+      } else if (selectedTemplate === 'consulta_encomienda') {
+        // Parámetros para la plantilla de consulta
+        const params = messageParameters.split(',').map(p => p.trim());
+        templateParameters = {
+          customerName: params[0] || 'Cliente'
+        };
+      }
+
       // Call the WhatsApp edge function with template parameters
       const response = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
@@ -115,7 +150,8 @@ export function WhatsAppTemplateTest() {
           message: messageParameters || `Plantilla: ${selectedTemplate}`,
           useTemplate: true,
           templateName: selectedTemplate,
-          templateLanguage: templateLanguage
+          templateLanguage: templateLanguage,
+          templateParameters: templateParameters
         }
       });
 
@@ -235,6 +271,16 @@ export function WhatsAppTemplateTest() {
                 <p className="text-xs text-gray-500 mt-1">
                   Esta plantilla requiere parámetros: {currentTemplate.parameters?.join(', ') || 'Ninguno'}
                 </p>
+                {selectedTemplate === 'package_arrival_notification' && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Formato: Nombre cliente, Número tracking, Destino, Dirección, Símbolo moneda, Monto
+                  </p>
+                )}
+                {selectedTemplate === 'consulta_encomienda' && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Formato: Nombre del cliente
+                  </p>
+                )}
               </div>
             )}
 

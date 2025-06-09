@@ -160,6 +160,19 @@ serve(async (req) => {
             ]
           }
         ]
+      } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
+        // Nueva plantilla consulta_encomienda
+        // Hola {{1}}, te saludamos de parte de Envíos Ojito 📦.  
+        // Tenemos una consulta sobre tu encomienda. 
+        // ¿Podrías atendernos?
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: templateParameters.customerName } // {{1}} - nombre cliente
+            ]
+          }
+        ]
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

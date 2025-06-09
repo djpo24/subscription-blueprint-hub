@@ -1,6 +1,6 @@
-
 import { useState, useRef } from 'react';
-import { BrowserQRCodeReader, BrowserMultiFormatReader, Result } from '@zxing/browser';
+import { BrowserQRCodeReader, BrowserMultiFormatReader } from '@zxing/browser';
+import { Result } from '@zxing/library';
 import { useScannerSounds } from './useScannerSounds';
 
 // Detectar tipo de dispositivo para optimizaciones específicas

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { BrowserQRCodeReader, BrowserMultiFormatReader } from '@zxing/browser';
 import { Result } from '@zxing/library';
@@ -23,42 +24,12 @@ export function useBarcodeScanner() {
   const barcodeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const scanningAbortController = useRef<AbortController | null>(null);
   const continuousScanRef = useRef<boolean>(false);
-  const scanAttemptsRef = useRef<number>(0);
   const deviceType = getDeviceType();
   
   // Integrar los sonidos del escáner
   const { playSuccessBeep, playErrorBeep, cleanup: cleanupSounds } = useScannerSounds();
 
-  // Configuraciones específicas por dispositivo
-  const getScanConfig = () => {
-    if (deviceType === 'iPad') {
-      return {
-        scanInterval: 20, // Más frecuente para iPad
-        maxAttempts: 150, // Más intentos para iPad
-        barcodeDelay: 20,
-        qrDelay: 40,
-        successDelay: 200
-      };
-    } else if (deviceType === 'iPhone') {
-      return {
-        scanInterval: 25,
-        maxAttempts: 100,
-        barcodeDelay: 25,
-        qrDelay: 50,
-        successDelay: 300
-      };
-    } else {
-      return {
-        scanInterval: 30,
-        maxAttempts: 80,
-        barcodeDelay: 30,
-        qrDelay: 60,
-        successDelay: 300
-      };
-    }
-  };
-
-  // Función mejorada para escaneo continuo con optimizaciones por dispositivo
+  // Función de escaneo continuo SIN intervalos - funciona como antes
   const continuousCodeScan = async (
     onCodeScanned: (codeData: string) => void, 
     barcodeReader: BrowserMultiFormatReader, 
@@ -68,25 +39,20 @@ export function useBarcodeScanner() {
   ) => {
     if (!videoElement || !continuousScanRef.current) return;
 
-    const config = getScanConfig();
-    scanAttemptsRef.current++;
-
     try {
-      console.log(`📊 [${deviceType}] Attempting thermal printer Barcode scan (PRIORITY) - Attempt ${scanAttemptsRef.current}/${config.maxAttempts}`);
+      console.log(`📊 [${deviceType}] Escaneando código de barras (PRIORIDAD) - Máxima resolución`);
       
-      const barcodeResult = await Promise.race([
-        barcodeReader.decodeOnceFromVideoDevice(deviceId, videoElement),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Barcode timeout')), config.barcodeDelay))
-      ]) as Result;
+      // Intentar escanear código de barras primero (PRIORIDAD)
+      const barcodeResult = await barcodeReader.decodeOnceFromVideoDevice(deviceId, videoElement) as Result;
       
       if (barcodeResult && continuousScanRef.current) {
-        console.log(`🎯 [${deviceType}] Thermal printer Barcode successfully detected:`, barcodeResult.getText());
+        console.log(`🎯 [${deviceType}] Código de barras detectado exitosamente:`, barcodeResult.getText());
         
         // Detener el escaneo primero
         stopScanning();
         
-        // Reproducir sonido de éxito DESPUÉS de detener el escaneo
-        console.log('🔊 Playing success sound...');
+        // Reproducir sonido de éxito
+        console.log('🔊 Reproduciendo sonido de éxito...');
         await playSuccessBeep();
         
         // Llamar al callback después del sonido
@@ -94,50 +60,33 @@ export function useBarcodeScanner() {
         return;
       }
     } catch (barcodeError: any) {
-      // Si falla Barcode, intentar con QR como fallback (solo después de varios intentos de barcode)
-      if (scanAttemptsRef.current % 3 === 0) { // Intentar QR cada 3 intentos de barcode
-        try {
-          console.log(`🔄 [${deviceType}] Barcode failed, attempting thermal printer QR scan as fallback...`);
+      // Si falla código de barras, intentar QR como fallback
+      try {
+        console.log(`🔄 [${deviceType}] Código de barras falló, intentando QR como respaldo...`);
+        
+        const qrResult = await qrReader.decodeOnceFromVideoDevice(deviceId, videoElement) as Result;
+        
+        if (qrResult && continuousScanRef.current) {
+          console.log(`🎯 [${deviceType}] Código QR detectado como respaldo:`, qrResult.getText());
           
-          const qrResult = await Promise.race([
-            qrReader.decodeOnceFromVideoDevice(deviceId, videoElement),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('QR timeout')), config.qrDelay))
-          ]) as Result;
+          // Detener el escaneo primero
+          stopScanning();
           
-          if (qrResult && continuousScanRef.current) {
-            console.log(`🎯 [${deviceType}] Thermal printer QR Code successfully detected as fallback:`, qrResult.getText());
-            
-            // Detener el escaneo primero
-            stopScanning();
-            
-            // Reproducir sonido de éxito DESPUÉS de detener el escaneo
-            console.log('🔊 Playing success sound for QR...');
-            await playSuccessBeep();
-            
-            // Llamar al callback después del sonido
-            onCodeScanned(qrResult.getText());
-            return;
-          }
-        } catch (qrError: any) {
-          // Continuar con el siguiente intento
+          // Reproducir sonido de éxito
+          console.log('🔊 Reproduciendo sonido de éxito para QR...');
+          await playSuccessBeep();
+          
+          // Llamar al callback después del sonido
+          onCodeScanned(qrResult.getText());
+          return;
         }
+      } catch (qrError: any) {
+        // Continuar con el siguiente intento SIN delay
       }
       
-      // Continuar intentando si no se detectó ningún código y no hemos superado el máximo
-      if (continuousScanRef.current && scanAttemptsRef.current < config.maxAttempts) {
-        setTimeout(() => {
-          continuousCodeScan(onCodeScanned, barcodeReader, qrReader, deviceId, videoElement);
-        }, config.scanInterval);
-      } else if (scanAttemptsRef.current >= config.maxAttempts) {
-        console.log(`⚠️ [${deviceType}] Maximum scan attempts reached (${config.maxAttempts}), resetting...`);
-        scanAttemptsRef.current = 0;
-        
-        // Reiniciar después de un breve pausa
-        setTimeout(() => {
-          if (continuousScanRef.current) {
-            continuousCodeScan(onCodeScanned, barcodeReader, qrReader, deviceId, videoElement);
-          }
-        }, config.scanInterval * 2);
+      // Continuar intentando INMEDIATAMENTE sin intervalos
+      if (continuousScanRef.current) {
+        continuousCodeScan(onCodeScanned, barcodeReader, qrReader, deviceId, videoElement);
       }
     }
   };
@@ -148,41 +97,34 @@ export function useBarcodeScanner() {
     videoElement: HTMLVideoElement | null
   ) => {
     if (!videoElement) {
-      console.error('Video element not available');
+      console.error('Elemento de video no disponible');
       return;
     }
 
     try {
       setIsScanning(true);
       continuousScanRef.current = true;
-      scanAttemptsRef.current = 0;
       
-      console.log(`🚀 [${deviceType}] Starting thermal printer Barcode scan (PRIORITY) with device:`, deviceId);
+      console.log(`🚀 [${deviceType}] Iniciando escaneo de códigos de barras con máxima resolución - dispositivo:`, deviceId);
 
       // Create abort controller for this scanning session
       const abortController = new AbortController();
       scanningAbortController.current = abortController;
 
-      // Configurar Multi-format reader para códigos de barras (PRIORIDAD - incluyendo Code128, Code39, etc.)
-      const barcodeReader = new BrowserMultiFormatReader(undefined, {
-        delayBetweenScanAttempts: getScanConfig().barcodeDelay,
-        delayBetweenScanSuccess: getScanConfig().successDelay
-      });
+      // Configurar Multi-format reader para códigos de barras (PRIORIDAD)
+      const barcodeReader = new BrowserMultiFormatReader();
       barcodeReaderRef.current = barcodeReader;
 
       // Configurar QR code reader como fallback
-      const qrCodeReader = new BrowserQRCodeReader(undefined, {
-        delayBetweenScanAttempts: getScanConfig().qrDelay,
-        delayBetweenScanSuccess: getScanConfig().successDelay
-      });
+      const qrCodeReader = new BrowserQRCodeReader();
       qrCodeReaderRef.current = qrCodeReader;
 
-      // Iniciar escaneo continuo con PRIORIDAD a códigos de barras
-      console.log(`🎯 [${deviceType}] Starting continuous thermal printer Barcode decode (priority over QR)...`);
+      // Iniciar escaneo continuo INMEDIATO sin intervalos
+      console.log(`🎯 [${deviceType}] Iniciando decodificación continua inmediata de códigos de barras...`);
       continuousCodeScan(onCodeScanned, barcodeReader, qrCodeReader, deviceId, videoElement);
       
     } catch (err) {
-      console.error(`❌ [${deviceType}] Error starting thermal printer Barcode scan:`, err);
+      console.error(`❌ [${deviceType}] Error iniciando escaneo de códigos de barras:`, err);
       
       // Reproducir sonido de error si falla al iniciar
       await playErrorBeep();
@@ -194,11 +136,10 @@ export function useBarcodeScanner() {
   };
 
   const stopScanning = () => {
-    console.log(`🛑 [${deviceType}] Stopping thermal printer Barcode scanning...`);
+    console.log(`🛑 [${deviceType}] Deteniendo escaneo de códigos de barras...`);
     
     // Detener escaneo continuo
     continuousScanRef.current = false;
-    scanAttemptsRef.current = 0;
     
     // Abort any ongoing scanning
     if (scanningAbortController.current) {
@@ -211,9 +152,6 @@ export function useBarcodeScanner() {
     barcodeReaderRef.current = null;
     
     setIsScanning(false);
-    
-    // NO limpiar recursos de audio inmediatamente - darle tiempo al sonido
-    // El cleanup se hará después cuando se necesite o cuando el componente se desmonte
   };
 
   const cleanup = () => {

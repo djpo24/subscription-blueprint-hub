@@ -1,3 +1,4 @@
+
 import type { VideoConstraints } from './types';
 
 // Detectar si el dispositivo es un iPad
@@ -19,17 +20,17 @@ function isAndroid(): boolean {
 export function getOptimalVideoConstraints(deviceId: string): VideoConstraints {
   const deviceType = getDeviceType();
   
-  console.log(`🎯 Optimizing camera for ${deviceType} - Thermal printer barcode scanning`);
+  console.log(`🎯 Configurando cámara para ${deviceType} - Máxima resolución para escaneo de códigos de barras`);
   
-  // Configuraciones específicas por dispositivo
+  // Configuraciones específicas por dispositivo con máxima resolución
   if (deviceType === 'iPad') {
-    return getIPadOptimizedConstraints(deviceId);
+    return getIPadMaxResolutionConstraints(deviceId);
   } else if (deviceType === 'iPhone') {
-    return getIPhoneOptimizedConstraints(deviceId);
+    return getIPhoneMaxResolutionConstraints(deviceId);
   } else if (deviceType === 'Android') {
-    return getAndroidOptimizedConstraints(deviceId);
+    return getAndroidMaxResolutionConstraints(deviceId);
   } else {
-    return getGenericOptimizedConstraints(deviceId);
+    return getGenericMaxResolutionConstraints(deviceId);
   }
 }
 
@@ -40,52 +41,50 @@ function getDeviceType(): string {
   return 'Generic';
 }
 
-function getIPadOptimizedConstraints(deviceId: string): VideoConstraints {
+function getIPadMaxResolutionConstraints(deviceId: string): VideoConstraints {
   return {
     deviceId: { exact: deviceId },
     facingMode: 'environment',
-    // Configuraciones específicas para iPad - resolución ultra alta
+    // Máxima resolución para iPad - hasta 8K si está disponible
     width: { 
-      ideal: 3840, // 4K para iPads más nuevos
-      min: 1920,
-      max: 4096 
+      ideal: 7680, // 8K
+      min: 3840,   // 4K mínimo
+      max: 7680    // 8K máximo
     },
     height: { 
-      ideal: 2160, // 4K para iPads más nuevos
-      min: 1080,
-      max: 2160 
+      ideal: 4320, // 8K
+      min: 2160,   // 4K mínimo
+      max: 4320    // 8K máximo
     },
-    // iPad específico - configuraciones para códigos de barras térmicos
     focusMode: 'continuous',
     aspectRatio: { ideal: 16/9 },
-    frameRate: { ideal: 60, min: 30, max: 60 },
+    frameRate: { ideal: 60, min: 30, max: 120 }, // Máximo framerate
     exposureMode: 'continuous',
     whiteBalanceMode: 'continuous',
-    // Configuraciones mejoradas para códigos de barras en iPad
-    brightness: { ideal: 0.7 }, // Más brillo para iPad
-    contrast: { ideal: 1.5 },   // Más contraste para iPad
-    saturation: { ideal: 0.8 } // Menos saturación para mejor contraste
+    brightness: { ideal: 0.7 },
+    contrast: { ideal: 1.5 },
+    saturation: { ideal: 0.8 }
   };
 }
 
-function getIPhoneOptimizedConstraints(deviceId: string): VideoConstraints {
+function getIPhoneMaxResolutionConstraints(deviceId: string): VideoConstraints {
   return {
     deviceId: { exact: deviceId },
     facingMode: 'environment',
-    // Configuraciones específicas para iPhone
+    // Máxima resolución para iPhone - hasta 4K
     width: { 
-      ideal: 2560,
-      min: 1280,
-      max: 4096 
+      ideal: 3840, // 4K
+      min: 1920,   // Full HD mínimo
+      max: 3840    // 4K máximo
     },
     height: { 
-      ideal: 1440,
-      min: 720,
-      max: 2160 
+      ideal: 2160, // 4K
+      min: 1080,   // Full HD mínimo
+      max: 2160    // 4K máximo
     },
     focusMode: 'continuous',
     aspectRatio: { ideal: 16/9 },
-    frameRate: { ideal: 60, min: 30, max: 60 },
+    frameRate: { ideal: 60, min: 30, max: 120 },
     exposureMode: 'continuous',
     whiteBalanceMode: 'continuous',
     brightness: { ideal: 0.5 },
@@ -94,24 +93,24 @@ function getIPhoneOptimizedConstraints(deviceId: string): VideoConstraints {
   };
 }
 
-function getAndroidOptimizedConstraints(deviceId: string): VideoConstraints {
+function getAndroidMaxResolutionConstraints(deviceId: string): VideoConstraints {
   return {
     deviceId: { exact: deviceId },
     facingMode: 'environment',
-    // Configuraciones específicas para Android
+    // Máxima resolución para Android - hasta 4K
     width: { 
-      ideal: 1920,
-      min: 1280,
-      max: 3840 
+      ideal: 3840, // 4K
+      min: 1920,   // Full HD mínimo
+      max: 3840    // 4K máximo
     },
     height: { 
-      ideal: 1080,
-      min: 720,
-      max: 2160 
+      ideal: 2160, // 4K
+      min: 1080,   // Full HD mínimo
+      max: 2160    // 4K máximo
     },
     focusMode: 'continuous',
     aspectRatio: { ideal: 16/9 },
-    frameRate: { ideal: 30, min: 15, max: 60 },
+    frameRate: { ideal: 60, min: 30, max: 120 },
     exposureMode: 'continuous',
     whiteBalanceMode: 'continuous',
     brightness: { ideal: 0.6 },
@@ -120,23 +119,24 @@ function getAndroidOptimizedConstraints(deviceId: string): VideoConstraints {
   };
 }
 
-function getGenericOptimizedConstraints(deviceId: string): VideoConstraints {
+function getGenericMaxResolutionConstraints(deviceId: string): VideoConstraints {
   return {
     deviceId: { exact: deviceId },
     facingMode: 'environment',
+    // Máxima resolución genérica - hasta Full HD
     width: { 
-      ideal: 1920,
-      min: 1280,
-      max: 2560 
+      ideal: 1920, // Full HD
+      min: 1280,   // HD mínimo
+      max: 1920    // Full HD máximo
     },
     height: { 
-      ideal: 1080,
-      min: 720,
-      max: 1440 
+      ideal: 1080, // Full HD
+      min: 720,    // HD mínimo
+      max: 1080    // Full HD máximo
     },
     focusMode: 'continuous',
     aspectRatio: { ideal: 16/9 },
-    frameRate: { ideal: 30, min: 15, max: 60 },
+    frameRate: { ideal: 60, min: 30, max: 120 },
     exposureMode: 'continuous',
     whiteBalanceMode: 'continuous',
     brightness: { ideal: 0.5 },
@@ -148,16 +148,16 @@ function getGenericOptimizedConstraints(deviceId: string): VideoConstraints {
 export function getFallbackVideoConstraints(deviceId: string) {
   const deviceType = getDeviceType();
   
-  console.log(`🔄 Using fallback constraints for ${deviceType}`);
+  console.log(`🔄 Usando configuración de respaldo para ${deviceType}`);
   
   if (deviceType === 'iPad') {
     return {
       video: {
         deviceId: { exact: deviceId },
         facingMode: 'environment',
-        width: { ideal: 1920, min: 1280, max: 2560 },
-        height: { ideal: 1080, min: 720, max: 1440 },
-        frameRate: { ideal: 30, min: 15, max: 60 }
+        width: { ideal: 3840, min: 1920, max: 3840 },
+        height: { ideal: 2160, min: 1080, max: 2160 },
+        frameRate: { ideal: 60, min: 30, max: 120 }
       },
       audio: false
     };
@@ -169,7 +169,7 @@ export function getFallbackVideoConstraints(deviceId: string) {
       facingMode: 'environment',
       width: { ideal: 1920, min: 1280 },
       height: { ideal: 1080, min: 720 },
-      frameRate: { ideal: 30, min: 15 }
+      frameRate: { ideal: 60, min: 30 }
     },
     audio: false
   };

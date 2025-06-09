@@ -25,16 +25,28 @@ export function useCamera() {
 
   const initCamera = async () => {
     try {
-      console.log(`🎯 [${deviceType}] Initializing camera for Beeprt CC450 CPCL Barcode scanning (priority over QR)...`);
+      console.log(`🎯 [${deviceType}] Inicializando cámara con máxima resolución para escaneo de códigos de barras...`);
       
-      // Configuraciones específicas de permisos para iPad
+      // Configuraciones específicas de permisos con máxima resolución
       const videoConstraints = deviceType === 'iPad' ? {
         video: {
           facingMode: 'environment',
-          width: { ideal: 3840, min: 1920 },
+          width: { ideal: 7680, min: 3840 }, // 8K para iPad
+          height: { ideal: 4320, min: 2160 }
+        }
+      } : deviceType === 'iPhone' ? {
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 3840, min: 1920 }, // 4K para iPhone
           height: { ideal: 2160, min: 1080 }
         }
-      } : { video: true };
+      } : {
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920, min: 1280 }, // Full HD para otros
+          height: { ideal: 1080, min: 720 }
+        }
+      };
 
       // Check if camera is available and get camera list
       const stream = await navigator.mediaDevices.getUserMedia(videoConstraints);
@@ -44,18 +56,18 @@ export function useCamera() {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       
-      console.log(`📷 [${deviceType}] Available cameras:`, videoDevices.map(d => ({ 
+      console.log(`📷 [${deviceType}] Cámaras disponibles:`, videoDevices.map(d => ({ 
         label: d.label, 
         deviceId: d.deviceId.substring(0, 20) + '...',
         groupId: d.groupId
       })));
       
-      // Sort cameras to prioritize rear camera (environment facing) con lógica específica para iPad
+      // Sort cameras to prioritize rear camera (environment facing) con lógica específica para cada dispositivo
       const sortedCameras = videoDevices.sort((a, b) => {
         const aIsRear = isRearCamera(a.label);
         const bIsRear = isRearCamera(b.label);
         
-        // Para iPad, priorizar cámaras ultra wide o main
+        // Para iPad, priorizar cámaras ultra wide o main para máxima resolución
         if (deviceType === 'iPad') {
           const aIsUltraWide = a.label.toLowerCase().includes('ultra') || a.label.toLowerCase().includes('wide');
           const bIsUltraWide = b.label.toLowerCase().includes('ultra') || b.label.toLowerCase().includes('wide');
@@ -73,12 +85,12 @@ export function useCamera() {
       setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
       setHasPermission(true);
       
-      console.log(`✅ [${deviceType}] Camera initialized for Barcode detection (priority). Default camera:`, 
-        sortedCameras[0]?.label || 'Unknown');
+      console.log(`✅ [${deviceType}] Cámara inicializada con máxima resolución. Cámara predeterminada:`, 
+        sortedCameras[0]?.label || 'Desconocida');
         
-      // Log adicional para iPad
-      if (deviceType === 'iPad' && sortedCameras.length > 0) {
-        console.log(`🎯 [iPad] Selected camera details:`, {
+      // Log adicional para dispositivos específicos
+      if (sortedCameras.length > 0) {
+        console.log(`🎯 [${deviceType}] Detalles de cámara seleccionada:`, {
           label: sortedCameras[0].label,
           deviceId: sortedCameras[0].deviceId.substring(0, 20) + '...',
           isRear: isRearCamera(sortedCameras[0].label)
@@ -86,7 +98,7 @@ export function useCamera() {
       }
       
     } catch (err) {
-      console.error(`❌ [${deviceType}] Camera permission denied:`, err);
+      console.error(`❌ [${deviceType}] Permiso de cámara denegado:`, err);
       setHasPermission(false);
       setError(`Se requiere acceso a la cámara para escanear códigos de barras en ${deviceType}`);
     }
@@ -114,11 +126,11 @@ export function useCamera() {
 
   const switchCamera = () => {
     if (availableCameras.length > 1) {
-      console.log(`🔄 [${deviceType}] Switching camera...`);
+      console.log(`🔄 [${deviceType}] Cambiando cámara...`);
       const newIndex = (currentCameraIndex + 1) % availableCameras.length;
       setCurrentCameraIndex(newIndex);
-      console.log(`✅ [${deviceType}] Switched to camera:`, 
-        availableCameras[newIndex]?.label || `Camera ${newIndex + 1}`);
+      console.log(`✅ [${deviceType}] Cambiado a cámara:`, 
+        availableCameras[newIndex]?.label || `Cámara ${newIndex + 1}`);
     }
   };
 

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +13,10 @@ export function ArrivalNotificationsPanel() {
     processNotifications,
     isProcessing
   } = useArrivalNotifications();
+
+  const handleProcessNotifications = () => {
+    processNotifications();
+  };
 
   if (isLoading) {
     return (
@@ -57,7 +60,7 @@ export function ArrivalNotificationsPanel() {
                     Hay {pendingNotifications.length} notificaciones pendientes de envío
                   </p>
                   <Button
-                    onClick={processNotifications}
+                    onClick={handleProcessNotifications}
                     disabled={isProcessing}
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700"

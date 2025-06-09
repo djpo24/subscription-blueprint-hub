@@ -32,7 +32,7 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
       // Buscar los datos del cliente
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
-        .select('name, email')
+        .select('name, email, phone')
         .eq('id', packageData.customer_id)
         .single();
 
@@ -57,10 +57,12 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         delivered_by: packageData.delivered_by,
         customers: customerData ? {
           name: customerData.name,
-          email: customerData.email
+          email: customerData.email,
+          phone: customerData.phone
         } : {
           name: 'Cliente no encontrado',
-          email: 'N/A'
+          email: 'N/A',
+          phone: 'N/A'
         }
       };
       

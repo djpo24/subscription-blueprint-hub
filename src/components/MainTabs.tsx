@@ -1,4 +1,5 @@
 
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { DashboardTab } from './tabs/DashboardTab';
@@ -36,7 +37,7 @@ interface MainTabsProps {
   onUpdate?: (id: string, updates: any) => void;
   disableChat?: boolean;
   // Props for TripsTab
-  viewingPackagesByDate?: boolean;
+  viewingPackagesByDate?: Date | null;
   trips?: any[];
   tripsLoading?: boolean;
   onAddPackage?: (tripId: string) => void;
@@ -165,7 +166,7 @@ export function MainTabs({
 
           <TabsContent value="trips">
             <TripsTab
-              viewingPackagesByDate={viewingPackagesByDate || false}
+              viewingPackagesByDate={viewingPackagesByDate}
               trips={trips || []}
               tripsLoading={tripsLoading || false}
               onAddPackage={onAddPackage || (() => {})}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
@@ -138,7 +139,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           isLoading={isLoading}
           onUpdate={handlePackagesUpdate}
           disableChat={true}
-          viewingPackagesByDate={viewingPackagesByDate}
+          viewingPackagesByDate={viewingPackagesByDate ? selectedDate : null}
           trips={employeeTrips}
           tripsLoading={tripsLoading}
           onAddPackage={handleAddPackageToTrip}

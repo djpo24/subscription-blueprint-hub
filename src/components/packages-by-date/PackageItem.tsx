@@ -110,7 +110,7 @@ export function PackageItem({
               <span className="text-xs font-medium text-gray-600">Flete</span>
             </div>
             <span className="text-xs font-semibold text-gray-800">
-              {formatCurrency(pkg.freight, pkg.currency || 'COP')}
+              {formatCurrency(pkg.freight, 'COP')}
             </span>
           </div>
           
@@ -171,7 +171,7 @@ export function PackageItem({
               <span className="font-medium">Peso:</span> {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
             </div>
             <div>
-              <span className="font-medium">Flete:</span> {formatCurrency(pkg.freight, pkg.currency || 'COP')}
+              <span className="font-medium">Flete:</span> {formatCurrency(pkg.freight, 'COP')}
             </div>
             <div>
               <span className="font-medium">A Cobrar:</span> {formatCurrency(pkg.amount_to_collect, pkg.currency || 'COP')}

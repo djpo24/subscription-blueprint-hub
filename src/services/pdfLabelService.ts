@@ -33,12 +33,23 @@ export class PDFLabelService {
     return pdf;
   }
 
-  static async printPDF(packages: Package[], labelsData: Map<string, LabelData>): Promise<void> {
+  static async printPDF(
+    packages: Package[], 
+    labelsData: Map<string, LabelData>,
+    onPrintSuccess?: (packageIds: string[]) => void
+  ): Promise<void> {
     try {
       console.log('🖨️ Iniciando impresión de PDF con', packages.length, 'etiquetas');
       
       const pdf = await this.generatePDF(packages, labelsData);
       await PDFPrintService.printPDF(pdf);
+      
+      // Llamar al callback de éxito con los IDs de los paquetes
+      if (onPrintSuccess) {
+        const packageIds = packages.map(pkg => pkg.id);
+        console.log('📋 Calling onPrintSuccess with package IDs:', packageIds);
+        onPrintSuccess(packageIds);
+      }
       
       console.log('✅ PDF print process completed');
     } catch (error) {

@@ -36,12 +36,13 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
   console.log('PackageLabelsDialog - Selected package IDs:', state.selectedPackageIds.size);
   console.log('PackageLabelsDialog - Selected printed package IDs:', state.selectedPrintedPackageIds.size);
 
+  // Actualizar la lógica de filtrado para los paquetes impresos
   const pendingPackages = allPackages.filter(pkg => 
-    pkg.status === 'recibido' || pkg.status === 'procesado'
+    pkg.status === 'recibido'
   );
   
   const printedPackages = allPackages.filter(pkg => 
-    pkg.status === 'transito' || pkg.status === 'en_destino' || pkg.status === 'delivered'
+    pkg.status === 'procesado' || pkg.status === 'transito' || pkg.status === 'en_destino' || pkg.status === 'delivered'
   );
 
   const handlePrintSingleLabel = (packageData: PackageWithRoute) => {

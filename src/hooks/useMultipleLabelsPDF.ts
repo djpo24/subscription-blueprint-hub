@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { PDFLabelService } from '@/services/pdfLabelService';
+import { useMarkPackageAsPrinted } from './useMarkPackageAsPrinted';
 
 interface Package {
   id: string;
@@ -25,6 +26,8 @@ interface LabelData {
 }
 
 export function useMultipleLabelsPDF() {
+  const markPackageAsPrinted = useMarkPackageAsPrinted();
+
   const generatePDFFromLabels = useCallback(async (
     packages: Package[], 
     labelsData: Map<string, LabelData>
@@ -36,8 +39,12 @@ export function useMultipleLabelsPDF() {
     packages: Package[], 
     labelsData: Map<string, LabelData>
   ) => {
-    return await PDFLabelService.printPDF(packages, labelsData);
-  }, []);
+    return await PDFLabelService.printPDF(packages, labelsData, (packageIds) => {
+      // Marcar paquetes como impresos después de la impresión exitosa
+      console.log('🏷️ Marcando paquetes como impresos después de la impresión:', packageIds);
+      markPackageAsPrinted.mutate({ packageIds });
+    });
+  }, [markPackageAsPrinted]);
 
   return {
     generatePDFFromLabels,

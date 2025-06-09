@@ -30,7 +30,7 @@ export function usePackageItemLogic(
     }
   };
 
-  const canShowChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
+  const canShowChat = !!(!disableChat && userRole?.role === 'admin' && onOpenChat);
 
   return {
     getStatusColor,

@@ -26,7 +26,10 @@ export function useNotificationValidation() {
           phone: data.phone,
           message: data.message,
           customerId: data.customerId,
-          packageId: data.packageId || null
+          packageId: data.packageId || null,
+          useTemplate: true,
+          templateName: 'package_arrival_notification',
+          templateLanguage: 'es_CO'
         }
       });
 

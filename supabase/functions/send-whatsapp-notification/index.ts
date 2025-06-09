@@ -165,7 +165,7 @@ serve(async (req) => {
           }
         ]
 
-        console.log('✅ Parámetros de plantilla configurados:', {
+        console.log('✅ Parámetros de plantilla package_arrival_notification configurados:', {
           customerName,
           trackingNumber,
           destination,
@@ -198,7 +198,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('Usando plantilla de WhatsApp:', autoSelectedTemplate)
+      console.log('Usando plantilla de WhatsApp:', autoSelectedTemplate, 'con idioma:', autoSelectedLanguage)
       console.log('Payload completo:', JSON.stringify(whatsappPayload, null, 2))
     } else if (imageUrl) {
       // Send image with optional text caption

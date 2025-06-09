@@ -63,7 +63,7 @@ export function useArrivalNotifications() {
             .update({ status: 'processing' })
             .eq('id', notification.id);
 
-          // Enviar notificación via WhatsApp con plantilla actualizada
+          // Enviar notificación via WhatsApp con plantilla corregida
           const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
               notificationId: notification.id,
@@ -72,7 +72,7 @@ export function useArrivalNotifications() {
               customerId: notification.customer_id,
               useTemplate: true,
               templateName: 'package_arrival_notification',
-              templateLanguage: 'es',
+              templateLanguage: 'es_CO',
               templateParameters: {
                 customerName: notification.customers?.name || 'Cliente',
                 trackingNumber: notification.packages?.tracking_number || '',

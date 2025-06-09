@@ -2,17 +2,27 @@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { CustomerAvatar } from './CustomerAvatar';
 
-interface ChatMessageProps {
+interface Message {
   id: string;
-  content: string;
+  message_content: string;
+  message_type: 'text' | 'image';
   timestamp: string;
-  type: 'incoming' | 'outgoing';
-  messageType?: string;
-  imageUrl?: string;
+  whatsapp_message_id?: string;
+  from_phone?: string;
+  is_from_customer?: boolean;
 }
 
-export function ChatMessage({ content, timestamp, type, messageType, imageUrl }: ChatMessageProps) {
+interface ChatMessageProps {
+  message: Message;
+  customerName?: string;
+  profileImageUrl?: string;
+}
+
+export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl }: ChatMessageProps) {
+  const isIncoming = message.is_from_customer !== false;
+  
   const getMessageTypeColor = (msgType: string) => {
     switch (msgType) {
       case 'text':
@@ -29,39 +39,42 @@ export function ChatMessage({ content, timestamp, type, messageType, imageUrl }:
   };
 
   return (
-    <div className={`flex ${type === 'outgoing' ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isIncoming ? 'justify-start' : 'justify-end'} mb-4`}>
       <div className={`max-w-xs lg:max-w-md rounded-lg p-3 ${
-        type === 'incoming' 
+        isIncoming 
           ? 'bg-white border border-gray-200' 
           : 'bg-blue-500 text-white'
       }`}>
+        {isIncoming && (
+          <div className="flex items-center gap-2 mb-2">
+            <CustomerAvatar 
+              customerName={customerName}
+              profileImageUrl={profileImageUrl}
+              size="sm"
+            />
+            <span className="text-xs font-medium text-gray-600">{customerName}</span>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between mb-1">
           <Badge 
-            className={type === 'incoming' 
-              ? getMessageTypeColor(messageType || 'text')
+            className={isIncoming 
+              ? getMessageTypeColor(message.message_type || 'text')
               : "bg-blue-600 text-white"
             }
             variant="secondary"
           >
-            {type === 'incoming' ? (messageType || 'text') : 'enviado'}
+            {isIncoming ? (message.message_type || 'text') : 'enviado'}
           </Badge>
           <span className={`text-xs ${
-            type === 'incoming' ? 'text-gray-500' : 'text-blue-100'
+            isIncoming ? 'text-gray-500' : 'text-blue-100'
           }`}>
-            {format(new Date(timestamp), 'HH:mm', { locale: es })}
+            {format(new Date(message.timestamp), 'HH:mm', { locale: es })}
           </span>
         </div>
         
         <div className="space-y-2">
-          <p className="text-sm">{content}</p>
-          {imageUrl && (
-            <img 
-              src={imageUrl} 
-              alt="Imagen enviada" 
-              className="max-w-48 rounded border cursor-pointer"
-              onClick={() => window.open(imageUrl, '_blank')}
-            />
-          )}
+          <p className="text-sm">{message.message_content || '(Sin contenido de texto)'}</p>
         </div>
       </div>
     </div>

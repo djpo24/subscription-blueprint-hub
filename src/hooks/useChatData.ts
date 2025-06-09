@@ -17,13 +17,14 @@ interface IncomingMessage {
   } | null;
 }
 
-interface ChatMessage {
+interface Message {
   id: string;
-  content: string;
+  message_content: string;
+  message_type: 'text' | 'image';
   timestamp: string;
-  type: 'incoming' | 'outgoing';
-  messageType?: string;
-  imageUrl?: string;
+  whatsapp_message_id?: string;
+  from_phone?: string;
+  is_from_customer?: boolean;
 }
 
 export function useChatData() {
@@ -90,20 +91,22 @@ export function useChatData() {
              incomingPhone.endsWith(msgPhone);
     });
     
-    const allMessages: ChatMessage[] = [
+    const allMessages: Message[] = [
       ...incoming.map(msg => ({
         id: msg.id,
-        content: msg.message_content || '(Sin contenido de texto)',
+        message_content: msg.message_content || '(Sin contenido de texto)',
+        message_type: (msg.message_type || 'text') as 'text' | 'image',
         timestamp: msg.message_timestamp,
-        type: 'incoming' as const,
-        messageType: msg.message_type
+        whatsapp_message_id: msg.whatsapp_message_id,
+        from_phone: msg.from_phone,
+        is_from_customer: true
       })),
       ...outgoing.map(msg => ({
         id: msg.id,
-        content: msg.message,
+        message_content: msg.message,
+        message_type: (msg.image_url ? 'image' : 'text') as 'text' | 'image',
         timestamp: msg.sent_at,
-        type: 'outgoing' as const,
-        imageUrl: msg.image_url
+        is_from_customer: false
       }))
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
@@ -121,7 +124,7 @@ export function useChatData() {
 
     return acc;
   }, {} as Record<string, {
-    messages: ChatMessage[];
+    messages: Message[];
     latestIncoming: IncomingMessage;
     customerName?: string;
     customerId: string | null;
@@ -146,10 +149,10 @@ export function useChatData() {
       conversationsByPhone[phone] = {
         messages: [{
           id: sentMsg.id,
-          content: sentMsg.message,
+          message_content: sentMsg.message,
+          message_type: (sentMsg.image_url ? 'image' : 'text') as 'text' | 'image',
           timestamp: sentMsg.sent_at,
-          type: 'outgoing' as const,
-          imageUrl: sentMsg.image_url
+          is_from_customer: false
         }],
         latestIncoming: null as any, // No hay mensaje entrante
         customerName: undefined,
@@ -163,7 +166,7 @@ export function useChatData() {
   const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => ({
     phone,
     customerName: conversation.customerName,
-    lastMessage: conversation.messages[conversation.messages.length - 1]?.content || 'Sin mensajes',
+    lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
     lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
     isRegistered: !!conversation.customerId,
     unreadCount: 0,

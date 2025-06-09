@@ -10,9 +10,10 @@ interface ChatInputProps {
   onSendMessage: (message: string, image?: File) => void;
   isLoading: boolean;
   disabled?: boolean;
+  placeholder?: string;
 }
 
-export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps) {
+export function ChatInput({ onSendMessage, isLoading, disabled, placeholder }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
@@ -107,7 +108,7 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
         
         <Textarea
           ref={textareaRef}
-          placeholder={isMobile ? "Escribir mensaje..." : "Escribir mensaje... (Enter para enviar)"}
+          placeholder={placeholder || (isMobile ? "Escribir mensaje..." : "Escribir mensaje... (Enter para enviar)")}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}

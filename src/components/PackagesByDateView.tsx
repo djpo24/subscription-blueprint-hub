@@ -4,7 +4,6 @@ import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs'
 import { CreateDispatchDialog } from './CreateDispatchDialog';
 import { PackageLabelsDialog } from './PackageLabelsDialog';
 import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
-import { getAllPackagesFromTrips } from './packages-by-date/PackagesByDateContent';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -57,8 +56,6 @@ export function PackagesByDateView({
     );
   }
 
-  const allPackages = getAllPackagesFromTrips(trips);
-
   return (
     <>
       <PackagesByDateContent
@@ -84,7 +81,7 @@ export function PackagesByDateView({
         setEditDialogOpen={setEditDialogOpen}
         selectedPackage={selectedPackage}
         selectedTripId={selectedTripId}
-        selectedDate={selectedDate} // Pasar la fecha seleccionada
+        selectedDate={selectedDate}
         onPackageEditSuccess={handlePackageEditSuccess}
         chatDialogOpen={chatDialogOpen}
         setChatDialogOpen={setChatDialogOpen}
@@ -95,15 +92,16 @@ export function PackagesByDateView({
       <CreateDispatchDialog
         open={createDispatchDialogOpen}
         onOpenChange={setCreateDispatchDialogOpen}
-        selectedDate={selectedDate}
-        packages={allPackages}
+        tripDate={selectedDate}
+        trips={trips}
         onSuccess={handleCreateDispatchSuccess}
       />
 
       <PackageLabelsDialog
         open={labelsDialogOpen}
         onOpenChange={setLabelsDialogOpen}
-        packages={allPackages}
+        tripDate={selectedDate}
+        trips={trips}
       />
     </>
   );

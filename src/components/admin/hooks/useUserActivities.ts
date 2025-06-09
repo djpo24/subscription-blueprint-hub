@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { UserActivity, ActivityType } from '../types';
 
 export function useUserActivities() {
@@ -10,36 +11,42 @@ export function useUserActivities() {
   const { data: userActivities = [], isLoading, refetch } = useQuery({
     queryKey: ['user-activities'],
     queryFn: async () => {
-      // Since audit_logs doesn't exist, let's create a mock dataset for demonstration
-      // In a real implementation, you would query actual audit/log tables
-      const mockData: UserActivity[] = [
-        {
-          id: '1',
-          created_at: new Date().toISOString(),
-          activity_type: 'LOGIN',
-          description: 'Usuario inició sesión en el sistema',
-          user_name: 'Admin User',
-          user_email: 'admin@example.com'
-        },
-        {
-          id: '2',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          activity_type: 'CREATE',
-          description: 'Creó un nuevo paquete',
-          user_name: 'Employee User',
-          user_email: 'employee@example.com'
-        },
-        {
-          id: '3',
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-          activity_type: 'UPDATE',
-          description: 'Actualizó información de cliente',
-          user_name: 'Admin User',
-          user_email: 'admin@example.com'
-        }
-      ];
+      console.log('Fetching user activities from database...');
+      
+      const { data, error } = await supabase
+        .from('user_actions')
+        .select(`
+          *,
+          user_profiles!inner(first_name, last_name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      return mockData;
+      if (error) {
+        console.error('Error fetching user activities:', error);
+        throw error;
+      }
+
+      console.log('Fetched user activities:', data);
+
+      // Transform the data to match our UserActivity interface
+      const transformedData: UserActivity[] = (data || []).map(activity => ({
+        id: activity.id,
+        created_at: activity.created_at,
+        activity_type: activity.action_type,
+        description: activity.description,
+        user_name: `${activity.user_profiles.first_name} ${activity.user_profiles.last_name}`,
+        user_email: activity.user_profiles.email,
+        table_name: activity.table_name,
+        record_id: activity.record_id,
+        old_values: activity.old_values,
+        new_values: activity.new_values,
+        can_revert: activity.can_revert,
+        reverted_at: activity.reverted_at,
+        reverted_by: activity.reverted_by
+      }));
+
+      return transformedData;
     },
   });
 

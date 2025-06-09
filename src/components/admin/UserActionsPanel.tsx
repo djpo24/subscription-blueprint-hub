@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Activity } from 'lucide-react';
+import { Activity, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useUserActivities } from './hooks/useUserActivities';
 import { ActivityFilters } from './ActivityFilters';
 import { ActivitiesTable } from './ActivitiesTable';
@@ -15,16 +16,19 @@ export function UserActionsPanel() {
     searchTerm,
     setSearchTerm,
     activityTypeFilter,
-    setActivityTypeFilter
+    setActivityTypeFilter,
+    refetch
   } = useUserActivities();
 
   const handleMarkForReview = async (activityId: string) => {
     try {
+      console.log('Marking activity for review:', activityId);
       toast({
         title: "Acción marcada para revisión",
         description: "Esta actividad ha sido marcada para revisión manual",
       });
     } catch (error) {
+      console.error('Error marking activity for review:', error);
       toast({
         title: "Error",
         description: "No se pudo marcar la acción para revisión",
@@ -33,16 +37,34 @@ export function UserActionsPanel() {
     }
   };
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Panel de Administración - Actividades de Usuarios
-        </CardTitle>
-        <CardDescription>
-          Monitorea y gestiona las actividades realizadas por los usuarios del sistema
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Panel de Administración - Actividades de Usuarios
+            </CardTitle>
+            <CardDescription>
+              Monitorea y gestiona las actividades realizadas por los usuarios del sistema
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <ActivityFilters
@@ -56,6 +78,7 @@ export function UserActionsPanel() {
           activities={filteredActivities}
           isLoading={isLoading}
           onMarkForReview={handleMarkForReview}
+          onRefresh={handleRefresh}
         />
 
         <PanelInformation />

@@ -29,10 +29,12 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 

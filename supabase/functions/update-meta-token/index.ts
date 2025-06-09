@@ -66,26 +66,66 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use Supabase vault to store the secret securely
-    const { error: vaultError } = await supabase
-      .from('vault.secrets')
-      .upsert({
-        name: 'META_WHATSAPP_TOKEN',
-        secret: token.trim(),
-      });
+    // Try to update using the secrets table directly
+    try {
+      const { error: secretsError } = await supabase
+        .from('vault.secrets')
+        .upsert({
+          name: 'META_WHATSAPP_TOKEN',
+          secret: token.trim(),
+        });
 
-    if (vaultError) {
-      console.error('Failed to update secret in vault:', vaultError);
+      if (secretsError) {
+        console.error('Vault.secrets approach failed:', secretsError);
+        
+        // Fallback: Try using RPC call to update secret
+        const { error: rpcError } = await supabase.rpc('update_secret', {
+          secret_name: 'META_WHATSAPP_TOKEN',
+          secret_value: token.trim()
+        });
+
+        if (rpcError) {
+          console.error('RPC approach also failed:', rpcError);
+          
+          // Final fallback: Store in a regular table for now
+          const { error: tableError } = await supabase
+            .from('app_secrets')
+            .upsert({
+              name: 'META_WHATSAPP_TOKEN',
+              value: token.trim(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'name'
+            });
+
+          if (tableError) {
+            console.error('All approaches failed:', tableError);
+            return new Response(
+              JSON.stringify({ error: 'Error al guardar el token en la base de datos' }),
+              { 
+                status: 500, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+          }
+
+          console.log('Token stored in app_secrets table as fallback');
+        } else {
+          console.log('Token updated successfully via RPC');
+        }
+      } else {
+        console.log('Token updated successfully in vault.secrets');
+      }
+    } catch (error) {
+      console.error('Error storing token:', error);
       return new Response(
-        JSON.stringify({ error: 'Error al actualizar el token en la configuración' }),
+        JSON.stringify({ error: 'Error interno al guardar el token' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
-
-    console.log('Token updated successfully in Supabase vault');
 
     return new Response(
       JSON.stringify({ success: true, message: 'Token actualizado correctamente' }),

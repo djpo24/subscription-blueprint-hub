@@ -25,6 +25,8 @@ export interface PackageInDispatch {
   amount_to_collect: number | null;
   currency: string | null;
   trip_id: string | null;
+  delivered_at: string | null;
+  delivered_by: string | null;
   customers: {
     name: string;
     email: string;

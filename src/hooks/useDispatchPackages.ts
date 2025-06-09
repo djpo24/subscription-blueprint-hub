@@ -49,7 +49,7 @@ export function useDispatchPackages(dispatchId: string) {
         (packages || []).map(async (pkg) => {
           const { data: customer } = await supabase
             .from('customers')
-            .select('name, email')
+            .select('name, email, phone')
             .eq('id', pkg.customer_id)
             .single();
           
@@ -57,7 +57,7 @@ export function useDispatchPackages(dispatchId: string) {
             ...pkg,
             delivered_at: pkg.delivered_at,
             delivered_by: pkg.delivered_by,
-            customers: customer || { name: 'N/A', email: 'N/A' }
+            customers: customer || { name: 'N/A', email: 'N/A', phone: 'N/A' }
           };
         })
       );

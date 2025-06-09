@@ -86,14 +86,17 @@ export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
         </div>
       </div>
 
-      {/* Segunda línea - Cliente y fecha */}
+      {/* Segunda línea - Cliente y fecha con nuevo estilo */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         marginBottom: '8mm',
         fontSize: '8px',
-        color: '#666'
+        color: '#000',
+        fontWeight: 'bold',
+        borderBottom: '3px solid #000',
+        paddingBottom: '2mm'
       }}>
         <div>{pkg.customers?.name || 'Cliente'}</div>
         <div>{formatDate(pkg.created_at)}</div>

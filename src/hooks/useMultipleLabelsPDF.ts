@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import jsPDF from 'jspdf';
 
@@ -106,16 +105,21 @@ export function useMultipleLabelsPDF() {
 
       currentY += 5;
 
-      // Segunda línea - Cliente y fecha
+      // Segunda línea - Cliente y fecha con nuevo estilo (color negro y línea más gruesa)
       pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
       
       pdf.text(pkg.customers?.name || 'Cliente', startX + 3, currentY);
 
       const dateText = formatDate(pkg.created_at);
       const dateWidth = pdf.getTextWidth(dateText);
       pdf.text(dateText, startX + labelWidth - dateWidth - 3, currentY);
+
+      // Línea negra más gruesa debajo del nombre y fecha
+      pdf.setLineWidth(3);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(startX + 3, currentY + 2, startX + labelWidth - 3, currentY + 2);
 
       currentY += 8;
 

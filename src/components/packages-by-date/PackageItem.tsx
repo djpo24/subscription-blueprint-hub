@@ -29,7 +29,7 @@ export function PackageItem({
     disableChat,
     getStatusColor,
     handleChatClick,
-    canShowChat
+    canShowChat: canShowChat  // Explicitly use the boolean from the hook
   };
 
   if (isMobile) {

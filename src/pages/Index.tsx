@@ -99,7 +99,7 @@ export default function Index() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen bg-gray-50 w-full flex">
         <AppSidebar 
           activeTab={activeTab} 
@@ -111,7 +111,7 @@ export default function Index() {
           
           <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
             <div className="flex items-center gap-2 mb-4">
-              <SidebarTrigger />
+              <SidebarTrigger className="uber-button-secondary" />
               <h2 className="text-xl font-semibold">
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'trips' && 'Viajes'}

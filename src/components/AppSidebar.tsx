@@ -57,10 +57,10 @@ export function AppSidebar({ activeTab, onTabChange, unreadCount = 0, previewRol
 
   if (isLoading) {
     return (
-      <Sidebar>
-        <SidebarContent>
+      <Sidebar className="bg-black border-gray-800">
+        <SidebarContent className="bg-black">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
           </div>
         </SidebarContent>
       </Sidebar>
@@ -158,10 +158,12 @@ export function AppSidebar({ activeTab, onTabChange, unreadCount = 0, previewRol
   ];
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="bg-black border-gray-800" collapsible="icon">
+      <SidebarContent className="bg-black">
         <SidebarGroup>
-          <SidebarGroupLabel>Envíos Ojitos</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-white font-bold text-lg px-4 py-6">
+            Envíos Ojitos
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -170,7 +172,7 @@ export function AppSidebar({ activeTab, onTabChange, unreadCount = 0, previewRol
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         isActive={activeTab === item.value}
-                        className="w-full"
+                        className="w-full text-gray-300 hover:text-white hover:bg-gray-800 data-[state=open]:bg-gray-800 data-[state=open]:text-white"
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -188,6 +190,7 @@ export function AppSidebar({ activeTab, onTabChange, unreadCount = 0, previewRol
                             <SidebarMenuSubButton
                               asChild
                               isActive={activeTab === subItem.value}
+                              className="text-gray-400 hover:text-white hover:bg-gray-700"
                             >
                               <button
                                 onClick={() => onTabChange(subItem.value)}

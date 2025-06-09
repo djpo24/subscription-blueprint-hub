@@ -59,42 +59,26 @@ export function useCamera() {
       console.log(`📷 [${deviceType}] Cámaras disponibles:`, videoDevices.map(d => ({ 
         label: d.label, 
         deviceId: d.deviceId.substring(0, 20) + '...',
-        groupId: d.groupId
+        groupId: d.groupId,
+        isRear: isRearCamera(d.label)
       })));
       
-      // Sort cameras to prioritize rear camera (environment facing) con lógica específica para cada dispositivo
-      const sortedCameras = videoDevices.sort((a, b) => {
-        const aIsRear = isRearCamera(a.label);
-        const bIsRear = isRearCamera(b.label);
-        
-        // Para iPad, priorizar cámaras ultra wide o main para máxima resolución
-        if (deviceType === 'iPad') {
-          const aIsUltraWide = a.label.toLowerCase().includes('ultra') || a.label.toLowerCase().includes('wide');
-          const bIsUltraWide = b.label.toLowerCase().includes('ultra') || b.label.toLowerCase().includes('wide');
-          
-          if (aIsUltraWide && !bIsUltraWide) return -1;
-          if (!aIsUltraWide && bIsUltraWide) return 1;
-        }
-        
-        if (aIsRear && !bIsRear) return -1;
-        if (!aIsRear && bIsRear) return 1;
-        return 0;
-      });
+      // Ordenar cámaras para GARANTIZAR que la cámara trasera sea la primera
+      const sortedCameras = sortCamerasByRearPriority(videoDevices);
       
       setAvailableCameras(sortedCameras);
-      setCurrentCameraIndex(0); // Start with first camera (should be rear if available)
+      setCurrentCameraIndex(0); // SIEMPRE empezar con la primera cámara (que debe ser trasera)
       setHasPermission(true);
       
-      console.log(`✅ [${deviceType}] Cámara inicializada con máxima resolución. Cámara predeterminada:`, 
-        sortedCameras[0]?.label || 'Desconocida');
+      console.log(`✅ [${deviceType}] Cámara inicializada. Cámara predeterminada (TRASERA):`, 
+        sortedCameras[0]?.label || 'Desconocida', 'Es trasera:', isRearCamera(sortedCameras[0]?.label || ''));
         
-      // Log adicional para dispositivos específicos
-      if (sortedCameras.length > 0) {
-        console.log(`🎯 [${deviceType}] Detalles de cámara seleccionada:`, {
-          label: sortedCameras[0].label,
-          deviceId: sortedCameras[0].deviceId.substring(0, 20) + '...',
-          isRear: isRearCamera(sortedCameras[0].label)
-        });
+      // Verificación adicional para asegurar que la primera cámara es trasera
+      if (sortedCameras.length > 0 && !isRearCamera(sortedCameras[0].label)) {
+        console.warn(`⚠️ [${deviceType}] ADVERTENCIA: La primera cámara no parece ser trasera. Revisando orden...`);
+        logCameraDetails(sortedCameras);
+      } else {
+        console.log(`🎯 [${deviceType}] ✅ CONFIRMADO: Cámara trasera establecida como predeterminada`);
       }
       
     } catch (err) {
@@ -104,24 +88,92 @@ export function useCamera() {
     }
   };
 
-  // Función mejorada para detectar cámara trasera
+  // Función mejorada y más estricta para detectar cámara trasera
   const isRearCamera = (label: string): boolean => {
+    if (!label) return false;
+    
     const lowerLabel = label.toLowerCase();
-    const rearKeywords = [
-      'back', 'rear', 'environment', 'trasera', 'posterior',
-      'main', 'principal', 'wide', 'ultra', 'telephoto'
-    ];
+    
+    // Palabras que indican cámara frontal (EXCLUIR estas cámaras)
     const frontKeywords = [
-      'front', 'frontal', 'user', 'face', 'selfie'
+      'front', 'frontal', 'user', 'face', 'selfie', 'facetime'
     ];
     
-    // Si contiene palabras de frente, no es trasera
+    // Palabras que indican cámara trasera (INCLUIR estas cámaras)
+    const rearKeywords = [
+      'back', 'rear', 'environment', 'trasera', 'posterior',
+      'main', 'principal', 'wide', 'ultra', 'telephoto', 'macro'
+    ];
+    
+    // Si contiene palabras de frente, definitivamente NO es trasera
     if (frontKeywords.some(keyword => lowerLabel.includes(keyword))) {
+      console.log(`📱 [Camera Detection] "${label}" -> FRONTAL (excluida)`);
       return false;
     }
     
-    // Si contiene palabras de trasera, es trasera
-    return rearKeywords.some(keyword => lowerLabel.includes(keyword));
+    // Si contiene palabras de trasera, definitivamente ES trasera
+    if (rearKeywords.some(keyword => lowerLabel.includes(keyword))) {
+      console.log(`📱 [Camera Detection] "${label}" -> TRASERA (incluida)`);
+      return true;
+    }
+    
+    // Para cámaras sin etiqueta específica, usar heurística por posición
+    // Las cámaras traseras suelen estar listadas primero en muchos dispositivos
+    console.log(`📱 [Camera Detection] "${label}" -> INDEFINIDA (se evaluará por posición)`);
+    return false;
+  };
+
+  // Nueva función para ordenar cámaras con prioridad absoluta a la trasera
+  const sortCamerasByRearPriority = (cameras: MediaDeviceInfo[]): MediaDeviceInfo[] => {
+    console.log(`🔄 [${deviceType}] Ordenando cámaras para priorizar cámara trasera...`);
+    
+    const rearCameras: MediaDeviceInfo[] = [];
+    const frontCameras: MediaDeviceInfo[] = [];
+    const unknownCameras: MediaDeviceInfo[] = [];
+    
+    cameras.forEach(camera => {
+      const label = camera.label || '';
+      if (isRearCamera(label)) {
+        rearCameras.push(camera);
+      } else if (label.toLowerCase().includes('front') || label.toLowerCase().includes('user')) {
+        frontCameras.push(camera);
+      } else {
+        unknownCameras.push(camera);
+      }
+    });
+    
+    // Para dispositivos específicos, aplicar lógica adicional
+    if (deviceType === 'iPad') {
+      // En iPad, priorizar cámaras ultra wide o main
+      rearCameras.sort((a, b) => {
+        const aIsUltraWide = a.label.toLowerCase().includes('ultra') || a.label.toLowerCase().includes('wide');
+        const bIsUltraWide = b.label.toLowerCase().includes('ultra') || b.label.toLowerCase().includes('wide');
+        
+        if (aIsUltraWide && !bIsUltraWide) return -1;
+        if (!aIsUltraWide && bIsUltraWide) return 1;
+        return 0;
+      });
+    }
+    
+    // Orden final: Traseras primero, luego desconocidas, luego frontales
+    const finalOrder = [...rearCameras, ...unknownCameras, ...frontCameras];
+    
+    console.log(`📋 [${deviceType}] Orden final de cámaras:`, finalOrder.map((cam, index) => ({
+      position: index + 1,
+      label: cam.label,
+      isRear: isRearCamera(cam.label),
+      type: isRearCamera(cam.label) ? 'TRASERA' : (cam.label.toLowerCase().includes('front') ? 'FRONTAL' : 'DESCONOCIDA')
+    })));
+    
+    return finalOrder;
+  };
+
+  // Función para loggear detalles de todas las cámaras
+  const logCameraDetails = (cameras: MediaDeviceInfo[]) => {
+    console.log(`📋 [${deviceType}] Detalle completo de cámaras disponibles:`);
+    cameras.forEach((camera, index) => {
+      console.log(`  ${index + 1}. ${camera.label} - Trasera: ${isRearCamera(camera.label)} - ID: ${camera.deviceId.substring(0, 15)}...`);
+    });
   };
 
   const switchCamera = () => {
@@ -130,7 +182,8 @@ export function useCamera() {
       const newIndex = (currentCameraIndex + 1) % availableCameras.length;
       setCurrentCameraIndex(newIndex);
       console.log(`✅ [${deviceType}] Cambiado a cámara:`, 
-        availableCameras[newIndex]?.label || `Cámara ${newIndex + 1}`);
+        availableCameras[newIndex]?.label || `Cámara ${newIndex + 1}`,
+        '- Es trasera:', isRearCamera(availableCameras[newIndex]?.label || ''));
     }
   };
 

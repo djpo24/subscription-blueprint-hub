@@ -1,5 +1,4 @@
 
-import { format } from 'date-fns';
 import { LabelData } from './PackageLabelGenerator';
 
 interface Package {
@@ -22,12 +21,10 @@ interface Package {
 interface PackageLabelProps {
   package: Package;
   labelData?: LabelData;
-  isPrintMode?: boolean;
 }
 
-export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: PackageLabelProps) {
+export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
   const formatAmount = (amount: number, currency?: string) => {
-    // Solo formatear el número sin símbolo de moneda
     return new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -38,24 +35,6 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
     return currency === 'AWG' ? 'ƒ' : '$';
   };
 
-  const baseStyles = {
-    width: isPrintMode ? 'auto' : '10cm',
-    height: isPrintMode ? 'auto' : '15cm',
-    maxWidth: isPrintMode ? '6in' : '10cm',
-    backgroundColor: 'white',
-    color: 'black',
-    fontSize: isPrintMode ? '14px' : '12px',
-    fontFamily: 'Arial, sans-serif',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    border: '1px solid #ccc',
-    margin: '0',
-    padding: '16px',
-    boxSizing: 'border-box' as const,
-    lineHeight: '1.2'
-  };
-
-  // Formatear fecha exactamente como en la imagen
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -65,140 +44,151 @@ export function PackageLabel({ package: pkg, labelData, isPrintMode = false }: P
     return `${month} ${day}/${year}`;
   };
 
+  if (!labelData) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Generando códigos QR y de barras...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={baseStyles}>
-      {/* Header - ENVIOS OJITO y tracking number en la misma línea */}
+    <div style={{
+      width: '102mm',
+      height: '152mm',
+      backgroundColor: 'white',
+      color: 'black',
+      fontSize: '12px',
+      fontFamily: 'Arial, sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+      border: '1px solid #000',
+      margin: '20px auto',
+      padding: '3mm'
+    }}>
+      {/* Header - ENVIOS OJITO y tracking number */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: '8px',
-        fontSize: isPrintMode ? '16px' : '14px'
+        marginBottom: '5mm',
+        paddingBottom: '3mm',
+        borderBottom: '1px solid #ddd'
       }}>
-        <div style={{ fontSize: isPrintMode ? '20px' : '18px', fontWeight: 'bold' }}>
-          ENVIOS OJITO
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 'bold' }}>ENVIOS OJITO</div>
         </div>
-        <div style={{ fontSize: isPrintMode ? '16px' : '14px', fontWeight: 'bold' }}>
-          {pkg.tracking_number}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{pkg.tracking_number}</div>
         </div>
       </div>
 
-      {/* Segunda línea - Cliente y fecha - reducido espacio inferior */}
+      {/* Segunda línea - Cliente y fecha */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'flex-start',
-        marginBottom: '8px',
-        fontSize: isPrintMode ? '14px' : '12px'
-      }}>
-        <div style={{ color: '#666' }}>
-          {pkg.customers?.name || 'Cliente'}
-        </div>
-        <div style={{ color: '#666' }}>
-          {formatDate(pkg.created_at)}
-        </div>
-      </div>
-
-      {/* QR Code centrado con marco - padding reducido a 10px y márgenes de 15px arriba y 25px abajo */}
-      <div style={{ 
-        display: 'flex',
-        justifyContent: 'center',
         alignItems: 'center',
-        marginTop: '15px',
-        marginBottom: '25px',
-        padding: '10px',
-        border: '2px solid #ddd',
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9'
+        marginBottom: '8mm',
+        fontSize: '8px',
+        color: '#666'
       }}>
-        {labelData?.qrCodeDataUrl && (
+        <div>{pkg.customers?.name || 'Cliente'}</div>
+        <div>{formatDate(pkg.created_at)}</div>
+      </div>
+
+      {/* QR Code centrado con marco */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        marginBottom: '8mm'
+      }}>
+        <div style={{
+          backgroundColor: '#f9f9f9',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          padding: '3mm',
+          display: 'inline-block'
+        }}>
           <img 
             src={labelData.qrCodeDataUrl} 
             alt="QR Code" 
-            style={{ 
-              width: isPrintMode ? '220px' : '200px', 
-              height: isPrintMode ? '220px' : '200px'
-            }}
+            style={{ width: '45mm', height: '45mm', display: 'block' }}
           />
-        )}
+        </div>
       </div>
 
-      {/* Peso y Total en la misma línea - peso izquierda, total derecha */}
+      {/* Peso y Total en la misma línea */}
       <div style={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
+        display: 'flex', 
+        justifyContent: 'space-between', 
         alignItems: 'center',
-        marginBottom: '12px',
-        fontSize: isPrintMode ? '16px' : '14px'
+        marginBottom: '8mm',
+        fontSize: '10px',
+        fontWeight: 'bold'
       }}>
-        <div style={{ fontWeight: 'bold' }}>
-          Peso: {pkg.weight ? `${pkg.weight}kg` : '3kg'}
-        </div>
-        <div style={{ fontWeight: 'bold' }}>
-          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.543.545'}
+        <div>Peso: {pkg.weight ? `${pkg.weight}kg` : '3kg'}</div>
+        <div>
+          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.354.435'}
         </div>
       </div>
 
-      {/* Texto informativo centrado - tamaño aumentado en 3pt y espaciado aumentado en 2pt */}
+      {/* Texto informativo centrado */}
       <div style={{ 
-        textAlign: 'center',
-        fontSize: isPrintMode ? '14px' : '12px', // Aumentado de 11px/9px a 14px/12px (3pt más)
-        lineHeight: '1.4', // Aumentado de 1.2 a 1.4 (2pt más de espaciado)
-        marginBottom: '12px',
-        fontWeight: 'bold'
+        textAlign: 'center', 
+        fontSize: '9px', 
+        fontWeight: 'bold',
+        marginBottom: '8mm',
+        lineHeight: '1.2'
       }}>
         <div>Toda encomienda debe ser verificada en el local al</div>
         <div>momento de la entrega. Una vez entregada, no se</div>
         <div>aceptan reclamos.</div>
       </div>
 
-      {/* Direcciones centradas - tamaño aumentado en 3pt y espaciado aumentado en 2pt */}
+      {/* Direcciones centradas */}
       <div style={{ 
-        textAlign: 'center',
-        fontSize: isPrintMode ? '13px' : '11px', // Aumentado de 10px/8px a 13px/11px (3pt más)
-        lineHeight: '1.5', // Aumentado de 1.3 a 1.5 (2pt más de espaciado)
-        color: '#000',
-        marginBottom: '15px'
+        textAlign: 'center', 
+        fontSize: '8px',
+        marginBottom: '8mm',
+        lineHeight: '1.3'
       }}>
-        <div style={{ marginBottom: '6px' }}>
-          <div style={{ fontWeight: 'bold' }}>Dirección en B/QUILLA: Calle 45B # 22 - 124</div>
-          <div>Tel: +5731272717446</div>
-        </div>
-        <div>
-          <div style={{ fontWeight: 'bold' }}>Dirección Curacao: Jo corsenstraat 48 brievengat</div>
-          <div>Tel: +599 9 6964306</div>
-        </div>
+        <div style={{ fontWeight: 'bold' }}>Dirección en B/QUILLA: Calle 45B # 22 - 124</div>
+        <div style={{ marginBottom: '5mm' }}>Tel: +5731272717446</div>
+        
+        <div style={{ fontWeight: 'bold' }}>Dirección Curacao: Jo corsenstraat 48 brievengat</div>
+        <div>Tel: +599 9 6964306</div>
       </div>
 
-      {/* Código de barras en la parte inferior */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
+      {/* Línea separadora */}
+      <div style={{ 
+        borderTop: '1px solid #ccc', 
+        margin: '5mm 10mm',
+        marginBottom: '5mm'
+      }}></div>
+
+      {/* Código de barras centrado */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
         alignItems: 'center',
-        marginTop: 'auto',
-        paddingTop: '10px',
-        borderTop: '1px solid #ddd'
+        flex: 1,
+        justifyContent: 'flex-end'
       }}>
-        {labelData?.barcodeDataUrl && (
-          <div style={{ textAlign: 'center' }}>
-            <img 
-              src={labelData.barcodeDataUrl} 
-              alt="Barcode" 
-              style={{ 
-                width: isPrintMode ? '280px' : '250px',
-                height: isPrintMode ? '60px' : '50px',
-                objectFit: 'contain'
-              }}
-            />
-            <div style={{ 
-              fontSize: isPrintMode ? '10px' : '8px', 
-              color: '#666', 
-              marginTop: '4px' 
-            }}>
-              {pkg.tracking_number}
-            </div>
-          </div>
-        )}
+        <img 
+          src={labelData.barcodeDataUrl}
+          alt="Barcode"
+          style={{ width: '70mm', height: '15mm', marginBottom: '2mm' }}
+        />
+        <div style={{ 
+          fontSize: '7px', 
+          color: '#666',
+          textAlign: 'center'
+        }}>
+          {pkg.tracking_number}
+        </div>
       </div>
     </div>
   );

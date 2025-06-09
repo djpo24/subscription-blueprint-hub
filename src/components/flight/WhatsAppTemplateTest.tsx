@@ -30,14 +30,14 @@ const AVAILABLE_TEMPLATES: Record<string, TemplateConfig> = {
   'customer_service_hello': {
     name: 'customer_service_hello',
     description: 'Saludo de servicio al cliente',
-    language: 'es',
+    language: 'es_CO',
     category: 'customer_service',
     hasParameters: false
   },
   'customer_service_followup': {
     name: 'customer_service_followup',
     description: 'Seguimiento de servicio al cliente',
-    language: 'es',
+    language: 'es_CO',
     category: 'customer_service',
     hasParameters: true,
     parameters: ['Motivo de consulta']
@@ -45,7 +45,7 @@ const AVAILABLE_TEMPLATES: Record<string, TemplateConfig> = {
   'package_arrival_notification': {
     name: 'package_arrival_notification',
     description: 'Notificación de llegada de paquete',
-    language: 'es',
+    language: 'es_CO',
     category: 'logistics',
     hasParameters: true,
     parameters: ['Nombre cliente', 'Número tracking', 'Destino', 'Dirección', 'Símbolo moneda', 'Monto'],
@@ -61,7 +61,7 @@ tu encomienda {{2}} ha llegado a 📍{{3}}.
   'consulta_encomienda': {
     name: 'consulta_encomienda',
     description: 'Consulta sobre encomienda del cliente',
-    language: 'es',
+    language: 'es_CO',
     category: 'customer_service',
     hasParameters: true,
     parameters: ['Nombre del cliente'],
@@ -72,7 +72,7 @@ Tenemos una consulta sobre tu encomienda.
   'payment_reminder': {
     name: 'payment_reminder',
     description: 'Recordatorio de pago pendiente',
-    language: 'es',
+    language: 'es_CO',
     category: 'finance',
     hasParameters: true,
     parameters: ['Monto', 'Fecha límite']
@@ -250,6 +250,7 @@ export function WhatsAppTemplateTest() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en_US">Inglés (en_US)</SelectItem>
+                  <SelectItem value="es_CO">Español Colombia (es_CO)</SelectItem>
                   <SelectItem value="es">Español (es)</SelectItem>
                   <SelectItem value="es_ES">Español España (es_ES)</SelectItem>
                   <SelectItem value="es_MX">Español México (es_MX)</SelectItem>
@@ -365,14 +366,14 @@ export function WhatsAppTemplateTest() {
               <ol className="list-decimal list-inside space-y-2 text-gray-700">
                 <li>Ve a <strong>Meta for Developers</strong> → Tu App → WhatsApp → Message Templates</li>
                 <li>Crea nuevas plantillas con los nombres exactos listados arriba</li>
-                <li>Configura el idioma correspondiente (es, en_US, etc.)</li>
+                <li>Configura el idioma como <strong>Spanish (COL)</strong> para todas las plantillas en español</li>
                 <li>Espera la aprobación de Meta (puede tomar 24-48 horas)</li>
                 <li>Una vez aprobadas, las plantillas aparecerán en el sistema automáticamente</li>
               </ol>
             </div>
             <div className="p-3 bg-yellow-100 rounded">
               <p className="font-medium text-yellow-800">💡 Consejo:</p>
-              <p className="text-yellow-700">La plantilla "hello_world" viene preaprobada y es ideal para pruebas iniciales.</p>
+              <p className="text-yellow-700">Asegúrate de usar <strong>Spanish (COL)</strong> como idioma en Meta para que coincida con el código "es_CO" del sistema.</p>
             </div>
           </div>
         </CardContent>

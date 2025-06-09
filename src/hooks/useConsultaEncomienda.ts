@@ -38,7 +38,7 @@ export function useConsultaEncomienda() {
           message: `Consulta sobre encomienda para ${customerName}`,
           useTemplate: true,
           templateName: 'consulta_encomienda',
-          templateLanguage: 'es',
+          templateLanguage: 'es_CO',
           templateParameters: {
             customerName: customerName
           },

@@ -75,7 +75,7 @@ serve(async (req) => {
     // AUTO-DETECT: Check if we need to use a template
     let shouldUseTemplate = useTemplate
     let autoSelectedTemplate = templateName
-    let autoSelectedLanguage = templateLanguage || 'es'
+    let autoSelectedLanguage = templateLanguage || 'es_CO'
 
     if (!useTemplate && customerId) {
       // Check when was the last interaction with this customer
@@ -97,12 +97,14 @@ serve(async (req) => {
         if (hoursSinceLastInteraction > 24) {
           shouldUseTemplate = true
           autoSelectedTemplate = 'customer_service_followup'
+          autoSelectedLanguage = 'es_CO'
           console.log('🔄 Auto-seleccionando plantilla por regla de 24 horas')
         }
       } else {
         // No previous interaction found, use template for first contact
         shouldUseTemplate = true
         autoSelectedTemplate = 'customer_service_hello'
+        autoSelectedLanguage = 'es_CO'
         console.log('🔄 Auto-seleccionando plantilla para primer contacto')
       }
     }
@@ -284,7 +286,7 @@ serve(async (req) => {
             template: {
               name: 'customer_service_followup',
               language: {
-                code: 'es'
+                code: 'es_CO'
               },
               components: [
                 {

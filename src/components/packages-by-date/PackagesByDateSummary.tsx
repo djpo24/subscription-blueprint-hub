@@ -1,5 +1,6 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatCurrency } from '@/utils/currencyFormatter';
 
 interface PackagesByDateSummaryProps {
   totalPackages: number;
@@ -18,10 +19,6 @@ export function PackagesByDateSummary({
 
   if (totalPackages === 0) return null;
 
-  const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('es-CO')} COP`;
-  };
-
   return (
     <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-4 gap-4'} mt-4 p-4 bg-gray-50 rounded-lg`}>
       <div className="text-center">
@@ -33,11 +30,11 @@ export function PackagesByDateSummary({
         <div className="text-xs text-gray-600">Peso Total</div>
       </div>
       <div className="text-center">
-        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-orange-600`}>{formatCurrency(totalFreight)}</div>
+        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-orange-600`}>{formatCurrency(totalFreight, 'COP')}</div>
         <div className="text-xs text-gray-600">Flete Total (COP)</div>
       </div>
       <div className="text-center">
-        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>{formatCurrency(totalAmountToCollect)}</div>
+        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>{formatCurrency(totalAmountToCollect, 'COP')}</div>
         <div className="text-xs text-gray-600">A Cobrar</div>
       </div>
     </div>

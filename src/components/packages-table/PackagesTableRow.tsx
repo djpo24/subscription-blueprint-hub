@@ -8,7 +8,7 @@ import { PackageActionsDropdown } from '../PackageActionsDropdown';
 import { PackageStatusBadge } from './PackageStatusBadge';
 import { PackageRouteDisplay } from './PackageRouteDisplay';
 import { formatPackageDescription } from '@/utils/descriptionFormatter';
-import { getCurrencySymbol, getCurrencyLabel } from '@/utils/currencyFormatter';
+import { formatCurrency } from '@/utils/currencyFormatter';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
 type Currency = 'COP' | 'AWG';
@@ -55,12 +55,6 @@ export function PackagesTableRow({
   showChatInSeparateColumn = false
 }: PackagesTableRowProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
-  
-  const formatCurrency = (value: number | null, currency: Currency) => {
-    if (!value) return 'N/A';
-    const symbol = getCurrencySymbol(currency);
-    return `${symbol}${value.toLocaleString('es-CO')} ${currency}`;
-  };
 
   const handleChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();

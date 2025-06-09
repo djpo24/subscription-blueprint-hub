@@ -19,10 +19,6 @@ export function PackageTableDetails({
   freight, 
   weight 
 }: PackageTableDetailsProps) {
-  const getCurrencySymbol = (curr: Currency) => {
-    return curr === 'AWG' ? 'ƒ' : '$';
-  };
-
   const getCurrencyLabel = (curr: Currency) => {
     const labels = {
       'AWG': 'Florín Arubano',
@@ -51,7 +47,7 @@ export function PackageTableDetails({
             <div className="flex justify-between">
               <span className="text-gray-600">Monto a cobrar:</span>
               <span className="font-bold text-green-600">
-                {getCurrencySymbol(currency)}{amountToCollect.toLocaleString('es-CO')} {currency}
+                {formatCurrency(amountToCollect, currency)}
               </span>
             </div>
           )}
@@ -62,7 +58,7 @@ export function PackageTableDetails({
             <div className="flex justify-between">
               <span className="text-gray-600">Flete:</span>
               <span>
-                {getCurrencySymbol(currency)}{freight.toLocaleString('es-CO')} {currency}
+                {formatCurrency(freight, 'COP')}
               </span>
             </div>
           )}

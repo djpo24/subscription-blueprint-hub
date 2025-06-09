@@ -6,6 +6,7 @@ import { Package, MapPin, Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePackages } from '@/hooks/usePackages';
+import { formatCurrency } from '@/utils/currencyFormatter';
 
 export function AllPackagesTable() {
   const isMobile = useIsMobile();
@@ -51,15 +52,6 @@ export function AllPackagesTable() {
       default:
         return status;
     }
-  };
-
-  const formatCurrency = (amount: number | null, currency: string = 'COP') => {
-    if (!amount) return '-';
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-    }).format(amount);
   };
 
   if (isLoading) {
@@ -121,7 +113,7 @@ export function AllPackagesTable() {
                           </span>
                         </div>
                         <div className="text-sm text-gray-600">
-                          Peso: {pkg.weight || 0} kg | Flete: {formatCurrency(pkg.freight)}
+                          Peso: {pkg.weight || 0} kg | Flete: {formatCurrency(pkg.freight, 'COP')}
                         </div>
                         {pkg.amount_to_collect && (
                           <div className="text-sm text-orange-600">
@@ -191,7 +183,7 @@ export function AllPackagesTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>{pkg.weight || 0} kg</TableCell>
-                <TableCell>{formatCurrency(pkg.freight)}</TableCell>
+                <TableCell>{formatCurrency(pkg.freight, 'COP')}</TableCell>
                 <TableCell>
                   {pkg.amount_to_collect ? 
                     formatCurrency(pkg.amount_to_collect, pkg.currency) : 

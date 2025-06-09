@@ -1,6 +1,5 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Weight, DollarSign, Banknote } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PackagesByDateSummaryProps {
   totalPackages: number;
@@ -15,65 +14,32 @@ export function PackagesByDateSummary({
   totalFreight,
   totalAmountToCollect
 }: PackagesByDateSummaryProps) {
+  const isMobile = useIsMobile();
+
+  if (totalPackages === 0) return null;
+
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString('es-CO')} COP`;
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Encomiendas</CardTitle>
-          <Package className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalPackages}</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Peso Total</CardTitle>
-          <Weight className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalWeight.toFixed(1)} kg</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Flete Total 
-            <span className="text-xs bg-orange-100 text-orange-700 px-1 py-0.5 rounded ml-1 font-bold">
-              COP
-            </span>
-          </CardTitle>
-          <DollarSign className="h-4 w-4 text-orange-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-orange-700">
-            ${totalFreight.toLocaleString('es-CO')}
-          </div>
-          <p className="text-xs text-orange-600 mt-1">
-            Siempre en Pesos Colombianos
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Total a Cobrar
-            <span className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded ml-1">
-              Mixto
-            </span>
-          </CardTitle>
-          <Banknote className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">${totalAmountToCollect.toLocaleString('es-CO')}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Suma en diferentes divisas
-          </p>
-        </CardContent>
-      </Card>
+    <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-4 gap-4'} mt-4 p-4 bg-gray-50 rounded-lg`}>
+      <div className="text-center">
+        <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-blue-600`}>{totalPackages}</div>
+        <div className="text-xs text-gray-600">Paquetes</div>
+      </div>
+      <div className="text-center">
+        <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-purple-600`}>{totalWeight} kg</div>
+        <div className="text-xs text-gray-600">Peso Total</div>
+      </div>
+      <div className="text-center">
+        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-orange-600`}>{formatCurrency(totalFreight)}</div>
+        <div className="text-xs text-gray-600">Flete Total (COP)</div>
+      </div>
+      <div className="text-center">
+        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>{formatCurrency(totalAmountToCollect)}</div>
+        <div className="text-xs text-gray-600">A Cobrar</div>
+      </div>
     </div>
   );
 }

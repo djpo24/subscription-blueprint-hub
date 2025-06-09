@@ -51,16 +51,15 @@ export function usePackageFormSubmission() {
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
-      // IMPORTANTE: El flete SIEMPRE se guarda en COP (peso colombiano)
-      // La currency del formData es SOLO para el monto a cobrar
+      // Preparar los datos para insertar
       const packageData = {
         tracking_number: trackingNumber,
         customer_id: customerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        freight: formData.freight ? parseFloat(formData.freight) : 0, // FLETE SIEMPRE EN COP
+        freight: formData.freight ? parseFloat(formData.freight) : 0, // El flete siempre en COP
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
-        currency: formData.currency, // Esta divisa es SOLO para el monto a cobrar
+        currency: formData.currency, // Esta es la divisa para el monto a cobrar, NO para el flete
         origin: tripData.origin,
         destination: tripData.destination,
         flight_number: tripData.flight_number,
@@ -68,14 +67,10 @@ export function usePackageFormSubmission() {
         status: 'recibido'
       };
 
-      console.log('📤 [PackageFormSubmission] DATOS DEL PAQUETE:', {
-        trackingNumber,
-        freight: packageData.freight,
-        freight_currency: 'COP (SIEMPRE)',
-        amount_to_collect: packageData.amount_to_collect,
-        amount_currency: packageData.currency,
-        note: 'FLETE SIEMPRE EN COP, CURRENCY ES SOLO PARA MONTO A COBRAR'
-      });
+      console.log('📤 [PackageFormSubmission] Datos del paquete a insertar:', packageData);
+      console.log('💰 [PackageFormSubmission] Divisa para monto a cobrar:', packageData.currency);
+      console.log('💰 [PackageFormSubmission] Monto a cobrar:', packageData.amount_to_collect);
+      console.log('🚢 [PackageFormSubmission] Flete (siempre en COP):', packageData.freight);
 
       const { error } = await supabase
         .from('packages')
@@ -86,9 +81,7 @@ export function usePackageFormSubmission() {
         throw error;
       }
 
-      console.log('✅ [PackageFormSubmission] Paquete creado exitosamente');
-      console.log('🚢 [PackageFormSubmission] Flete guardado en COP:', packageData.freight);
-      console.log('💰 [PackageFormSubmission] Monto a cobrar en', packageData.currency, ':', packageData.amount_to_collect);
+      console.log('✅ [PackageFormSubmission] Paquete creado exitosamente en BD');
 
       // Create initial tracking event
       const { data: newPackageData } = await supabase
@@ -110,7 +103,7 @@ export function usePackageFormSubmission() {
 
       toast({
         title: "Encomienda creada",
-        description: `Número de seguimiento: ${trackingNumber}. Flete en COP, monto a cobrar en ${formData.currency}`
+        description: `Número de seguimiento: ${trackingNumber}`
       });
 
       return true;

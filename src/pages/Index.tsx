@@ -8,6 +8,7 @@ import { ChatTab } from '@/components/tabs/ChatTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { UsersTab } from '@/components/tabs/UsersTab';
+import { CustomersTab } from '@/components/tabs/CustomersTab';
 import { DeveloperTab } from '@/components/tabs/DeveloperTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { Tabs } from '@/components/ui/tabs';
@@ -119,6 +120,7 @@ export default function Index() {
                 {activeTab === 'finances' && 'Finanzas'}
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'notifications' && 'Notificaciones'}
+                {activeTab === 'customers' && 'Clientes'}
                 {activeTab === 'users' && 'Usuarios'}
                 {activeTab === 'settings' && 'Configuración'}
                 {activeTab === 'developer' && 'Preview'}
@@ -152,6 +154,7 @@ export default function Index() {
               <FinancesTab />
               <ChatTab />
               <NotificationsTab />
+              <CustomersTab />
               <UsersTab />
               <SettingsTab />
               <DeveloperTab />

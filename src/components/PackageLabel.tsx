@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { PackageLabelPreview } from './package-labels/PackageLabelPreview';
-import { MultiplePackageLabels } from './MultiplePackageLabels';
 import { generateLabelData, LabelData } from './package-labels/PackageLabelGenerator';
+import { useMultipleLabelsPDF } from '@/hooks/useMultipleLabelsPDF';
 
 interface Package {
   id: string;
@@ -28,7 +28,9 @@ interface PackageLabelProps {
 export function PackageLabel({ package: pkg }: PackageLabelProps) {
   const [labelData, setLabelData] = useState<LabelData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
-  const [showPreview, setShowPreview] = useState(true);
+  const [isPrinting, setIsPrinting] = useState(false);
+  
+  const { printMultipleLabelsAsPDF } = useMultipleLabelsPDF();
 
   useEffect(() => {
     const generateCodes = async () => {
@@ -45,12 +47,19 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
     generateCodes();
   }, [pkg]);
 
-  const handlePrint = () => {
-    setShowPreview(false);
-  };
-
-  const handleBackToPreview = () => {
-    setShowPreview(true);
+  const handlePrint = async () => {
+    if (!labelData || isPrinting) return;
+    
+    try {
+      setIsPrinting(true);
+      const labelsData = new Map<string, LabelData>();
+      labelsData.set(pkg.id, labelData);
+      await printMultipleLabelsAsPDF([pkg], labelsData);
+    } catch (error) {
+      console.error('Error printing label:', error);
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   if (isGenerating) {
@@ -74,29 +83,28 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
     );
   }
 
+  if (isPrinting) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p>Generando PDF e imprimiendo...</p>
+        </div>
+      </div>
+    );
+  }
+
   const labelsData = new Map<string, LabelData>();
   labelsData.set(pkg.id, labelData);
 
   return (
     <div className="package-label-container">
-      {showPreview ? (
-        <PackageLabelPreview
-          packages={[pkg]}
-          labelsData={labelsData}
-          onPrint={handlePrint}
-          isPDFMode={false}
-        />
-      ) : (
-        <div>
-          <button
-            onClick={handleBackToPreview}
-            className="mb-4 text-blue-600 hover:text-blue-800 underline"
-          >
-            ← Volver a la vista previa
-          </button>
-          <MultiplePackageLabels packages={[pkg]} />
-        </div>
-      )}
+      <PackageLabelPreview
+        packages={[pkg]}
+        labelsData={labelsData}
+        onPrint={handlePrint}
+        isPDFMode={true}
+      />
     </div>
   );
 }

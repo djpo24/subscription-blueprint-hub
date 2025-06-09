@@ -1,9 +1,10 @@
 
-import { Search, LogOut } from 'lucide-react';
+import { Search, LogOut, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeaderProps {
   searchTerm: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export function Header({ searchTerm, onSearchChange }: HeaderProps) {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     try {
@@ -31,40 +33,42 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
   };
 
   return (
-    <header className="uber-header">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">
-              Envíos Ojitos
+    <header className="uber-header sticky top-0 z-10">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
+              {isMobile ? "Ojitos" : "Envíos Ojitos"}
             </h1>
           </div>
           
-          <div className="flex items-center gap-4 flex-1 max-w-md">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-sm sm:max-w-md">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
               <Input
                 type="text"
-                placeholder="Buscar encomiendas..."
+                placeholder={isMobile ? "Buscar..." : "Buscar encomiendas..."}
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 bg-white"
+                className="pl-8 sm:pl-10 bg-white text-sm h-8 sm:h-10"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 hidden sm:block">
-              {user?.email}
-            </span>
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {!isMobile && (
+              <span className="text-xs sm:text-sm text-gray-300 hidden lg:block truncate max-w-32">
+                {user?.email}
+              </span>
+            )}
             <Button
               variant="secondary"
-              size="sm"
+              size={isMobile ? "sm" : "sm"}
               onClick={handleSignOut}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
             >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Salir</span>
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+              {!isMobile && <span className="hidden sm:inline text-sm">Salir</span>}
             </Button>
           </div>
         </div>

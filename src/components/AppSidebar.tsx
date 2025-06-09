@@ -3,6 +3,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGrou
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SidebarLoadingState } from './sidebar/SidebarLoadingState';
 import { SidebarMenuSection } from './sidebar/SidebarMenuSection';
 import { createMenuItems } from './sidebar/SidebarMenuItems';
@@ -28,6 +29,7 @@ export function AppSidebar({
     state,
     toggleSidebar
   } = useSidebar();
+  const isMobile = useIsMobile();
 
   // Show tabs based on user role - Customers is now available for everyone
   const showUsersTab = userRole?.role === 'admin';
@@ -43,14 +45,19 @@ export function AppSidebar({
   const menuItems = createMenuItems(showUsersTab, showNotificationsTab, showSettingsTab, showChatTab, showFinancesTab, unreadCount);
   
   return (
-    <Sidebar className="bg-black border-gray-800" collapsible="icon">
+    <Sidebar className="bg-black border-gray-800" collapsible="icon" variant={isMobile ? "floating" : "sidebar"}>
       <SidebarHeader className="border-b border-gray-800 p-2 bg-zinc-950">
         <div className="flex items-center justify-between">
-          <SidebarGroupLabel className="text-white font-bold text-lg px-2 py-2 group-data-[collapsible=icon]:hidden">
-            Envíos Ojitos
+          <SidebarGroupLabel className="text-white font-bold text-sm sm:text-lg px-2 py-2 group-data-[collapsible=icon]:hidden truncate">
+            {isMobile ? "Ojitos" : "Envíos Ojitos"}
           </SidebarGroupLabel>
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-white hover:bg-gray-800 hover:text-white">
-            {state === "expanded" ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar} 
+            className="h-6 w-6 sm:h-8 sm:w-8 text-white hover:bg-gray-800 hover:text-white flex-shrink-0"
+          >
+            {state === "expanded" ? <X className="h-3 w-3 sm:h-4 sm:w-4" /> : <Menu className="h-3 w-3 sm:h-4 sm:w-4" />}
           </Button>
         </div>
       </SidebarHeader>

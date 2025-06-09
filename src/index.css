@@ -100,54 +100,54 @@
   }
 
   h1 {
-    @apply text-4xl font-bold;
+    @apply text-2xl sm:text-3xl lg:text-4xl font-bold;
   }
 
   h2 {
-    @apply text-3xl font-bold;
+    @apply text-xl sm:text-2xl lg:text-3xl font-bold;
   }
 
   h3 {
-    @apply text-2xl font-bold;
+    @apply text-lg sm:text-xl lg:text-2xl font-bold;
   }
 }
 
 @layer components {
-  /* Estilos principales de Uber - Negro y blanco con hover corregido */
+  /* Estilos principales de Uber - Negro y blanco con hover corregido y responsivo */
   .uber-header {
     @apply bg-black text-white shadow-none border-0;
   }
   
   .uber-button-primary {
-    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-3 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-none border-0 text-sm;
   }
 
   .uber-button-secondary {
-    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-3 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-none border-0 text-sm;
   }
 
   .uber-input {
-    @apply bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:ring-offset-0 shadow-none transition-all duration-200;
+    @apply bg-gray-50 border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-4 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:ring-offset-0 shadow-none transition-all duration-200 text-sm sm:text-base;
   }
 
   .uber-card {
-    @apply bg-white rounded-2xl border border-gray-200 shadow-sm;
+    @apply bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-sm;
   }
 
   .uber-dialog {
-    @apply bg-white rounded-2xl border-0 shadow-xl;
+    @apply bg-white rounded-xl sm:rounded-2xl border-0 shadow-xl;
   }
 
   /* Estilos de botones mejorados para evitar conflictos */
   .btn-default {
-    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-black text-white hover:bg-gray-800 hover:text-white active:bg-gray-900 active:text-white rounded-full font-medium px-3 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-none border-0 text-sm;
   }
 
   .btn-secondary {
-    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-6 py-3 transition-all duration-200 shadow-none border-0;
+    @apply bg-gray-100 text-black hover:bg-gray-200 hover:text-black active:bg-gray-300 active:text-black rounded-full font-medium px-3 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-none border-0 text-sm;
   }
 
-  /* Aplicar estilo Uber a inputs */
+  /* Aplicar estilo Uber a inputs con responsividad */
   .input-default {
     @apply uber-input;
   }
@@ -161,15 +161,59 @@
   input[type="text"]:not([class*="uber"]):not(button),
   input[type="email"]:not([class*="uber"]):not(button),
   textarea:not([class*="uber"]):not(button) {
-    @apply bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:border-black;
+    @apply bg-gray-50 border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-black placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-black focus:border-black text-sm sm:text-base;
   }
 
-  /* Estilo para badges y elementos pequeños */
+  /* Estilo para badges y elementos pequeños con responsividad */
   .uber-badge {
-    @apply bg-black text-white px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-black text-white px-2 sm:px-3 py-1 rounded-full text-xs font-medium;
   }
 
   .uber-badge-secondary {
-    @apply bg-gray-100 text-black px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-gray-100 text-black px-2 sm:px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Utilidades responsivas adicionales */
+  .container {
+    @apply w-full max-w-none sm:max-w-full lg:max-w-7xl xl:max-w-screen-xl 2xl:max-w-screen-2xl;
+  }
+
+  /* Mejoras para overflow en móvil */
+  .mobile-safe {
+    @apply max-w-full overflow-x-hidden;
+  }
+
+  /* Spacing responsivo */
+  .responsive-padding {
+    @apply px-2 sm:px-4 lg:px-6 xl:px-8;
+  }
+
+  .responsive-margin {
+    @apply mx-2 sm:mx-4 lg:mx-6 xl:mx-8;
+  }
+}
+
+/* Media queries adicionales para casos específicos */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Asegurar que los elementos no se desborden en móvil */
+  * {
+    min-width: 0;
+  }
+}
+
+/* Mejoras para elementos de tabla en móvil */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  .table-responsive th,
+  .table-responsive td {
+    padding: 0.5rem;
   }
 }

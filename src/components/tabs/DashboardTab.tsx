@@ -4,6 +4,7 @@ import { StatsGrid } from '@/components/StatsGrid';
 import { QuickActions } from '@/components/QuickActions';
 import { PackagesTable } from '@/components/PackagesTable';
 import { TestQRCode } from '@/components/TestQRCode';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardTabProps {
   packageStats: {
@@ -44,8 +45,10 @@ export function DashboardTab({
   disableChat = false,
   previewRole
 }: DashboardTabProps) {
+  const isMobile = useIsMobile();
+
   return (
-    <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
+    <TabsContent value="dashboard" className="space-y-3 sm:space-y-4 lg:space-y-6 mt-4">
       <StatsGrid
         packageStats={packageStats}
         customersCount={customersCount}
@@ -58,20 +61,24 @@ export function DashboardTab({
         onMobileDelivery={onMobileDelivery}
       />
 
-      {/* QR Code de prueba */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-4 text-center">QR de Prueba para Móvil</h3>
-        <TestQRCode />
-      </div>
+      {/* QR Code de prueba - Solo mostrar en móvil */}
+      {isMobile && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <h3 className="text-base font-semibold mb-3 text-center">QR de Prueba</h3>
+          <TestQRCode />
+        </div>
+      )}
 
-      <PackagesTable
-        packages={packages}
-        filteredPackages={filteredPackages}
-        isLoading={isLoading}
-        onUpdate={onUpdate}
-        disableChat={false}
-        previewRole={previewRole}
-      />
+      <div className="w-full overflow-x-auto">
+        <PackagesTable
+          packages={packages}
+          filteredPackages={filteredPackages}
+          isLoading={isLoading}
+          onUpdate={onUpdate}
+          disableChat={false}
+          previewRole={previewRole}
+        />
+      </div>
     </TabsContent>
   );
 }

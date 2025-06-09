@@ -19,9 +19,11 @@ import { useIndexState } from '@/hooks/useIndexState';
 import { useIndexHandlers } from '@/hooks/useIndexHandlers';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
 import { MobileDeliveryView } from '@/components/mobile/MobileDeliveryView';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Index() {
   const [showMobileDelivery, setShowMobileDelivery] = useState(false);
+  const isMobile = useIsMobile();
 
   const {
     packagesData,
@@ -100,20 +102,20 @@ export default function Index() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen bg-gray-50 w-full flex">
         <AppSidebar 
           activeTab={activeTab} 
           onTabChange={setActiveTab}
           unreadCount={unreadCount}
         />
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex-1 min-w-0">
           <Header searchTerm={searchTerm} onSearchChange={setSearchTerm} />
           
-          <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-            <div className="flex items-center gap-2 mb-4">
-              <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-10 w-10" />
-              <h2 className="text-xl font-semibold">
+          <main className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 lg:py-8 max-w-full overflow-x-hidden">
+            <div className="flex items-center gap-2 mb-2 sm:mb-4">
+              <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
+              <h2 className="text-lg sm:text-xl font-semibold truncate">
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'trips' && 'Viajes'}
                 {activeTab === 'dispatches' && 'Despachos'}
@@ -127,7 +129,7 @@ export default function Index() {
               </h2>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <DashboardTab
                 packageStats={packageStats}
                 customersCount={customersCount}

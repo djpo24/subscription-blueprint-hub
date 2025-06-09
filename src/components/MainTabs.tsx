@@ -44,7 +44,7 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
   if (isLoading) {
     console.log('MainTabs: Still loading user role...');
     return (
-      <div className="w-full h-10 bg-gray-200 animate-pulse rounded-md"></div>
+      <div className="w-full h-8 sm:h-10 bg-gray-200 animate-pulse rounded-md"></div>
     );
   }
 
@@ -52,70 +52,43 @@ export function MainTabs({ activeTab, onTabChange, unreadCount = 0, previewRole 
     console.error('MainTabs: Error loading user role:', error);
   }
 
-  // Calculate grid columns dynamically based on visible tabs
-  const visibleTabsCount = [
-    true, // dashboard
-    true, // trips
-    true, // dispatches
-    showFinancesTab,
-    showChatTab,
-    showNotificationsTab,
-    showCustomersTab, // now always visible
-    showUsersTab,
-    showSettingsTab,
-    true // developer (always visible)
-  ].filter(Boolean).length;
+  // Calculate visible tabs
+  const visibleTabs = [
+    { value: 'dashboard', label: isMobile ? 'Home' : 'Dashboard', show: true },
+    { value: 'trips', label: 'Viajes', show: true },
+    { value: 'dispatches', label: isMobile ? 'Desp.' : 'Despachos', show: true },
+    { value: 'finances', label: 'Finanzas', show: showFinancesTab },
+    { value: 'chat', label: 'Chat', show: showChatTab, hasNotification: unreadCount > 0 },
+    { value: 'notifications', label: isMobile ? 'Notif.' : 'Notificaciones', show: showNotificationsTab },
+    { value: 'customers', label: 'Clientes', show: showCustomersTab },
+    { value: 'users', label: isMobile ? 'Users' : 'Usuarios', show: showUsersTab },
+    { value: 'settings', label: isMobile ? 'Config' : 'Configuración', show: showSettingsTab },
+    { value: 'developer', label: isMobile ? 'Dev' : 'Preview', show: true, special: true }
+  ].filter(tab => tab.show);
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className={`grid w-full gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto`} style={{ gridTemplateColumns: `repeat(${visibleTabsCount}, minmax(0, 1fr))` }}>
-        <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Home" : "Dashboard"}
-        </TabsTrigger>
-        <TabsTrigger value="trips" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Viajes" : "Viajes"}
-        </TabsTrigger>
-        <TabsTrigger value="dispatches" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-          {isMobile ? "Desp." : "Despachos"}
-        </TabsTrigger>
-        {showFinancesTab && (
-          <TabsTrigger value="finances" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Finanzas" : "Finanzas"}
-          </TabsTrigger>
-        )}
-        {showChatTab && (
-          <TabsTrigger value="chat" className="text-xs sm:text-sm px-1 sm:px-3 py-2 relative min-w-0 flex-shrink-0">
-            {isMobile ? "Chat" : "Chat"}
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 text-xs absolute -top-1 -right-1 sm:relative sm:top-auto sm:right-auto">
+      <TabsList className="grid w-full gap-0.5 sm:gap-1 h-auto p-1 overflow-x-auto bg-muted" 
+        style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}>
+        {visibleTabs.map((tab) => (
+          <TabsTrigger 
+            key={tab.value}
+            value={tab.value} 
+            className={`text-xs sm:text-sm px-1 sm:px-2 lg:px-3 py-1.5 sm:py-2 min-w-0 flex-shrink-0 whitespace-nowrap relative ${
+              tab.special ? 'bg-purple-100 text-purple-800 data-[state=active]:bg-purple-200' : ''
+            }`}
+          >
+            {tab.label}
+            {tab.hasNotification && (
+              <Badge 
+                variant="destructive" 
+                className="ml-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full p-0 text-xs absolute -top-1 -right-1 sm:relative sm:top-auto sm:right-auto sm:ml-2"
+              >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
             )}
           </TabsTrigger>
-        )}
-        {showNotificationsTab && (
-          <TabsTrigger value="notifications" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Notif." : "Notificaciones"}
-          </TabsTrigger>
-        )}
-        {showCustomersTab && (
-          <TabsTrigger value="customers" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Clientes" : "Clientes"}
-          </TabsTrigger>
-        )}
-        {showUsersTab && (
-          <TabsTrigger value="users" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Users" : "Usuarios"}
-          </TabsTrigger>
-        )}
-        {showSettingsTab && (
-          <TabsTrigger value="settings" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0">
-            {isMobile ? "Config" : "Configuración"}
-          </TabsTrigger>
-        )}
-        <TabsTrigger value="developer" className="text-xs sm:text-sm px-1 sm:px-3 py-2 min-w-0 flex-shrink-0 bg-purple-100 text-purple-800">
-          {isMobile ? "Dev" : "Preview"}
-        </TabsTrigger>
+        ))}
       </TabsList>
     </Tabs>
   );

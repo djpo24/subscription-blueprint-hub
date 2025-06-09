@@ -18,8 +18,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Use the same verify token as the original webhook (ojitos_webhook_verify)
-    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN') || 'ojitos_webhook_verify'
+    // Use the same verify token as configured in Meta Developer Console
+    const verifyToken = 'ojitos_webhook_verify'
 
     if (req.method === 'GET') {
       // Webhook verification - Meta requires this

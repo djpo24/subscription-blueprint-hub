@@ -1224,7 +1224,15 @@ export type Database = {
           table_name?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_actions_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {

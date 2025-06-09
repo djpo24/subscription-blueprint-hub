@@ -17,7 +17,7 @@ export function useUserActivities() {
         .from('user_actions')
         .select(`
           *,
-          user_profiles!inner(first_name, last_name, email)
+          user_profiles!fk_user_actions_user_profiles(first_name, last_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -35,8 +35,8 @@ export function useUserActivities() {
         created_at: activity.created_at,
         activity_type: activity.action_type,
         description: activity.description,
-        user_name: `${activity.user_profiles.first_name} ${activity.user_profiles.last_name}`,
-        user_email: activity.user_profiles.email,
+        user_name: activity.user_profiles ? `${activity.user_profiles.first_name} ${activity.user_profiles.last_name}` : 'Usuario desconocido',
+        user_email: activity.user_profiles?.email || '',
         table_name: activity.table_name,
         record_id: activity.record_id,
         old_values: activity.old_values,

@@ -9,6 +9,7 @@ import { MessageCircle, Edit, Users, Package } from 'lucide-react';
 import { PhoneWithFlag } from '@/components/PhoneWithFlag';
 import { ChatDialog } from '@/components/chat/ChatDialog';
 import { EditCustomerDialog } from './EditCustomerDialog';
+import { CustomerSearchBar } from './CustomerSearchBar';
 import { useToast } from '@/hooks/use-toast';
 
 interface Customer {
@@ -23,6 +24,7 @@ interface Customer {
 
 export function CustomersList() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [searchCustomerId, setSearchCustomerId] = useState<string | null>(null);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -59,6 +61,11 @@ export function CustomersList() {
     },
   });
 
+  // Filter customers based on search
+  const filteredCustomers = searchCustomerId 
+    ? customers.filter(customer => customer.id === searchCustomerId)
+    : customers;
+
   const handleChatClick = (customerId: string) => {
     setSelectedCustomerId(customerId);
     setChatDialogOpen(true);
@@ -78,6 +85,14 @@ export function CustomersList() {
     });
   };
 
+  const handleCustomerSearch = (customerId: string) => {
+    setSearchCustomerId(customerId);
+  };
+
+  const handleClearSearch = () => {
+    setSearchCustomerId(null);
+  };
+
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
   if (isLoading) {
@@ -90,14 +105,27 @@ export function CustomersList() {
 
   return (
     <>
+      <CustomerSearchBar 
+        onCustomerSelect={handleCustomerSearch}
+        onClearSearch={handleClearSearch}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Lista de Clientes
+            {searchCustomerId && (
+              <span className="text-sm font-normal text-muted-foreground">
+                (Mostrando resultado de búsqueda)
+              </span>
+            )}
           </CardTitle>
           <div className="text-sm text-muted-foreground">
-            Total de clientes: {customers.length}
+            {searchCustomerId 
+              ? `${filteredCustomers.length} cliente${filteredCustomers.length !== 1 ? 's' : ''} encontrado${filteredCustomers.length !== 1 ? 's' : ''}`
+              : `Total de clientes: ${customers.length}`
+            }
           </div>
         </CardHeader>
         <CardContent>
@@ -119,7 +147,7 @@ export function CustomersList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {filteredCustomers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">
                       {customer.name}
@@ -164,10 +192,10 @@ export function CustomersList() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {customers.length === 0 && (
+                {filteredCustomers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                      No hay clientes registrados
+                      {searchCustomerId ? "No se encontró el cliente buscado" : "No hay clientes registrados"}
                     </TableCell>
                   </TableRow>
                 )}

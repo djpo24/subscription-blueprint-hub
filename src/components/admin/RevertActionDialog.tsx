@@ -58,6 +58,8 @@ export function RevertActionDialog({ activity, open, onOpenChange, onRevertSucce
 
   if (!activity) return null;
 
+  const isRevertDisabled = !activity.can_revert || !!activity.reverted_at;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -109,7 +111,7 @@ export function RevertActionDialog({ activity, open, onOpenChange, onRevertSucce
           </Button>
           <Button
             onClick={handleRevert}
-            disabled={isReverting || !activity.can_revert || activity.reverted_at}
+            disabled={isReverting || isRevertDisabled}
             className="bg-red-600 hover:bg-red-700"
           >
             {isReverting ? "Revirtiendo..." : "Revertir Acción"}

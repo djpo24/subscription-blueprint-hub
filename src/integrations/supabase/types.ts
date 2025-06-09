@@ -1181,6 +1181,51 @@ export type Database = {
           },
         ]
       }
+      user_actions: {
+        Row: {
+          action_type: string
+          can_revert: boolean
+          created_at: string
+          description: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          reverted_at: string | null
+          reverted_by: string | null
+          table_name: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          can_revert?: boolean
+          created_at?: string
+          description: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          table_name?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          can_revert?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          table_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           created_at: string
@@ -1386,6 +1431,10 @@ export type Database = {
           p_notes?: string
           p_created_by?: string
         }
+        Returns: undefined
+      }
+      revert_user_action: {
+        Args: { p_action_id: string; p_reverted_by: string }
         Returns: undefined
       }
       update_batch_totals: {

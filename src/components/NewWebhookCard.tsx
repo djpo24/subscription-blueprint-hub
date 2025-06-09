@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, ExternalLink, Webhook, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Copy, ExternalLink, Webhook, CheckCircle, AlertCircle, Sparkles, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { WhatsAppTokenConfig } from './WhatsAppTokenConfig';
 
 export function NewWebhookCard() {
   const { toast } = useToast();
@@ -35,12 +36,16 @@ export function NewWebhookCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert>
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>✅ Tokens sincronizados:</strong> Este webhook ahora usa el mismo token de verificación que tu webhook original (ojitos_webhook_verify). Ya puedes configurarlo en Meta Developer Console.
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            <strong>⚠️ Tokens no sincronizados:</strong> Detectamos un problema de configuración con los tokens. El webhook espera un token diferente al configurado en Meta Developer Console.
           </AlertDescription>
         </Alert>
+
+        <div className="flex justify-center">
+          <WhatsAppTokenConfig />
+        </div>
 
         <div className="space-y-4">
           <div>
@@ -121,7 +126,7 @@ export function NewWebhookCard() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Importante:</strong> Ahora este webhook usa el mismo token de verificación que tu webhook original (ojitos_webhook_verify). Solo necesitas copiar la nueva URL y configurarla en Meta Developer Console.
+              <strong>Solución:</strong> Usa el configurador de tokens de arriba para sincronizar los tokens correctamente. Esto resolverá el problema de verificación del webhook.
             </AlertDescription>
           </Alert>
         </div>

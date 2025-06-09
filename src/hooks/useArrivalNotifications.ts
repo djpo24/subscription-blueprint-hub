@@ -108,7 +108,7 @@ export function useArrivalNotifications() {
               .eq('id', notification.id);
           }
 
-        } catch (error) {
+        } catch (error: any) {
           console.error(`❌ Error procesando notificación ${notification.id}:`, error);
           
           // Marcar como fallido

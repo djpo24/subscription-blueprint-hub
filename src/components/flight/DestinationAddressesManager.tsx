@@ -251,7 +251,7 @@ export function DestinationAddressesManager() {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"
-                    disabled={isAdding || isEditing}
+                    disabled={isAdding || Boolean(isEditing)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -260,7 +260,7 @@ export function DestinationAddressesManager() {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                    disabled={isAdding || isEditing || deleteAddressMutation.isPending}
+                    disabled={isAdding || Boolean(isEditing) || deleteAddressMutation.isPending}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

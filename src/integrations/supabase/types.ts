@@ -615,6 +615,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_notification_log_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notification_log_package"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notification_log_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false

@@ -47,7 +47,7 @@ export function StatsGrid({ packageStats, customersCount }: StatsGridProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {stats.map((stat, index) => (
         <Card key={index} className="bg-gray-100 border-0 rounded-2xl shadow-none hover:bg-gray-200 transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

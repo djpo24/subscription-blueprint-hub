@@ -3,8 +3,6 @@ import { TabsContent } from '@/components/ui/tabs';
 import { StatsGrid } from '@/components/StatsGrid';
 import { QuickActions } from '@/components/QuickActions';
 import { PackagesTable } from '@/components/PackagesTable';
-import { TestQRCode } from '@/components/TestQRCode';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardTabProps {
   packageStats: {
@@ -45,8 +43,6 @@ export function DashboardTab({
   disableChat = false,
   previewRole
 }: DashboardTabProps) {
-  const isMobile = useIsMobile();
-
   return (
     <TabsContent value="dashboard" className="space-y-3 sm:space-y-4 lg:space-y-6 mt-4">
       <StatsGrid
@@ -60,14 +56,6 @@ export function DashboardTab({
         onViewNotifications={onViewNotifications}
         onMobileDelivery={onMobileDelivery}
       />
-
-      {/* QR Code de prueba - Solo mostrar en móvil */}
-      {isMobile && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <h3 className="text-base font-semibold mb-3 text-center">QR de Prueba</h3>
-          <TestQRCode />
-        </div>
-      )}
 
       <div className="w-full overflow-x-auto">
         <PackagesTable

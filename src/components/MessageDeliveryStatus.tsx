@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +32,7 @@ export function MessageDeliveryStatus() {
           *,
           notification_log (
             message,
-            customers (
+            customers!fk_notification_log_customer (
               name,
               phone
             )

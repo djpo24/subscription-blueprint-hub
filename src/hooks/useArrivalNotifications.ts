@@ -15,12 +15,12 @@ export function useArrivalNotifications() {
         .from('notification_log')
         .select(`
           *,
-          customers (
+          customers!fk_notification_log_customer (
             name,
             phone,
             whatsapp_number
           ),
-          packages (
+          packages!fk_notification_log_package (
             tracking_number,
             destination,
             amount_to_collect,

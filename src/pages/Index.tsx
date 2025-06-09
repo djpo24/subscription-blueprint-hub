@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
@@ -143,6 +142,7 @@ export default function Index() {
                 filteredPackages={filteredPackages}
                 isLoading={isLoading}
                 onUpdate={handlePackagesUpdate}
+                onTabChange={setActiveTab}
               />
               
               <TripsTab 

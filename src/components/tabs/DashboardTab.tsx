@@ -27,6 +27,7 @@ interface DashboardTabProps {
   onUpdate: (id: string, updates: any) => void;
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
+  onTabChange: (tab: string) => void;
 }
 
 export function DashboardTab({
@@ -41,13 +42,34 @@ export function DashboardTab({
   isLoading,
   onUpdate,
   disableChat = false,
-  previewRole
+  previewRole,
+  onTabChange
 }: DashboardTabProps) {
+  const handleStatClick = (statType: string) => {
+    switch (statType) {
+      case 'packages':
+        // Quedarse en dashboard pero mostrar tabla de paquetes (ya está visible)
+        break;
+      case 'customers':
+        onTabChange('customers');
+        break;
+      case 'in-transit':
+        // Quedarse en dashboard pero podríamos filtrar por en tránsito en el futuro
+        break;
+      case 'delivered':
+        // Quedarse en dashboard pero podríamos filtrar por entregados en el futuro
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <TabsContent value="dashboard" className="space-y-3 sm:space-y-4 lg:space-y-6 mt-4">
       <StatsGrid
         packageStats={packageStats}
         customersCount={customersCount}
+        onStatClick={handleStatClick}
       />
       
       <QuickActions

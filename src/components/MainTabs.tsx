@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { DashboardTab } from './tabs/DashboardTab';
@@ -19,16 +20,66 @@ import { NotificationBadge } from '@/components/ui/notification-badge';
 
 interface MainTabsProps {
   previewRole?: 'admin' | 'employee' | 'traveler';
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+  unreadCount?: number;
+  // Props for DashboardTab
+  packageStats?: any;
+  customersCount?: number;
+  onNewPackage?: () => void;
+  onNewTrip?: () => void;
+  onViewNotifications?: () => void;
+  onMobileDelivery?: () => void;
+  packages?: any[];
+  filteredPackages?: any[];
+  isLoading?: boolean;
+  onUpdate?: (id: string, updates: any) => void;
+  disableChat?: boolean;
+  // Props for TripsTab
+  viewingPackagesByDate?: boolean;
+  trips?: any[];
+  tripsLoading?: boolean;
+  onAddPackage?: (tripId: string) => void;
+  onCreateTrip?: (date: Date) => void;
+  onViewPackagesByDate?: (date: Date) => void;
+  onBack?: () => void;
+  // Props for PackagesByDateView
+  selectedDate?: Date;
 }
 
-export function MainTabs({ previewRole }: MainTabsProps) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+export function MainTabs({ 
+  previewRole,
+  activeTab: externalActiveTab,
+  onTabChange: externalOnTabChange,
+  unreadCount: externalUnreadCount,
+  packageStats,
+  customersCount,
+  onNewPackage,
+  onNewTrip,
+  onViewNotifications,
+  onMobileDelivery,
+  packages,
+  filteredPackages,
+  isLoading,
+  onUpdate,
+  disableChat = false,
+  viewingPackagesByDate,
+  trips,
+  tripsLoading,
+  onAddPackage,
+  onCreateTrip,
+  onViewPackagesByDate,
+  onBack,
+  selectedDate
+}: MainTabsProps) {
+  const [internalActiveTab, setInternalActiveTab] = useState('dashboard');
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
-  const { unreadCount } = useUnreadMessages();
+  const { unreadCount: internalUnreadCount } = useUnreadMessages();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
-  const { unreadCount } = useUnreadMessages();
+  // Use external values if provided, otherwise use internal ones
+  const activeTab = externalActiveTab || internalActiveTab;
+  const setActiveTab = externalOnTabChange || setInternalActiveTab;
+  const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : internalUnreadCount;
 
   if (!userRole) {
     return <div>Cargando...</div>;
@@ -79,17 +130,51 @@ export function MainTabs({ previewRole }: MainTabsProps) {
       </TabsList>
 
       <TabsContent value="dashboard">
-        <DashboardTab />
+        <DashboardTab
+          packageStats={packageStats || { total: 0, recibido: 0, bodega: 0, procesado: 0, transito: 0, en_destino: 0, delivered: 0, pending: 0, inTransit: 0 }}
+          customersCount={customersCount || 0}
+          onNewPackage={onNewPackage || (() => {})}
+          onNewTrip={onNewTrip || (() => {})}
+          onViewNotifications={onViewNotifications || (() => {})}
+          onMobileDelivery={onMobileDelivery || (() => {})}
+          packages={packages || []}
+          filteredPackages={filteredPackages || []}
+          isLoading={isLoading || false}
+          onUpdate={onUpdate || (() => {})}
+          disableChat={disableChat}
+          previewRole={previewRole}
+          onTabChange={setActiveTab}
+        />
       </TabsContent>
 
       {isAdminOrEmployee && (
         <>
           <TabsContent value="packages">
-            <PackagesByDateView previewRole={previewRole} />
+            {selectedDate && onBack && onAddPackage ? (
+              <PackagesByDateView 
+                selectedDate={selectedDate}
+                onBack={onBack}
+                onAddPackage={onAddPackage}
+                previewRole={previewRole}
+                disableChat={disableChat}
+              />
+            ) : (
+              <div>Seleccione una fecha para ver las encomiendas</div>
+            )}
           </TabsContent>
 
           <TabsContent value="trips">
-            <TripsTab />
+            <TripsTab
+              viewingPackagesByDate={viewingPackagesByDate || false}
+              trips={trips || []}
+              tripsLoading={tripsLoading || false}
+              onAddPackage={onAddPackage || (() => {})}
+              onCreateTrip={onCreateTrip || (() => {})}
+              onViewPackagesByDate={onViewPackagesByDate || (() => {})}
+              onBack={onBack || (() => {})}
+              disableChat={disableChat}
+              previewRole={previewRole}
+            />
           </TabsContent>
 
           <TabsContent value="dispatches">

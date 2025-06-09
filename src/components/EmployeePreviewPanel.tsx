@@ -127,39 +127,26 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           onTabChange={setActiveTab}
           unreadCount={unreadCount}
           previewRole="employee"
+          packageStats={employeePackageStats}
+          customersCount={customersCount}
+          onNewPackage={handleNewPackage}
+          onNewTrip={() => handleCreateTripFromCalendar(new Date())}
+          onViewNotifications={() => {}} // Deshabilitado para empleados
+          onMobileDelivery={handleMobileDelivery}
+          packages={employeePackages}
+          filteredPackages={employeeFilteredPackages}
+          isLoading={isLoading}
+          onUpdate={handlePackagesUpdate}
+          disableChat={true}
+          viewingPackagesByDate={viewingPackagesByDate}
+          trips={employeeTrips}
+          tripsLoading={tripsLoading}
+          onAddPackage={handleAddPackageToTrip}
+          onCreateTrip={handleCreateTripFromCalendar}
+          onViewPackagesByDate={handleViewPackagesByDate}
+          onBack={handleBackToCalendar}
+          selectedDate={selectedDate}
         />
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-8">
-          <DashboardTab
-            packageStats={employeePackageStats}
-            customersCount={customersCount}
-            onNewPackage={handleNewPackage}
-            onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-            onViewNotifications={() => {}} // Deshabilitado para empleados
-            onMobileDelivery={handleMobileDelivery}
-            packages={employeePackages}
-            filteredPackages={employeeFilteredPackages}
-            isLoading={isLoading}
-            onUpdate={handlePackagesUpdate}
-            disableChat={true}
-            previewRole="employee"
-            onTabChange={setActiveTab}
-          />
-          
-          <TripsTab 
-            viewingPackagesByDate={viewingPackagesByDate}
-            trips={employeeTrips}
-            tripsLoading={tripsLoading}
-            onAddPackage={handleAddPackageToTrip}
-            onCreateTrip={handleCreateTripFromCalendar}
-            onViewPackagesByDate={handleViewPackagesByDate}
-            onBack={handleBackToCalendar}
-            disableChat={true}
-            previewRole="employee"
-          />
-          
-          <DispatchesTab />
-        </Tabs>
 
         <DialogsContainer
           packageDialogOpen={packageDialogOpen}

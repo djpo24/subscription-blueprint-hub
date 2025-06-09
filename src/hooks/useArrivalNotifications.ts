@@ -41,6 +41,18 @@ export function useArrivalNotifications() {
     refetchInterval: 30000, // Refrescar cada 30 segundos
   });
 
+  // Función para generar el mensaje exacto según el formato requerido
+  const generateArrivalMessage = (customerName: string, trackingNumber: string, destination: string, address: string, currency: string, amount: string) => {
+    const currencySymbol = currency === 'AWG' ? 'ƒ' : '$';
+    
+    return `📦 Hola ${customerName},
+ tu encomienda ${trackingNumber} ha llegado a ${destination}. 
+
+📍 Ya puedes recogerla en la dirección: ${address}. 
+
+💰 Te recordamos el valor a pagar: ${currencySymbol}${amount}.`;
+  };
+
   // Procesar notificaciones pendientes
   const processNotificationsMutation = useMutation({
     mutationFn: async () => {
@@ -55,20 +67,49 @@ export function useArrivalNotifications() {
             continue;
           }
 
-          console.log(`📱 Enviando notificación de llegada para ${notification.packages?.tracking_number}`);
+          // Obtener dirección del destino
+          let address = 'nuestras oficinas';
+          if (notification.packages?.destination) {
+            const { data: destinationAddress } = await supabase
+              .from('destination_addresses')
+              .select('address')
+              .ilike('city', notification.packages.destination)
+              .limit(1)
+              .single();
+            
+            if (destinationAddress) {
+              address = destinationAddress.address;
+            }
+          }
 
-          // Marcar como procesando
+          // Generar el mensaje exacto según el formato requerido
+          const messageContent = generateArrivalMessage(
+            notification.customers?.name || 'Cliente',
+            notification.packages?.tracking_number || '',
+            notification.packages?.destination || '',
+            address,
+            notification.packages?.currency || 'COP',
+            notification.packages?.amount_to_collect?.toString() || '0'
+          );
+
+          console.log(`📱 Enviando notificación de llegada para ${notification.packages?.tracking_number}`);
+          console.log('📝 Mensaje a enviar:', messageContent);
+
+          // Actualizar el mensaje en notification_log para que coincida exactamente
           await supabase
             .from('notification_log')
-            .update({ status: 'processing' })
+            .update({ 
+              message: messageContent,
+              status: 'processing' 
+            })
             .eq('id', notification.id);
 
-          // Enviar notificación via WhatsApp con plantilla corregida
+          // Enviar notificación via WhatsApp con plantilla
           const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
               notificationId: notification.id,
               phone: customerPhone,
-              message: notification.message,
+              message: messageContent,
               customerId: notification.customer_id,
               useTemplate: true,
               templateName: 'package_arrival_notification',
@@ -77,7 +118,7 @@ export function useArrivalNotifications() {
                 customerName: notification.customers?.name || 'Cliente',
                 trackingNumber: notification.packages?.tracking_number || '',
                 destination: notification.packages?.destination || '',
-                address: '', // Se llenará desde destination_addresses
+                address: address,
                 currency: notification.packages?.currency === 'AWG' ? 'ƒ' : '$',
                 amount: notification.packages?.amount_to_collect?.toString() || '0'
               }

@@ -1,27 +1,53 @@
 
+export const getMaxPhoneLength = (countryCode: string): number => {
+  if (countryCode === '+57') { // Colombia
+    return 7;
+  } else if (countryCode === '+599') { // Curaçao
+    return 8;
+  }
+  return 10; // Default for other countries
+};
+
 export const formatPhoneNumber = (phone: string, countryCode: string): string => {
   // Remove all non-digit characters
   const numbers = phone.replace(/\D/g, '');
   
   if (!numbers) return '';
   
+  // Apply length limits based on country
+  const maxLength = getMaxPhoneLength(countryCode);
+  const limitedNumbers = numbers.slice(0, maxLength);
+  
   // Format based on country code
   if (countryCode === '+57') { // Colombia
-    // Format: XXX XXX XXXX
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 6) return `${numbers.slice(0, 3)} ${numbers.slice(3)}`;
-    return `${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+    // Format: XXX XXXX (max 7 digits)
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 7)}`;
   } else if (countryCode === '+599') { // Curaçao
-    // Format: XXX XXXX
-    if (numbers.length <= 3) return numbers;
-    return `${numbers.slice(0, 3)} ${numbers.slice(3, 7)}`;
+    // Format: XXX XXXXX (max 8 digits)
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 8)}`;
   }
   
   // Default formatting for other countries
-  return numbers;
+  return limitedNumbers;
 };
 
 export const parsePhoneNumber = (formattedPhone: string): string => {
   // Remove all non-digit characters
   return formattedPhone.replace(/\D/g, '');
+};
+
+export const validatePhoneNumber = (phone: string, countryCode: string): boolean => {
+  const numbers = phone.replace(/\D/g, '');
+  const maxLength = getMaxPhoneLength(countryCode);
+  
+  // Check if phone number has the correct length for the country
+  if (countryCode === '+57') { // Colombia
+    return numbers.length === 7;
+  } else if (countryCode === '+599') { // Curaçao
+    return numbers.length === 7 || numbers.length === 8; // Allow 7 or 8 digits
+  }
+  
+  return numbers.length <= maxLength;
 };

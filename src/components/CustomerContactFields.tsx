@@ -42,6 +42,14 @@ export function CustomerContactFields({
     return formatNumber(idNumber);
   };
 
+  const handleCountryCodeChange = (value: string) => {
+    onCountryCodeChange(value);
+    // Clear phone number when country changes to avoid validation issues
+    if (phoneNumber) {
+      onPhoneNumberChange('');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -81,7 +89,7 @@ export function CustomerContactFields({
           id="phone"
           countryCode={countryCode}
           phoneNumber={phoneNumber}
-          onCountryCodeChange={onCountryCodeChange}
+          onCountryCodeChange={handleCountryCodeChange}
           onPhoneNumberChange={onPhoneNumberChange}
           placeholder="Número de teléfono"
           required

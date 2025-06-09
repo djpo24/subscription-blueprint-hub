@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PhoneNumberInput } from '@/components/PhoneNumberInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +22,8 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
     password: '',
     first_name: '',
     last_name: '',
-    phone: '',
+    countryCode: '+57',
+    phoneNumber: '',
     role: 'employee' as 'admin' | 'employee' | 'traveler'
   });
 
@@ -37,9 +39,16 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         throw new Error('No active session');
       }
 
+      // Prepare user data with full phone number
+      const fullPhone = userData.phoneNumber ? `${userData.countryCode}${userData.phoneNumber}` : '';
+      const userDataToSend = {
+        ...userData,
+        phone: fullPhone
+      };
+
       // Call the Edge Function to create user
       const { data, error } = await supabase.functions.invoke('create-user', {
-        body: userData,
+        body: userDataToSend,
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -74,7 +83,8 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         password: '',
         first_name: '',
         last_name: '',
-        phone: '',
+        countryCode: '+57',
+        phoneNumber: '',
         role: 'employee'
       });
       
@@ -201,12 +211,14 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
+            <PhoneNumberInput
+              label="Teléfono"
               id="phone"
-              value={formData.phone}
-              onChange={(e) => updateFormData('phone', e.target.value)}
-              placeholder="+57 300 123 4567"
+              countryCode={formData.countryCode}
+              phoneNumber={formData.phoneNumber}
+              onCountryCodeChange={(value) => updateFormData('countryCode', value)}
+              onPhoneNumberChange={(value) => updateFormData('phoneNumber', value)}
+              placeholder="Número de teléfono"
             />
           </div>
 

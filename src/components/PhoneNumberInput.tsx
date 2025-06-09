@@ -2,7 +2,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CountryCodeSelector } from './CountryCodeSelector';
-import { formatPhoneNumber, parsePhoneNumber } from '@/utils/phoneFormatter';
+import { formatPhoneNumber, parsePhoneNumber, getMaxPhoneLength } from '@/utils/phoneFormatter';
 
 interface PhoneNumberInputProps {
   label: string;
@@ -31,13 +31,42 @@ export function PhoneNumberInput({
 }: PhoneNumberInputProps) {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const formatted = formatPhoneNumber(value, countryCode);
+    
+    // Only allow numeric input and formatting characters
+    const numericValue = value.replace(/[^\d\s]/g, '');
+    
+    // Get max length for current country
+    const maxLength = getMaxPhoneLength(countryCode);
+    const numbersOnly = numericValue.replace(/\D/g, '');
+    
+    // Don't allow input beyond max length
+    if (numbersOnly.length > maxLength) {
+      return;
+    }
+    
+    const formatted = formatPhoneNumber(numericValue, countryCode);
     const raw = parsePhoneNumber(formatted);
     onPhoneNumberChange(raw);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Only allow numeric input
+    if (!/[\d\s]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const getFormattedPhone = () => {
     return formatPhoneNumber(phoneNumber, countryCode);
+  };
+
+  const getPlaceholderText = () => {
+    if (countryCode === '+57') {
+      return 'XXX XXXX (7 dígitos)';
+    } else if (countryCode === '+599') {
+      return 'XXX XXXXX (7-8 dígitos)';
+    }
+    return placeholder;
   };
 
   return (
@@ -59,9 +88,12 @@ export function PhoneNumberInput({
           id={id}
           value={getFormattedPhone()}
           onChange={handlePhoneChange}
-          placeholder={placeholder}
+          onKeyPress={handleKeyPress}
+          placeholder={getPlaceholderText()}
           className={`flex-1 ${className || ''}`}
           required={required}
+          inputMode="numeric"
+          pattern="[0-9\s]*"
         />
       </div>
     </div>

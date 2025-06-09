@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { PhoneNumberInput } from '@/components/PhoneNumberInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
+import { getCountryCodeFromPhone } from '@/utils/countryUtils';
 
 interface UserProfile {
   id: string;
@@ -32,7 +34,8 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    phone: '',
+    countryCode: '+57',
+    phoneNumber: '',
     role: 'employee' as 'admin' | 'employee' | 'traveler',
     is_active: true
   });
@@ -41,10 +44,15 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
 
   useEffect(() => {
     if (user) {
+      // Extract country code and phone number from existing phone
+      const countryCode = getCountryCodeFromPhone(user.phone || '') || '+57';
+      const phoneNumber = user.phone ? user.phone.replace(countryCode, '') : '';
+      
       setFormData({
         first_name: user.first_name,
         last_name: user.last_name,
-        phone: user.phone || '',
+        countryCode,
+        phoneNumber,
         role: user.role,
         is_active: user.is_active
       });
@@ -55,12 +63,14 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
     mutationFn: async (userData: typeof formData) => {
       if (!user) throw new Error('No user selected');
 
+      const fullPhone = userData.phoneNumber ? `${userData.countryCode}${userData.phoneNumber}` : null;
+
       const { error } = await supabase
         .from('user_profiles')
         .update({
           first_name: userData.first_name,
           last_name: userData.last_name,
-          phone: userData.phone || null,
+          phone: fullPhone,
           role: userData.role,
           is_active: userData.is_active
         })
@@ -154,12 +164,14 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
+            <PhoneNumberInput
+              label="Teléfono"
               id="phone"
-              value={formData.phone}
-              onChange={(e) => updateFormData('phone', e.target.value)}
-              placeholder="+57 300 123 4567"
+              countryCode={formData.countryCode}
+              phoneNumber={formData.phoneNumber}
+              onCountryCodeChange={(value) => updateFormData('countryCode', value)}
+              onPhoneNumberChange={(value) => updateFormData('phoneNumber', value)}
+              placeholder="Número de teléfono"
             />
           </div>
 

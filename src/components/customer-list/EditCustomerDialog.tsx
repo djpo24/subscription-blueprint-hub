@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { PhoneNumberInput } from '@/components/PhoneNumberInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getCountryCodeFromPhone } from '@/utils/countryUtils';
 
 interface Customer {
   id: string;
@@ -32,10 +34,15 @@ export function EditCustomerDialog({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
+  // Extract country code from phone number
+  const initialCountryCode = getCountryCodeFromPhone(customer.phone) || '+57';
+  const initialPhoneNumber = customer.phone.replace(initialCountryCode, '');
+  
   const [formData, setFormData] = useState({
     name: customer.name,
     email: customer.email,
-    phone: customer.phone,
+    countryCode: initialCountryCode,
+    phoneNumber: initialPhoneNumber,
     address: customer.address || ''
   });
 
@@ -44,12 +51,14 @@ export function EditCustomerDialog({
     setIsLoading(true);
 
     try {
+      const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
+      
       const { error } = await supabase
         .from('customers')
         .update({
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
+          phone: fullPhone,
           address: formData.address || null
         })
         .eq('id', customer.id);
@@ -102,11 +111,20 @@ export function EditCustomerDialog({
           </div>
 
           <div>
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
+            <PhoneNumberInput
+              label="Teléfono"
               id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              countryCode={formData.countryCode}
+              phoneNumber={formData.phoneNumber}
+              onCountryCodeChange={(value) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  countryCode: value,
+                  phoneNumber: '' // Clear phone when country changes
+                }));
+              }}
+              onPhoneNumberChange={(value) => setFormData(prev => ({ ...prev, phoneNumber: value }))}
+              placeholder="Número de teléfono"
               required
             />
           </div>

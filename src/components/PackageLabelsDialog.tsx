@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
@@ -141,6 +140,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
           <PackageLabelsDialogHeader tripDate={tripDate} />
 
+          {/* Mover los botones de acción arriba junto a las pestañas */}
           <div className="flex items-center justify-between mb-4">
             <PackageLabelsDialogTabs
               pendingPackages={pendingPackages}

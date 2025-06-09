@@ -38,7 +38,7 @@ export function NewWebhookCard() {
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            Este es un webhook completamente nuevo que puedes usar como respaldo o para configuraciones adicionales. Funciona de manera independiente al webhook original.
+            <strong>✅ Tokens sincronizados:</strong> Este webhook ahora usa el mismo token de verificación que tu webhook original (ojitos_webhook_verify). Ya puedes configurarlo en Meta Developer Console.
           </AlertDescription>
         </Alert>
 
@@ -69,7 +69,7 @@ export function NewWebhookCard() {
                   <strong>Callback URL:</strong> Usa la URL de arriba
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  <strong>Verify Token:</strong> <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">usa el mismo token que tienes configurado</Badge>
+                  <strong>Verify Token:</strong> <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">ojitos_webhook_verify</Badge>
                 </p>
                 <p className="text-sm text-gray-700">
                   <strong>Webhook Fields:</strong> Selecciona "messages"
@@ -121,7 +121,7 @@ export function NewWebhookCard() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Importante:</strong> Este nuevo webhook utiliza los mismos tokens de Meta que tienes configurados en Supabase. Solo necesitas copiar la nueva URL y configurarla en Meta Developer Console.
+              <strong>Importante:</strong> Ahora este webhook usa el mismo token de verificación que tu webhook original (ojitos_webhook_verify). Solo necesitas copiar la nueva URL y configurarla en Meta Developer Console.
             </AlertDescription>
           </Alert>
         </div>

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -19,8 +18,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get verify token from environment - this should match what you have in Meta Developer Console
-    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN') || '1371636570719904'
+    // Use the same verify token as the original webhook (ojitos_webhook_verify)
+    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN') || 'ojitos_webhook_verify'
 
     if (req.method === 'GET') {
       // Webhook verification - Meta requires this
@@ -29,7 +28,7 @@ serve(async (req) => {
       const token = url.searchParams.get('hub.verify_token')
       const challenge = url.searchParams.get('hub.challenge')
 
-      console.log('Webhook verification attempt:', { 
+      console.log('Webhook V2 verification attempt:', { 
         mode, 
         token, 
         challenge,
@@ -38,7 +37,7 @@ serve(async (req) => {
       })
 
       if (mode === 'subscribe' && token === verifyToken) {
-        console.log('Webhook verified successfully')
+        console.log('Webhook V2 verified successfully')
         return new Response(challenge, { 
           status: 200,
           headers: { 
@@ -47,7 +46,7 @@ serve(async (req) => {
           }
         })
       } else {
-        console.log('Webhook verification failed - token mismatch')
+        console.log('Webhook V2 verification failed - token mismatch')
         console.log(`Expected: ${verifyToken}, Received: ${token}`)
         return new Response('Forbidden', { 
           status: 403,
@@ -59,7 +58,7 @@ serve(async (req) => {
     if (req.method === 'POST') {
       // Handle webhook events
       const body = await req.json()
-      console.log('Webhook received:', JSON.stringify(body, null, 2))
+      console.log('Webhook V2 received:', JSON.stringify(body, null, 2))
 
       // Process webhook entries
       if (body.entry && Array.isArray(body.entry)) {
@@ -86,7 +85,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error in webhook:', error)
+    console.error('Error in webhook V2:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

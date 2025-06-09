@@ -1,14 +1,16 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Camera, ArrowLeft, Smartphone, BarChart3 } from 'lucide-react';
 import { QRScanner } from './QRScanner';
 import { MobileDeliveryForm } from './MobileDeliveryForm';
+import { MobileDeliveryStatusInfo } from './MobileDeliveryStatusInfo';
 import { usePackageByTrackingNumber } from '@/hooks/usePackageByTrackingNumber';
 import { useScannerSounds } from '@/hooks/qr-scanner/useScannerSounds';
 import type { PackageInDispatch } from '@/types/dispatch';
 
-type ViewMode = 'menu' | 'scanner' | 'delivery';
+type ViewMode = 'menu' | 'scanner' | 'delivery' | 'delivered';
 
 interface MobileDeliveryViewProps {
   onClose: () => void;
@@ -53,12 +55,39 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
     }
   };
 
+  // Función para verificar si el paquete está completamente entregado y cobrado
+  const isPackageFullyDeliveredAndPaid = (pkg: PackageInDispatch): boolean => {
+    const isDelivered = pkg.status === 'delivered';
+    const hasNoAmountToCollect = !pkg.amount_to_collect || pkg.amount_to_collect === 0;
+    const hasDeliveryDate = !!pkg.delivered_at;
+    
+    console.log('🔍 [MobileDeliveryView] Verificando estado del paquete:', {
+      trackingNumber: pkg.tracking_number,
+      status: pkg.status,
+      isDelivered,
+      amountToCollect: pkg.amount_to_collect,
+      hasNoAmountToCollect,
+      hasDeliveryDate,
+      deliveredAt: pkg.delivered_at
+    });
+    
+    return isDelivered && hasDeliveryDate;
+  };
+
   // Manejar cuando se obtienen los datos del paquete
   useEffect(() => {
     if (packageData && scannedTrackingNumber) {
       console.log('✅ [MobileDeliveryView] Paquete cargado exitosamente:', packageData);
       setIsLoading(false);
-      setViewMode('delivery');
+      
+      // Verificar si el paquete está completamente entregado y cobrado
+      if (isPackageFullyDeliveredAndPaid(packageData)) {
+        console.log('📋 [MobileDeliveryView] Paquete ya entregado, mostrando vista de información');
+        setViewMode('delivered');
+      } else {
+        console.log('📋 [MobileDeliveryView] Paquete pendiente, mostrando formulario de entrega');
+        setViewMode('delivery');
+      }
     }
   }, [packageData, scannedTrackingNumber]);
 
@@ -191,6 +220,24 @@ export function MobileDeliveryView({ onClose }: MobileDeliveryViewProps) {
             onDeliveryComplete={handleDeliveryComplete}
             onCancel={handleBackToMenu}
           />
+        )}
+
+        {viewMode === 'delivered' && packageData && (
+          <div className="space-y-4">
+            <MobileDeliveryStatusInfo package={packageData} />
+            
+            {/* Botón para volver al menú */}
+            <div className="pt-4">
+              <Button
+                onClick={handleBackToMenu}
+                className="w-full"
+                size="lg"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver al Menú
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

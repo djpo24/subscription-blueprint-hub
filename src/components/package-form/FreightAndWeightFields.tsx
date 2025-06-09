@@ -18,14 +18,14 @@ export function FreightAndWeightFields({
   onFreightChange,
   onWeightChange
 }: FreightAndWeightFieldsProps) {
-  console.log('🚢 [FreightAndWeightFields] Current freight (COP):', freight);
+  console.log('🚢 [FreightAndWeightFields] Current freight (always COP):', freight);
   console.log('⚖️ [FreightAndWeightFields] Current weight:', weight);
 
   const handleFreightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatNumber(value);
     const raw = parseFormattedNumber(formatted);
-    console.log('🚢 [FreightAndWeightFields] Freight changing to:', raw, 'formatted:', formatted);
+    console.log('🚢 [FreightAndWeightFields] Freight changing to (COP):', raw, 'formatted:', formatted);
     onFreightChange(raw, formatted);
   };
 
@@ -34,8 +34,8 @@ export function FreightAndWeightFields({
       <div>
         <Label htmlFor="freight" className="flex items-center gap-2">
           Flete 
-          <span className="text-sm bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
-            COP (Peso)
+          <span className="text-sm bg-orange-100 px-2 py-1 rounded text-orange-700 font-bold">
+            COP (Peso Colombiano)
           </span>
         </Label>
         <Input
@@ -45,8 +45,8 @@ export function FreightAndWeightFields({
           onChange={handleFreightChange}
           placeholder="0"
         />
-        <p className="text-xs text-gray-500 mt-1">
-          El flete siempre se maneja en Pesos Colombianos (COP)
+        <p className="text-xs text-orange-600 mt-1 font-medium">
+          ⚠️ El flete SIEMPRE se maneja en Pesos Colombianos (COP)
         </p>
       </div>
 

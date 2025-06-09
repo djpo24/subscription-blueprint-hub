@@ -78,10 +78,10 @@ export function ArrivalNotificationsPanel() {
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-blue-600" />
                             <span className="font-medium text-sm">
-                              {notification.packages?.tracking_number}
+                              {notification.packages?.tracking_number || 'N/A'}
                             </span>
-                            <Badge variant="outline" size="sm">
-                              {notification.packages?.destination}
+                            <Badge variant="outline">
+                              {notification.packages?.destination || 'N/A'}
                             </Badge>
                           </div>
                           <p className="text-xs text-gray-600">
@@ -90,14 +90,14 @@ export function ArrivalNotificationsPanel() {
                           <p className="text-xs text-gray-500">
                             {notification.customers?.whatsapp_number || notification.customers?.phone}
                           </p>
-                          {notification.packages?.amount_to_collect > 0 && (
+                          {notification.packages?.amount_to_collect && notification.packages.amount_to_collect > 0 && (
                             <p className="text-xs text-green-600 font-medium">
-                              Monto a cobrar: ${notification.packages.amount_to_collect} {notification.packages.currency}
+                              Monto a cobrar: {notification.packages.currency === 'AWG' ? 'ƒ' : '$'}{notification.packages.amount_to_collect} {notification.packages.currency}
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <Badge variant="secondary" size="sm">
+                          <Badge variant="secondary">
                             <Clock className="h-3 w-3 mr-1" />
                             {formatDistanceToNow(new Date(notification.created_at), { 
                               addSuffix: true, 
@@ -139,9 +139,9 @@ export function ArrivalNotificationsPanel() {
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 mt-0.5 text-blue-600" />
                   <div>
-                    <p className="font-medium">Direcciones incluidas</p>
+                    <p className="font-medium">Nuevo formato personalizado</p>
                     <p className="text-blue-600">
-                      El mensaje incluye la dirección específica donde pueden recoger el paquete.
+                      El mensaje incluye emojis y formato mejorado con nombre del cliente, tracking, destino y monto a pagar.
                     </p>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export function ArrivalNotificationsPanel() {
                   <div>
                     <p className="font-medium">Envío por WhatsApp</p>
                     <p className="text-blue-600">
-                      Las notificaciones se envían automáticamente usando plantillas de WhatsApp Business.
+                      Las notificaciones se envían usando la plantilla actualizada de WhatsApp Business.
                     </p>
                   </div>
                 </div>

@@ -13,7 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationId, phone, message, imageUrl, useTemplate = false, templateName, templateLanguage, customerId } = await req.json()
+    const { 
+      notificationId, 
+      phone, 
+      message, 
+      imageUrl, 
+      useTemplate = false, 
+      templateName, 
+      templateLanguage, 
+      templateParameters,
+      customerId 
+    } = await req.json()
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -38,6 +48,7 @@ serve(async (req) => {
       useTemplate, 
       templateName, 
       templateLanguage,
+      templateParameters,
       customerId
     })
 
@@ -114,7 +125,37 @@ serve(async (req) => {
       }
 
       // Add parameters for specific templates
-      if (autoSelectedTemplate === 'customer_service_followup') {
+      if (autoSelectedTemplate === 'package_arrival_notification' && templateParameters) {
+        // Obtener dirección del destino si no se proporcionó
+        let address = templateParameters.address || 'nuestras oficinas'
+        
+        if (!templateParameters.address && templateParameters.destination) {
+          const { data: destinationAddress } = await supabaseClient
+            .from('destination_addresses')
+            .select('address')
+            .ilike('city', templateParameters.destination)
+            .limit(1)
+            .single()
+          
+          if (destinationAddress) {
+            address = destinationAddress.address
+          }
+        }
+
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: templateParameters.customerName },
+              { type: 'text', text: templateParameters.trackingNumber },
+              { type: 'text', text: templateParameters.destination },
+              { type: 'text', text: address },
+              { type: 'text', text: templateParameters.currency },
+              { type: 'text', text: templateParameters.amount }
+            ]
+          }
+        ]
+      } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {
             type: 'body',

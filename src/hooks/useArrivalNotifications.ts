@@ -63,7 +63,7 @@ export function useArrivalNotifications() {
             .update({ status: 'processing' })
             .eq('id', notification.id);
 
-          // Enviar notificación via WhatsApp
+          // Enviar notificación via WhatsApp con plantilla actualizada
           const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
               notificationId: notification.id,
@@ -72,7 +72,15 @@ export function useArrivalNotifications() {
               customerId: notification.customer_id,
               useTemplate: true,
               templateName: 'package_arrival_notification',
-              templateLanguage: 'es'
+              templateLanguage: 'es',
+              templateParameters: {
+                customerName: notification.customers?.name || 'Cliente',
+                trackingNumber: notification.packages?.tracking_number || '',
+                destination: notification.packages?.destination || '',
+                address: '', // Se llenará desde destination_addresses
+                currency: notification.packages?.currency === 'AWG' ? 'ƒ' : '$',
+                amount: notification.packages?.amount_to_collect?.toString() || '0'
+              }
             }
           });
 
@@ -138,7 +146,7 @@ export function useArrivalNotifications() {
   return {
     pendingNotifications,
     isLoading,
-    processNotifications: processNotificationsMutation.mutateAsync,
+    processNotifications: () => processNotificationsMutation.mutateAsync(),
     isProcessing: processNotificationsMutation.isPending,
   };
 }

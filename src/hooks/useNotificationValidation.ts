@@ -50,6 +50,26 @@ export function useNotificationValidation() {
         throw new Error('Error de WhatsApp: ' + responseData.error);
       }
 
+      // Registrar el mensaje reenviado en sent_messages si fue exitoso
+      if (responseData && responseData.success) {
+        console.log('📝 Registrando mensaje reenviado en sent_messages...');
+        const { error: sentMessageError } = await supabase
+          .from('sent_messages')
+          .insert({
+            customer_id: data.customerId,
+            phone: data.phone,
+            message: data.message,
+            status: 'sent'
+          });
+
+        if (sentMessageError) {
+          console.error('Error registrando mensaje reenviado:', sentMessageError);
+          // No lanzamos error aquí ya que la notificación ya se reenvió exitosamente
+        } else {
+          console.log('✅ Mensaje reenviado registrado en chat');
+        }
+      }
+
       console.log('✅ Notificación reenviada exitosamente:', responseData);
       return responseData;
     },
@@ -67,6 +87,8 @@ export function useNotificationValidation() {
       
       // Refrescar datos relacionados
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['sent-messages'] }); // Refrescar mensajes enviados
     },
     onError: (error: any) => {
       console.error('Error reenviando notificación:', error);

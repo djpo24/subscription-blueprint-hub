@@ -74,6 +74,27 @@ export function useNotifications() {
         throw new Error('Error de WhatsApp: ' + responseData.error);
       }
 
+      // Registrar el mensaje enviado en sent_messages si la notificación fue exitosa
+      if (responseData && responseData.success) {
+        console.log('📝 Registrando mensaje de notificación en sent_messages...');
+        const { error: sentMessageError } = await supabase
+          .from('sent_messages')
+          .insert({
+            customer_id: data.customerId,
+            phone: data.phone,
+            message: data.message,
+            image_url: data.imageUrl,
+            status: 'sent'
+          });
+
+        if (sentMessageError) {
+          console.error('Error registrando mensaje enviado:', sentMessageError);
+          // No lanzamos error aquí ya que la notificación ya se envió exitosamente
+        } else {
+          console.log('✅ Mensaje de notificación registrado en chat');
+        }
+      }
+
       // Mostrar información adicional si se usó plantilla automáticamente
       if (responseData && responseData.autoDetected) {
         toast({
@@ -89,6 +110,7 @@ export function useNotifications() {
       // Refrescar datos relacionados
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
       queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['sent-messages'] }); // Refrescar mensajes enviados
     },
     onError: (error: any) => {
       console.error('Error sending manual notification:', error);

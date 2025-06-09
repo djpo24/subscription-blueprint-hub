@@ -154,6 +154,24 @@ serve(async (req) => {
           errorCount++
         } else if (responseData?.success) {
           console.log(`✅ Notificación ${notification.id} enviada automáticamente`)
+          
+          // Registrar el mensaje en sent_messages para que aparezca en el chat
+          console.log('📝 Registrando mensaje de notificación en sent_messages...')
+          const { error: sentMessageError } = await supabaseClient
+            .from('sent_messages')
+            .insert({
+              customer_id: notification.customer_id,
+              phone: customerPhone,
+              message: messageContent,
+              status: 'sent'
+            })
+
+          if (sentMessageError) {
+            console.error('Error registrando mensaje en sent_messages:', sentMessageError)
+          } else {
+            console.log('✅ Mensaje de notificación registrado en chat')
+          }
+          
           processedCount++
         }
 

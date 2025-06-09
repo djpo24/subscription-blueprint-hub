@@ -1,13 +1,18 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNotificationLog } from '@/hooks/useNotificationLog';
-import { MessageCircle } from 'lucide-react';
+import { NotificationValidationDialog } from './NotificationValidationDialog';
+import { MessageCircle, Settings, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function NotificationLogTable() {
   const { data: notifications = [], isLoading } = useNotificationLog();
+  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -35,76 +40,116 @@ export function NotificationLogTable() {
     }
   };
 
+  const handleValidateNotification = (notification: any) => {
+    setSelectedNotification(notification);
+    setValidationDialogOpen(true);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5" />
-          Log de Notificaciones
-        </CardTitle>
-        <CardDescription>
-          Historial de notificaciones enviadas a los clientes
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="text-gray-500">Cargando notificaciones...</div>
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No hay notificaciones registradas</p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Tracking</TableHead>
-                <TableHead>Mensaje</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Enviado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {notifications.map((notification) => (
-                <TableRow key={notification.id}>
-                  <TableCell>
-                    {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm')}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{notification.customers?.name || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{notification.customers?.phone || 'N/A'}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {notification.packages?.tracking_number || 'N/A'}
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <div className="truncate" title={notification.message}>
-                      {notification.message}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(notification.status)}>
-                      {getStatusLabel(notification.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {notification.sent_at 
-                      ? format(new Date(notification.sent_at), 'dd/MM/yyyy HH:mm')
-                      : '-'
-                    }
-                  </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Log de Notificaciones
+          </CardTitle>
+          <CardDescription>
+            Historial de notificaciones enviadas a los clientes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="text-gray-500">Cargando notificaciones...</div>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay notificaciones registradas</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Tracking</TableHead>
+                  <TableHead>Mensaje</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Enviado</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {notifications.map((notification) => (
+                  <TableRow key={notification.id}>
+                    <TableCell>
+                      {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm')}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{notification.customers?.name || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">{notification.customers?.phone || 'N/A'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {notification.packages?.tracking_number || 'N/A'}
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="truncate" title={notification.message}>
+                        {notification.message}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(notification.status)}>
+                        {getStatusLabel(notification.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {notification.sent_at 
+                        ? format(new Date(notification.sent_at), 'dd/MM/yyyy HH:mm')
+                        : '-'
+                      }
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleValidateNotification(notification)}
+                          title="Validar parámetros y plantilla"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                        
+                        {notification.status === 'failed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleValidateNotification(notification)}
+                            title="Validar y reenviar notificación"
+                            className="text-orange-600 hover:text-orange-700"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedNotification && (
+        <NotificationValidationDialog
+          notification={selectedNotification}
+          open={validationDialogOpen}
+          onOpenChange={setValidationDialogOpen}
+        />
+      )}
+    </>
   );
 }

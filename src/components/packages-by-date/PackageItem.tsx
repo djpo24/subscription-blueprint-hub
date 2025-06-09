@@ -13,13 +13,13 @@ export function PackageItem({
   disableChat = false
 }: PackageItemProps) {
   const isMobile = useIsMobile();
-  const { getStatusColor, createChatHandler, canShowChat } = usePackageItemLogic(
+  const packageItemLogic = usePackageItemLogic(
     onOpenChat,
     previewRole,
     disableChat
   );
 
-  const handleChatClick = createChatHandler(pkg.customer_id, pkg.customers?.name);
+  const handleChatClick = packageItemLogic.createChatHandler(pkg.customer_id, pkg.customers?.name);
 
   const sharedProps = {
     package: pkg,
@@ -27,9 +27,9 @@ export function PackageItem({
     onOpenChat,
     previewRole,
     disableChat,
-    getStatusColor,
+    getStatusColor: packageItemLogic.getStatusColor,
     handleChatClick,
-    canShowChat: canShowChat // Ensure this is the boolean from the hook
+    canShowChat: packageItemLogic.canShowChat
   };
 
   if (isMobile) {

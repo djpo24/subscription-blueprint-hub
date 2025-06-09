@@ -174,6 +174,30 @@ export type Database = {
           },
         ]
       }
+      destination_addresses: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dispatch_batches: {
         Row: {
           batch_id: string
@@ -1317,6 +1341,10 @@ export type Database = {
         Returns: undefined
       }
       process_arrival_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      process_arrival_notifications_v2: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

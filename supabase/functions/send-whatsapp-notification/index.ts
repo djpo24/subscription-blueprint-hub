@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationId, phone, message, imageUrl, useTemplate = false, templateName, templateLanguage } = await req.json()
+    const { notificationId, phone, message, imageUrl, useTemplate = false, templateName, templateLanguage, customerId } = await req.json()
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -37,7 +37,8 @@ serve(async (req) => {
       imageUrl,
       useTemplate, 
       templateName, 
-      templateLanguage 
+      templateLanguage,
+      customerId
     })
 
     // Clean phone number (remove spaces, dashes, etc.)
@@ -60,23 +61,75 @@ serve(async (req) => {
 
     console.log('Teléfono formateado:', { original: phone, formatted: apiPhone })
 
+    // AUTO-DETECT: Check if we need to use a template
+    let shouldUseTemplate = useTemplate
+    let autoSelectedTemplate = templateName
+    let autoSelectedLanguage = templateLanguage || 'es'
+
+    if (!useTemplate && customerId) {
+      // Check when was the last interaction with this customer
+      const { data: lastMessage, error: lastMessageError } = await supabaseClient
+        .from('incoming_messages')
+        .select('timestamp')
+        .eq('customer_id', customerId)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+
+      if (!lastMessageError && lastMessage && lastMessage.length > 0) {
+        const lastInteraction = new Date(lastMessage[0].timestamp)
+        const now = new Date()
+        const hoursSinceLastInteraction = (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60)
+
+        console.log('Última interacción hace:', hoursSinceLastInteraction, 'horas')
+
+        // If more than 24 hours, we need to use a template
+        if (hoursSinceLastInteraction > 24) {
+          shouldUseTemplate = true
+          autoSelectedTemplate = 'customer_service_followup'
+          console.log('🔄 Auto-seleccionando plantilla por regla de 24 horas')
+        }
+      } else {
+        // No previous interaction found, use template for first contact
+        shouldUseTemplate = true
+        autoSelectedTemplate = 'customer_service_hello'
+        console.log('🔄 Auto-seleccionando plantilla para primer contacto')
+      }
+    }
+
     // Prepare WhatsApp message payload
     let whatsappPayload
 
-    if (useTemplate && templateName) {
+    if (shouldUseTemplate && autoSelectedTemplate) {
       // Use template message
-      whatsappPayload = {
+      const templatePayload = {
         messaging_product: 'whatsapp',
         to: apiPhone,
         type: 'template',
         template: {
-          name: templateName,
+          name: autoSelectedTemplate,
           language: {
-            code: templateLanguage || 'en_US'
+            code: autoSelectedLanguage
           }
         }
       }
-      console.log('Usando plantilla de WhatsApp:', templateName)
+
+      // Add parameters for specific templates
+      if (autoSelectedTemplate === 'customer_service_followup') {
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: message || 'su consulta'
+              }
+            ]
+          }
+        ]
+      }
+
+      whatsappPayload = templatePayload
+      console.log('Usando plantilla de WhatsApp:', autoSelectedTemplate)
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -142,7 +195,9 @@ serve(async (req) => {
           success: true, 
           notificationId,
           whatsappMessageId: whatsappResult.messages[0].id,
-          messageType: useTemplate ? 'template' : (imageUrl ? 'image' : 'text')
+          messageType: shouldUseTemplate ? 'template' : (imageUrl ? 'image' : 'text'),
+          templateUsed: shouldUseTemplate ? autoSelectedTemplate : null,
+          autoDetected: shouldUseTemplate && !useTemplate
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -153,6 +208,81 @@ serve(async (req) => {
       // Handle WhatsApp API error
       const errorMessage = whatsappResult.error?.message || 'Error enviando mensaje WhatsApp'
       console.error('Error de WhatsApp API:', whatsappResult)
+
+      // Check if it's a 24-hour window error
+      if (whatsappResult.error?.code === 131047 || 
+          (whatsappResult.error?.error_data?.details && 
+           whatsappResult.error.error_data.details.includes('24 hours'))) {
+        
+        console.log('🔄 Error de ventana de 24 horas detectado, reintentando con plantilla...')
+        
+        // Retry with template if we haven't already
+        if (!shouldUseTemplate) {
+          const retryPayload = {
+            messaging_product: 'whatsapp',
+            to: apiPhone,
+            type: 'template',
+            template: {
+              name: 'customer_service_followup',
+              language: {
+                code: 'es'
+              },
+              components: [
+                {
+                  type: 'body',
+                  parameters: [
+                    {
+                      type: 'text',
+                      text: message || 'su consulta'
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+
+          const retryResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${whatsappToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(retryPayload)
+            }
+          )
+
+          const retryResult = await retryResponse.json()
+          console.log('Respuesta del reintento con plantilla:', retryResult)
+
+          if (retryResponse.ok && retryResult.messages) {
+            await supabaseClient
+              .from('notification_log')
+              .update({ 
+                status: 'sent',
+                sent_at: new Date().toISOString()
+              })
+              .eq('id', notificationId)
+
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                notificationId,
+                whatsappMessageId: retryResult.messages[0].id,
+                messageType: 'template',
+                templateUsed: 'customer_service_followup',
+                autoDetected: true,
+                retried: true
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200 
+              }
+            )
+          }
+        }
+      }
 
       // Update notification status to failed
       await supabaseClient
@@ -167,7 +297,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: errorMessage,
-          details: whatsappResult 
+          details: whatsappResult,
+          suggestTemplate: whatsappResult.error?.code === 131047
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -179,23 +310,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error en send-whatsapp-notification:', error)
     
-    // Try to update notification status to failed if we have the ID
-    try {
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
-      await supabaseClient
-        .from('notification_log')
-        .update({ 
-          status: 'failed',
-          error_message: error.message
-        })
-        .eq('id', notificationId)
-    } catch (updateError) {
-      console.error('Error updating failed notification:', updateError)
-    }
-
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

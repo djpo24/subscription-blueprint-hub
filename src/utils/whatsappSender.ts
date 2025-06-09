@@ -29,7 +29,7 @@ export async function sendWhatsAppMessage({
       imageUrl: imageUrl
     });
   } else {
-    // Cliente no registrado - envío directo
+    // Cliente no registrado - envío directo con detección automática de plantillas
     console.log('👤 Sending to unregistered customer');
     
     // Crear entrada de notificación
@@ -50,13 +50,14 @@ export async function sendWhatsAppMessage({
       throw new Error('Error al crear registro de notificación');
     }
 
-    // Enviar a WhatsApp
+    // Enviar a WhatsApp con customerId para detección automática de plantillas
     const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
       body: {
         notificationId: notificationData.id,
         phone: selectedPhone,
         message: message,
-        imageUrl: imageUrl
+        imageUrl: imageUrl,
+        customerId: customerId // Pasar customerId para detección automática
       }
     });
 
@@ -78,6 +79,11 @@ export async function sendWhatsAppMessage({
         throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
       }
       throw new Error('Error de WhatsApp: ' + responseData.error);
+    }
+
+    // Mostrar información adicional si se usó plantilla automáticamente
+    if (responseData && responseData.autoDetected) {
+      console.log('✅ Plantilla detectada automáticamente:', responseData.templateUsed);
     }
 
     console.log('✅ WhatsApp message sent successfully');

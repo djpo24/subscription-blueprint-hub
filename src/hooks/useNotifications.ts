@@ -44,13 +44,14 @@ export function useNotifications() {
 
       console.log('Notification log created:', logEntry.id);
 
-      // Enviar notificación
+      // Enviar notificación con customerId para detección automática de plantillas
       const { data: responseData, error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: logEntry.id,
           phone: data.phone,
           message: data.message,
-          imageUrl: data.imageUrl
+          imageUrl: data.imageUrl,
+          customerId: data.customerId // Importante: pasar customerId para detección automática
         }
       });
 
@@ -71,6 +72,14 @@ export function useNotifications() {
           throw new Error('Token de WhatsApp expirado. Necesita renovar el token de acceso en la configuración de Meta.');
         }
         throw new Error('Error de WhatsApp: ' + responseData.error);
+      }
+
+      // Mostrar información adicional si se usó plantilla automáticamente
+      if (responseData && responseData.autoDetected) {
+        toast({
+          title: "🔄 Plantilla detectada automáticamente",
+          description: `Se usó la plantilla "${responseData.templateUsed}" por la regla de 24 horas`,
+        });
       }
 
       console.log('Manual notification sent successfully:', responseData);

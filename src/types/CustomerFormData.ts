@@ -2,24 +2,25 @@
 export interface CustomerFormData {
   firstName: string;
   lastName: string;
-  idNumber: string;
+  email: string;
   countryCode: string;
   phoneNumber: string;
-  email: string;
   address: string;
+  idNumber: string;
 }
 
 export const initialCustomerFormData: CustomerFormData = {
   firstName: '',
   lastName: '',
-  idNumber: '',
+  email: '',
   countryCode: '+57',
   phoneNumber: '',
-  email: '',
-  address: ''
+  address: '',
+  idNumber: ''
 };
 
 export const countryCodes = [
-  { code: '+57', country: 'CO', flag: '🇨🇴' },
-  { code: '+599', country: 'CW', flag: '🇨🇼' },
+  { code: '+57', flag: '🇨🇴', name: 'Colombia' },
+  { code: '+599', flag: '🇨🇼', name: 'Curaçao' },
+  { code: '+52', flag: '🇲🇽', name: 'México' }
 ];

@@ -4,6 +4,8 @@ export const getMaxPhoneLength = (countryCode: string): number => {
     return 7;
   } else if (countryCode === '+599') { // Curaçao
     return 8;
+  } else if (countryCode === '+52') { // México
+    return 7;
   }
   return 10; // Default for other countries
 };
@@ -27,6 +29,10 @@ export const formatPhoneNumber = (phone: string, countryCode: string): string =>
     // Format: XXX XXXXX (max 8 digits)
     if (limitedNumbers.length <= 3) return limitedNumbers;
     return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 8)}`;
+  } else if (countryCode === '+52') { // México
+    // Format: XXX XXXX (max 7 digits)
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 7)}`;
   }
   
   // Default formatting for other countries
@@ -47,6 +53,8 @@ export const validatePhoneNumber = (phone: string, countryCode: string): boolean
     return numbers.length === 7;
   } else if (countryCode === '+599') { // Curaçao
     return numbers.length === 7 || numbers.length === 8; // Allow 7 or 8 digits
+  } else if (countryCode === '+52') { // México
+    return numbers.length === 7;
   }
   
   return numbers.length <= maxLength;

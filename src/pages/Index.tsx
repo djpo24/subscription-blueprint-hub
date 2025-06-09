@@ -114,7 +114,9 @@ export default function Index() {
           
           <main className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 lg:py-8 max-w-full overflow-x-hidden">
             <div className="flex items-center gap-2 mb-2 sm:mb-4">
-              <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
+              {!isMobile && (
+                <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
+              )}
               <h2 className="text-lg sm:text-xl font-semibold truncate">
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'trips' && 'Viajes'}

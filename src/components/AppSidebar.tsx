@@ -27,7 +27,8 @@ export function AppSidebar({
   } = useCurrentUserRoleWithPreview(previewRole);
   const {
     state,
-    toggleSidebar
+    toggleSidebar,
+    setOpenMobile
   } = useSidebar();
   const isMobile = useIsMobile();
 
@@ -44,6 +45,14 @@ export function AppSidebar({
   
   const menuItems = createMenuItems(showUsersTab, showNotificationsTab, showSettingsTab, showChatTab, showFinancesTab, unreadCount);
   
+  const handleTabChange = (tab: string) => {
+    onTabChange(tab);
+    // Close sidebar on mobile when selecting an option
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+  
   return (
     <Sidebar className="bg-black border-gray-800" collapsible="icon" variant={isMobile ? "floating" : "sidebar"}>
       <SidebarHeader className="border-b border-gray-800 p-2 bg-zinc-950">
@@ -51,20 +60,22 @@ export function AppSidebar({
           <SidebarGroupLabel className="text-white font-bold text-sm sm:text-lg px-2 py-2 group-data-[collapsible=icon]:hidden truncate">
             {isMobile ? "Ojitos" : "Envíos Ojitos"}
           </SidebarGroupLabel>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar} 
-            className="h-6 w-6 sm:h-8 sm:w-8 text-white hover:bg-gray-800 hover:text-white flex-shrink-0"
-          >
-            {state === "expanded" ? <X className="h-3 w-3 sm:h-4 sm:w-4" /> : <Menu className="h-3 w-3 sm:h-4 sm:w-4" />}
-          </Button>
+          {!isMobile && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleSidebar} 
+              className="h-6 w-6 sm:h-8 sm:w-8 text-white hover:bg-gray-800 hover:text-white flex-shrink-0"
+            >
+              {state === "expanded" ? <X className="h-3 w-3 sm:h-4 sm:w-4" /> : <Menu className="h-3 w-3 sm:h-4 sm:w-4" />}
+            </Button>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent className="bg-black">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenuSection menuItems={menuItems} activeTab={activeTab} onTabChange={onTabChange} />
+            <SidebarMenuSection menuItems={menuItems} activeTab={activeTab} onTabChange={handleTabChange} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

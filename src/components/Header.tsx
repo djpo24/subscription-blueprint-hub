@@ -2,6 +2,7 @@
 import { Search, LogOut, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,6 +38,9 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            {isMobile && (
+              <SidebarTrigger className="bg-white text-black hover:bg-gray-100 hover:text-black rounded-full h-8 w-8 flex-shrink-0" />
+            )}
             <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
               {isMobile ? "Ojitos" : "Envíos Ojitos"}
             </h1>

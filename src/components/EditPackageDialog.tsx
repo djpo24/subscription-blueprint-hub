@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CustomerSearchSelector } from './CustomerSearchSelector';
 import { TripSelector } from './TripSelector';
 import { EditPackageFormNew } from './EditPackageFormNew';
+import { format } from 'date-fns';
 
 type Currency = 'COP' | 'AWG';
 
@@ -25,10 +26,18 @@ interface EditPackageDialogProps {
   onOpenChange: (open: boolean) => void;
   package: Package | null;
   tripId?: string;
+  tripDate?: Date; // Agregar la fecha del viaje
   onSuccess: () => void;
 }
 
-export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, onSuccess }: EditPackageDialogProps) {
+export function EditPackageDialog({ 
+  open, 
+  onOpenChange, 
+  package: pkg, 
+  tripId, 
+  tripDate, // Recibir la fecha del viaje
+  onSuccess 
+}: EditPackageDialogProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedTripId, setSelectedTripId] = useState('');
 
@@ -41,6 +50,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, on
         customer_id: pkg.customer_id,
         package_trip_id: pkg.trip_id,
         passed_trip_id: tripId,
+        tripDate: tripDate?.toISOString(),
         currency: pkg.currency,
         amount_to_collect: pkg.amount_to_collect
       });
@@ -51,7 +61,7 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, on
       setSelectedCustomerId(pkg.customer_id || '');
       setSelectedTripId(finalTripId);
     }
-  }, [pkg, tripId, open]);
+  }, [pkg, tripId, tripDate, open]);
 
   // Reset when dialog closes
   useEffect(() => {
@@ -74,12 +84,18 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, on
 
   // Display currency with validation
   const currencyDisplay: Currency = (pkg.currency === 'AWG' || pkg.currency === 'COP') ? pkg.currency : 'COP';
-  console.log('🎯 [EditPackageDialog] Package currency for display:', {
+  
+  // Format trip date for display
+  const tripDateFormatted = tripDate ? format(tripDate, 'dd/MM/yyyy') : 'Fecha no disponible';
+  
+  console.log('🎯 [EditPackageDialog] Package currency and date for display:', {
     original: pkg.currency,
     display: currencyDisplay,
     customer_id: pkg.customer_id,
     selectedCustomerId: selectedCustomerId,
-    selectedTripId: selectedTripId
+    selectedTripId: selectedTripId,
+    tripDate: tripDate?.toISOString(),
+    tripDateFormatted
   });
 
   return (
@@ -104,6 +120,11 @@ export function EditPackageDialog({ open, onOpenChange, package: pkg, tripId, on
               <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs ml-2">
                 Viaje ID: {selectedTripId || 'No asignado'}
               </span>
+              {tripDate && (
+                <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs ml-2">
+                  Fecha del viaje: {tripDateFormatted}
+                </span>
+              )}
             </div>
           </DialogDescription>
         </DialogHeader>

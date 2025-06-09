@@ -7,6 +7,7 @@ interface PackagesByDateDialogsProps {
   setEditDialogOpen: (open: boolean) => void;
   selectedPackage: any;
   selectedTripId: string;
+  selectedDate: Date; // Agregar la fecha seleccionada
   onPackageEditSuccess: () => void;
   chatDialogOpen: boolean;
   setChatDialogOpen: (open: boolean) => void;
@@ -19,14 +20,16 @@ export function PackagesByDateDialogs({
   setEditDialogOpen,
   selectedPackage,
   selectedTripId,
+  selectedDate, // Recibir la fecha seleccionada
   onPackageEditSuccess,
   chatDialogOpen,
   setChatDialogOpen,
   selectedCustomerId,
   selectedCustomerName
 }: PackagesByDateDialogsProps) {
-  console.log('🔍 [PackagesByDateDialogs] Rendering with trip ID:', {
+  console.log('🔍 [PackagesByDateDialogs] Rendering with trip data:', {
     selectedTripId,
+    selectedDate: selectedDate.toISOString(),
     hasPackage: !!selectedPackage,
     packageTripId: selectedPackage?.trip_id
   });
@@ -38,6 +41,7 @@ export function PackagesByDateDialogs({
         onOpenChange={setEditDialogOpen}
         package={selectedPackage}
         tripId={selectedTripId}
+        tripDate={selectedDate} // Pasar la fecha del viaje
         onSuccess={onPackageEditSuccess}
       />
 

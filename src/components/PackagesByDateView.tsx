@@ -1,11 +1,10 @@
 
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
-import { PackagesByDateContent, getAllPackagesFromTrips } from './packages-by-date/PackagesByDateContent';
+import { PackagesByDateContent } from './packages-by-date/PackagesByDateContent';
 import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
 import { PackageLabelsDialog } from './PackageLabelsDialog';
+import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
+import { getAllPackagesFromTrips } from './packages-by-date/PackagesByDateContent';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
@@ -18,9 +17,9 @@ interface PackagesByDateViewProps {
 export function PackagesByDateView({ 
   selectedDate, 
   onBack, 
-  onAddPackage,
+  onAddPackage, 
   disableChat = false,
-  previewRole
+  previewRole 
 }: PackagesByDateViewProps) {
   const {
     trips,
@@ -47,29 +46,18 @@ export function PackagesByDateView({
     handlePackageEditSuccess,
     handleCreateDispatch,
     handleOpenLabelsDialog,
-    handleCreateDispatchSuccess
+    handleCreateDispatchSuccess,
   } = usePackagesByDateView(selectedDate);
 
   if (isLoading) {
     return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver al Calendario
-          </Button>
-        </div>
-        <div className="flex justify-center py-8">
-          <div className="text-gray-500">Cargando encomiendas...</div>
-        </div>
+      <div className="flex justify-center py-8">
+        <div className="text-gray-500">Cargando encomiendas...</div>
       </div>
     );
   }
+
+  const allPackages = getAllPackagesFromTrips(trips);
 
   return (
     <>
@@ -96,6 +84,7 @@ export function PackagesByDateView({
         setEditDialogOpen={setEditDialogOpen}
         selectedPackage={selectedPackage}
         selectedTripId={selectedTripId}
+        selectedDate={selectedDate} // Pasar la fecha seleccionada
         onPackageEditSuccess={handlePackageEditSuccess}
         chatDialogOpen={chatDialogOpen}
         setChatDialogOpen={setChatDialogOpen}
@@ -106,16 +95,15 @@ export function PackagesByDateView({
       <CreateDispatchDialog
         open={createDispatchDialogOpen}
         onOpenChange={setCreateDispatchDialogOpen}
-        tripDate={selectedDate}
-        trips={trips}
+        selectedDate={selectedDate}
+        packages={allPackages}
         onSuccess={handleCreateDispatchSuccess}
       />
 
       <PackageLabelsDialog
         open={labelsDialogOpen}
         onOpenChange={setLabelsDialogOpen}
-        tripDate={selectedDate}
-        trips={trips}
+        packages={allPackages}
       />
     </>
   );

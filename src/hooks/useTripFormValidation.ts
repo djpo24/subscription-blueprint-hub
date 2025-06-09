@@ -6,7 +6,10 @@ export function useTripFormValidation() {
   const { toast } = useToast();
 
   const validateForm = (date: Date | undefined, formData: TripFormData) => {
+    console.log('Validating form:', { date, formData });
+    
     if (!date) {
+      console.log('Validation failed: No date provided');
       toast({
         title: "Error",
         description: "Por favor selecciona una fecha para el viaje",
@@ -16,6 +19,7 @@ export function useTripFormValidation() {
     }
 
     if (!formData.route) {
+      console.log('Validation failed: No route provided');
       toast({
         title: "Error", 
         description: "Por favor selecciona una ruta para el viaje",
@@ -25,6 +29,7 @@ export function useTripFormValidation() {
     }
 
     if (!formData.traveler_id) {
+      console.log('Validation failed: No traveler provided');
       toast({
         title: "Error",
         description: "Por favor selecciona un viajero para el viaje",
@@ -33,6 +38,7 @@ export function useTripFormValidation() {
       return false;
     }
 
+    console.log('Validation passed successfully');
     return true;
   };
 

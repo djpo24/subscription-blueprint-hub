@@ -15,6 +15,7 @@ export function useTripForm(onSuccess: () => void, initialDate?: Date) {
     traveler_id: ''
   });
 
+  // Inicializar la fecha correctamente
   const [date, setDate] = useState<Date | undefined>(initialDate);
   const today = new Date();
   const queryClient = useQueryClient();
@@ -82,11 +83,16 @@ export function useTripForm(onSuccess: () => void, initialDate?: Date) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm(date, formData)) {
+    // Usar la fecha preseleccionada si existe, sino usar el estado date
+    const finalDate = initialDate || date;
+    
+    console.log('Validating form with:', { finalDate, formData });
+    
+    if (!validateForm(finalDate, formData)) {
       return;
     }
 
-    const tripData = prepareTripData(formData, date!);
+    const tripData = prepareTripData(formData, finalDate!);
     console.log('Submitting trip data:', tripData);
     createTripMutation.mutate(tripData);
   };

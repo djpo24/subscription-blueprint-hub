@@ -1,6 +1,7 @@
 
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
+import { useDispatchReport } from '@/hooks/useDispatchReport';
 import { DispatchDetailsHeader } from './DispatchDetailsHeader';
 import { DispatchSummaryCards } from './DispatchSummaryCards';
 import { DispatchPackagesTable } from './DispatchPackagesTable';
@@ -13,6 +14,7 @@ interface DispatchDetailsViewProps {
 export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { data: dispatches = [] } = useDispatchRelations();
+  const { generateReport, isGenerating } = useDispatchReport();
   const isMobile = useIsMobile();
   const { 
     markTripAsInTransit, 
@@ -62,6 +64,10 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     }
   };
 
+  const handleGenerateReport = () => {
+    generateReport(packages);
+  };
+
   if (isLoading) {
     return (
       <div className="py-8 text-center text-gray-500">
@@ -80,6 +86,8 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
         isMarkingAsInTransit={isMarkingAsInTransit}
         isMarkingAsArrived={isMarkingAsArrived}
         hasPackages={packages.length > 0}
+        onGenerateReport={handleGenerateReport}
+        isGeneratingReport={isGenerating}
       />
 
       <DispatchSummaryCards

@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
+import { useDispatchReport } from '@/hooks/useDispatchReport';
 import { DispatchDetailsHeader } from './dispatch-details/DispatchDetailsHeader';
 import { DispatchSummaryCards } from './dispatch-details/DispatchSummaryCards';
 import { DispatchPackagesTable } from './dispatch-details/DispatchPackagesTable';
@@ -20,6 +21,7 @@ export function DispatchDetailsDialog({
 }: DispatchDetailsDialogProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { data: dispatches = [] } = useDispatchRelations();
+  const { generateReport, isGenerating } = useDispatchReport();
   const isMobile = useIsMobile();
   const { 
     markTripAsInTransit, 
@@ -63,6 +65,10 @@ export function DispatchDetailsDialog({
     }
   };
 
+  const handleGenerateReport = () => {
+    generateReport(packages);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${isMobile ? 'max-w-[95vw] max-h-[90vh] p-3' : 'max-w-6xl max-h-[80vh]'} overflow-y-auto`}>
@@ -75,6 +81,8 @@ export function DispatchDetailsDialog({
             isMarkingAsInTransit={isMarkingAsInTransit}
             isMarkingAsArrived={isMarkingAsArrived}
             hasPackages={packages.length > 0}
+            onGenerateReport={handleGenerateReport}
+            isGeneratingReport={isGenerating}
           />
         </DialogHeader>
 

@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
-import { Truck, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Truck, CheckCircle, FileText } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsHeaderProps {
   canMarkAsInTransit: boolean;
@@ -11,6 +11,8 @@ interface DispatchDetailsHeaderProps {
   isMarkingAsInTransit: boolean;
   isMarkingAsArrived: boolean;
   hasPackages: boolean;
+  onGenerateReport?: () => void;
+  isGeneratingReport?: boolean;
 }
 
 export function DispatchDetailsHeader({
@@ -20,64 +22,55 @@ export function DispatchDetailsHeader({
   onMarkAsArrived,
   isMarkingAsInTransit,
   isMarkingAsArrived,
-  hasPackages
+  hasPackages,
+  onGenerateReport,
+  isGeneratingReport = false
 }: DispatchDetailsHeaderProps) {
-  const queryClient = useQueryClient();
-
-  const handleMarkAsInTransit = async () => {
-    onMarkAsInTransit();
-    // Forzar actualización inmediata después de 1 segundo
-    setTimeout(() => {
-      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
-      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
-    }, 1000);
-  };
-
-  const handleMarkAsArrived = async () => {
-    onMarkAsArrived();
-    // Forzar actualización inmediata después de 1 segundo
-    setTimeout(() => {
-      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
-      queryClient.refetchQueries({ queryKey: ['dispatch-packages'] });
-    }, 1000);
-  };
+  const isMobile = useIsMobile();
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Truck className="h-5 w-5" />
-        <h2 className="text-lg font-semibold">Detalles del Despacho</h2>
-      </div>
-      <div className="flex items-center gap-2">
-        {canMarkAsInTransit && (
-          <Button 
-            size="sm" 
+    <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-row justify-between items-center'}`}>
+      <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold`}>
+        Detalles del Despacho
+      </h3>
+      
+      <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
+        {hasPackages && onGenerateReport && (
+          <Button
+            onClick={onGenerateReport}
+            disabled={isGeneratingReport}
             variant="outline"
-            onClick={handleMarkAsInTransit}
-            disabled={isMarkingAsInTransit}
-            className="flex items-center gap-1"
+            size={isMobile ? 'sm' : 'default'}
+            className="flex items-center gap-2"
           >
-            <Send className="h-3 w-3" />
+            <FileText className="h-4 w-4" />
+            {isGeneratingReport ? 'Generando...' : 'Excel'}
+          </Button>
+        )}
+        
+        {canMarkAsInTransit && (
+          <Button
+            onClick={onMarkAsInTransit}
+            disabled={isMarkingAsInTransit}
+            size={isMobile ? 'sm' : 'default'}
+            className="flex items-center gap-2"
+          >
+            <Truck className="h-4 w-4" />
             {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
           </Button>
         )}
+        
         {canMarkAsArrived && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={handleMarkAsArrived}
+          <Button
+            onClick={onMarkAsArrived}
             disabled={isMarkingAsArrived}
-            className="flex items-center gap-1"
+            variant="outline"
+            size={isMobile ? 'sm' : 'default'}
+            className="flex items-center gap-2"
           >
-            <CheckCircle className="h-3 w-3" />
-            {isMarkingAsArrived ? 'Marcando...' : 'Llegado'}
+            <CheckCircle className="h-4 w-4" />
+            {isMarkingAsArrived ? 'Marcando...' : 'Marcar como Llegado'}
           </Button>
-        )}
-        {!canMarkAsInTransit && !canMarkAsArrived && hasPackages && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <AlertCircle className="h-4 w-4" />
-            No hay acciones disponibles para este despacho
-          </div>
         )}
       </div>
     </div>

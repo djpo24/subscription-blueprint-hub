@@ -1,9 +1,8 @@
-
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { formatTripDate } from '@/utils/dateUtils';
 
 interface TripSelectorProps {
   selectedTripId: string;
@@ -56,23 +55,6 @@ export function TripSelector({ selectedTripId, onTripChange, disabled, readOnly 
   if (disabled) {
     return null;
   }
-
-  // Format date safely avoiding timezone issues
-  const formatTripDate = (dateString: string) => {
-    try {
-      // Parse the date string directly (assumes YYYY-MM-DD format from database)
-      const dateParts = dateString.split('-');
-      const year = parseInt(dateParts[0]);
-      const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
-      const day = parseInt(dateParts[2]);
-      
-      const date = new Date(year, month, day);
-      return format(date, 'dd/MM/yyyy');
-    } catch (error) {
-      console.error('❌ [TripSelector] Error formatting date:', error);
-      return dateString;
-    }
-  };
 
   // Display read-only version
   if (readOnly) {

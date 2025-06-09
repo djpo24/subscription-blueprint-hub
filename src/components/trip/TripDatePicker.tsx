@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatTripDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 
 interface TripDatePickerProps {
@@ -34,6 +33,12 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
     return dateToCheck < today;
   };
 
+  const getDisplayDate = () => {
+    if (!date) return "Seleccionar fecha";
+    const dateString = date.toISOString().split('T')[0];
+    return formatTripDate(dateString);
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="trip_date" className="text-sm font-medium text-black">
@@ -49,7 +54,7 @@ export function TripDatePicker({ date, onDateChange, today }: TripDatePickerProp
             )}
           >
             <CalendarIcon className="mr-3 h-4 w-4 text-gray-400" />
-            {date ? format(date, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
+            {getDisplayDate()}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0 bg-white border-0 shadow-xl rounded-lg pointer-events-auto" align="start">

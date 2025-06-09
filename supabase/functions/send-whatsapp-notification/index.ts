@@ -144,34 +144,42 @@ serve(async (req) => {
           }
         }
 
-        // Usar el formato exacto especificado:
-        // 📦 Hola {{1}}, tu encomienda {{2}} ha llegado a 📍{{3}}.
-        // 🏢 Ya puedes recogerla en la dirección: {{4}}.
-        // 💰 Te recordamos el valor a pagar: {{5}}{{6}}.
-        // 🙏 ¡Gracias por confiar en nosotros!
+        // Validar y usar parámetros con valores por defecto seguros
+        const customerName = templateParameters.customerName || 'Cliente'
+        const trackingNumber = templateParameters.trackingNumber || 'N/A'
+        const destination = templateParameters.destination || 'destino'
+        const currency = templateParameters.currency || '$'
+        const amount = templateParameters.amount || '0'
+
         templatePayload.template.components = [
           {
             type: 'body',
             parameters: [
-              { type: 'text', text: templateParameters.customerName }, // {{1}} - nombre cliente
-              { type: 'text', text: templateParameters.trackingNumber }, // {{2}} - tracking
-              { type: 'text', text: templateParameters.destination }, // {{3}} - destino
-              { type: 'text', text: address }, // {{4}} - dirección
-              { type: 'text', text: templateParameters.currency }, // {{5}} - símbolo moneda
-              { type: 'text', text: templateParameters.amount } // {{6}} - monto
+              { type: 'text', text: customerName },
+              { type: 'text', text: trackingNumber },
+              { type: 'text', text: destination },
+              { type: 'text', text: address },
+              { type: 'text', text: currency },
+              { type: 'text', text: amount }
             ]
           }
         ]
+
+        console.log('✅ Parámetros de plantilla configurados:', {
+          customerName,
+          trackingNumber,
+          destination,
+          address,
+          currency,
+          amount
+        })
       } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
-        // Nueva plantilla consulta_encomienda
-        // Hola {{1}}, te saludamos de parte de Envíos Ojito 📦.  
-        // Tenemos una consulta sobre tu encomienda. 
-        // ¿Podrías atendernos?
+        const customerName = templateParameters.customerName || 'Cliente'
         templatePayload.template.components = [
           {
             type: 'body',
             parameters: [
-              { type: 'text', text: templateParameters.customerName } // {{1}} - nombre cliente
+              { type: 'text', text: customerName }
             ]
           }
         ]
@@ -191,6 +199,7 @@ serve(async (req) => {
 
       whatsappPayload = templatePayload
       console.log('Usando plantilla de WhatsApp:', autoSelectedTemplate)
+      console.log('Payload completo:', JSON.stringify(whatsappPayload, null, 2))
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -216,7 +225,7 @@ serve(async (req) => {
       console.log('Usando mensaje de texto regular')
     }
 
-    console.log('Payload para WhatsApp API:', whatsappPayload)
+    console.log('Payload final para WhatsApp API:', JSON.stringify(whatsappPayload, null, 2))
 
     // Send message via WhatsApp Business API
     const whatsappResponse = await fetch(

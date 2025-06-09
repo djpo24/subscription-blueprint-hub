@@ -22,7 +22,7 @@ export function usePackageFormLogic() {
     freightFormatted: '',
     amountToCollect: '',
     amountToCollectFormatted: '',
-    currency: 'COP' as Currency,
+    currency: 'AWG' as Currency, // Cambiado de 'COP' a 'AWG' como predeterminado
     details: ['']
   });
 

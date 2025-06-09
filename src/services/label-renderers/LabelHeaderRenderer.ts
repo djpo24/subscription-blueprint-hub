@@ -41,8 +41,8 @@ export class LabelHeaderRenderer {
   renderCustomerAndDate(currentY: number): number {
     const { startX, labelWidth } = LABEL_DIMENSIONS;
     
-    // Segunda línea - Cliente y fecha con nuevo estilo (color negro y línea más gruesa)
-    this.pdf.setFontSize(8);
+    // Segunda línea - Cliente y fecha con tamaño aumentado a 10pt (era 8pt)
+    this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.setTextColor(0, 0, 0);
     
@@ -52,10 +52,10 @@ export class LabelHeaderRenderer {
     const dateWidth = this.pdf.getTextWidth(dateText);
     this.pdf.text(dateText, startX + labelWidth - dateWidth - 3, currentY);
 
-    // Línea negra más gruesa debajo del nombre y fecha
-    this.pdf.setLineWidth(3);
-    this.pdf.setDrawColor(0, 0, 0);
-    this.pdf.line(startX + 3, currentY + 2, startX + labelWidth - 3, currentY + 2);
+    // Eliminar la línea negra que estaba debajo del nombre y fecha
+    // this.pdf.setLineWidth(3);
+    // this.pdf.setDrawColor(0, 0, 0);
+    // this.pdf.line(startX + 3, currentY + 2, startX + labelWidth - 3, currentY + 2);
 
     return currentY + SPACING.sectionSpacing;
   }

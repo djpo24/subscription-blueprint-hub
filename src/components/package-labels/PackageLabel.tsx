@@ -86,17 +86,16 @@ export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
         </div>
       </div>
 
-      {/* Segunda línea - Cliente y fecha con nuevo estilo */}
+      {/* Segunda línea - Cliente y fecha con tamaño aumentado y sin línea negra */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         marginBottom: '8mm',
-        fontSize: '8px',
+        fontSize: '10px', // Aumentado de 8px a 10px (+2pt)
         color: '#000',
-        fontWeight: 'bold',
-        borderBottom: '3px solid #000',
-        paddingBottom: '2mm'
+        fontWeight: 'bold'
+        // Eliminada la línea negra: borderBottom: '3px solid #000',
       }}>
         <div>{pkg.customers?.name || 'Cliente'}</div>
         <div>{formatDate(pkg.created_at)}</div>

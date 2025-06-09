@@ -1,4 +1,3 @@
-
 import type { VideoConstraints } from './types';
 
 // Detectar si el dispositivo es un iPad
@@ -65,8 +64,7 @@ function getIPadOptimizedConstraints(deviceId: string): VideoConstraints {
     // Configuraciones mejoradas para códigos de barras en iPad
     brightness: { ideal: 0.7 }, // Más brillo para iPad
     contrast: { ideal: 1.5 },   // Más contraste para iPad
-    saturation: { ideal: 0.8 }, // Menos saturación para mejor contraste
-    sharpness: { ideal: 1.3 }   // Más nitidez para códigos pequeños
+    saturation: { ideal: 0.8 } // Menos saturación para mejor contraste
   };
 }
 

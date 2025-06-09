@@ -1,6 +1,6 @@
 
 import { useState, useRef } from 'react';
-import { BrowserQRCodeReader, BrowserMultiFormatReader } from '@zxing/browser';
+import { BrowserQRCodeReader, BrowserMultiFormatReader, Result } from '@zxing/browser';
 import { useScannerSounds } from './useScannerSounds';
 
 // Detectar tipo de dispositivo para optimizaciones específicas
@@ -76,8 +76,8 @@ export function useBarcodeScanner() {
       
       const barcodeResult = await Promise.race([
         barcodeReader.decodeOnceFromVideoDevice(deviceId, videoElement),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Barcode timeout')), config.barcodeDelay))
-      ]);
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Barcode timeout')), config.barcodeDelay))
+      ]) as Result;
       
       if (barcodeResult && continuousScanRef.current) {
         console.log(`🎯 [${deviceType}] Thermal printer Barcode successfully detected:`, barcodeResult.getText());
@@ -101,8 +101,8 @@ export function useBarcodeScanner() {
           
           const qrResult = await Promise.race([
             qrReader.decodeOnceFromVideoDevice(deviceId, videoElement),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('QR timeout')), config.qrDelay))
-          ]);
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('QR timeout')), config.qrDelay))
+          ]) as Result;
           
           if (qrResult && continuousScanRef.current) {
             console.log(`🎯 [${deviceType}] Thermal printer QR Code successfully detected as fallback:`, qrResult.getText());

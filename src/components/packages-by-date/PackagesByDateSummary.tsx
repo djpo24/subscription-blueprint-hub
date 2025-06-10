@@ -1,7 +1,6 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { formatWeight, formatFreight } from '@/utils/formatters';
 
 interface PackagesByDateSummaryProps {
   totalPackages: number;
@@ -27,7 +26,7 @@ export function PackagesByDateSummary({
         <div className="text-xs text-gray-600">Paquetes</div>
       </div>
       <div className="text-center">
-        <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-purple-600`}>{formatWeight(totalWeight)} kg</div>
+        <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-purple-600`}>{totalWeight} kg</div>
         <div className="text-xs text-gray-600">Peso Total</div>
       </div>
       <div className="text-center">

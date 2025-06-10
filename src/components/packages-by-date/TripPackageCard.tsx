@@ -75,9 +75,9 @@ export function TripPackageCard({
     }, 500);
   };
 
-  const handlePackageClick = (pkg: Package) => {
+  const handlePackageClick = (pkg: Package, tripId: string) => {
     // Pass the trip ID along with the package
-    onPackageClick(pkg, trip.id);
+    onPackageClick(pkg, tripId);
     
     // Invalidar después de la edición de paquetes
     setTimeout(() => {
@@ -99,6 +99,7 @@ export function TripPackageCard({
       
       <TripPackageCardContent
         packages={trip.packages}
+        tripId={trip.id}
         onPackageClick={handlePackageClick}
         onOpenChat={canShowChat ? onOpenChat : undefined}
         previewRole={previewRole}

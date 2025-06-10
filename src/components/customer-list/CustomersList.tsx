@@ -6,6 +6,9 @@ import { ChatDialog } from '@/components/chat/ChatDialog';
 import { EditCustomerDialog } from './EditCustomerDialog';
 import { CustomerSearchBar } from './CustomerSearchBar';
 import { CustomersTable } from './CustomersTable';
+import { CustomerFormDialog } from '@/components/CustomerFormDialog';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Customer {
@@ -23,6 +26,7 @@ export function CustomersList() {
   const [searchCustomerId, setSearchCustomerId] = useState<string | null>(null);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: customers = [], isLoading, refetch } = useQuery({
@@ -81,6 +85,15 @@ export function CustomersList() {
     });
   };
 
+  const handleCreateCustomerSuccess = (customerId: string) => {
+    refetch();
+    setCreateCustomerDialogOpen(false);
+    toast({
+      title: "Cliente creado",
+      description: "El nuevo cliente ha sido creado exitosamente",
+    });
+  };
+
   const handleCustomerSearch = (customerId: string) => {
     setSearchCustomerId(customerId);
   };
@@ -101,10 +114,20 @@ export function CustomersList() {
 
   return (
     <>
-      <CustomerSearchBar 
-        onCustomerSelect={handleCustomerSearch}
-        onClearSearch={handleClearSearch}
-      />
+      <div className="flex items-center justify-between mb-6">
+        <CustomerSearchBar 
+          onCustomerSelect={handleCustomerSearch}
+          onClearSearch={handleClearSearch}
+        />
+        
+        <Button 
+          onClick={() => setCreateCustomerDialogOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Nuevo Cliente
+        </Button>
+      </div>
 
       <CustomersTable
         customers={customers}
@@ -132,6 +155,12 @@ export function CustomersList() {
           />
         </>
       )}
+
+      <CustomerFormDialog
+        open={createCustomerDialogOpen}
+        onOpenChange={setCreateCustomerDialogOpen}
+        onSuccess={handleCreateCustomerSuccess}
+      />
     </>
   );
 }

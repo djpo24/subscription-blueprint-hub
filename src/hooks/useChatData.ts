@@ -2,32 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSentMessages } from './useSentMessages';
-
-interface IncomingMessage {
-  id: string;
-  whatsapp_message_id: string;
-  from_phone: string;
-  customer_id: string | null;
-  message_type: string;
-  message_content: string | null;
-  media_url: string | null;
-  message_timestamp: string;
-  customers?: {
-    name: string;
-    profile_image_url?: string;
-  } | null;
-}
-
-interface Message {
-  id: string;
-  message_content: string;
-  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
-  timestamp: string;
-  whatsapp_message_id?: string;
-  from_phone?: string;
-  is_from_customer?: boolean;
-  media_url?: string;
-}
+import { ChatMessage, IncomingMessage } from '@/types/chatMessage';
 
 export function useChatData() {
   const { sentMessages } = useSentMessages();
@@ -60,7 +35,7 @@ export function useChatData() {
         customer_id: msg.customer_id,
         message_type: msg.message_type,
         message_content: msg.message_content,
-        media_url: msg.media_url,
+        media_url: msg.media_url || null,
         message_timestamp: msg.timestamp,
         customers: msg.customers
       }));
@@ -94,7 +69,7 @@ export function useChatData() {
              incomingPhone.endsWith(msgPhone);
     });
     
-    const allMessages: Message[] = [
+    const allMessages: ChatMessage[] = [
       ...incoming.map(msg => ({
         id: msg.id,
         message_content: msg.message_content || '(Sin contenido de texto)',
@@ -129,7 +104,7 @@ export function useChatData() {
 
     return acc;
   }, {} as Record<string, {
-    messages: Message[];
+    messages: ChatMessage[];
     latestIncoming: IncomingMessage;
     customerName?: string;
     customerId: string | null;

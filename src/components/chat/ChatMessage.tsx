@@ -3,20 +3,10 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
-
-interface Message {
-  id: string;
-  message_content: string;
-  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
-  timestamp: string;
-  whatsapp_message_id?: string;
-  from_phone?: string;
-  is_from_customer?: boolean;
-  media_url?: string;
-}
+import { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
-  message: Message;
+  message: ChatMessageType;
   customerName?: string;
   profileImageUrl?: string;
 }

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSentMessages } from './useSentMessages';
@@ -42,7 +41,7 @@ export function useChatData() {
         customer_id: msg.customer_id,
         message_type: msg.message_type,
         message_content: msg.message_content,
-        media_url: msg.media_url || null,
+        media_url: msg.media_url,
         message_timestamp: msg.timestamp,
         customers: msg.customers
       }));

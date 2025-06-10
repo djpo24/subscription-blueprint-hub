@@ -23,7 +23,7 @@ interface ChatConversationProps {
 
 export function ChatConversation({
   phone,
-  customerName = 'Cliente',
+  customerName,
   customerId,
   messages,
   isRegistered,
@@ -35,10 +35,17 @@ export function ChatConversation({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { sendConsultaEncomienda, isSending } = useConsultaEncomienda();
 
-  // Priorizar el nombre registrado del cliente si está disponible y es cliente registrado
-  const displayName = isRegistered && customerName && customerName !== 'Cliente' 
-    ? customerName 
-    : (customerName || 'Cliente');
+  // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
+  const displayName = customerName || 'Cliente';
+
+  console.log('ChatConversation render:', {
+    phone,
+    customerName,
+    displayName,
+    customerId,
+    isRegistered,
+    profileImageUrl
+  });
 
   const scrollToBottom = () => {
     if (autoScroll && messagesEndRef.current) {
@@ -53,7 +60,6 @@ export function ChatConversation({
   const handleInitiateChat = async () => {
     const success = await sendConsultaEncomienda(displayName, phone, customerId || undefined);
     if (success) {
-      // Opcionalmente refrescar los mensajes después de enviar
       console.log('Plantilla consulta_encomienda enviada exitosamente');
     }
   };
@@ -89,7 +95,6 @@ export function ChatConversation({
             </div>
           </div>
           
-          {/* Botón Iniciar Chat */}
           <Button
             onClick={handleInitiateChat}
             disabled={isSending}
@@ -136,7 +141,6 @@ export function ChatConversation({
           )}
         </div>
 
-        {/* Input de mensaje */}
         <ChatInput 
           onSendMessage={onSendMessage} 
           isLoading={isLoading}

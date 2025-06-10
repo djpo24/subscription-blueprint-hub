@@ -47,10 +47,15 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
         <ScrollArea className="h-full">
           <div className="space-y-1 p-2">
             {chats.map((chat) => {
-              // Priorizar el nombre registrado si el cliente está registrado
-              const displayName = chat.isRegistered && chat.customerName 
-                ? chat.customerName 
-                : (chat.customerName || 'Cliente');
+              // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
+              const displayName = chat.customerName || 'Cliente';
+              
+              console.log('Rendering chat item:', {
+                phone: chat.phone,
+                customerName: chat.customerName,
+                displayName,
+                isRegistered: chat.isRegistered
+              });
               
               return (
                 <div

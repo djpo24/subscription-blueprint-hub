@@ -48,7 +48,7 @@ export function useChatData() {
       }));
 
       console.log('Processed incoming messages:', processedData.length);
-      console.log('Sample message with media:', processedData.find(m => m.media_url));
+      console.log('Messages with customer data:', processedData.filter(m => m.customers?.name));
       
       return processedData;
     },
@@ -99,17 +99,17 @@ export function useChatData() {
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const latestMessage = incoming[0];
-    // Priorizar nombre registrado del cliente
     const registeredCustomerName = latestMessage?.customers?.name;
     const profileImageUrl = latestMessage?.customers?.profile_image_url;
 
-    console.log('Profile image URL for phone', phone, ':', profileImageUrl);
-    console.log('Registered customer name for phone', phone, ':', registeredCustomerName);
+    console.log('Processing conversation for phone:', phone);
+    console.log('Customer ID:', latestMessage?.customer_id);
+    console.log('Registered customer name:', registeredCustomerName);
+    console.log('Profile image URL:', profileImageUrl);
 
     acc[phone] = {
       messages: allMessages,
       latestIncoming: latestMessage,
-      // Usar el nombre registrado del cliente si está disponible
       customerName: registeredCustomerName || undefined,
       customerId: latestMessage?.customer_id,
       profileImageUrl: profileImageUrl || null
@@ -124,12 +124,11 @@ export function useChatData() {
     profileImageUrl?: string | null;
   }>);
 
-  // Incluir conversaciones de mensajes solo salientes (números a los que hemos enviado pero no hemos recibido respuesta)
+  // Incluir conversaciones de mensajes solo salientes
   sentMessages.forEach(sentMsg => {
     const phone = sentMsg.phone;
     const normalizedPhone = phone.replace(/[\s\-\(\)\+]/g, '');
     
-    // Verificar si ya existe una conversación para este teléfono
     const existingConversation = Object.keys(conversationsByPhone).find(existingPhone => {
       const normalizedExisting = existingPhone.replace(/[\s\-\(\)\+]/g, '');
       return normalizedExisting === normalizedPhone || 
@@ -138,7 +137,6 @@ export function useChatData() {
     });
     
     if (!existingConversation) {
-      // Crear nueva conversación solo con mensajes salientes
       conversationsByPhone[phone] = {
         messages: [{
           id: sentMsg.id,
@@ -148,7 +146,7 @@ export function useChatData() {
           is_from_customer: false,
           media_url: sentMsg.image_url || undefined
         }],
-        latestIncoming: null as any, // No hay mensaje entrante
+        latestIncoming: null as any,
         customerName: undefined,
         customerId: sentMsg.customer_id,
         profileImageUrl: null
@@ -158,22 +156,30 @@ export function useChatData() {
 
   // Crear lista de chats para la columna izquierda
   const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => {
-    console.log('Creating chat list item for phone:', phone, 'with registered name:', conversation.customerName);
+    // Un cliente está registrado si tiene customer_id Y nombre registrado
+    const isRegistered = !!(conversation.customerId && conversation.customerName);
+    
+    console.log('Creating chat list item for phone:', phone);
+    console.log('Customer ID:', conversation.customerId);
+    console.log('Customer name:', conversation.customerName);
+    console.log('Is registered:', isRegistered);
     
     return {
       phone,
-      // Usar el nombre registrado del cliente si está disponible
       customerName: conversation.customerName,
       lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
       lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
-      isRegistered: !!conversation.customerId,
+      isRegistered,
       unreadCount: 0,
       profileImageUrl: conversation.profileImageUrl
     };
   }).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
-  console.log('Chat list processed:', chatList.length, 'conversations');
-  console.log('Registered names in chat list:', chatList.map(chat => ({ phone: chat.phone, customerName: chat.customerName, isRegistered: chat.isRegistered })));
+  console.log('Final chat list:', chatList.map(chat => ({ 
+    phone: chat.phone, 
+    customerName: chat.customerName, 
+    isRegistered: chat.isRegistered 
+  })));
 
   return {
     chatList,

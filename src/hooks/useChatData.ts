@@ -48,7 +48,7 @@ export function useChatData() {
       }));
 
       console.log('Processed incoming messages:', processedData.length);
-      console.log('Sample message with customer data:', processedData[0]);
+      console.log('Sample message with media:', processedData.find(m => m.media_url));
       
       return processedData;
     },

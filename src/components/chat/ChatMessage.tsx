@@ -32,20 +32,27 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
   };
 
   const renderMessageContent = () => {
-    const hasMedia = message.media_url && message.message_type !== 'text';
+    console.log('Rendering message:', message.id, 'Type:', message.message_type, 'Media URL:', message.media_url);
     
     return (
       <div className="space-y-2">
-        {/* Mostrar imagen si es un mensaje de imagen */}
+        {/* Mostrar imagen si es un mensaje de imagen y tiene media_url */}
         {message.message_type === 'image' && message.media_url && (
           <div className="max-w-xs">
             <img 
               src={message.media_url} 
               alt="Imagen enviada"
-              className="rounded-lg max-w-full h-auto"
+              className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+              onLoad={() => {
+                console.log('Image loaded successfully:', message.media_url);
+              }}
               onError={(e) => {
-                console.error('Error loading image:', message.media_url);
+                console.error('Error loading image:', message.media_url, e);
                 e.currentTarget.style.display = 'none';
+              }}
+              onClick={() => {
+                // Abrir imagen en nueva ventana para ver en tamaño completo
+                window.open(message.media_url, '_blank');
               }}
             />
           </div>
@@ -67,8 +74,15 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
           </div>
         )}
         
-        {/* Mostrar texto del mensaje */}
-        <p className="text-sm">{message.message_content || '(Sin contenido de texto)'}</p>
+        {/* Mostrar texto del mensaje si existe */}
+        {message.message_content && message.message_content !== '(Sin contenido de texto)' && (
+          <p className="text-sm">{message.message_content}</p>
+        )}
+        
+        {/* Si es imagen pero no hay texto, mostrar indicador */}
+        {message.message_type === 'image' && (!message.message_content || message.message_content === '(Sin contenido de texto)') && (
+          <p className="text-sm text-gray-500 italic">📷 Imagen</p>
+        )}
       </div>
     );
   };

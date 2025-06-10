@@ -1,99 +1,108 @@
 
-import { Badge } from '@/components/ui/badge';
+import { Package, User, MessageCircle, DollarSign, Weight, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Package, User, Weight, DollarSign } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBadge';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { PackageItemProps } from './types';
 
-interface PackageItemMobileProps extends PackageItemProps {
-  getStatusColor: (status: string) => string;
-  handleChatClick: (e: React.MouseEvent) => void;
-  canShowChat: boolean;
+type Currency = 'COP' | 'AWG';
+
+interface Package {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  description: string;
+  weight: string;
+  freight: string;
+  amount_to_collect: string;
+  currency: Currency;
+  status: string;
+  customers?: {
+    name: string;
+    email: string;
+  };
 }
 
-export function PackageItemMobile({ 
-  package: pkg, 
-  onClick,
-  getStatusColor,
-  handleChatClick,
-  canShowChat
+interface PackageItemMobileProps {
+  package: Package;
+  tripId: string;
+  onPackageClick: (pkg: any, tripId: string) => void;
+  onOpenChat: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
+}
+
+export function PackageItemMobile({
+  package: pkg,
+  tripId,
+  onPackageClick,
+  onOpenChat,
+  previewRole,
+  disableChat = false
 }: PackageItemMobileProps) {
+  const handleClick = () => {
+    onPackageClick(pkg, tripId);
+  };
+
+  const handleChatClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenChat(pkg.customer_id, pkg.customers?.name);
+  };
+
+  const canChat = !disableChat && previewRole !== 'traveler';
+
   return (
     <div 
-      className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200"
-      onClick={onClick}
+      className="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 bg-white"
+      onClick={handleClick}
     >
-      {/* Header con tracking number y estado */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-gray-500" />
-          <span className="font-bold text-sm text-black">{pkg.tracking_number}</span>
+          <Package className="h-4 w-4 text-blue-600" />
+          <span className="font-mono text-sm font-medium">{pkg.tracking_number}</span>
         </div>
-        <Badge className={`${getStatusColor(pkg.status)} text-xs px-2 py-0.5`}>
-          {pkg.status}
-        </Badge>
+        <PackageStatusBadge status={pkg.status} />
       </div>
 
-      {/* Información del cliente */}
-      <div className="flex items-center gap-2 mb-3">
-        <User className="h-4 w-4 text-gray-500" />
-        <span className="font-medium text-sm text-gray-800 truncate">
-          {pkg.customers?.name || 'Cliente no especificado'}
-        </span>
-      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <User className="h-3 w-3 text-gray-500" />
+          <span className="text-sm text-gray-700">
+            {pkg.customers?.name || 'Cliente no encontrado'}
+          </span>
+        </div>
 
-      {/* Grid de información compacta */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-gray-50 rounded-md p-2">
-          <div className="flex items-center gap-1 mb-1">
-            <Weight className="h-3 w-3 text-gray-500" />
-            <span className="text-xs font-medium text-gray-600">Peso</span>
+        <p className="text-sm text-gray-600 line-clamp-2">{pkg.description}</p>
+
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <Weight className="h-3 w-3 text-purple-600" />
+            <span>{pkg.weight} kg</span>
           </div>
-          <span className="text-xs font-semibold text-gray-800">
-            {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
-          </span>
-        </div>
-        
-        <div className="bg-gray-50 rounded-md p-2">
-          <div className="flex items-center gap-1 mb-1">
-            <DollarSign className="h-3 w-3 text-gray-500" />
-            <span className="text-xs font-medium text-gray-600">Flete</span>
+          <div className="flex items-center gap-1">
+            <Truck className="h-3 w-3 text-orange-600" />
+            <span>${pkg.freight}</span>
           </div>
-          <span className="text-xs font-semibold text-gray-800">
-            {formatCurrency(pkg.freight, 'COP')}
-          </span>
-        </div>
-        
-        <div className="bg-gray-50 rounded-md p-2 col-span-2">
-          <div className="flex items-center gap-1 mb-1">
+          <div className="flex items-center gap-1">
             <DollarSign className="h-3 w-3 text-green-600" />
-            <span className="text-xs font-medium text-gray-600">A Cobrar</span>
+            <span>{formatCurrency(parseFloat(pkg.amount_to_collect), pkg.currency)}</span>
           </div>
-          <span className="text-xs font-semibold text-green-700">
-            {formatCurrency(pkg.amount_to_collect, pkg.currency || 'COP')}
-          </span>
         </div>
-      </div>
 
-      {/* Descripción */}
-      <div className="mb-3">
-        <p className="text-xs text-gray-600 line-clamp-2">{pkg.description}</p>
+        {canChat && (
+          <div className="flex justify-end pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleChatClick}
+              className="h-8 px-3"
+            >
+              <MessageCircle className="h-3 w-3 mr-1" />
+              Chat
+            </Button>
+          </div>
+        )}
       </div>
-
-      {/* Botón de chat si está disponible */}
-      {canShowChat && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleChatClick}
-            className="h-7 px-2 text-xs flex items-center gap-1"
-          >
-            <MessageSquare className="h-3 w-3" />
-            Chat
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

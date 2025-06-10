@@ -89,6 +89,14 @@ export function PackagesByDateContent({
         dispatches={dispatches}
       />
 
+      {/* Resumen de totales - movido arriba del buscador */}
+      <PackagesByDateSummary
+        totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
+        totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
+        totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
+        totalAmountToCollect={searchTerm.trim() ? filteredTotalAmountToCollect : totalAmountToCollect}
+      />
+
       {/* Buscador */}
       <PackageSearchBar
         searchTerm={searchTerm}
@@ -114,30 +122,21 @@ export function PackagesByDateContent({
           />
         )
       ) : (
-        <>
-          <div className="grid gap-4 sm:gap-6">
-            {filteredTrips.map((trip) => (
-              <TripPackageCard
-                key={trip.id}
-                trip={trip}
-                onAddPackage={onAddPackage}
-                onPackageClick={onPackageClick}
-                onOpenChat={onOpenChat}
-                previewRole={previewRole}
-                disableChat={disableChat}
-                tripDate={selectedDate}
-                showSummary={true}
-              />
-            ))}
-          </div>
-
-          <PackagesByDateSummary
-            totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
-            totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
-            totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
-            totalAmountToCollect={searchTerm.trim() ? filteredTotalAmountToCollect : totalAmountToCollect}
-          />
-        </>
+        <div className="grid gap-4 sm:gap-6">
+          {filteredTrips.map((trip) => (
+            <TripPackageCard
+              key={trip.id}
+              trip={trip}
+              onAddPackage={onAddPackage}
+              onPackageClick={onPackageClick}
+              onOpenChat={onOpenChat}
+              previewRole={previewRole}
+              disableChat={disableChat}
+              tripDate={selectedDate}
+              showSummary={true}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

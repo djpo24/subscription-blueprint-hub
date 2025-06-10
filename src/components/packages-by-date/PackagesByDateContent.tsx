@@ -111,6 +111,7 @@ export function PackagesByDateContent({
         ) : (
           <EmptyTripsState 
             selectedDate={selectedDate}
+            onCreateTrip={() => {}} // No necesitamos esta función aquí
           />
         )
       ) : (

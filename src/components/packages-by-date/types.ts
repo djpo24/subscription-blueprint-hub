@@ -17,14 +17,6 @@ export interface Package {
   };
 }
 
-export interface Trip {
-  id: string;
-  origin: string;
-  destination: string;
-  flight_number: string | null;
-  packages: Package[];
-}
-
 export interface PackageItemProps {
   package: Package;
   onClick: () => void;

@@ -8,18 +8,23 @@ interface PackagesByDateSummaryProps {
   totalPackages: number;
   totalWeight: number;
   totalFreight: number;
-  totalAmountToCollect: number;
+  amountsByCurrency: Record<string, number>;
 }
 
 export function PackagesByDateSummary({
   totalPackages,
   totalWeight,
   totalFreight,
-  totalAmountToCollect
+  amountsByCurrency
 }: PackagesByDateSummaryProps) {
   const isMobile = useIsMobile();
 
   if (totalPackages === 0) return null;
+
+  // Determinar si hay múltiples monedas o solo COP
+  const currencies = Object.keys(amountsByCurrency).filter(currency => amountsByCurrency[currency] > 0);
+  const hasMultipleCurrencies = currencies.length > 1;
+  const hasAnyAmountToCollect = currencies.some(currency => amountsByCurrency[currency] > 0);
 
   return (
     <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-4 gap-4'} mt-4`}>
@@ -46,8 +51,30 @@ export function PackagesByDateSummary({
       
       <Card className="bg-gray-50 border-0 shadow-none">
         <CardContent className="p-4 text-center">
-          <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>{formatCurrency(totalAmountToCollect, 'COP')}</div>
-          <div className="text-xs text-gray-600">A Cobrar</div>
+          {!hasAnyAmountToCollect ? (
+            <>
+              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>$0</div>
+              <div className="text-xs text-gray-600">A Cobrar</div>
+            </>
+          ) : hasMultipleCurrencies ? (
+            <div className="space-y-1">
+              {currencies.map((currency) => (
+                <div key={currency}>
+                  <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-green-600`}>
+                    {formatCurrency(amountsByCurrency[currency], currency as 'COP' | 'AWG')}
+                  </div>
+                </div>
+              ))}
+              <div className="text-xs text-gray-600">A Cobrar</div>
+            </div>
+          ) : (
+            <>
+              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>
+                {formatCurrency(amountsByCurrency[currencies[0]], currencies[0] as 'COP' | 'AWG')}
+              </div>
+              <div className="text-xs text-gray-600">A Cobrar</div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

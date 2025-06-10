@@ -1,24 +1,24 @@
 
 import { PackagesByDateContent } from './packages-by-date/PackagesByDateContent';
-import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs';
 import { CreateDispatchDialog } from './CreateDispatchDialog';
 import { PackageLabelsDialog } from './PackageLabelsDialog';
+import { PackagesByDateDialogs } from './packages-by-date/PackagesByDateDialogs';
 import { usePackagesByDateView } from '@/hooks/usePackagesByDateView';
 
 interface PackagesByDateViewProps {
   selectedDate: Date;
   onBack: () => void;
   onAddPackage: (tripId: string) => void;
-  disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
 }
 
 export function PackagesByDateView({ 
   selectedDate, 
   onBack, 
-  onAddPackage, 
-  disableChat = false,
-  previewRole 
+  onAddPackage,
+  previewRole,
+  disableChat = false
 }: PackagesByDateViewProps) {
   const {
     trips,
@@ -39,19 +39,19 @@ export function PackagesByDateView({
     totalPackages,
     totalWeight,
     totalFreight,
-    totalAmountToCollect,
+    amountsByCurrency,
     handlePackageClick,
     handleOpenChat,
     handlePackageEditSuccess,
     handleCreateDispatch,
     handleOpenLabelsDialog,
-    handleCreateDispatchSuccess,
+    handleCreateDispatchSuccess
   } = usePackagesByDateView(selectedDate);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="text-gray-500">Cargando encomiendas...</div>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export function PackagesByDateView({
         totalPackages={totalPackages}
         totalWeight={totalWeight}
         totalFreight={totalFreight}
-        totalAmountToCollect={totalAmountToCollect}
+        amountsByCurrency={amountsByCurrency}
         onBack={onBack}
         onAddPackage={onAddPackage}
         onPackageClick={handlePackageClick}
@@ -100,7 +100,7 @@ export function PackagesByDateView({
       <PackageLabelsDialog
         open={labelsDialogOpen}
         onOpenChange={setLabelsDialogOpen}
-        tripDate={selectedDate}
+        selectedDate={selectedDate}
         trips={trips}
       />
     </>

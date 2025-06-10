@@ -114,10 +114,19 @@ export function usePackagesByDateView(selectedDate: Date) {
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
   );
   
-  // Los montos a cobrar se suman independientemente de la moneda (para el resumen general)
-  const totalAmountToCollect = trips.reduce((acc, trip) => 
-    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.amount_to_collect || 0), 0), 0
-  );
+  // Calcular montos a cobrar por moneda
+  const amountsByCurrency = trips.reduce((acc, trip) => {
+    trip.packages.forEach(pkg => {
+      const currency = pkg.currency || 'COP';
+      const amount = pkg.amount_to_collect || 0;
+      
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += amount;
+    });
+    return acc;
+  }, {} as Record<string, number>);
 
   return {
     trips,
@@ -138,7 +147,7 @@ export function usePackagesByDateView(selectedDate: Date) {
     totalPackages,
     totalWeight,
     totalFreight,
-    totalAmountToCollect,
+    amountsByCurrency, // Nuevo: totales por moneda
     handlePackageClick,
     handleOpenChat,
     handlePackageEditSuccess,

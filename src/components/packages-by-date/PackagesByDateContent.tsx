@@ -31,7 +31,7 @@ interface PackagesByDateContentProps {
   totalPackages: number;
   totalWeight: number;
   totalFreight: number;
-  totalAmountToCollect: number;
+  amountsByCurrency: Record<string, number>; // Cambiado para soportar múltiples monedas
   onBack: () => void;
   onAddPackage: (tripId: string) => void;
   onPackageClick: (pkg: Package, tripId: string) => void;
@@ -49,7 +49,7 @@ export function PackagesByDateContent({
   totalPackages,
   totalWeight,
   totalFreight,
-  totalAmountToCollect,
+  amountsByCurrency,
   onBack,
   onAddPackage,
   onPackageClick,
@@ -75,9 +75,20 @@ export function PackagesByDateContent({
   const filteredTotalFreight = filteredTrips.reduce((acc, trip) => 
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
   );
-  const filteredTotalAmountToCollect = filteredTrips.reduce((acc, trip) => 
-    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.amount_to_collect || 0), 0), 0
-  );
+  
+  // Calcular montos filtrados por moneda
+  const filteredAmountsByCurrency = filteredTrips.reduce((acc, trip) => {
+    trip.packages.forEach(pkg => {
+      const currency = pkg.currency || 'COP';
+      const amount = pkg.amount_to_collect || 0;
+      
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += amount;
+    });
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -94,7 +105,7 @@ export function PackagesByDateContent({
         totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
         totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
         totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
-        totalAmountToCollect={searchTerm.trim() ? filteredTotalAmountToCollect : totalAmountToCollect}
+        amountsByCurrency={searchTerm.trim() ? filteredAmountsByCurrency : amountsByCurrency}
       />
 
       {/* Buscador */}

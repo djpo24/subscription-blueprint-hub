@@ -14,7 +14,14 @@ export function useChatData() {
       const { data, error } = await supabase
         .from('incoming_messages')
         .select(`
-          *,
+          id,
+          whatsapp_message_id,
+          from_phone,
+          customer_id,
+          message_type,
+          message_content,
+          media_url,
+          timestamp,
           customers (
             name,
             profile_image_url

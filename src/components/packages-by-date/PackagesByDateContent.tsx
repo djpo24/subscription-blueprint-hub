@@ -1,43 +1,33 @@
 
+import { useState } from 'react';
+import { ArrowLeft, Plus, FileText, Tags, Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { PackagesByDateHeader } from './PackagesByDateHeader';
-import { EmptyTripsState } from './EmptyTripsState';
 import { TripPackageCard } from './TripPackageCard';
-import { TripPackageCardSummary } from './TripPackageCardSummary';
-import { usePackagePaymentsByTrip } from '@/hooks/usePackagePaymentsByTrip';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { format } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
+import { PackagesByDateSummary } from './PackagesByDateSummary';
+import { EmptyTripsState } from './EmptyTripsState';
+import { PackageSearchBar } from '@/components/common/PackageSearchBar';
+import { filterPackagesBySearchTerm } from '@/utils/packageSearchUtils';
+import { Trip, Package } from './types';
 
-type Currency = 'COP' | 'AWG';
-
-interface Package {
+interface DispatchRelation {
   id: string;
-  tracking_number: string;
-  customer_id: string;
-  description: string;
-  weight: number | null;
-  freight: number | null;
-  amount_to_collect: number | null;
-  currency: Currency;
+  dispatch_date: string;
+  total_packages: number;
+  total_weight: number;
+  total_freight: number;
+  total_amount_to_collect: number;
   status: string;
-  customers?: {
-    name: string;
-    email: string;
-  };
-}
-
-interface Trip {
-  id: string;
-  origin: string;
-  destination: string;
-  flight_number: string | null;
-  packages: Package[];
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface PackagesByDateContentProps {
   selectedDate: Date;
   trips: Trip[];
-  dispatches: any[];
+  dispatches: DispatchRelation[];
   totalPackages: number;
   totalWeight: number;
   totalFreight: number;
@@ -45,62 +35,11 @@ interface PackagesByDateContentProps {
   onBack: () => void;
   onAddPackage: (tripId: string) => void;
   onPackageClick: (pkg: Package, tripId: string) => void;
-  onOpenChat: (customerId: string, customerName?: string) => void;
+  onOpenChat?: (customerId: string, customerName?: string) => void;
   onCreateDispatch: () => void;
   onOpenLabelsDialog: () => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
-}
-
-// Componente para mostrar el resumen de un viaje individual
-function TripSummaryContainer({ trip, children }: { trip: Trip; children: React.ReactNode }) {
-  const { data: paymentData, error: paymentError, isLoading } = usePackagePaymentsByTrip(trip.id);
-
-  // Calcular totales para este viaje específico
-  const totalWeight = trip.packages.reduce((acc, pkg) => acc + (pkg.weight || 0), 0);
-  const totalFreight = trip.packages.reduce((acc, pkg) => acc + (pkg.freight || 0), 0);
-  
-  // Usar los datos de pagos del hook para separar pendientes y cobrados
-  const pendingAmountByCurrency = paymentData?.pending || {};
-  const collectedAmountByCurrency = paymentData?.collected || {};
-
-  console.log('🔍 TripSummaryContainer data:', {
-    tripId: trip.id,
-    paymentData,
-    paymentError,
-    isLoading,
-    pendingAmountByCurrency,
-    collectedAmountByCurrency
-  });
-
-  if (paymentError) {
-    console.error('❌ Error loading payment data for trip:', trip.id, paymentError);
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Mostrar error si hay problemas con los pagos */}
-      {paymentError && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            Error cargando datos de pagos: {paymentError.message}
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {/* Cajas de resumen fuera del contenedor del viaje */}
-      <TripPackageCardSummary 
-        packageCount={trip.packages.length}
-        totalWeight={totalWeight}
-        totalFreight={totalFreight}
-        pendingAmountByCurrency={pendingAmountByCurrency as Record<Currency, number>}
-        collectedAmountByCurrency={collectedAmountByCurrency as Record<Currency, number>}
-      />
-      
-      {/* Contenedor del viaje */}
-      {children}
-    </div>
-  );
 }
 
 export function PackagesByDateContent({
@@ -120,88 +59,87 @@ export function PackagesByDateContent({
   previewRole,
   disableChat = false
 }: PackagesByDateContentProps) {
-  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const handleAddPackageWithRefresh = (tripId: string) => {
-    onAddPackage(tripId);
-    
-    // Después de crear la encomienda, invalidar las consultas
-    setTimeout(() => {
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      queryClient.invalidateQueries({ queryKey: ['packages-by-date', formattedDate] });
-      queryClient.invalidateQueries({ queryKey: ['packages-by-trip', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['package-payments-by-trip', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['packages'] });
-      queryClient.invalidateQueries({ queryKey: ['trips'] });
-    }, 500);
-  };
+  // Filtrar trips basado en el término de búsqueda
+  const filteredTrips = trips.map(trip => ({
+    ...trip,
+    packages: filterPackagesBySearchTerm(trip.packages, searchTerm)
+  })).filter(trip => trip.packages.length > 0 || !searchTerm.trim());
 
-  // Recopilar todos los paquetes de todos los viajes para el diálogo de despacho
-  const allPackages = trips.flatMap(trip => 
-    trip.packages.map(pkg => ({
-      id: pkg.id,
-      tracking_number: pkg.tracking_number,
-      origin: trip.origin,
-      destination: trip.destination,
-      status: pkg.status,
-      description: pkg.description,
-      weight: pkg.weight,
-      freight: pkg.freight,
-      amount_to_collect: pkg.amount_to_collect,
-      customers: pkg.customers
-    }))
+  // Calcular totales de los trips filtrados
+  const filteredTotalPackages = filteredTrips.reduce((acc, trip) => acc + trip.packages.length, 0);
+  const filteredTotalWeight = filteredTrips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.weight || 0), 0), 0
+  );
+  const filteredTotalFreight = filteredTrips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
+  );
+  const filteredTotalAmountToCollect = filteredTrips.reduce((acc, trip) => 
+    acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.amount_to_collect || 0), 0), 0
   );
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PackagesByDateHeader 
+      <PackagesByDateHeader
         selectedDate={selectedDate}
-        totalPackages={totalPackages}
-        totalTrips={trips.length}
-        dispatchCount={dispatches.length}
         onBack={onBack}
         onCreateDispatch={onCreateDispatch}
         onOpenLabelsDialog={onOpenLabelsDialog}
+        dispatches={dispatches}
       />
 
-      {trips.length === 0 ? (
-        <EmptyTripsState selectedDate={selectedDate} />
+      {/* Buscador */}
+      <PackageSearchBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        className="max-w-md"
+      />
+
+      {/* Mostrar mensaje si hay búsqueda activa */}
+      {searchTerm.trim() && (
+        <div className="text-sm text-gray-600">
+          Mostrando {filteredTotalPackages} de {totalPackages} encomiendas
+        </div>
+      )}
+
+      {filteredTrips.length === 0 ? (
+        searchTerm.trim() ? (
+          <div className="text-center py-8">
+            <div className="text-gray-500">No se encontraron encomiendas que coincidan con la búsqueda</div>
+          </div>
+        ) : (
+          <EmptyTripsState 
+            selectedDate={selectedDate}
+            onCreateTrip={() => {}} // No necesitamos esta función aquí
+          />
+        )
       ) : (
-        <div className="space-y-4 sm:space-y-6">
-          {trips.map((trip) => (
-            <TripSummaryContainer key={trip.id} trip={trip}>
+        <>
+          <div className="grid gap-4 sm:gap-6">
+            {filteredTrips.map((trip) => (
               <TripPackageCard
+                key={trip.id}
                 trip={trip}
-                onAddPackage={handleAddPackageWithRefresh}
+                onAddPackage={onAddPackage}
                 onPackageClick={onPackageClick}
                 onOpenChat={onOpenChat}
                 previewRole={previewRole}
                 disableChat={disableChat}
                 tripDate={selectedDate}
-                showSummary={false}
+                showSummary={true}
               />
-            </TripSummaryContainer>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <PackagesByDateSummary
+            totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
+            totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
+            totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
+            totalAmountToCollect={searchTerm.trim() ? filteredTotalAmountToCollect : totalAmountToCollect}
+          />
+        </>
       )}
     </div>
-  );
-}
-
-// Exportar la función para obtener todos los paquetes
-export function getAllPackagesFromTrips(trips: Trip[]) {
-  return trips.flatMap(trip => 
-    trip.packages.map(pkg => ({
-      id: pkg.id,
-      tracking_number: pkg.tracking_number,
-      origin: trip.origin,
-      destination: trip.destination,
-      status: pkg.status,
-      description: pkg.description,
-      weight: pkg.weight,
-      freight: pkg.freight,
-      amount_to_collect: pkg.amount_to_collect,
-      customers: pkg.customers
-    }))
   );
 }

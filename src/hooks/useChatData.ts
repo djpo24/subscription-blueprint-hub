@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSentMessages } from './useSentMessages';
@@ -47,6 +48,7 @@ export function useChatData() {
       }));
 
       console.log('Processed incoming messages:', processedData.length);
+      console.log('Sample message with customer data:', processedData[0]);
       
       return processedData;
     },
@@ -97,15 +99,17 @@ export function useChatData() {
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const latestMessage = incoming[0];
-    // Normalizar el profile_image_url para evitar valores undefined problemáticos
-    const profileImageUrl = latestMessage?.customers?.profile_image_url || null;
+    // Obtener la imagen de perfil del cliente más reciente
+    const profileImageUrl = latestMessage?.customers?.profile_image_url;
+
+    console.log('Profile image URL for phone', phone, ':', profileImageUrl);
 
     acc[phone] = {
       messages: allMessages,
       latestIncoming: latestMessage,
       customerName: latestMessage?.customers?.name,
       customerId: latestMessage?.customer_id,
-      profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : null
+      profileImageUrl: profileImageUrl || null
     };
 
     return acc;
@@ -150,17 +154,22 @@ export function useChatData() {
   });
 
   // Crear lista de chats para la columna izquierda
-  const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => ({
-    phone,
-    customerName: conversation.customerName,
-    lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
-    lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
-    isRegistered: !!conversation.customerId,
-    unreadCount: 0,
-    profileImageUrl: conversation.profileImageUrl
-  })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+  const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => {
+    console.log('Creating chat list item for phone:', phone, 'with profile image:', conversation.profileImageUrl);
+    
+    return {
+      phone,
+      customerName: conversation.customerName,
+      lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
+      lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
+      isRegistered: !!conversation.customerId,
+      unreadCount: 0,
+      profileImageUrl: conversation.profileImageUrl
+    };
+  }).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
   console.log('Chat list processed:', chatList.length, 'conversations');
+  console.log('Profile images in chat list:', chatList.map(chat => ({ phone: chat.phone, profileImageUrl: chat.profileImageUrl })));
 
   return {
     chatList,

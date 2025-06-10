@@ -100,7 +100,7 @@ export function PackagesByDateView({
       <PackageLabelsDialog
         open={labelsDialogOpen}
         onOpenChange={setLabelsDialogOpen}
-        selectedDate={selectedDate}
+        tripDate={selectedDate}
         trips={trips}
       />
     </>

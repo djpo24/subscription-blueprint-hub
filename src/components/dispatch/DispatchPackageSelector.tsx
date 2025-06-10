@@ -1,8 +1,11 @@
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Weight, DollarSign, Truck } from 'lucide-react';
+import { PackageSearchBar } from '@/components/common/PackageSearchBar';
+import { filterPackagesBySearchTerm } from '@/utils/packageSearchUtils';
 
 interface PackageInfo {
   id: string;
@@ -17,6 +20,8 @@ interface PackageInfo {
   customers: {
     name: string;
     email: string;
+    phone?: string;
+    id_number?: string;
   } | null;
 }
 
@@ -33,6 +38,11 @@ export function DispatchPackageSelector({
   onPackageToggle, 
   onSelectAll 
 }: DispatchPackageSelectorProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar paquetes usando la misma utilidad que el popup de etiquetas
+  const filteredPackages = filterPackagesBySearchTerm(packages, searchTerm);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -49,14 +59,32 @@ export function DispatchPackageSelector({
         </Button>
       </div>
 
+      {/* Buscador - igual al del popup de etiquetas */}
+      <PackageSearchBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        placeholder="Buscar por nombre, número de encomienda, cédula o teléfono..."
+        className="mb-4"
+      />
+
+      {/* Mostrar mensaje si hay búsqueda activa */}
+      {searchTerm.trim() && (
+        <div className="text-sm text-gray-600 mb-3">
+          Mostrando {filteredPackages.length} de {packages.length} encomiendas
+        </div>
+      )}
+
       <div className="border rounded-lg max-h-60 overflow-y-auto">
-        {packages.length === 0 ? (
+        {filteredPackages.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
-            No hay encomiendas disponibles para este día
+            {searchTerm.trim() 
+              ? "No se encontraron encomiendas que coincidan con la búsqueda"
+              : "No hay encomiendas disponibles para este día"
+            }
           </div>
         ) : (
           <div className="space-y-2 p-3">
-            {packages.map((pkg) => (
+            {filteredPackages.map((pkg) => (
               <div
                 key={pkg.id}
                 className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"

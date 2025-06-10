@@ -11,6 +11,7 @@ import { CustomerFormDialog } from '@/components/CustomerFormDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
 
 interface Customer {
   id: string;
@@ -30,6 +31,10 @@ export function CustomersList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { data: userRole } = useCurrentUserRole();
+
+  // Check if user can delete customers (admin or traveler only)
+  const canDeleteCustomers = userRole?.role === 'admin' || userRole?.role === 'traveler';
 
   const { data: customers = [], isLoading, refetch } = useQuery({
     queryKey: ['customers-list'],
@@ -79,6 +84,16 @@ export function CustomersList() {
   };
 
   const handleDeleteClick = (customerId: string) => {
+    // Additional permission check
+    if (!canDeleteCustomers) {
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para eliminar clientes",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedCustomerId(customerId);
     setDeleteDialogOpen(true);
   };
@@ -149,6 +164,7 @@ export function CustomersList() {
         onChatClick={handleChatClick}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
+        canDelete={canDeleteCustomers}
       />
 
       {selectedCustomer && (
@@ -168,12 +184,14 @@ export function CustomersList() {
             onSuccess={handleEditSuccess}
           />
 
-          <DeleteCustomerDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            customer={selectedCustomer}
-            onSuccess={handleDeleteSuccess}
-          />
+          {canDeleteCustomers && (
+            <DeleteCustomerDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              customer={selectedCustomer}
+              onSuccess={handleDeleteSuccess}
+            />
+          )}
         </>
       )}
 

@@ -22,6 +22,7 @@ interface CustomersTableProps {
   onChatClick: (customerId: string) => void;
   onEditClick: (customerId: string) => void;
   onDeleteClick: (customerId: string) => void;
+  canDelete?: boolean;
 }
 
 export function CustomersTable({
@@ -30,7 +31,8 @@ export function CustomersTable({
   searchCustomerId,
   onChatClick,
   onEditClick,
-  onDeleteClick
+  onDeleteClick,
+  canDelete = false
 }: CustomersTableProps) {
   return (
     <Card>
@@ -68,6 +70,7 @@ export function CustomersTable({
                   onChatClick={onChatClick}
                   onEditClick={onEditClick}
                   onDeleteClick={onDeleteClick}
+                  canDelete={canDelete}
                 />
               ))}
               {filteredCustomers.length === 0 && (

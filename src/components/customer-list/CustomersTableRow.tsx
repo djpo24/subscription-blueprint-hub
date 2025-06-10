@@ -19,13 +19,15 @@ interface CustomersTableRowProps {
   onChatClick: (customerId: string) => void;
   onEditClick: (customerId: string) => void;
   onDeleteClick: (customerId: string) => void;
+  canDelete?: boolean;
 }
 
 export function CustomersTableRow({ 
   customer, 
   onChatClick, 
   onEditClick,
-  onDeleteClick 
+  onDeleteClick,
+  canDelete = false
 }: CustomersTableRowProps) {
   return (
     <TableRow key={customer.id}>
@@ -67,14 +69,16 @@ export function CustomersTableRow({
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDeleteClick(customer.id)}
-            className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDeleteClick(customer.id)}
+              className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
+            >
+              <Trash2 className="h-4 w-4 text-red-600" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>

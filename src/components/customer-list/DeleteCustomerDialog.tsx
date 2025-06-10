@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
 
 interface Customer {
   id: string;
@@ -38,8 +39,20 @@ export function DeleteCustomerDialog({
 }: DeleteCustomerDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { data: userRole } = useCurrentUserRole();
 
   const handleDelete = async () => {
+    // Verificar permisos antes de proceder
+    if (userRole?.role !== 'admin' && userRole?.role !== 'traveler') {
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para eliminar clientes",
+        variant: "destructive",
+      });
+      onOpenChange(false);
+      return;
+    }
+
     setIsDeleting(true);
     
     try {
@@ -88,6 +101,11 @@ export function DeleteCustomerDialog({
       setIsDeleting(false);
     }
   };
+
+  // No renderizar el diálogo si el usuario no tiene permisos
+  if (userRole?.role !== 'admin' && userRole?.role !== 'traveler') {
+    return null;
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

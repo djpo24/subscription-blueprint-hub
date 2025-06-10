@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -274,15 +275,68 @@ async function handleMessageStatus(status: any, supabaseClient: any) {
   }
 }
 
+async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Promise<string | null> {
+  try {
+    console.log('Downloading WhatsApp media:', mediaId)
+    
+    // First, get the media URL
+    const mediaResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!mediaResponse.ok) {
+      console.error('Error getting media URL:', await mediaResponse.text())
+      return null
+    }
+    
+    const mediaData = await mediaResponse.json()
+    const mediaUrl = mediaData.url
+    
+    console.log('Media URL obtained:', mediaUrl)
+    
+    // Download the media file
+    const fileResponse = await fetch(mediaUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!fileResponse.ok) {
+      console.error('Error downloading media file:', await fileResponse.text())
+      return null
+    }
+    
+    const fileBlob = await fileResponse.blob()
+    const fileExtension = mediaData.mime_type?.split('/')[1] || 'jpg'
+    const fileName = `whatsapp_${mediaId}.${fileExtension}`
+    
+    console.log('Media downloaded, size:', fileBlob.size, 'bytes')
+    
+    // Here you would typically upload to your storage
+    // For now, we'll return the original URL as placeholder
+    return mediaUrl
+    
+  } catch (error) {
+    console.error('Error downloading WhatsApp media:', error)
+    return null
+  }
+}
+
 async function handleIncomingMessage(message: any, supabaseClient: any) {
-  const { id, from, timestamp, type, text } = message
+  const { id, from, timestamp, type, text, image, document, audio, video } = message
   
   console.log('Incoming message:', {
     id,
     from,
     timestamp,
     type,
-    text: text?.body
+    text: text?.body,
+    image: image?.id,
+    document: document?.id,
+    audio: audio?.id,
+    video: video?.id
   })
 
   // Try to find customer by phone number with more flexible matching
@@ -306,20 +360,87 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     }) || existingCustomers[0]
   }
 
-  // Store the incoming message
-  await supabaseClient
-    .from('incoming_messages')
-    .insert({
-      whatsapp_message_id: id,
-      from_phone: from,
-      customer_id: customer?.id || null,
-      message_type: type,
-      message_content: text?.body || '',
-      timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-      raw_data: message
-    })
+  // Prepare message content and media URL
+  let messageContent = ''
+  let mediaUrl = null
+  let mediaType = type
 
-  console.log('Incoming message stored')
+  // Handle different message types
+  switch (type) {
+    case 'text':
+      messageContent = text?.body || ''
+      break
+    
+    case 'image':
+      messageContent = image?.caption || '📷 Imagen'
+      if (image?.id) {
+        // For now, we'll store the media ID and try to download later
+        // In production, you'd want to download and store the image
+        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
+        if (accessToken) {
+          mediaUrl = await downloadWhatsAppMedia(image.id, accessToken)
+        }
+      }
+      break
+    
+    case 'document':
+      messageContent = document?.caption || `📄 Documento: ${document?.filename || 'archivo'}`
+      if (document?.id) {
+        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
+        if (accessToken) {
+          mediaUrl = await downloadWhatsAppMedia(document.id, accessToken)
+        }
+      }
+      break
+    
+    case 'audio':
+      messageContent = '🎵 Mensaje de voz'
+      if (audio?.id) {
+        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
+        if (accessToken) {
+          mediaUrl = await downloadWhatsAppMedia(audio.id, accessToken)
+        }
+      }
+      break
+    
+    case 'video':
+      messageContent = video?.caption || '🎥 Video'
+      if (video?.id) {
+        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
+        if (accessToken) {
+          mediaUrl = await downloadWhatsAppMedia(video.id, accessToken)
+        }
+      }
+      break
+    
+    default:
+      messageContent = `Mensaje no soportado: ${type}`
+      console.log('Unsupported message type:', type, message)
+  }
+
+  // Store the incoming message
+  const messageData = {
+    whatsapp_message_id: id,
+    from_phone: from,
+    customer_id: customer?.id || null,
+    message_type: mediaType,
+    message_content: messageContent,
+    media_url: mediaUrl,
+    timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
+    raw_data: message
+  }
+
+  console.log('Storing message with data:', messageData)
+
+  const { error: insertError } = await supabaseClient
+    .from('incoming_messages')
+    .insert(messageData)
+
+  if (insertError) {
+    console.error('Error storing incoming message:', insertError)
+  } else {
+    console.log('Incoming message stored successfully')
+  }
 
   // If it's a text message, you could implement auto-responses here
   if (type === 'text' && text?.body) {

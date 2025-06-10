@@ -10,6 +10,7 @@ interface IncomingMessage {
   customer_id: string | null;
   message_type: string;
   message_content: string | null;
+  media_url: string | null;
   message_timestamp: string;
   customers?: {
     name: string;
@@ -20,11 +21,12 @@ interface IncomingMessage {
 interface Message {
   id: string;
   message_content: string;
-  message_type: 'text' | 'image';
+  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
   timestamp: string;
   whatsapp_message_id?: string;
   from_phone?: string;
   is_from_customer?: boolean;
+  media_url?: string;
 }
 
 export function useChatData() {
@@ -58,6 +60,7 @@ export function useChatData() {
         customer_id: msg.customer_id,
         message_type: msg.message_type,
         message_content: msg.message_content,
+        media_url: msg.media_url,
         message_timestamp: msg.timestamp,
         customers: msg.customers
       }));
@@ -95,18 +98,20 @@ export function useChatData() {
       ...incoming.map(msg => ({
         id: msg.id,
         message_content: msg.message_content || '(Sin contenido de texto)',
-        message_type: (msg.message_type || 'text') as 'text' | 'image',
+        message_type: (msg.message_type || 'text') as 'text' | 'image' | 'document' | 'audio' | 'video',
         timestamp: msg.message_timestamp,
         whatsapp_message_id: msg.whatsapp_message_id,
         from_phone: msg.from_phone,
-        is_from_customer: true
+        is_from_customer: true,
+        media_url: msg.media_url || undefined
       })),
       ...outgoing.map(msg => ({
         id: msg.id,
         message_content: msg.message,
-        message_type: (msg.image_url ? 'image' : 'text') as 'text' | 'image',
+        message_type: (msg.image_url ? 'image' : 'text') as 'text' | 'image' | 'document' | 'audio' | 'video',
         timestamp: msg.sent_at,
-        is_from_customer: false
+        is_from_customer: false,
+        media_url: msg.image_url || undefined
       }))
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
@@ -150,9 +155,10 @@ export function useChatData() {
         messages: [{
           id: sentMsg.id,
           message_content: sentMsg.message,
-          message_type: (sentMsg.image_url ? 'image' : 'text') as 'text' | 'image',
+          message_type: (sentMsg.image_url ? 'image' : 'text') as 'text' | 'image' | 'document' | 'audio' | 'video',
           timestamp: sentMsg.sent_at,
-          is_from_customer: false
+          is_from_customer: false,
+          media_url: sentMsg.image_url || undefined
         }],
         latestIncoming: null as any, // No hay mensaje entrante
         customerName: undefined,

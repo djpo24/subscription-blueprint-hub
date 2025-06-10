@@ -28,19 +28,8 @@ export function CustomerAvatar({
     return names[0][0].toUpperCase();
   };
 
-  // Validar que profileImageUrl sea una string válida y no esté vacía
-  const isValidImageUrl = profileImageUrl && 
-                         typeof profileImageUrl === 'string' && 
-                         profileImageUrl.trim() !== '' &&
-                         profileImageUrl !== 'null' &&
-                         profileImageUrl !== 'undefined';
-
-  console.log('CustomerAvatar render:', {
-    customerName,
-    profileImageUrl,
-    isValidImageUrl,
-    size
-  });
+  // Validar que profileImageUrl sea una string válida
+  const isValidImageUrl = profileImageUrl && typeof profileImageUrl === 'string' && profileImageUrl.trim() !== '';
 
   return (
     <Avatar className={sizeClasses[size]}>
@@ -51,7 +40,7 @@ export function CustomerAvatar({
           onLoad={() => console.log('Avatar image loaded successfully:', profileImageUrl)}
           onError={(e) => {
             console.log('Avatar image failed to load:', profileImageUrl);
-            console.error('Image error event:', e);
+            console.error('Image error:', e);
           }}
           crossOrigin="anonymous"
         />

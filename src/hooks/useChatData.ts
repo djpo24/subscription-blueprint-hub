@@ -2,7 +2,32 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSentMessages } from './useSentMessages';
-import { ChatMessage, IncomingMessage } from '@/types/chatMessage';
+
+interface IncomingMessage {
+  id: string;
+  whatsapp_message_id: string;
+  from_phone: string;
+  customer_id: string | null;
+  message_type: string;
+  message_content: string | null;
+  media_url: string | null;
+  message_timestamp: string;
+  customers?: {
+    name: string;
+    profile_image_url?: string;
+  } | null;
+}
+
+interface Message {
+  id: string;
+  message_content: string;
+  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
+  timestamp: string;
+  whatsapp_message_id?: string;
+  from_phone?: string;
+  is_from_customer?: boolean;
+  media_url?: string;
+}
 
 export function useChatData() {
   const { sentMessages } = useSentMessages();
@@ -14,14 +39,7 @@ export function useChatData() {
       const { data, error } = await supabase
         .from('incoming_messages')
         .select(`
-          id,
-          whatsapp_message_id,
-          from_phone,
-          customer_id,
-          message_type,
-          message_content,
-          media_url,
-          timestamp,
+          *,
           customers (
             name,
             profile_image_url
@@ -48,7 +66,6 @@ export function useChatData() {
       }));
 
       console.log('Processed incoming messages:', processedData.length);
-      console.log('Sample message with media:', processedData.find(m => m.media_url));
       
       return processedData;
     },
@@ -77,7 +94,7 @@ export function useChatData() {
              incomingPhone.endsWith(msgPhone);
     });
     
-    const allMessages: ChatMessage[] = [
+    const allMessages: Message[] = [
       ...incoming.map(msg => ({
         id: msg.id,
         message_content: msg.message_content || '(Sin contenido de texto)',
@@ -99,22 +116,20 @@ export function useChatData() {
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const latestMessage = incoming[0];
-    // Obtener la imagen de perfil del cliente más reciente
-    const profileImageUrl = latestMessage?.customers?.profile_image_url;
-
-    console.log('Profile image URL for phone', phone, ':', profileImageUrl);
+    // Normalizar el profile_image_url para evitar valores undefined problemáticos
+    const profileImageUrl = latestMessage?.customers?.profile_image_url || null;
 
     acc[phone] = {
       messages: allMessages,
       latestIncoming: latestMessage,
       customerName: latestMessage?.customers?.name,
       customerId: latestMessage?.customer_id,
-      profileImageUrl: profileImageUrl || null
+      profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : null
     };
 
     return acc;
   }, {} as Record<string, {
-    messages: ChatMessage[];
+    messages: Message[];
     latestIncoming: IncomingMessage;
     customerName?: string;
     customerId: string | null;
@@ -154,22 +169,17 @@ export function useChatData() {
   });
 
   // Crear lista de chats para la columna izquierda
-  const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => {
-    console.log('Creating chat list item for phone:', phone, 'with profile image:', conversation.profileImageUrl);
-    
-    return {
-      phone,
-      customerName: conversation.customerName,
-      lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
-      lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
-      isRegistered: !!conversation.customerId,
-      unreadCount: 0,
-      profileImageUrl: conversation.profileImageUrl
-    };
-  }).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+  const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => ({
+    phone,
+    customerName: conversation.customerName,
+    lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
+    lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
+    isRegistered: !!conversation.customerId,
+    unreadCount: 0,
+    profileImageUrl: conversation.profileImageUrl
+  })).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
   console.log('Chat list processed:', chatList.length, 'conversations');
-  console.log('Profile images in chat list:', chatList.map(chat => ({ phone: chat.phone, profileImageUrl: chat.profileImageUrl })));
 
   return {
     chatList,

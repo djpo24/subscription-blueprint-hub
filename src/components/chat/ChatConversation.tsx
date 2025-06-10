@@ -8,13 +8,22 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
 import { useConsultaEncomienda } from '@/hooks/useConsultaEncomienda';
-import { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+
+interface Message {
+  id: string;
+  message_content: string;
+  message_type: 'text' | 'image';
+  timestamp: string;
+  whatsapp_message_id?: string;
+  from_phone?: string;
+  is_from_customer?: boolean;
+}
 
 interface ChatConversationProps {
   phone: string;
   customerName?: string;
   customerId?: string | null;
-  messages: ChatMessageType[];
+  messages: Message[];
   isRegistered: boolean;
   onSendMessage: (message: string, image?: File) => void;
   isLoading: boolean;

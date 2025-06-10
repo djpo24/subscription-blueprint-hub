@@ -3,10 +3,20 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
-import { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+
+interface Message {
+  id: string;
+  message_content: string;
+  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
+  timestamp: string;
+  whatsapp_message_id?: string;
+  from_phone?: string;
+  is_from_customer?: boolean;
+  media_url?: string;
+}
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: Message;
   customerName?: string;
   profileImageUrl?: string;
 }
@@ -32,27 +42,20 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
   };
 
   const renderMessageContent = () => {
-    console.log('Rendering message:', message.id, 'Type:', message.message_type, 'Media URL:', message.media_url);
+    const hasMedia = message.media_url && message.message_type !== 'text';
     
     return (
       <div className="space-y-2">
-        {/* Mostrar imagen si es un mensaje de imagen y tiene media_url */}
+        {/* Mostrar imagen si es un mensaje de imagen */}
         {message.message_type === 'image' && message.media_url && (
           <div className="max-w-xs">
             <img 
               src={message.media_url} 
               alt="Imagen enviada"
-              className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-              onLoad={() => {
-                console.log('Image loaded successfully:', message.media_url);
-              }}
+              className="rounded-lg max-w-full h-auto"
               onError={(e) => {
-                console.error('Error loading image:', message.media_url, e);
+                console.error('Error loading image:', message.media_url);
                 e.currentTarget.style.display = 'none';
-              }}
-              onClick={() => {
-                // Abrir imagen en nueva ventana para ver en tamaño completo
-                window.open(message.media_url, '_blank');
               }}
             />
           </div>
@@ -74,15 +77,8 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
           </div>
         )}
         
-        {/* Mostrar texto del mensaje si existe */}
-        {message.message_content && message.message_content !== '(Sin contenido de texto)' && (
-          <p className="text-sm">{message.message_content}</p>
-        )}
-        
-        {/* Si es imagen pero no hay texto, mostrar indicador */}
-        {message.message_type === 'image' && (!message.message_content || message.message_content === '(Sin contenido de texto)') && (
-          <p className="text-sm text-gray-500 italic">📷 Imagen</p>
-        )}
+        {/* Mostrar texto del mensaje */}
+        <p className="text-sm">{message.message_content || '(Sin contenido de texto)'}</p>
       </div>
     );
   };

@@ -503,7 +503,6 @@ export type Database = {
           customer_id: string | null
           from_phone: string
           id: string
-          media_url: string | null
           message_content: string | null
           message_type: string
           raw_data: Json | null
@@ -515,7 +514,6 @@ export type Database = {
           customer_id?: string | null
           from_phone: string
           id?: string
-          media_url?: string | null
           message_content?: string | null
           message_type?: string
           raw_data?: Json | null
@@ -527,7 +525,6 @@ export type Database = {
           customer_id?: string | null
           from_phone?: string
           id?: string
-          media_url?: string | null
           message_content?: string | null
           message_type?: string
           raw_data?: Json | null

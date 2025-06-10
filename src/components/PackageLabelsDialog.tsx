@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
@@ -36,14 +37,18 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
   console.log('PackageLabelsDialog - Selected package IDs:', state.selectedPackageIds.size);
   console.log('PackageLabelsDialog - Selected printed package IDs:', state.selectedPrintedPackageIds.size);
 
-  // Actualizar la lógica de filtrado para los paquetes impresos
+  // LÓGICA ACTUALIZADA: Una vez que un paquete tiene estado diferente a "recibido", 
+  // se considera que su etiqueta ha sido impresa y debe permanecer en la pestaña "Impresas"
   const pendingPackages = allPackages.filter(pkg => 
-    pkg.status === 'recibido'
+    pkg.status === 'recibido' // SOLO los paquetes en estado "recibido" están pendientes de imprimir
   );
   
   const printedPackages = allPackages.filter(pkg => 
-    pkg.status === 'procesado' || pkg.status === 'transito' || pkg.status === 'en_destino' || pkg.status === 'delivered'
+    pkg.status !== 'recibido' // TODOS los demás estados significan que la etiqueta ha sido impresa
   );
+
+  console.log('PackageLabelsDialog - Pending packages:', pendingPackages.length);
+  console.log('PackageLabelsDialog - Printed packages:', printedPackages.length);
 
   const handlePrintSingleLabel = (packageData: PackageWithRoute) => {
     setState(prev => ({

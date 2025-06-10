@@ -25,28 +25,32 @@ export function useMarkPackageAsPrinted() {
         throw fetchError;
       }
 
-      // Actualizar estados según la lógica actual
+      // Actualizar estados según la lógica: una vez impreso, nunca vuelve a pendiente
       const updates = packages?.map(pkg => {
         let newStatus = pkg.status;
         
-        // Si está en recibido, pasa a procesado
+        // Si está en recibido (pendiente), pasa a procesado (impreso)
         if (pkg.status === 'recibido') {
           newStatus = 'procesado';
+          console.log(`📦 Paquete ${pkg.id}: ${pkg.status} → ${newStatus} (primera impresión)`);
         }
-        // Si está en procesado, pasa a transito
-        else if (pkg.status === 'procesado') {
-          newStatus = 'transito';
+        // Si ya está impreso (cualquier estado != recibido), mantiene su estado actual
+        // Esto asegura que nunca vuelva a "recibido" (pendiente)
+        else {
+          console.log(`📦 Paquete ${pkg.id}: mantiene estado ${pkg.status} (re-impresión)`);
         }
-        // Si ya está en transito o superior, mantiene su estado
         
         return {
           id: pkg.id,
+          oldStatus: pkg.status,
           newStatus
         };
       }) || [];
 
-      // Ejecutar las actualizaciones
-      for (const update of updates) {
+      // Ejecutar las actualizaciones solo si hay cambios de estado
+      const packagesToUpdate = updates.filter(update => update.oldStatus !== update.newStatus);
+      
+      for (const update of packagesToUpdate) {
         const { error } = await supabase
           .from('packages')
           .update({ status: update.newStatus })
@@ -58,7 +62,12 @@ export function useMarkPackageAsPrinted() {
         }
       }
 
-      console.log('✅ Paquetes marcados como impresos exitosamente');
+      console.log('✅ Paquetes procesados para impresión:', {
+        total: updates.length,
+        updated: packagesToUpdate.length,
+        maintained: updates.length - packagesToUpdate.length
+      });
+      
       return updates;
     },
     onSuccess: (updates) => {
@@ -67,11 +76,17 @@ export function useMarkPackageAsPrinted() {
       queryClient.invalidateQueries({ queryKey: ['packagesByDate'] });
       queryClient.invalidateQueries({ queryKey: ['packagesByTrip'] });
       
-      toast.success(`${updates.length} etiqueta${updates.length !== 1 ? 's' : ''} marcada${updates.length !== 1 ? 's' : ''} como impresa${updates.length !== 1 ? 's' : ''}`);
+      const updatedCount = updates.filter(u => u.oldStatus !== u.newStatus).length;
+      
+      if (updatedCount > 0) {
+        toast.success(`${updates.length} etiqueta${updates.length !== 1 ? 's' : ''} procesada${updates.length !== 1 ? 's' : ''} para impresión`);
+      } else {
+        toast.success(`${updates.length} etiqueta${updates.length !== 1 ? 's' : ''} re-impresa${updates.length !== 1 ? 's' : ''}`);
+      }
     },
     onError: (error) => {
-      console.error('❌ Error marcando paquetes como impresos:', error);
-      toast.error('Error al marcar las etiquetas como impresas');
+      console.error('❌ Error procesando etiquetas para impresión:', error);
+      toast.error('Error al procesar las etiquetas para impresión');
     }
   });
 }

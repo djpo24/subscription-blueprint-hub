@@ -35,6 +35,11 @@ export function ChatConversation({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { sendConsultaEncomienda, isSending } = useConsultaEncomienda();
 
+  // Priorizar el nombre registrado del cliente si está disponible y es cliente registrado
+  const displayName = isRegistered && customerName && customerName !== 'Cliente' 
+    ? customerName 
+    : (customerName || 'Cliente');
+
   const scrollToBottom = () => {
     if (autoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -46,7 +51,7 @@ export function ChatConversation({
   }, [messages, autoScroll]);
 
   const handleInitiateChat = async () => {
-    const success = await sendConsultaEncomienda(customerName, phone, customerId || undefined);
+    const success = await sendConsultaEncomienda(displayName, phone, customerId || undefined);
     if (success) {
       // Opcionalmente refrescar los mensajes después de enviar
       console.log('Plantilla consulta_encomienda enviada exitosamente');
@@ -59,12 +64,12 @@ export function ChatConversation({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CustomerAvatar 
-              customerName={customerName}
+              customerName={displayName}
               profileImageUrl={profileImageUrl}
               size="md"
             />
             <div>
-              <CardTitle className="text-lg">{customerName}</CardTitle>
+              <CardTitle className="text-lg">{displayName}</CardTitle>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>{phone}</span>
                 <Badge variant={isRegistered ? "default" : "secondary"} className="text-xs">
@@ -113,7 +118,7 @@ export function ChatConversation({
               <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
               <p className="text-center">No hay mensajes aún</p>
               <p className="text-sm text-center mt-2">
-                Los mensajes aparecerán aquí cuando {customerName} escriba
+                Los mensajes aparecerán aquí cuando {displayName} escriba
               </p>
             </div>
           ) : (
@@ -122,7 +127,7 @@ export function ChatConversation({
                 <ChatMessage
                   key={message.id}
                   message={message}
-                  customerName={customerName}
+                  customerName={displayName}
                   profileImageUrl={profileImageUrl}
                 />
               ))}
@@ -135,7 +140,7 @@ export function ChatConversation({
         <ChatInput 
           onSendMessage={onSendMessage} 
           isLoading={isLoading}
-          placeholder={`Escribir mensaje a ${customerName}...`}
+          placeholder={`Escribir mensaje a ${displayName}...`}
         />
       </CardContent>
     </Card>

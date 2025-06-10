@@ -99,15 +99,18 @@ export function useChatData() {
     ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const latestMessage = incoming[0];
-    // Obtener la imagen de perfil del cliente más reciente
+    // Priorizar nombre registrado del cliente
+    const registeredCustomerName = latestMessage?.customers?.name;
     const profileImageUrl = latestMessage?.customers?.profile_image_url;
 
     console.log('Profile image URL for phone', phone, ':', profileImageUrl);
+    console.log('Registered customer name for phone', phone, ':', registeredCustomerName);
 
     acc[phone] = {
       messages: allMessages,
       latestIncoming: latestMessage,
-      customerName: latestMessage?.customers?.name,
+      // Usar el nombre registrado del cliente si está disponible
+      customerName: registeredCustomerName || undefined,
       customerId: latestMessage?.customer_id,
       profileImageUrl: profileImageUrl || null
     };
@@ -155,10 +158,11 @@ export function useChatData() {
 
   // Crear lista de chats para la columna izquierda
   const chatList = Object.entries(conversationsByPhone).map(([phone, conversation]) => {
-    console.log('Creating chat list item for phone:', phone, 'with profile image:', conversation.profileImageUrl);
+    console.log('Creating chat list item for phone:', phone, 'with registered name:', conversation.customerName);
     
     return {
       phone,
+      // Usar el nombre registrado del cliente si está disponible
       customerName: conversation.customerName,
       lastMessage: conversation.messages[conversation.messages.length - 1]?.message_content || 'Sin mensajes',
       lastMessageTime: conversation.messages[conversation.messages.length - 1]?.timestamp || new Date().toISOString(),
@@ -169,7 +173,7 @@ export function useChatData() {
   }).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
   console.log('Chat list processed:', chatList.length, 'conversations');
-  console.log('Profile images in chat list:', chatList.map(chat => ({ phone: chat.phone, profileImageUrl: chat.profileImageUrl })));
+  console.log('Registered names in chat list:', chatList.map(chat => ({ phone: chat.phone, customerName: chat.customerName, isRegistered: chat.isRegistered })));
 
   return {
     chatList,

@@ -46,63 +46,70 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
       <CardContent className="p-0 h-[calc(100%-5rem)]">
         <ScrollArea className="h-full">
           <div className="space-y-1 p-2">
-            {chats.map((chat) => (
-              <div
-                key={chat.phone}
-                onClick={() => onChatSelect(chat.phone)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                  selectedPhone === chat.phone
-                    ? 'bg-blue-50 border-blue-200'
-                    : 'hover:bg-gray-50 border-transparent'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <CustomerAvatar 
-                      customerName={chat.customerName}
-                      profileImageUrl={chat.profileImageUrl}
-                      size="md"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-medium truncate">
-                          {chat.customerName || 'Cliente'}
-                        </h4>
-                        <Badge 
-                          variant={chat.isRegistered ? "default" : "secondary"} 
-                          className="text-xs"
-                        >
-                          {chat.isRegistered ? (
-                            <UserCheck className="h-3 w-3" />
-                          ) : (
-                            <UserX className="h-3 w-3" />
-                          )}
-                        </Badge>
-                      </div>
-                      {chat.unreadCount > 0 && (
-                        <Badge variant="destructive" className="text-xs">
-                          {chat.unreadCount}
-                        </Badge>
-                      )}
+            {chats.map((chat) => {
+              // Priorizar el nombre registrado si el cliente está registrado
+              const displayName = chat.isRegistered && chat.customerName 
+                ? chat.customerName 
+                : (chat.customerName || 'Cliente');
+              
+              return (
+                <div
+                  key={chat.phone}
+                  onClick={() => onChatSelect(chat.phone)}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                    selectedPhone === chat.phone
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'hover:bg-gray-50 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <CustomerAvatar 
+                        customerName={displayName}
+                        profileImageUrl={chat.profileImageUrl}
+                        size="md"
+                      />
                     </div>
                     
-                    <p className="text-xs text-gray-600 mb-1">{chat.phone}</p>
-                    
-                    <div className="flex justify-between items-end">
-                      <p className="text-sm text-gray-500 truncate flex-1 mr-2">
-                        {chat.lastMessage}
-                      </p>
-                      <span className="text-xs text-gray-400 flex-shrink-0">
-                        {format(new Date(chat.lastMessageTime), 'HH:mm', { locale: es })}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-medium truncate">
+                            {displayName}
+                          </h4>
+                          <Badge 
+                            variant={chat.isRegistered ? "default" : "secondary"} 
+                            className="text-xs"
+                          >
+                            {chat.isRegistered ? (
+                              <UserCheck className="h-3 w-3" />
+                            ) : (
+                              <UserX className="h-3 w-3" />
+                            )}
+                          </Badge>
+                        </div>
+                        {chat.unreadCount > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {chat.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-600 mb-1">{chat.phone}</p>
+                      
+                      <div className="flex justify-between items-end">
+                        <p className="text-sm text-gray-500 truncate flex-1 mr-2">
+                          {chat.lastMessage}
+                        </p>
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {format(new Date(chat.lastMessageTime), 'HH:mm', { locale: es })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>

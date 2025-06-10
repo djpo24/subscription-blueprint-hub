@@ -24,7 +24,8 @@ interface Package {
 
 interface TripPackageCardContentProps {
   packages: Package[];
-  onPackageClick: (pkg: Package) => void;
+  tripId: string;
+  onPackageClick: (pkg: Package, tripId: string) => void;
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
@@ -32,6 +33,7 @@ interface TripPackageCardContentProps {
 
 export function TripPackageCardContent({ 
   packages, 
+  tripId,
   onPackageClick, 
   onOpenChat,
   previewRole,
@@ -52,7 +54,8 @@ export function TripPackageCardContent({
             <PackageItem
               key={pkg.id}
               package={pkg}
-              onClick={() => onPackageClick(pkg)}
+              tripId={tripId}
+              onPackageClick={onPackageClick}
               onOpenChat={onOpenChat}
               previewRole={previewRole}
               disableChat={disableChat}

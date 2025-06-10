@@ -5,24 +5,34 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+interface DispatchRelation {
+  id: string;
+  dispatch_date: string;
+  total_packages: number;
+  total_weight: number;
+  total_freight: number;
+  total_amount_to_collect: number;
+  status: string;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface PackagesByDateHeaderProps {
   selectedDate: Date;
-  totalPackages: number;
-  totalTrips: number;
-  dispatchCount: number;
   onBack: () => void;
   onCreateDispatch: () => void;
   onOpenLabelsDialog: () => void;
+  dispatches: DispatchRelation[];
 }
 
 export function PackagesByDateHeader({
   selectedDate,
-  totalPackages,
-  totalTrips,
-  dispatchCount,
   onBack,
   onCreateDispatch,
-  onOpenLabelsDialog
+  onOpenLabelsDialog,
+  dispatches
 }: PackagesByDateHeaderProps) {
   const isMobile = useIsMobile();
 
@@ -46,16 +56,9 @@ export function PackagesByDateHeader({
             Encomiendas - {format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: es })}
           </h2>
           <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-            <span className="flex items-center gap-1">
-              <Package className="h-4 w-4" />
-              {totalPackages} encomiendas
-            </span>
-            <span>•</span>
-            <span>{totalTrips} viajes</span>
-            {dispatchCount > 0 && (
+            {dispatches.length > 0 && (
               <>
-                <span>•</span>
-                <span>{dispatchCount} despachos</span>
+                <span>{dispatches.length} despachos</span>
               </>
             )}
           </div>

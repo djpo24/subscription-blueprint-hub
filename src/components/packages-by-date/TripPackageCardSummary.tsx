@@ -2,6 +2,7 @@
 import { Package, Weight, DollarSign, CheckCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/utils/currencyFormatter';
+import { formatWeight, formatFreight } from '@/utils/formatters';
 
 type Currency = 'COP' | 'AWG';
 
@@ -72,7 +73,7 @@ export function TripPackageCardSummary({
           <Weight className="h-4 w-4 text-purple-600" />
           <div>
             <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-purple-800`}>
-              {totalWeight} kg
+              {formatWeight(totalWeight)} kg
             </div>
             <div className="text-xs text-purple-600">Peso</div>
           </div>

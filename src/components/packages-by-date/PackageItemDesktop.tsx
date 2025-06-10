@@ -1,72 +1,116 @@
 
-import { Badge } from '@/components/ui/badge';
+import { Package, User, MessageCircle, DollarSign, Weight, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBadge';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { PackageItemProps } from './types';
 
-interface PackageItemDesktopProps extends PackageItemProps {
-  getStatusColor: (status: string) => string;
-  handleChatClick: (e: React.MouseEvent) => void;
-  canShowChat: boolean;
+type Currency = 'COP' | 'AWG';
+
+interface Package {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  description: string;
+  weight: string;
+  freight: string;
+  amount_to_collect: string;
+  currency: Currency;
+  status: string;
+  customers?: {
+    name: string;
+    email: string;
+  };
 }
 
-export function PackageItemDesktop({ 
-  package: pkg, 
-  onClick,
-  getStatusColor,
-  handleChatClick,
-  canShowChat
+interface PackageItemDesktopProps {
+  package: Package;
+  tripId: string;
+  onPackageClick: (pkg: any, tripId: string) => void;
+  onOpenChat: (customerId: string, customerName?: string) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  disableChat?: boolean;
+}
+
+export function PackageItemDesktop({
+  package: pkg,
+  tripId,
+  onPackageClick,
+  onOpenChat,
+  previewRole,
+  disableChat = false
 }: PackageItemDesktopProps) {
+  const handleClick = () => {
+    onPackageClick(pkg, tripId);
+  };
+
+  const handleChatClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenChat(pkg.customer_id, pkg.customers?.name);
+  };
+
+  const canChat = !disableChat && previewRole !== 'traveler';
+
   return (
     <div 
-      className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-      onClick={onClick}
+      className="grid grid-cols-12 gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 bg-white items-center"
+      onClick={handleClick}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-lg">{pkg.customers?.name || 'Cliente no especificado'}</span>
-              <Badge className={getStatusColor(pkg.status)}>
-                {pkg.status}
-              </Badge>
-            </div>
-            <span className="font-semibold text-lg">{pkg.tracking_number}</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-            <div>
-              <span className="font-medium">Peso:</span> {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
-            </div>
-            <div>
-              <span className="font-medium">Flete:</span> {formatCurrency(pkg.freight, 'COP')}
-            </div>
-            <div>
-              <span className="font-medium">A Cobrar:</span> {formatCurrency(pkg.amount_to_collect, pkg.currency || 'COP')}
-            </div>
-            <div>
-              <span className="font-medium">Moneda:</span> {pkg.currency || 'COP'}
-            </div>
-          </div>
-          
-          <div className="mt-2 text-sm text-gray-500">
-            <span className="font-medium">Descripción:</span> {pkg.description}
-          </div>
+      <div className="col-span-3">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-blue-600" />
+          <span className="font-mono text-sm font-medium">{pkg.tracking_number}</span>
         </div>
-        
-        {canShowChat && (
-          <div className="ml-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleChatClick}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </Button>
-          </div>
+      </div>
+
+      <div className="col-span-2">
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-gray-500" />
+          <span className="text-sm text-gray-700 truncate">
+            {pkg.customers?.name || 'Cliente no encontrado'}
+          </span>
+        </div>
+      </div>
+
+      <div className="col-span-2">
+        <p className="text-sm text-gray-600 line-clamp-1">{pkg.description}</p>
+      </div>
+
+      <div className="col-span-1 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <Weight className="h-3 w-3 text-purple-600" />
+          <span className="text-sm">{pkg.weight} kg</span>
+        </div>
+      </div>
+
+      <div className="col-span-1 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <Truck className="h-3 w-3 text-orange-600" />
+          <span className="text-sm">${pkg.freight}</span>
+        </div>
+      </div>
+
+      <div className="col-span-1 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <DollarSign className="h-3 w-3 text-green-600" />
+          <span className="text-sm">{formatCurrency(parseFloat(pkg.amount_to_collect), pkg.currency)}</span>
+        </div>
+      </div>
+
+      <div className="col-span-1">
+        <PackageStatusBadge status={pkg.status} />
+      </div>
+
+      <div className="col-span-1">
+        {canChat && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleChatClick}
+            className="h-8 w-full"
+          >
+            <MessageCircle className="h-3 w-3" />
+          </Button>
         )}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBadge';
 import { formatCurrency } from '@/utils/currencyFormatter';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -79,14 +80,14 @@ export function PackageItemDesktop({
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <Weight className="h-3 w-3 text-purple-600" />
-          <span className="text-sm">{pkg.weight} kg</span>
+          <span className="text-sm">{formatNumberWithThousandsSeparator(pkg.weight)} kg</span>
         </div>
       </div>
 
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <Truck className="h-3 w-3 text-orange-600" />
-          <span className="text-sm">${pkg.freight}</span>
+          <span className="text-sm">${formatNumberWithThousandsSeparator(pkg.freight)}</span>
         </div>
       </div>
 

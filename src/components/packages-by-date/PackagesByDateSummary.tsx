@@ -2,6 +2,7 @@
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { formatWeight, formatFreight } from '@/utils/formatters';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface PackagesByDateSummaryProps {
@@ -30,7 +31,7 @@ export function PackagesByDateSummary({
     <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-4 gap-4'} mt-4`}>
       <Card className="bg-gray-50 border-0 shadow-none">
         <CardContent className="p-4 text-center">
-          <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-blue-600`}>{totalPackages}</div>
+          <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-blue-600`}>{formatNumberWithThousandsSeparator(totalPackages)}</div>
           <div className="text-xs text-gray-600">Paquetes</div>
         </CardContent>
       </Card>

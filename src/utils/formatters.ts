@@ -1,4 +1,6 @@
 
+import { formatNumberWithThousandsSeparator } from './numberFormatter';
+
 // Utility functions for formatting numbers
 export const formatDecimal = (value: number | null | undefined, maxDecimals: number = 2): string => {
   if (value === null || value === undefined) return '0';
@@ -8,8 +10,9 @@ export const formatDecimal = (value: number | null | undefined, maxDecimals: num
   
   if (isNaN(numValue)) return '0';
   
-  // Format with maximum decimal places, removing trailing zeros
-  return parseFloat(numValue.toFixed(maxDecimals)).toString();
+  // Format with maximum decimal places, removing trailing zeros, and add thousands separator
+  const formattedValue = parseFloat(numValue.toFixed(maxDecimals));
+  return formatNumberWithThousandsSeparator(formattedValue);
 };
 
 export const formatWeight = (weight: number | null | undefined): string => {

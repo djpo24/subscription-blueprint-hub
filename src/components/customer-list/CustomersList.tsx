@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatDialog } from '@/components/chat/ChatDialog';
 import { EditCustomerDialog } from './EditCustomerDialog';
+import { DeleteCustomerDialog } from './DeleteCustomerDialog';
 import { CustomerSearchBar } from './CustomerSearchBar';
 import { CustomersTable } from './CustomersTable';
 import { CustomerFormDialog } from '@/components/CustomerFormDialog';
@@ -26,6 +27,7 @@ export function CustomersList() {
   const [searchCustomerId, setSearchCustomerId] = useState<string | null>(null);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -76,6 +78,11 @@ export function CustomersList() {
     setEditDialogOpen(true);
   };
 
+  const handleDeleteClick = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setDeleteDialogOpen(true);
+  };
+
   const handleEditSuccess = () => {
     refetch();
     setEditDialogOpen(false);
@@ -83,6 +90,12 @@ export function CustomersList() {
       title: "Cliente actualizado",
       description: "La información del cliente ha sido actualizada exitosamente",
     });
+  };
+
+  const handleDeleteSuccess = () => {
+    refetch();
+    setDeleteDialogOpen(false);
+    setSelectedCustomerId(null);
   };
 
   const handleCreateCustomerSuccess = (customerId: string) => {
@@ -135,6 +148,7 @@ export function CustomersList() {
         searchCustomerId={searchCustomerId}
         onChatClick={handleChatClick}
         onEditClick={handleEditClick}
+        onDeleteClick={handleDeleteClick}
       />
 
       {selectedCustomer && (
@@ -152,6 +166,13 @@ export function CustomersList() {
             onOpenChange={setEditDialogOpen}
             customer={selectedCustomer}
             onSuccess={handleEditSuccess}
+          />
+
+          <DeleteCustomerDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            customer={selectedCustomer}
+            onSuccess={handleDeleteSuccess}
           />
         </>
       )}

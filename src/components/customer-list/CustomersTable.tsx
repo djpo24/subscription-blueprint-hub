@@ -21,6 +21,7 @@ interface CustomersTableProps {
   searchCustomerId: string | null;
   onChatClick: (customerId: string) => void;
   onEditClick: (customerId: string) => void;
+  onDeleteClick: (customerId: string) => void;
 }
 
 export function CustomersTable({
@@ -28,7 +29,8 @@ export function CustomersTable({
   filteredCustomers,
   searchCustomerId,
   onChatClick,
-  onEditClick
+  onEditClick,
+  onDeleteClick
 }: CustomersTableProps) {
   return (
     <Card>
@@ -65,6 +67,7 @@ export function CustomersTable({
                   customer={customer}
                   onChatClick={onChatClick}
                   onEditClick={onEditClick}
+                  onDeleteClick={onDeleteClick}
                 />
               ))}
               {filteredCustomers.length === 0 && (

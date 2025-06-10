@@ -10,16 +10,22 @@ export const formatDecimal = (value: number | null | undefined, maxDecimals: num
   
   if (isNaN(numValue)) return '0';
   
-  // Return the complete value with thousands separator, no truncation
+  // Don't use toFixed to avoid rounding, just format with thousands separator
   return formatNumberWithThousandsSeparator(numValue);
 };
 
 export const formatWeight = (weight: number | null | undefined): string => {
-  return formatDecimal(weight, 2);
+  if (weight === null || weight === undefined) return '0';
+  
+  const numValue = typeof weight === 'string' ? parseFloat(weight) : weight;
+  
+  if (isNaN(numValue)) return '0';
+  
+  // Show complete value with thousands separator
+  return formatNumberWithThousandsSeparator(numValue);
 };
 
 export const formatFreight = (freight: number | null | undefined): string => {
-  // For freight, we want to show the complete value without decimal truncation
   if (freight === null || freight === undefined) return '0';
   
   const numValue = typeof freight === 'string' ? parseFloat(freight) : freight;
@@ -31,7 +37,6 @@ export const formatFreight = (freight: number | null | undefined): string => {
 };
 
 export const formatAmountToCollect = (amount: number | null | undefined): string => {
-  // For amount to collect, we want to show the complete value without decimal truncation
   if (amount === null || amount === undefined) return '0';
   
   const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;

@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { PackageItemMobile } from './PackageItemMobile';
 import { PackageItemDesktop } from './PackageItemDesktop';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
+import { formatWeight, formatFreight, formatAmountToCollect } from '@/utils/formatters';
 
 type Currency = 'COP' | 'AWG';
 
@@ -46,12 +46,11 @@ export function PackageItem({
 }: PackageItemProps) {
   const isMobile = useIsMobile();
 
-  // Format values with thousands separators for display
   const formattedPackage = {
     ...pkg,
-    weight: formatNumberWithThousandsSeparator(pkg.weight || 0),
-    freight: formatNumberWithThousandsSeparator(pkg.freight || 0),
-    amount_to_collect: formatNumberWithThousandsSeparator(pkg.amount_to_collect || 0)
+    weight: formatWeight(pkg.weight),
+    freight: formatFreight(pkg.freight),
+    amount_to_collect: formatAmountToCollect(pkg.amount_to_collect)
   };
 
   if (isMobile) {

@@ -52,11 +52,6 @@ export function PackageItemDesktop({
 
   const canChat = !disableChat && previewRole !== 'traveler';
 
-  // Parse the string values to numbers to format them properly
-  const weightValue = parseFloat(pkg.weight) || 0;
-  const freightValue = parseFloat(pkg.freight) || 0;
-  const amountValue = parseFloat(pkg.amount_to_collect) || 0;
-
   return (
     <div 
       className="grid grid-cols-12 gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 bg-white items-center"
@@ -85,21 +80,21 @@ export function PackageItemDesktop({
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <Weight className="h-3 w-3 text-purple-600" />
-          <span className="text-sm">{formatNumberWithThousandsSeparator(weightValue)} kg</span>
+          <span className="text-sm">{formatNumberWithThousandsSeparator(pkg.weight)} kg</span>
         </div>
       </div>
 
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <Truck className="h-3 w-3 text-orange-600" />
-          <span className="text-sm">${formatNumberWithThousandsSeparator(freightValue)}</span>
+          <span className="text-sm">${formatNumberWithThousandsSeparator(pkg.freight)}</span>
         </div>
       </div>
 
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <DollarSign className="h-3 w-3 text-green-600" />
-          <span className="text-sm">{formatCurrency(amountValue, pkg.currency)}</span>
+          <span className="text-sm">{formatCurrency(parseFloat(pkg.amount_to_collect), pkg.currency)}</span>
         </div>
       </div>
 

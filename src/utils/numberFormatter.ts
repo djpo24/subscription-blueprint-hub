@@ -23,6 +23,17 @@ export const formatNumberWithThousandsSeparator = (value: number | string | null
   
   if (isNaN(numValue)) return '0';
   
-  // Format with thousands separator (periods)
-  return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // Convert to string preserving all decimals, then format with thousands separator
+  const stringValue = numValue.toString();
+  
+  // Split into integer and decimal parts
+  const parts = stringValue.split('.');
+  const integerPart = parts[0];
+  const decimalPart = parts[1] || '';
+  
+  // Format integer part with thousands separator (periods)
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  
+  // Return with decimal part if it exists
+  return decimalPart ? `${formattedInteger},${decimalPart}` : formattedInteger;
 };

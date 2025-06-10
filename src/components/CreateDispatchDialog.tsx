@@ -38,7 +38,7 @@ interface CreateDispatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tripDate: Date;
-  trips: Trip[]; // Cambiar packages por trips para mejor filtrado
+  trips: Trip[];
   onSuccess?: () => void;
 }
 
@@ -55,6 +55,10 @@ export function CreateDispatchDialog({
 
   // Obtener solo paquetes elegibles para despacho
   const eligiblePackages = useDispatchEligiblePackages(trips);
+
+  console.log('🔍 CreateDispatchDialog - trips received:', trips.length);
+  console.log('📦 CreateDispatchDialog - eligible packages:', eligiblePackages.length);
+  console.log('📊 CreateDispatchDialog - all package statuses:', trips.flatMap(t => t.packages).map(p => `${p.tracking_number}: ${p.status}`));
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
     if (checked) {
@@ -111,10 +115,24 @@ export function CreateDispatchDialog({
           {eligiblePackages.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
-              <p className="text-sm">
-                Las encomiendas pueden no estar disponibles porque ya fueron despachadas, 
-                entregadas o están en tránsito.
+              <p className="text-sm mb-4">
+                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido" o "bodega"
+                y no haber sido despachadas anteriormente.
               </p>
+              <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded">
+                <p className="mb-2"><strong>Estados elegibles para despacho:</strong></p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>"recibido" - Encomiendas que han llegado</li>
+                  <li>"bodega" - Encomiendas en bodega</li>
+                </ul>
+                <p className="mt-3"><strong>Estados NO elegibles:</strong></p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>"procesado" - Ya despachadas</li>
+                  <li>"delivered" - Ya entregadas</li>
+                  <li>"in_transit" / "transito" - En tránsito</li>
+                  <li>"en_destino" - En destino</li>
+                </ul>
+              </div>
             </div>
           ) : (
             <>

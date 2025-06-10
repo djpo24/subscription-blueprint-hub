@@ -27,11 +27,20 @@ interface Trip {
   packages: Package[];
 }
 
+// Estados que SÍ pueden ser despachados
+const ELIGIBLE_STATES = [
+  'recibido',     // Paquetes que han llegado y están listos para despacho
+  'bodega',       // Paquetes en bodega listos para despacho
+] as const;
+
 // Estados que NO deben aparecer en el listado de despacho
 const INELIGIBLE_STATES = [
   'procesado',    // Ya fue procesado en un despacho anterior
   'delivered',    // Ya fue entregado
   'in_transit',   // Ya está en tránsito
+  'transito',     // Variante de in_transit
+  'en_destino',   // Ya llegó al destino
+  'arrived',      // Ya llegó
 ] as const;
 
 export function useDispatchEligiblePackages(trips: Trip[] = []) {
@@ -84,11 +93,13 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
             return false;
           }
 
-          // Verificar si el estado es elegible
-          const isEligible = !INELIGIBLE_STATES.includes(pkg.status as any);
+          // Verificar si el estado es elegible (usar ELIGIBLE_STATES en lugar de filtrar INELIGIBLE)
+          const isEligible = ELIGIBLE_STATES.includes(pkg.status as any);
           
           if (!isEligible) {
-            console.log(`⚠️ Package ${pkg.tracking_number} excluded (status: ${pkg.status})`);
+            console.log(`⚠️ Package ${pkg.tracking_number} excluded (status: ${pkg.status}). Eligible states: ${ELIGIBLE_STATES.join(', ')}`);
+          } else {
+            console.log(`✅ Package ${pkg.tracking_number} is eligible (status: ${pkg.status})`);
           }
           
           return isEligible;
@@ -107,7 +118,8 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
         }))
     );
 
-    console.log(`✅ Found ${eligiblePackages.length} dispatch-eligible packages`);
+    console.log(`✅ Found ${eligiblePackages.length} dispatch-eligible packages from ${trips.length} trips`);
+    console.log('📊 Package statuses found:', trips.flatMap(t => t.packages).map(p => p.status));
     
     return eligiblePackages;
   }, [trips, dispatchedPackages]);

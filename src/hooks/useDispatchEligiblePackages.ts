@@ -31,11 +31,11 @@ interface Trip {
 const ELIGIBLE_STATES = [
   'recibido',     // Paquetes que han llegado y están listos para despacho
   'bodega',       // Paquetes en bodega listos para despacho
+  'procesado',    // Paquetes que fueron impresos (NO significa despachados)
 ] as const;
 
 // Estados que NO deben aparecer en el listado de despacho
 const INELIGIBLE_STATES = [
-  'procesado',    // Ya fue procesado en un despacho anterior
   'delivered',    // Ya fue entregado
   'in_transit',   // Ya está en tránsito
   'transito',     // Variante de in_transit

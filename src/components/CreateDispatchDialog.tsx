@@ -116,7 +116,7 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido" o "bodega"
+                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido", "bodega" o "procesado"
                 y no haber sido despachadas anteriormente.
               </p>
               <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded">
@@ -124,10 +124,10 @@ export function CreateDispatchDialog({
                 <ul className="list-disc list-inside space-y-1">
                   <li>"recibido" - Encomiendas que han llegado</li>
                   <li>"bodega" - Encomiendas en bodega</li>
+                  <li>"procesado" - Encomiendas impresas (listas para despacho)</li>
                 </ul>
                 <p className="mt-3"><strong>Estados NO elegibles:</strong></p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>"procesado" - Ya despachadas</li>
                   <li>"delivered" - Ya entregadas</li>
                   <li>"in_transit" / "transito" - En tránsito</li>
                   <li>"en_destino" - En destino</li>

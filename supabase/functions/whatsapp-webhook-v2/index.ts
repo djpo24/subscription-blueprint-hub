@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -294,28 +293,10 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Prom
     const mediaData = await mediaResponse.json()
     const mediaUrl = mediaData.url
     
-    console.log('Media URL obtained:', mediaUrl)
+    console.log('Media URL obtained from WhatsApp:', mediaUrl)
     
-    // Download the media file
-    const fileResponse = await fetch(mediaUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-    
-    if (!fileResponse.ok) {
-      console.error('Error downloading media file:', await fileResponse.text())
-      return null
-    }
-    
-    const fileBlob = await fileResponse.blob()
-    const fileExtension = mediaData.mime_type?.split('/')[1] || 'jpg'
-    const fileName = `whatsapp_${mediaId}.${fileExtension}`
-    
-    console.log('Media downloaded, size:', fileBlob.size, 'bytes')
-    
-    // Here you would typically upload to your storage
-    // For now, we'll return the original URL as placeholder
+    // Return the URL directly - this is a temporary URL provided by WhatsApp
+    // In production, you would want to download the file and store it permanently
     return mediaUrl
     
   } catch (error) {
@@ -372,13 +353,14 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       break
     
     case 'image':
-      messageContent = image?.caption || '📷 Imagen'
+      messageContent = image?.caption || ''
       if (image?.id) {
-        // For now, we'll store the media ID and try to download later
-        // In production, you'd want to download and store the image
         const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
         if (accessToken) {
           mediaUrl = await downloadWhatsAppMedia(image.id, accessToken)
+          console.log('Image media URL processed:', mediaUrl)
+        } else {
+          console.error('META_WHATSAPP_TOKEN not found for image download')
         }
       }
       break
@@ -439,7 +421,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
   if (insertError) {
     console.error('Error storing incoming message:', insertError)
   } else {
-    console.log('Incoming message stored successfully')
+    console.log('Incoming message stored successfully with media URL:', mediaUrl)
   }
 
   // If it's a text message, you could implement auto-responses here

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CustomerFormData } from '@/types/CustomerFormData';
 import { getCountryCodeFromPhone } from '@/utils/countryUtils';
 
@@ -13,24 +13,35 @@ interface Customer {
 }
 
 export function useEditCustomerForm(customer: Customer) {
-  // Extract country code from phone number
-  const initialCountryCode = getCountryCodeFromPhone(customer.phone) || '+57';
-  const initialPhoneNumber = customer.phone.replace(initialCountryCode, '');
-  
-  // Split full name into first and last name
-  const nameParts = customer.name.split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-  
-  const [formData, setFormData] = useState<CustomerFormData>({
-    firstName,
-    lastName,
-    email: customer.email || '',
-    countryCode: initialCountryCode,
-    phoneNumber: initialPhoneNumber,
-    address: customer.address || '',
-    idNumber: customer.id_number || ''
-  });
+  const getInitialFormData = (customer: Customer): CustomerFormData => {
+    // Extract country code from phone number
+    const initialCountryCode = getCountryCodeFromPhone(customer.phone) || '+57';
+    const initialPhoneNumber = customer.phone.replace(initialCountryCode, '');
+    
+    // Split full name into first and last name
+    const nameParts = customer.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    return {
+      firstName,
+      lastName,
+      email: customer.email || '',
+      countryCode: initialCountryCode,
+      phoneNumber: initialPhoneNumber,
+      address: customer.address || '',
+      idNumber: customer.id_number || ''
+    };
+  };
+
+  const [formData, setFormData] = useState<CustomerFormData>(() => 
+    getInitialFormData(customer)
+  );
+
+  // Update form data when customer changes
+  useEffect(() => {
+    setFormData(getInitialFormData(customer));
+  }, [customer.id, customer.name, customer.phone, customer.email, customer.address, customer.id_number]);
 
   const updateFormData = (field: keyof CustomerFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

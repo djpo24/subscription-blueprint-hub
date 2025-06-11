@@ -76,6 +76,7 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
   const [createdPackages, setCreatedPackages] = useState<string[]>([]);
   const [failedPackages, setFailedPackages] = useState<string[]>([]);
   const [notFoundCustomers, setNotFoundCustomers] = useState<string[]>([]);
+  const [tripNotFound, setTripNotFound] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -103,7 +104,31 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
     return null;
   };
 
-  const createSinglePackage = async (packageData: typeof PACKAGES_TO_CREATE[0]) => {
+  const findTripForJune11 = async () => {
+    console.log(`🔍 Buscando viaje del 11 de junio de 2025`);
+
+    const { data: trips, error } = await supabase
+      .from('trips')
+      .select('id, origin, destination, flight_number, trip_date')
+      .eq('trip_date', '2025-06-11')
+      .limit(1);
+
+    if (error) {
+      console.error('Error buscando viaje:', error);
+      throw error;
+    }
+
+    if (!trips || trips.length === 0) {
+      console.log('❌ No se encontró viaje para el 11 de junio de 2025');
+      return null;
+    }
+
+    const trip = trips[0];
+    console.log(`✅ Viaje encontrado para el 11 de junio: ${trip.origin} → ${trip.destination} (ID: ${trip.id})`);
+    return trip;
+  };
+
+  const createSinglePackage = async (packageData: typeof PACKAGES_TO_CREATE[0], trip: any) => {
     console.log(`📦 Creando paquete: ${packageData.codigo} para ${packageData.nombre}`);
 
     // Buscar el customer_id
@@ -111,21 +136,6 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
     if (!customerId) {
       throw new Error(`Cliente no encontrado: ${packageData.nombre}`);
     }
-
-    // Obtener un viaje activo para asignar el paquete
-    const { data: trips, error: tripError } = await supabase
-      .from('trips')
-      .select('id, origin, destination, flight_number')
-      .eq('status', 'pending')
-      .limit(1);
-
-    if (tripError) throw tripError;
-
-    if (!trips || trips.length === 0) {
-      throw new Error('No hay viajes disponibles para asignar el paquete');
-    }
-
-    const trip = trips[0];
 
     const packageToInsert = {
       tracking_number: packageData.codigo,
@@ -162,7 +172,7 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
         .insert([{
           package_id: data.id,
           event_type: 'created',
-          description: 'Encomienda creada - Importación masiva',
+          description: 'Encomienda creada - Importación masiva para viaje del 11 de junio',
           location: trip.origin || 'Colombia'
         }]);
     }
@@ -176,37 +186,64 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
     setCreatedPackages([]);
     setFailedPackages([]);
     setNotFoundCustomers([]);
+    setTripNotFound(false);
 
-    for (let i = 0; i < PACKAGES_TO_CREATE.length; i++) {
-      const packageData = PACKAGES_TO_CREATE[i];
-      setCurrentIndex(i + 1);
-      
-      try {
-        await createSinglePackage(packageData);
-        setCreatedPackages(prev => [...prev, `${packageData.codigo} - ${packageData.nombre}`]);
-        console.log(`✅ Paquete creado: ${packageData.codigo} para ${packageData.nombre}`);
+    try {
+      // Primero buscar el viaje del 11 de junio
+      const trip = await findTripForJune11();
+      if (!trip) {
+        setTripNotFound(true);
+        setIsCreating(false);
+        toast({
+          title: "Error",
+          description: "No se encontró ningún viaje para el 11 de junio de 2025. Por favor crea un viaje para esa fecha primero.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log(`📅 Asignando todas las encomiendas al viaje: ${trip.origin} → ${trip.destination} del 11 de junio`);
+
+      for (let i = 0; i < PACKAGES_TO_CREATE.length; i++) {
+        const packageData = PACKAGES_TO_CREATE[i];
+        setCurrentIndex(i + 1);
         
-        // Pequeña pausa para no sobrecargar el servidor
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (error: any) {
-        console.error(`❌ Error creando paquete ${packageData.codigo}:`, error);
-        
-        if (error.message.includes('Cliente no encontrado')) {
-          setNotFoundCustomers(prev => [...prev, packageData.nombre]);
-        } else {
-          setFailedPackages(prev => [...prev, `${packageData.codigo} - ${packageData.nombre}`]);
+        try {
+          await createSinglePackage(packageData, trip);
+          setCreatedPackages(prev => [...prev, `${packageData.codigo} - ${packageData.nombre}`]);
+          console.log(`✅ Paquete creado: ${packageData.codigo} para ${packageData.nombre}`);
+          
+          // Pequeña pausa para no sobrecargar el servidor
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (error: any) {
+          console.error(`❌ Error creando paquete ${packageData.codigo}:`, error);
+          
+          if (error.message.includes('Cliente no encontrado')) {
+            setNotFoundCustomers(prev => [...prev, packageData.nombre]);
+          } else {
+            setFailedPackages(prev => [...prev, `${packageData.codigo} - ${packageData.nombre}`]);
+          }
         }
       }
+    } catch (error) {
+      console.error('❌ Error general en la importación:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error durante la importación masiva",
+        variant: "destructive"
+      });
     }
 
     setIsCreating(false);
     
     // Invalidar queries para refrescar las listas de paquetes
     queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
     
     toast({
       title: "Importación masiva completada",
-      description: `${createdPackages.length + 1} paquetes creados, ${failedPackages.length} fallaron, ${notFoundCustomers.length} clientes no encontrados`,
+      description: `${createdPackages.length + 1} encomiendas asignadas al viaje del 11 de junio`,
     });
 
     onSuccess();
@@ -220,16 +257,25 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
         <DialogHeader>
           <DialogTitle>Importación Masiva de Encomiendas</DialogTitle>
           <DialogDescription>
-            Se importarán {PACKAGES_TO_CREATE.length} encomiendas con sus códigos de tracking exactos 
-            y se asignarán a los clientes correspondientes según coincidencia de nombres.
+            Se importarán {PACKAGES_TO_CREATE.length} encomiendas y se asignarán específicamente 
+            al viaje del <strong>11 de junio de 2025</strong>.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+          {tripNotFound && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-800 font-medium">⚠️ No se encontró viaje para el 11 de junio de 2025</p>
+              <p className="text-red-600 text-sm mt-1">
+                Por favor crea un viaje para esa fecha antes de importar las encomiendas.
+              </p>
+            </div>
+          )}
+
           {isCreating && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Creando encomiendas...</span>
+                <span>Creando encomiendas para el viaje del 11 de junio...</span>
                 <span>{currentIndex} / {PACKAGES_TO_CREATE.length}</span>
               </div>
               <Progress value={progress} className="w-full" />
@@ -273,6 +319,9 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
 
           <div className="border rounded p-3">
             <div className="text-sm font-medium mb-2">Vista previa de encomiendas a importar:</div>
+            <div className="text-xs text-blue-600 mb-2">
+              📅 Todas las encomiendas se asignarán al viaje del 11 de junio de 2025
+            </div>
             <div className="max-h-40 overflow-y-auto">
               <div className="text-xs space-y-1">
                 {PACKAGES_TO_CREATE.slice(0, 10).map((pkg, index) => (
@@ -303,13 +352,13 @@ export function BulkPackageCreationDialog({ open, onOpenChange, onSuccess }: Bul
           >
             {isCreating ? 'Procesando...' : 'Cerrar'}
           </Button>
-          {!isCreating && (
+          {!isCreating && !tripNotFound && (
             <Button 
               type="button" 
               onClick={handleBulkCreation}
               disabled={isCreating}
             >
-              Importar Todas las Encomiendas
+              Importar al Viaje del 11 de Junio
             </Button>
           )}
         </DialogFooter>

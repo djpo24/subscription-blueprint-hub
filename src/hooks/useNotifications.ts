@@ -1,9 +1,13 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export function useNotifications() {
-  return useQuery({
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const notificationsQuery = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       console.log('🔍 Fetching notifications...');
@@ -12,8 +16,8 @@ export function useNotifications() {
         .from('notification_log')
         .select(`
           *,
-          customers!fk_notification_log_customer(name, phone, whatsapp_number),
-          packages!fk_notification_log_package(tracking_number, destination, amount_to_collect, currency)
+          customers!customer_id(name, phone, whatsapp_number),
+          packages!package_id(tracking_number, destination, amount_to_collect, currency)
         `)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -25,9 +29,88 @@ export function useNotifications() {
 
       console.log('✅ Notifications fetched:', data?.length || 0, 'notifications');
       return data || [];
-    },
-    onError: (error: any) => {
-      console.error('❌ Error in useNotifications:', error);
     }
   });
+
+  const sendManualNotificationMutation = useMutation({
+    mutationFn: async ({ 
+      customerId, 
+      packageId, 
+      message, 
+      phone,
+      imageUrl 
+    }: { 
+      customerId: string;
+      packageId: string;
+      message: string;
+      phone: string;
+      imageUrl?: string;
+    }) => {
+      console.log('📤 Sending manual notification:', { customerId, packageId, message, phone });
+      
+      // Create notification log entry
+      const { data: notificationData, error: logError } = await supabase
+        .from('notification_log')
+        .insert({
+          customer_id: customerId,
+          package_id: packageId || null,
+          notification_type: 'manual',
+          message: message,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (logError) {
+        console.error('❌ Error creating notification log:', logError);
+        throw new Error('Error al crear registro de notificación');
+      }
+
+      // Send via WhatsApp
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          notificationId: notificationData.id,
+          phone: phone,
+          message: message,
+          imageUrl: imageUrl,
+          customerId: customerId
+        }
+      });
+
+      if (functionError) {
+        console.error('❌ WhatsApp function error:', functionError);
+        throw new Error('Error al enviar mensaje por WhatsApp: ' + functionError.message);
+      }
+
+      if (responseData && responseData.error) {
+        console.error('❌ WhatsApp API error:', responseData.error);
+        throw new Error('Error de WhatsApp: ' + responseData.error);
+      }
+
+      console.log('✅ Manual notification sent successfully');
+      return responseData;
+    },
+    onSuccess: () => {
+      toast({
+        title: "¡Mensaje enviado!",
+        description: "Su mensaje ha sido enviado por WhatsApp correctamente",
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['sent-messages'] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Error sending manual notification:', error);
+      toast({
+        title: "❌ Error enviando mensaje",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  return {
+    ...notificationsQuery,
+    sendManualNotification: sendManualNotificationMutation.mutate,
+    isManualSending: sendManualNotificationMutation.isPending
+  };
 }

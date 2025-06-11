@@ -21,8 +21,8 @@ export function useSentMessages() {
     queryKey: ['sent-messages'],
     queryFn: async (): Promise<SentMessage[]> => {
       console.log('Fetching sent messages...');
-      // Use type assertion since sent_messages table exists but types aren't updated yet
-      const { data, error } = await (supabase as any)
+      
+      const { data, error } = await supabase
         .from('sent_messages')
         .select('*')
         .order('sent_at', { ascending: false })
@@ -53,7 +53,7 @@ export function useSentMessages() {
     }) => {
       console.log('Saving sent message:', { customerId, phone, message, imageUrl });
       
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('sent_messages')
         .insert({
           customer_id: customerId,
@@ -77,6 +77,7 @@ export function useSentMessages() {
       console.log('Invalidating sent messages query...');
       queryClient.invalidateQueries({ queryKey: ['sent-messages'] });
       queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-data'] });
     },
     onError: (error: any) => {
       console.error('Error saving sent message:', error);

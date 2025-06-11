@@ -3,61 +3,38 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
 
 interface CustomerAvatarProps {
-  customerName?: string;
-  profileImageUrl?: string | null;
+  name: string;
+  profileImageUrl?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function CustomerAvatar({ 
-  customerName, 
-  profileImageUrl, 
-  size = 'md' 
-}: CustomerAvatarProps) {
+export function CustomerAvatar({ name, profileImageUrl, size = 'md' }: CustomerAvatarProps) {
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const sizeClasses = {
     sm: 'h-8 w-8',
-    md: 'h-10 w-10', 
-    lg: 'h-16 w-16'
+    md: 'h-10 w-10',
+    lg: 'h-12 w-12'
   };
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'C';
-    const names = name.split(' ');
-    if (names.length >= 2) {
-      return (names[0][0] + names[1][0]).toUpperCase();
-    }
-    return names[0][0].toUpperCase();
-  };
-
-  // Validar que profileImageUrl sea una string válida y no esté vacía
-  const isValidImageUrl = profileImageUrl && 
-                         typeof profileImageUrl === 'string' && 
-                         profileImageUrl.trim() !== '' &&
-                         profileImageUrl !== 'null' &&
-                         profileImageUrl !== 'undefined';
-
-  console.log('CustomerAvatar render:', {
-    customerName,
-    profileImageUrl,
-    isValidImageUrl,
-    size
-  });
 
   return (
     <Avatar className={sizeClasses[size]}>
-      {isValidImageUrl && (
+      {profileImageUrl && (
         <AvatarImage 
           src={profileImageUrl} 
-          alt={customerName || 'Cliente'}
-          onLoad={() => console.log('Avatar image loaded successfully:', profileImageUrl)}
-          onError={(e) => {
-            console.log('Avatar image failed to load:', profileImageUrl);
-            console.error('Image error event:', e);
-          }}
-          crossOrigin="anonymous"
+          alt={name}
+          className="object-cover"
         />
       )}
-      <AvatarFallback className="bg-blue-100 text-blue-600">
-        {customerName ? getInitials(customerName) : <User className="h-4 w-4" />}
+      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+        {name ? getInitials(name) : <User className="h-4 w-4" />}
       </AvatarFallback>
     </Avatar>
   );

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { CustomerAvatar } from '@/components/chat/CustomerAvatar';
 import type { IncomingMessage } from '@/types/supabase-temp';
 
 export function IncomingMessages() {
@@ -17,7 +18,8 @@ export function IncomingMessages() {
         .select(`
           *,
           customers (
-            name
+            name,
+            profile_image_url
           )
         `)
         .order('timestamp', { ascending: false })
@@ -35,6 +37,7 @@ export function IncomingMessages() {
         customer_id: msg.customer_id,
         message_type: msg.message_type,
         message_content: msg.message_content,
+        media_url: msg.media_url,
         timestamp: msg.timestamp,
         customers: msg.customers
       }));
@@ -52,6 +55,8 @@ export function IncomingMessages() {
         return "bg-purple-100 text-purple-800";
       case 'video':
         return "bg-red-100 text-red-800";
+      case 'document':
+        return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -94,8 +99,12 @@ export function IncomingMessages() {
               {incomingMessages.map((message) => (
                 <TableRow key={message.id}>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center gap-3">
+                      <CustomerAvatar 
+                        name={message.customers?.name || 'Cliente Desconocido'}
+                        profileImageUrl={message.customers?.profile_image_url}
+                        size="sm"
+                      />
                       <div>
                         <div className="font-medium">
                           {message.customers?.name || 'Cliente Desconocido'}
@@ -121,6 +130,11 @@ export function IncomingMessages() {
                   <TableCell className="max-w-xs">
                     <div className="truncate" title={message.message_content || ''}>
                       {message.message_content || '(Sin contenido de texto)'}
+                      {message.media_url && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          📎 Archivo adjunto
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

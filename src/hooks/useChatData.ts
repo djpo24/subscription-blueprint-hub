@@ -37,7 +37,8 @@ export function useChatData(): ChatData {
           .select(`
             *,
             customers (
-              name
+              name,
+              profile_image_url
             )
           `)
           .order('timestamp', { ascending: false })
@@ -86,7 +87,7 @@ export function useChatData(): ChatData {
         customerId: message.customer_id,
         customerName: message.customers?.name || phone,
         messages: [],
-        profileImageUrl: undefined
+        profileImageUrl: message.customers?.profile_image_url
       };
     }
     conversationsByPhone[phone].messages.push(message);

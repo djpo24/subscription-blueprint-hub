@@ -89,6 +89,7 @@ export type Database = {
           id_number: string | null
           name: string
           phone: string
+          profile_image_url: string | null
           updated_at: string | null
           whatsapp_number: string | null
         }
@@ -100,6 +101,7 @@ export type Database = {
           id_number?: string | null
           name: string
           phone: string
+          profile_image_url?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
         }
@@ -111,6 +113,7 @@ export type Database = {
           id_number?: string | null
           name?: string
           phone?: string
+          profile_image_url?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
         }
@@ -208,6 +211,7 @@ export type Database = {
           media_url: string | null
           message_content: string | null
           message_type: string | null
+          raw_data: Json | null
           timestamp: string | null
           whatsapp_message_id: string | null
         }
@@ -218,6 +222,7 @@ export type Database = {
           media_url?: string | null
           message_content?: string | null
           message_type?: string | null
+          raw_data?: Json | null
           timestamp?: string | null
           whatsapp_message_id?: string | null
         }
@@ -228,6 +233,7 @@ export type Database = {
           media_url?: string | null
           message_content?: string | null
           message_type?: string | null
+          raw_data?: Json | null
           timestamp?: string | null
           whatsapp_message_id?: string | null
         }
@@ -417,33 +423,36 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_id: string | null
-          delivery_status: string | null
           id: string
-          message_content: string
-          phone_number: string
+          image_url: string | null
+          message: string
+          phone: string
           sent_at: string | null
+          status: string | null
           updated_at: string | null
           whatsapp_message_id: string | null
         }
         Insert: {
           created_at?: string | null
           customer_id?: string | null
-          delivery_status?: string | null
           id?: string
-          message_content: string
-          phone_number: string
+          image_url?: string | null
+          message: string
+          phone: string
           sent_at?: string | null
+          status?: string | null
           updated_at?: string | null
           whatsapp_message_id?: string | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string | null
-          delivery_status?: string | null
           id?: string
-          message_content?: string
-          phone_number?: string
+          image_url?: string | null
+          message?: string
+          phone?: string
           sent_at?: string | null
+          status?: string | null
           updated_at?: string | null
           whatsapp_message_id?: string | null
         }

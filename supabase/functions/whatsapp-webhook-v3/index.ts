@@ -403,7 +403,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       console.log('Unsupported message type V3:', type, message)
   }
 
-  // Store the incoming message
+  // Store the incoming message with raw_data for debugging
   const messageData = {
     whatsapp_message_id: id,
     from_phone: from,
@@ -412,7 +412,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     message_content: messageContent,
     media_url: mediaUrl,
     timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-    raw_data: message
+    raw_data: message // Store complete webhook payload for debugging
   }
 
   console.log('Storing message with data V3:', messageData)
@@ -424,7 +424,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
   if (insertError) {
     console.error('Error storing incoming message V3:', insertError)
   } else {
-    console.log('Incoming message stored successfully with media URL V3:', mediaUrl)
+    console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
   }
 
   // If it's a text message, you could implement auto-responses here

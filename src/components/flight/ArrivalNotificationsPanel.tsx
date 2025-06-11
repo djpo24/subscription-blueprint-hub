@@ -1,10 +1,9 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useArrivalNotifications } from '@/hooks/useArrivalNotifications';
 import { useCreateArrivalNotifications } from '@/hooks/useCreateArrivalNotifications';
-import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus } from 'lucide-react';
+import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -15,8 +14,10 @@ export function ArrivalNotificationsPanel() {
     isLoading,
     prepareNotifications,
     executeNotifications,
+    clearPreparedNotifications,
     isPreparing,
-    isExecuting
+    isExecuting,
+    isClearing
   } = useArrivalNotifications();
 
   const {
@@ -166,17 +167,31 @@ export function ArrivalNotificationsPanel() {
                     </Badge>
                   )}
                 </h4>
-                {preparedNotifications.length > 0 && (
-                  <Button
-                    onClick={() => executeNotifications()}
-                    disabled={isExecuting}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isExecuting ? 'Enviando...' : 'Ejecutar Envío'}
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {preparedNotifications.length > 0 && (
+                    <>
+                      <Button
+                        onClick={() => clearPreparedNotifications()}
+                        disabled={isClearing}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isClearing ? 'Limpiando...' : 'Limpiar'}
+                      </Button>
+                      <Button
+                        onClick={() => executeNotifications()}
+                        disabled={isExecuting}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {isExecuting ? 'Enviando...' : 'Ejecutar Envío'}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {preparedNotifications.length > 0 ? (

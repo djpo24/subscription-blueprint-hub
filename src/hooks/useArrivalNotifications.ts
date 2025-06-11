@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,8 +10,10 @@ interface ArrivalNotificationsResult {
   isLoading: boolean;
   prepareNotifications: () => void;
   executeNotifications: () => void;
+  clearPreparedNotifications: () => void;
   isPreparing: boolean;
   isExecuting: boolean;
+  isClearing: boolean;
 }
 
 export function useArrivalNotifications(): ArrivalNotificationsResult {
@@ -186,6 +187,44 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
     }
   });
 
+  // Nueva mutación para limpiar notificaciones preparadas
+  const clearPreparedMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🗑️ Clearing prepared arrival notifications...');
+      
+      const { data, error } = await supabase
+        .from('notification_log')
+        .delete()
+        .eq('notification_type', 'package_arrival')
+        .eq('status', 'prepared');
+
+      if (error) {
+        console.error('❌ Error clearing prepared notifications:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      console.log('✅ Prepared notifications cleared successfully');
+      toast({
+        title: "Notificaciones Limpiadas",
+        description: "Las notificaciones preparadas han sido eliminadas exitosamente",
+      });
+      // Invalidar queries para refrescar los datos
+      queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-log'] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Error clearing prepared notifications:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron limpiar las notificaciones preparadas",
+        variant: "destructive"
+      });
+    }
+  });
+
   const allNotifications = query.data || [];
   const pendingNotifications = allNotifications.filter(n => n.status === 'pending');
   const preparedNotifications = allNotifications.filter(n => n.status === 'prepared');
@@ -196,7 +235,9 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
     preparedNotifications,
     prepareNotifications: prepareMutation.mutate,
     executeNotifications: executeMutation.mutate,
+    clearPreparedNotifications: clearPreparedMutation.mutate,
     isPreparing: prepareMutation.isPending,
-    isExecuting: executeMutation.isPending
+    isExecuting: executeMutation.isPending,
+    isClearing: clearPreparedMutation.isPending
   };
 }

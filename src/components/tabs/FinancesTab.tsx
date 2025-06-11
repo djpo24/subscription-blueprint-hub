@@ -83,10 +83,10 @@ export function FinancesTab() {
                 <span className="hidden sm:inline">Pendiente Cobro</span>
                 <span className="sm:hidden">Pendiente</span>
               </CardTitle>
-              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0" />
             </CardHeader>
             <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-              <div className="text-lg sm:text-2xl font-bold text-green-600 leading-tight">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600 leading-tight">
                 {formatCurrency(summary?.pendingCollections || 0)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -101,10 +101,10 @@ export function FinancesTab() {
                 <span className="hidden sm:inline">Dinero Cobrado</span>
                 <span className="sm:hidden">Cobrado</span>
               </CardTitle>
-              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0" />
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
             </CardHeader>
             <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600 leading-tight">
+              <div className="text-lg sm:text-2xl font-bold text-green-600 leading-tight">
                 {formatCurrency(summary?.totalCollected || 0)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">

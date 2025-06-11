@@ -156,6 +156,8 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
             onSelectAll={handleSelectAll}
             onSelectAllPrinted={handleSelectAllPrinted}
             onPrintSingleLabel={handlePrintSingleLabel}
+            onPrintSelected={handlePrintSelected}
+            onReprintSelected={handleReprintSelected}
           />
         </DialogContent>
       </Dialog>

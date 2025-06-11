@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Printer, Check } from 'lucide-react';
 import { PackageWithRoute } from './PackageLabelsDialogTypes';
 import { PackageLabelsDialogContent } from './PackageLabelsDialogContent';
@@ -17,6 +18,8 @@ interface PackageLabelsDialogTabsProps {
   onSelectAll: (packages: PackageWithRoute[]) => void;
   onSelectAllPrinted: (packages: PackageWithRoute[]) => void;
   onPrintSingleLabel: (packageData: PackageWithRoute) => void;
+  onPrintSelected: () => void;
+  onReprintSelected: () => void;
 }
 
 export function PackageLabelsDialogTabs({
@@ -28,7 +31,9 @@ export function PackageLabelsDialogTabs({
   onPrintedPackageToggle,
   onSelectAll,
   onSelectAllPrinted,
-  onPrintSingleLabel
+  onPrintSingleLabel,
+  onPrintSelected,
+  onReprintSelected
 }: PackageLabelsDialogTabsProps) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState('');
   const [printedSearchTerm, setPrintedSearchTerm] = useState('');
@@ -53,13 +58,27 @@ export function PackageLabelsDialogTabs({
       </TabsList>
 
       <TabsContent value="pending" className="mt-4 space-y-4">
-        {/* Buscador para paquetes pendientes */}
-        <PackageSearchBar
-          searchTerm={pendingSearchTerm}
-          onSearchChange={setPendingSearchTerm}
-          placeholder="Buscar en pendientes..."
-          className="max-w-md"
-        />
+        {/* Fila con buscador y botones de acción */}
+        <div className="flex items-center justify-between gap-4">
+          <PackageSearchBar
+            searchTerm={pendingSearchTerm}
+            onSearchChange={setPendingSearchTerm}
+            placeholder="Buscar en pendientes..."
+            className="max-w-md"
+          />
+          
+          <div className="flex gap-2">
+            {selectedPackageIds.size > 0 && (
+              <Button
+                onClick={onPrintSelected}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir Seleccionadas ({selectedPackageIds.size})
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Mostrar mensaje si hay búsqueda activa */}
         {pendingSearchTerm.trim() && (
@@ -90,13 +109,28 @@ export function PackageLabelsDialogTabs({
       </TabsContent>
 
       <TabsContent value="printed" className="mt-4 space-y-4">
-        {/* Buscador para paquetes impresos */}
-        <PackageSearchBar
-          searchTerm={printedSearchTerm}
-          onSearchChange={setPrintedSearchTerm}
-          placeholder="Buscar en impresas..."
-          className="max-w-md"
-        />
+        {/* Fila con buscador y botones de acción */}
+        <div className="flex items-center justify-between gap-4">
+          <PackageSearchBar
+            searchTerm={printedSearchTerm}
+            onSearchChange={setPrintedSearchTerm}
+            placeholder="Buscar en impresas..."
+            className="max-w-md"
+          />
+          
+          <div className="flex gap-2">
+            {selectedPrintedPackageIds.size > 0 && (
+              <Button
+                onClick={onReprintSelected}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <Printer className="h-4 w-4" />
+                Re-imprimir Seleccionadas ({selectedPrintedPackageIds.size})
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Mostrar mensaje si hay búsqueda activa */}
         {printedSearchTerm.trim() && (

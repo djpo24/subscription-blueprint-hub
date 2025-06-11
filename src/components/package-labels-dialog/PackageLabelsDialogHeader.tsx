@@ -1,7 +1,5 @@
 
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
 
 interface PackageLabelsDialogHeaderProps {
   selectedPackageIds: Set<string>;
@@ -18,38 +16,10 @@ export function PackageLabelsDialogHeader({
 }: PackageLabelsDialogHeaderProps) {
   return (
     <DialogHeader>
-      <div className="flex items-start justify-between">
-        <div>
-          <DialogTitle>Etiquetas de Encomiendas</DialogTitle>
-          <DialogDescription>
-            Gestiona e imprime etiquetas para las encomiendas seleccionadas
-          </DialogDescription>
-        </div>
-        
-        {/* Botones de acción en la parte superior derecha */}
-        <div className="flex gap-2">
-          {selectedPackageIds.size > 0 && (
-            <Button
-              onClick={onPrintSelected}
-              className="flex items-center gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir Seleccionadas ({selectedPackageIds.size})
-            </Button>
-          )}
-
-          {selectedPrintedPackageIds.size > 0 && (
-            <Button
-              onClick={onReprintSelected}
-              className="flex items-center gap-2"
-              variant="outline"
-            >
-              <Printer className="h-4 w-4" />
-              Re-imprimir Seleccionadas ({selectedPrintedPackageIds.size})
-            </Button>
-          )}
-        </div>
-      </div>
+      <DialogTitle>Etiquetas de Encomiendas</DialogTitle>
+      <DialogDescription>
+        Gestiona e imprime etiquetas para las encomiendas seleccionadas
+      </DialogDescription>
     </DialogHeader>
   );
 }

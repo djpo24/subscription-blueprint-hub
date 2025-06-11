@@ -6,6 +6,7 @@ import { DispatchDetailsHeader } from './DispatchDetailsHeader';
 import { DispatchSummaryCards } from './DispatchSummaryCards';
 import { DispatchPackagesTable } from './DispatchPackagesTable';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { parseCurrencyString, type Currency } from '@/utils/currencyFormatter';
 
 interface DispatchDetailsViewProps {
   dispatchId: string | null;
@@ -31,14 +32,25 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     );
   }
 
+  // Calcular totales básicos
   const totals = packages.reduce(
     (acc, pkg) => ({
       weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0),
-      amount_to_collect: acc.amount_to_collect + (pkg.amount_to_collect || 0)
+      freight: acc.freight + (pkg.freight || 0)
     }),
-    { weight: 0, freight: 0, amount_to_collect: 0 }
+    { weight: 0, freight: 0 }
   );
+
+  // Calcular el total a cobrar agrupado por moneda (igual que en DispatchDetailsDialog)
+  const amountsByCurrency = packages.reduce((acc, pkg) => {
+    if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
+      const currency = parseCurrencyString(pkg.currency);
+      acc[currency] = (acc[currency] || 0) + pkg.amount_to_collect;
+    }
+    return acc;
+  }, {} as Record<Currency, number>);
+
+  console.log('💰 [DispatchDetailsView] Amounts by currency:', amountsByCurrency);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
@@ -94,7 +106,7 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
         packageCount={packages.length}
         totalWeight={totals.weight}
         totalFreight={totals.freight}
-        totalAmountToCollect={totals.amount_to_collect}
+        amountsByCurrency={amountsByCurrency}
       />
 
       <DispatchPackagesTable packages={packages} />

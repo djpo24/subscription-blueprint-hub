@@ -21,12 +21,12 @@ serve(async (req) => {
 
     console.log('🔄 Procesando notificaciones de llegada automáticamente...')
 
-    // Obtener notificaciones pendientes de llegada
+    // Obtener notificaciones pendientes de llegada - ahora usando la foreign key correcta
     const { data: pendingNotifications, error: fetchError } = await supabaseClient
       .from('notification_log')
       .select(`
         *,
-        customers!fk_notification_log_customer (
+        customers!customer_id (
           name,
           phone,
           whatsapp_number

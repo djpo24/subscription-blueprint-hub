@@ -32,6 +32,7 @@ export function DispatchDetailsDialog({
 
   if (!dispatchId) return null;
 
+  // Calcular totales por moneda
   const totals = packages.reduce(
     (acc, pkg) => ({
       weight: acc.weight + (pkg.weight || 0),
@@ -41,26 +42,28 @@ export function DispatchDetailsDialog({
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
 
-  // Mejorar la detección de la divisa predominante
-  const currencyCount = packages.reduce((acc, pkg) => {
-    // Solo contar paquetes que tienen amount_to_collect > 0
+  // Calcular el total a cobrar agrupado por moneda
+  const amountsByCurrency = packages.reduce((acc, pkg) => {
     if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
       const currency = parseCurrencyString(pkg.currency);
-      acc[currency] = (acc[currency] || 0) + 1;
+      acc[currency] = (acc[currency] || 0) + pkg.amount_to_collect;
     }
     return acc;
   }, {} as Record<Currency, number>);
 
-  // Determinar la divisa principal basada en los paquetes con monto a cobrar
-  const primaryCurrency: Currency = Object.keys(currencyCount).length > 0 
-    ? (Object.keys(currencyCount).reduce((a, b) => 
-        currencyCount[a as Currency] > currencyCount[b as Currency] ? a : b
+  // Usar la moneda con mayor monto total como primaria
+  const primaryCurrency: Currency = Object.keys(amountsByCurrency).length > 0 
+    ? (Object.keys(amountsByCurrency).reduce((a, b) => 
+        amountsByCurrency[a as Currency] > amountsByCurrency[b as Currency] ? a : b
       ) as Currency)
     : 'COP';
 
-  console.log('💰 [DispatchDetailsDialog] Currency count:', currencyCount);
-  console.log('💰 [DispatchDetailsDialog] Primary currency detected:', primaryCurrency);
-  console.log('💰 [DispatchDetailsDialog] Packages with amount to collect:', packages.filter(p => p.amount_to_collect > 0).length);
+  // El total a mostrar será el de la moneda primaria
+  const totalAmountToCollect = amountsByCurrency[primaryCurrency] || 0;
+
+  console.log('💰 [DispatchDetailsDialog] Amounts by currency:', amountsByCurrency);
+  console.log('💰 [DispatchDetailsDialog] Primary currency (highest amount):', primaryCurrency);
+  console.log('💰 [DispatchDetailsDialog] Total amount for primary currency:', totalAmountToCollect);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
@@ -117,7 +120,7 @@ export function DispatchDetailsDialog({
               packageCount={packages.length}
               totalWeight={totals.weight}
               totalFreight={totals.freight}
-              totalAmountToCollect={totals.amount_to_collect}
+              totalAmountToCollect={totalAmountToCollect}
               primaryCurrency={primaryCurrency}
             />
 

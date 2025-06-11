@@ -58,9 +58,34 @@ export function ChatConversation({
   }, [messages, autoScroll]);
 
   const handleInitiateChat = async () => {
-    const success = await sendConsultaEncomienda(displayName, phone, customerId || undefined);
-    if (success) {
-      console.log('Plantilla consulta_encomienda enviada exitosamente');
+    try {
+      console.log('🔘 [BUTTON] Iniciar Chat button clicked:', {
+        displayName,
+        phone,
+        customerId
+      });
+      
+      if (!displayName) {
+        console.error('❌ [BUTTON] No displayName provided');
+        return;
+      }
+      
+      if (!phone) {
+        console.error('❌ [BUTTON] No phone provided');
+        return;
+      }
+      
+      console.log('⏳ [BUTTON] Calling sendConsultaEncomienda...');
+      const success = await sendConsultaEncomienda(displayName, phone, customerId || undefined);
+      
+      if (success) {
+        console.log('✅ [BUTTON] Plantilla consulta_encomienda enviada exitosamente');
+      } else {
+        console.log('❌ [BUTTON] Plantilla consulta_encomienda falló');
+      }
+    } catch (error: any) {
+      console.error('❌ [BUTTON] Error in handleInitiateChat:', error);
+      console.error('❌ [BUTTON] Error stack:', error.stack);
     }
   };
 

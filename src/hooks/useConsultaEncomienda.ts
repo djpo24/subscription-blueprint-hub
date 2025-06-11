@@ -11,13 +11,14 @@ export function useConsultaEncomienda() {
     setIsSending(true);
     
     try {
-      console.log('🚀 Iniciando envío de plantilla consulta_encomienda:', { 
+      console.log('🚀 [CONSULTA] Iniciando envío de plantilla consulta_encomienda:', { 
         customerName, 
         customerPhone, 
         customerId 
       });
       
-      // Crear entrada de notificación
+      // Paso 1: Crear entrada de notificación
+      console.log('📝 [CONSULTA] Paso 1: Creando entrada de notificación...');
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
         .insert({
@@ -30,30 +31,38 @@ export function useConsultaEncomienda() {
         .single();
 
       if (logError) {
-        console.error('❌ Error creating notification log:', logError);
+        console.error('❌ [CONSULTA] Error creating notification log:', logError);
         throw new Error(`Error al crear registro de notificación: ${logError.message}`);
       }
 
-      console.log('✅ Notification log created:', notificationData);
+      console.log('✅ [CONSULTA] Notification log created successfully:', notificationData);
 
-      // Enviar plantilla usando la edge function
+      // Paso 2: Enviar plantilla usando la edge function
+      console.log('📱 [CONSULTA] Paso 2: Enviando plantilla a WhatsApp...');
+      const requestBody = {
+        notificationId: notificationData.id,
+        phone: customerPhone,
+        message: `Consulta sobre encomienda para ${customerName}`,
+        useTemplate: true,
+        templateName: 'consulta_encomienda',
+        templateLanguage: 'es_CO',
+        templateParameters: {
+          customerName: customerName
+        },
+        customerId: customerId
+      };
+      
+      console.log('📊 [CONSULTA] Request body:', requestBody);
+      
       const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
-        body: {
-          notificationId: notificationData.id,
-          phone: customerPhone,
-          message: `Consulta sobre encomienda para ${customerName}`,
-          useTemplate: true,
-          templateName: 'consulta_encomienda',
-          templateLanguage: 'es_CO',
-          templateParameters: {
-            customerName: customerName
-          },
-          customerId: customerId
-        }
+        body: requestBody
       });
 
+      console.log('📱 [CONSULTA] Raw WhatsApp function response:', responseData);
+      console.log('⚠️ [CONSULTA] Function error (if any):', functionError);
+
       if (functionError) {
-        console.error('❌ Error en función de WhatsApp:', functionError);
+        console.error('❌ [CONSULTA] Error en función de WhatsApp:', functionError);
         
         // Actualizar el log de notificación como fallido
         await supabase
@@ -67,18 +76,20 @@ export function useConsultaEncomienda() {
         throw new Error(`Error enviando plantilla: ${functionError.message}`);
       }
 
-      console.log('📱 WhatsApp function response:', responseData);
-
+      // Verificar respuesta de la función
       if (responseData?.success) {
+        console.log('✅ [CONSULTA] Plantilla enviada exitosamente:', responseData);
         toast({
           title: "✅ Consulta iniciada",
           description: `Se envió la plantilla de consulta a ${customerName}`,
         });
-        console.log('✅ Plantilla consulta_encomienda enviada exitosamente:', responseData);
         return true;
       } else {
         const errorMsg = responseData?.error || 'Error desconocido en respuesta de WhatsApp';
-        console.error('❌ Error en respuesta de WhatsApp:', responseData);
+        console.error('❌ [CONSULTA] Error en respuesta de WhatsApp:', {
+          responseData,
+          errorMsg
+        });
         
         // Actualizar el log de notificación como fallido
         await supabase
@@ -93,7 +104,8 @@ export function useConsultaEncomienda() {
       }
 
     } catch (error: any) {
-      console.error('❌ Error general enviando consulta_encomienda:', error);
+      console.error('❌ [CONSULTA] Error general enviando consulta_encomienda:', error);
+      console.error('❌ [CONSULTA] Error stack:', error.stack);
       
       const userFriendlyMessage = error.message.includes('Token de WhatsApp') 
         ? error.message 

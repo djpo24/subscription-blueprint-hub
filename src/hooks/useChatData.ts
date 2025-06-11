@@ -29,10 +29,11 @@ export function useChatData(): ChatData {
   const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-data'],
     queryFn: async (): Promise<IncomingMessage[]> => {
-      console.log('🔍 Fetching chat data...');
+      console.log('🔍 Fetching chat data with sent messages...');
       
       try {
-        const { data, error } = await supabase
+        // Fetch incoming messages
+        const { data: incomingData, error: incomingError } = await supabase
           .from('incoming_messages')
           .select(`
             *,
@@ -42,14 +43,53 @@ export function useChatData(): ChatData {
             )
           `)
           .order('timestamp', { ascending: false })
-          .limit(50);
+          .limit(100);
 
-        if (error) {
-          console.error('❌ Error fetching chat data:', error);
-          throw error;
+        if (incomingError) {
+          console.error('❌ Error fetching incoming messages:', incomingError);
+          throw incomingError;
         }
 
-        return (data || []).map(msg => ({
+        // Fetch sent messages
+        const { data: sentData, error: sentError } = await supabase
+          .from('sent_messages')
+          .select(`
+            *,
+            customers (
+              name,
+              profile_image_url
+            )
+          `)
+          .order('sent_at', { ascending: false })
+          .limit(100);
+
+        if (sentError) {
+          console.error('❌ Error fetching sent messages:', sentError);
+          throw sentError;
+        }
+
+        // Fetch notification log for template messages
+        const { data: notificationData, error: notificationError } = await supabase
+          .from('notification_log')
+          .select(`
+            *,
+            customers (
+              name,
+              profile_image_url
+            )
+          `)
+          .in('notification_type', ['consulta_encomienda', 'package_arrival_notification', 'customer_service_followup'])
+          .eq('status', 'sent')
+          .order('sent_at', { ascending: false })
+          .limit(100);
+
+        if (notificationError) {
+          console.error('❌ Error fetching notifications:', notificationError);
+          throw notificationError;
+        }
+
+        // Convert incoming messages to unified format
+        const incomingMessages = (incomingData || []).map(msg => ({
           id: msg.id,
           whatsapp_message_id: msg.whatsapp_message_id,
           from_phone: msg.from_phone,
@@ -58,11 +98,75 @@ export function useChatData(): ChatData {
           message_content: msg.message_content,
           media_url: msg.media_url,
           timestamp: msg.timestamp,
+          is_from_customer: true,
           customers: msg.customers ? {
             name: msg.customers.name,
             profile_image_url: msg.customers.profile_image_url || undefined
           } : undefined
         }));
+
+        // Convert sent messages to unified format
+        const sentMessages = (sentData || []).map(msg => ({
+          id: `sent_${msg.id}`,
+          whatsapp_message_id: msg.whatsapp_message_id,
+          from_phone: msg.phone,
+          customer_id: msg.customer_id,
+          message_type: 'text' as const,
+          message_content: msg.message,
+          media_url: msg.image_url,
+          timestamp: msg.sent_at,
+          is_from_customer: false,
+          customers: msg.customers ? {
+            name: msg.customers.name,
+            profile_image_url: msg.customers.profile_image_url || undefined
+          } : undefined
+        }));
+
+        // Convert template notifications to unified format
+        const templateMessages = (notificationData || []).map(notification => ({
+          id: `template_${notification.id}`,
+          whatsapp_message_id: null,
+          from_phone: '', // Will be populated from customer data
+          customer_id: notification.customer_id,
+          message_type: 'template' as const,
+          message_content: `📋 Plantilla: ${notification.notification_type} - ${notification.message}`,
+          media_url: null,
+          timestamp: notification.sent_at || notification.created_at,
+          is_from_customer: false,
+          customers: notification.customers ? {
+            name: notification.customers.name,
+            profile_image_url: notification.customers.profile_image_url || undefined
+          } : undefined
+        }));
+
+        // For template messages, we need to get the customer's phone number
+        for (const templateMsg of templateMessages) {
+          if (templateMsg.customer_id) {
+            const { data: customerData } = await supabase
+              .from('customers')
+              .select('whatsapp_number, phone')
+              .eq('id', templateMsg.customer_id)
+              .single();
+            
+            if (customerData) {
+              templateMsg.from_phone = customerData.whatsapp_number || customerData.phone || '';
+            }
+          }
+        }
+
+        // Combine all messages and sort by timestamp
+        const allMessages = [...incomingMessages, ...sentMessages, ...templateMessages]
+          .filter(msg => msg.from_phone) // Only include messages with phone numbers
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        console.log('✅ Fetched messages:', {
+          incoming: incomingMessages.length,
+          sent: sentMessages.length,
+          templates: templateMessages.length,
+          total: allMessages.length
+        });
+
+        return allMessages;
       } catch (error) {
         console.error('❌ Error in useChatData:', error);
         return [];
@@ -96,14 +200,26 @@ export function useChatData(): ChatData {
     conversationsByPhone[phone].messages.push(message);
   });
 
+  // Sort messages within each conversation by timestamp (newest first for display)
+  Object.values(conversationsByPhone).forEach(conversation => {
+    conversation.messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  });
+
   // Create chat list
   Object.entries(conversationsByPhone).forEach(([phone, conversation]) => {
     const lastMessage = conversation.messages[0];
     if (lastMessage) {
+      let displayMessage = lastMessage.message_content || '';
+      if (lastMessage.message_type === 'template') {
+        displayMessage = `📋 ${displayMessage}`;
+      } else if (!lastMessage.is_from_customer) {
+        displayMessage = `Tú: ${displayMessage}`;
+      }
+
       chatList.push({
         phone,
         customerName: conversation.customerName,
-        lastMessage: lastMessage.message_content || '',
+        lastMessage: displayMessage,
         timestamp: lastMessage.timestamp || '',
         unreadCount: 0,
         customerId: conversation.customerId,
@@ -111,6 +227,9 @@ export function useChatData(): ChatData {
       });
     }
   });
+
+  // Sort chat list by most recent message
+  chatList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return {
     chatList,

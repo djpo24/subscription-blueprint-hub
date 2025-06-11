@@ -2,7 +2,7 @@
 export interface ChatMessage {
   id: string;
   message_content: string;
-  message_type: 'text' | 'image' | 'document' | 'audio' | 'video';
+  message_type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template';
   timestamp: string;
   whatsapp_message_id?: string;
   from_phone?: string;
@@ -19,6 +19,7 @@ export interface IncomingMessage {
   message_content: string | null;
   media_url: string | null;
   message_timestamp: string;
+  is_from_customer?: boolean;
   customers?: {
     name: string;
     profile_image_url?: string;

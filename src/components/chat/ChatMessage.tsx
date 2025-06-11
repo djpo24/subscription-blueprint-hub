@@ -14,7 +14,14 @@ interface ChatMessageProps {
 export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl }: ChatMessageProps) {
   const isIncoming = message.is_from_customer !== false;
   
-  const getMessageTypeColor = (msgType: string) => {
+  const getMessageTypeColor = (msgType: string, isFromCustomer: boolean) => {
+    if (!isFromCustomer) {
+      if (msgType === 'template') {
+        return "bg-purple-100 text-purple-800";
+      }
+      return "bg-blue-500 text-white";
+    }
+    
     switch (msgType) {
       case 'text':
         return "bg-blue-100 text-blue-800";
@@ -29,6 +36,16 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const getMessageTypeLabel = (msgType: string, isFromCustomer: boolean) => {
+    if (!isFromCustomer) {
+      if (msgType === 'template') {
+        return 'plantilla';
+      }
+      return 'enviado';
+    }
+    return msgType || 'text';
   };
 
   const renderMessageContent = () => {
@@ -107,13 +124,10 @@ export function ChatMessage({ message, customerName = 'Cliente', profileImageUrl
         
         <div className="flex items-center justify-between mb-1">
           <Badge 
-            className={isIncoming 
-              ? getMessageTypeColor(message.message_type || 'text')
-              : "bg-blue-600 text-white"
-            }
+            className={getMessageTypeColor(message.message_type || 'text', isIncoming)}
             variant="secondary"
           >
-            {isIncoming ? (message.message_type || 'text') : 'enviado'}
+            {getMessageTypeLabel(message.message_type || 'text', isIncoming)}
           </Badge>
           <span className={`text-xs ${
             isIncoming ? 'text-gray-500' : 'text-blue-100'

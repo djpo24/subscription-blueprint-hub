@@ -43,16 +43,18 @@ export function ChatView() {
 
   // Convert IncomingMessage to ChatMessage
   const convertToChatMessages = (messages: any[]): ChatMessage[] => {
-    return messages.map(msg => ({
-      id: msg.id,
-      message_content: msg.message_content || '',
-      message_type: msg.message_type || 'text',
-      timestamp: msg.timestamp || new Date().toISOString(),
-      whatsapp_message_id: msg.whatsapp_message_id,
-      from_phone: msg.from_phone,
-      is_from_customer: true,
-      media_url: msg.media_url
-    }));
+    return messages
+      .map(msg => ({
+        id: msg.id,
+        message_content: msg.message_content || '',
+        message_type: msg.message_type || 'text',
+        timestamp: msg.timestamp || new Date().toISOString(),
+        whatsapp_message_id: msg.whatsapp_message_id,
+        from_phone: msg.from_phone,
+        is_from_customer: msg.is_from_customer !== false,
+        media_url: msg.media_url
+      }))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()); // Sort chronologically for display
   };
 
   // Convert chatList to proper ChatItem format

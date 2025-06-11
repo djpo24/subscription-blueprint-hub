@@ -1,119 +1,103 @@
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import type { Package, TrackingEvent } from '@/types/supabase-temp';
 
-interface TrackingResult {
-  tracking_number: string;
-  status: string;
-  weight: number | null;
-  origin: string;
-  destination: string;
-  last_updated: string;
+interface GuestTrackingResult {
+  package: Package | null;
+  trackingEvents: TrackingEvent[];
+  isLoading: boolean;
+  error: string | null;
+  searchPackage: (trackingNumber: string) => void;
 }
 
-export function useGuestTracking() {
-  const [loading, setLoading] = useState(false);
-  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
-  const { toast } = useToast();
+export function useGuestTracking(): GuestTrackingResult {
+  const [trackingNumber, setTrackingNumber] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
-  const trackPackage = async (trackingNumber: string) => {
-    if (!trackingNumber.trim()) {
-      toast({
-        title: "Error",
-        description: "Por favor ingresa un número de rastreo",
-        variant: "destructive"
-      });
-      return;
-    }
+  const { data: packageData, isLoading: isLoadingPackage } = useQuery({
+    queryKey: ['guest-package', trackingNumber],
+    queryFn: async (): Promise<Package | null> => {
+      if (!trackingNumber.trim()) return null;
 
-    setLoading(true);
-    setTrackingResult(null);
-
-    try {
-      // Get client IP (simplified - in production you'd want a more robust solution)
-      const clientIP = '127.0.0.1'; // Placeholder - in production use a service to get real IP
+      console.log('🔍 Searching for package:', trackingNumber);
       
-      // Check rate limiting
-      const { data: canQuery, error: limitError } = await supabase
-        .rpc('check_guest_query_limit', { p_ip_address: clientIP });
+      try {
+        const { data, error } = await supabase
+          .from('packages')
+          .select(`
+            *,
+            customers (
+              name,
+              email,
+              phone
+            )
+          `)
+          .eq('tracking_number', trackingNumber)
+          .maybeSingle();
 
-      if (limitError) {
-        console.error('Rate limit check error:', limitError);
-        toast({
-          title: "Error",
-          description: "Error verificando límites de consulta",
-          variant: "destructive"
-        });
-        return;
+        if (error) {
+          console.error('❌ Error fetching package:', error);
+          throw error;
+        }
+
+        if (!data) {
+          setError('No se encontró ningún paquete con ese número de seguimiento');
+          return null;
+        }
+
+        setError(null);
+        return data;
+      } catch (error) {
+        console.error('❌ Error in guest tracking:', error);
+        setError('Error al buscar el paquete');
+        return null;
       }
+    },
+    enabled: !!trackingNumber.trim(),
+    refetchInterval: 30000,
+  });
 
-      if (!canQuery) {
-        toast({
-          title: "Límite excedido",
-          description: "Has excedido el límite de consultas diarias. Intenta mañana.",
-          variant: "destructive"
-        });
-        return;
-      }
+  const { data: trackingEvents = [], isLoading: isLoadingEvents } = useQuery({
+    queryKey: ['guest-tracking-events', packageData?.id],
+    queryFn: async (): Promise<TrackingEvent[]> => {
+      if (!packageData?.id) return [];
 
-      // Get tracking information
-      const { data: trackingData, error: trackingError } = await supabase
-        .rpc('get_package_tracking_for_guest', { p_tracking_number: trackingNumber });
-
-      if (trackingError) {
-        console.error('Tracking error:', trackingError);
-        toast({
-          title: "Error",
-          description: "Error consultando información de rastreo",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!trackingData || trackingData.length === 0) {
-        toast({
-          title: "No encontrado",
-          description: `No se encontró información para el número de rastreo: ${trackingNumber}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Log the query
-      await supabase.rpc('log_guest_tracking_query', {
-        p_ip_address: clientIP,
-        p_tracking_number: trackingNumber,
-        p_user_agent: navigator.userAgent
-      });
-
-      setTrackingResult(trackingData[0]);
+      console.log('🔍 Fetching tracking events for package:', packageData.id);
       
-      toast({
-        title: "Éxito",
-        description: "Información de rastreo encontrada",
-      });
+      try {
+        const { data, error } = await supabase
+          .from('tracking_events')
+          .select('*')
+          .eq('package_id', packageData.id)
+          .order('created_at', { ascending: false });
 
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "Error inesperado consultando el rastreo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (error) {
+          console.error('❌ Error fetching tracking events:', error);
+          throw error;
+        }
 
-  const clearResult = () => {
-    setTrackingResult(null);
+        return data || [];
+      } catch (error) {
+        console.error('❌ Error fetching tracking events:', error);
+        return [];
+      }
+    },
+    enabled: !!packageData?.id,
+    refetchInterval: 30000,
+  });
+
+  const searchPackage = (newTrackingNumber: string) => {
+    setTrackingNumber(newTrackingNumber);
+    setError(null);
   };
 
   return {
-    trackPackage,
-    clearResult,
-    loading,
-    trackingResult
+    package: packageData || null,
+    trackingEvents,
+    isLoading: isLoadingPackage || isLoadingEvents,
+    error,
+    searchPackage
   };
 }

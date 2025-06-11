@@ -58,13 +58,25 @@ export function useFinancialData() {
           pending: {
             total: pendingTotal,
             packages: pendingData || []
+          },
+          summary: {
+            totalCollected: collectedTotal,
+            totalPending: pendingTotal,
+            totalPayments: paymentsData?.length || 0,
+            totalPendingPackages: pendingData?.length || 0
           }
         };
       } catch (error) {
         console.error('❌ Error in useFinancialData:', error);
         return {
           collected: { total: 0, payments: [] },
-          pending: { total: 0, packages: [] }
+          pending: { total: 0, packages: [] },
+          summary: {
+            totalCollected: 0,
+            totalPending: 0,
+            totalPayments: 0,
+            totalPendingPackages: 0
+          }
         };
       }
     },

@@ -12,6 +12,7 @@ export interface Customer {
   id_number?: string;
   created_at?: string;
   updated_at?: string;
+  profile_image_url?: string;
 }
 
 export interface Package {
@@ -35,7 +36,7 @@ export interface Package {
   customers?: {
     name: string;
     email: string;
-    phone: string;
+    phone?: string;
   };
 }
 
@@ -90,6 +91,29 @@ export interface NotificationLog {
   };
 }
 
+export interface NotificationLogEntry {
+  id: string;
+  customer_id?: string;
+  package_id?: string;
+  message: string;
+  status?: string;
+  created_at?: string;
+  sent_at?: string;
+  notification_type: string;
+  error_message?: string;
+  customers?: {
+    name: string;
+    phone: string;
+    whatsapp_number?: string;
+  };
+  packages?: {
+    tracking_number: string;
+    destination: string;
+    amount_to_collect: number;
+    currency: string;
+  };
+}
+
 export interface UserProfile {
   id: string;
   user_id: string;
@@ -97,7 +121,7 @@ export interface UserProfile {
   first_name: string;
   last_name: string;
   phone: string;
-  role?: 'admin' | 'employee' | 'traveler';
+  role: 'admin' | 'employee' | 'traveler';
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -145,6 +169,7 @@ export interface DispatchRelation {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  status?: string;
   total_packages?: number;
   total_weight?: number;
   total_freight?: number;
@@ -171,6 +196,24 @@ export interface UserAction {
   new_values?: any;
   can_revert?: boolean;
   created_at?: string;
+  reverted_at?: string;
+  reverted_by?: string;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id?: string;
+  user_name?: string;
+  user_email?: string;
+  action_type: string;
+  activity_type: string;
+  description: string;
+  table_name?: string;
+  record_id?: string;
+  old_values?: any;
+  new_values?: any;
+  can_revert?: boolean;
+  created_at: string;
   reverted_at?: string;
   reverted_by?: string;
 }

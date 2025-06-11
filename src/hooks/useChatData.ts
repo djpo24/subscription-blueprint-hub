@@ -3,8 +3,30 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { IncomingMessage } from '@/types/supabase-temp';
 
-export function useChatData() {
-  return useQuery({
+interface ChatConversation {
+  customerId?: string;
+  customerName: string;
+  messages: IncomingMessage[];
+  profileImageUrl?: string;
+}
+
+interface ChatData {
+  chatList: Array<{
+    phone: string;
+    customerName: string;
+    lastMessage: string;
+    timestamp: string;
+    unreadCount: number;
+    customerId?: string;
+    profileImageUrl?: string;
+  }>;
+  conversationsByPhone: Record<string, ChatConversation>;
+  isLoading: boolean;
+  refetch: () => void;
+}
+
+export function useChatData(): ChatData {
+  const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-data'],
     queryFn: async (): Promise<IncomingMessage[]> => {
       console.log('🔍 Fetching chat data...');
@@ -44,4 +66,52 @@ export function useChatData() {
     },
     refetchInterval: 5000,
   });
+
+  // Group messages by phone number
+  const conversationsByPhone: Record<string, ChatConversation> = {};
+  const chatList: Array<{
+    phone: string;
+    customerName: string;
+    lastMessage: string;
+    timestamp: string;
+    unreadCount: number;
+    customerId?: string;
+    profileImageUrl?: string;
+  }> = [];
+
+  messages.forEach(message => {
+    const phone = message.from_phone;
+    if (!conversationsByPhone[phone]) {
+      conversationsByPhone[phone] = {
+        customerId: message.customer_id,
+        customerName: message.customers?.name || phone,
+        messages: [],
+        profileImageUrl: undefined
+      };
+    }
+    conversationsByPhone[phone].messages.push(message);
+  });
+
+  // Create chat list
+  Object.entries(conversationsByPhone).forEach(([phone, conversation]) => {
+    const lastMessage = conversation.messages[0];
+    if (lastMessage) {
+      chatList.push({
+        phone,
+        customerName: conversation.customerName,
+        lastMessage: lastMessage.message_content || '',
+        timestamp: lastMessage.timestamp || '',
+        unreadCount: 0,
+        customerId: conversation.customerId,
+        profileImageUrl: conversation.profileImageUrl
+      });
+    }
+  });
+
+  return {
+    chatList,
+    conversationsByPhone,
+    isLoading,
+    refetch
+  };
 }

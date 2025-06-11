@@ -1,5 +1,6 @@
 
 import { Package, Weight, DollarSign, Truck } from 'lucide-react';
+import { formatWeight, formatFreight, formatAmountToCollect } from '@/utils/formatters';
 
 interface PackageInfo {
   id: string;
@@ -56,21 +57,21 @@ export function DispatchSummary({ selectedPackages, packages }: DispatchSummaryP
           <Weight className="h-4 w-4 text-blue-600" />
           <div>
             <div className="text-blue-600">Peso Total</div>
-            <div className="font-bold">{totals.weight} kg</div>
+            <div className="font-bold">{formatWeight(totals.weight)} kg</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-blue-600" />
           <div>
             <div className="text-blue-600">Flete Total</div>
-            <div className="font-bold">{formatCurrency(totals.freight)}</div>
+            <div className="font-bold">${formatFreight(totals.freight)}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <DollarSign className="h-4 w-4 text-green-600" />
           <div>
             <div className="text-green-600">A Cobrar</div>
-            <div className="font-bold text-green-700">{formatCurrency(totals.amount_to_collect)}</div>
+            <div className="font-bold text-green-700">{formatAmountToCollect(totals.amount_to_collect)}</div>
           </div>
         </div>
       </div>

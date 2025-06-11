@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -59,7 +58,7 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
 
   // Función para determinar si se puede entregar el paquete
   const canDeliverPackage = (pkg: PackageInDispatch) => {
-    return pkg.status === 'en_destino' && pkg.status !== 'delivered';
+    return pkg.status === 'en_destino';
   };
 
   const handleDeliverPackage = (pkg: PackageInDispatch) => {

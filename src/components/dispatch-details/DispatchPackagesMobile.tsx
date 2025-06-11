@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +43,7 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchP
 
   // Función para determinar si se puede entregar el paquete
   const canDeliverPackage = (pkg: PackageInDispatch) => {
-    return pkg.status === 'en_destino' && pkg.status !== 'delivered';
+    return pkg.status === 'en_destino';
   };
 
   if (packages.length === 0) {

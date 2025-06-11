@@ -33,18 +33,18 @@ export function PackagesByDateHeader({
   onOpenLabelsDialog,
   dispatches
 }: PackagesByDateHeaderProps) {
-  console.log('🔍 [PackagesByDateHeader] Component rendered:', {
-    selectedDate: selectedDate.toISOString(),
-    dispatchesCount: dispatches.length
-  });
+  console.log('🔍 [PackagesByDateHeader] === DIAGNÓSTICO DEL HEADER ===');
+  console.log('🔍 [PackagesByDateHeader] Fecha seleccionada:', selectedDate.toISOString());
+  console.log('🔍 [PackagesByDateHeader] Despachos encontrados:', dispatches.length);
 
   const handleCreateDispatchClick = () => {
-    console.log('🚀 [PackagesByDateHeader] Create Dispatch button clicked');
+    console.log('🚀 [PackagesByDateHeader] === BOTÓN CREAR DESPACHO CLICKEADO ===');
+    console.log('🚀 [PackagesByDateHeader] Ejecutando onCreateDispatch...');
     onCreateDispatch();
   };
 
   const handleLabelsDialogClick = () => {
-    console.log('🏷️ [PackagesByDateHeader] Labels Dialog button clicked');
+    console.log('🏷️ [PackagesByDateHeader] Botón etiquetas clickeado');
     onOpenLabelsDialog();
   };
 
@@ -88,7 +88,7 @@ export function PackagesByDateHeader({
         <Button
           onClick={handleCreateDispatchClick}
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
         >
           <Send className="h-4 w-4" />
           <span className="hidden sm:inline">Crear Despacho</span>

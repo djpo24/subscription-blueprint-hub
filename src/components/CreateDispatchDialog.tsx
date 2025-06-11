@@ -56,21 +56,27 @@ export function CreateDispatchDialog({
   // Obtener solo paquetes elegibles para despacho
   const eligiblePackages = useDispatchEligiblePackages(trips);
 
-  console.log('🔍 [CreateDispatchDialog] Component rendered with:', {
-    open,
-    tripsReceived: trips.length,
-    eligiblePackages: eligiblePackages.length,
-    selectedPackages: selectedPackages.length
+  console.log('🔍 [CreateDispatchDialog] === DIAGNÓSTICO DEL DIÁLOGO ===');
+  console.log('🔍 [CreateDispatchDialog] Diálogo abierto:', open);
+  console.log('🔍 [CreateDispatchDialog] Viajes recibidos:', trips.length);
+  console.log('🔍 [CreateDispatchDialog] Paquetes elegibles:', eligiblePackages.length);
+  console.log('🔍 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
+
+  // Log detallado de viajes
+  console.log('📊 [CreateDispatchDialog] Detalles de viajes:');
+  trips.forEach((trip, index) => {
+    console.log(`🚗 [CreateDispatchDialog] Viaje ${index + 1}:`, {
+      id: trip.id,
+      packagesCount: trip.packages?.length || 0,
+      packages: trip.packages?.map(p => ({
+        tracking: p.tracking_number,
+        status: p.status
+      })) || []
+    });
   });
 
-  // Log adicional para debugging
-  console.log('📦 [CreateDispatchDialog] All trips data:', trips.map(t => ({
-    id: t.id,
-    packagesCount: t.packages.length,
-    packageStatuses: t.packages.map(p => `${p.tracking_number}: ${p.status}`)
-  })));
-
   const handlePackageToggle = (packageId: string, checked: boolean) => {
+    console.log('🔄 [CreateDispatchDialog] Toggle paquete:', packageId, checked);
     if (checked) {
       setSelectedPackages(prev => [...prev, packageId]);
     } else {
@@ -79,6 +85,7 @@ export function CreateDispatchDialog({
   };
 
   const handleSelectAll = () => {
+    console.log('🔄 [CreateDispatchDialog] Seleccionar todo. Estado actual:', selectedPackages.length, 'de', eligiblePackages.length);
     if (selectedPackages.length === eligiblePackages.length) {
       setSelectedPackages([]);
     } else {
@@ -89,21 +96,19 @@ export function CreateDispatchDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🚀 [CreateDispatchDialog] Submit attempt:', {
-      selectedPackagesCount: selectedPackages.length,
-      eligiblePackagesCount: eligiblePackages.length,
-      isPending: createDispatch.isPending
-    });
+    console.log('🚀 [CreateDispatchDialog] === INTENTO DE ENVÍO ===');
+    console.log('🚀 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
+    console.log('🚀 [CreateDispatchDialog] Está pendiente:', createDispatch.isPending);
+    console.log('🚀 [CreateDispatchDialog] IDs seleccionados:', selectedPackages);
     
     if (selectedPackages.length === 0) {
-      console.log('⚠️ [CreateDispatchDialog] Submit blocked: no packages selected');
+      console.log('❌ [CreateDispatchDialog] ENVÍO BLOQUEADO: no hay paquetes seleccionados');
       return;
     }
 
     try {
       const currentDate = new Date();
-      console.log('📅 [CreateDispatchDialog] Creating dispatch with current date:', currentDate);
-      console.log('📦 [CreateDispatchDialog] Selected packages:', selectedPackages.length);
+      console.log('📅 [CreateDispatchDialog] Creando despacho para fecha:', currentDate);
       
       await createDispatch.mutateAsync({
         date: currentDate,
@@ -111,12 +116,13 @@ export function CreateDispatchDialog({
         notes: notes.trim() || undefined
       });
       
+      console.log('✅ [CreateDispatchDialog] Despacho creado exitosamente');
       setSelectedPackages([]);
       setNotes('');
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      console.error('❌ [CreateDispatchDialog] Error creating dispatch:', error);
+      console.error('❌ [CreateDispatchDialog] Error creando despacho:', error);
     }
   };
 
@@ -125,10 +131,13 @@ export function CreateDispatchDialog({
 
   // Debug: Check if button should be disabled
   const isButtonDisabled = selectedPackages.length === 0 || createDispatch.isPending;
-  console.log('🔘 [CreateDispatchDialog] Button state:', {
-    disabled: isButtonDisabled,
-    reason: selectedPackages.length === 0 ? 'no packages selected' : createDispatch.isPending ? 'request pending' : 'enabled'
-  });
+  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN ===');
+  console.log('🔘 [CreateDispatchDialog] Botón deshabilitado:', isButtonDisabled);
+  console.log('🔘 [CreateDispatchDialog] Razón:', 
+    selectedPackages.length === 0 ? 'no hay paquetes seleccionados' : 
+    createDispatch.isPending ? 'petición pendiente' : 
+    'habilitado'
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,7 +151,7 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido", "bodega" o "procesado"
+                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido", "bodega", "procesado", "pending" o "arrived"
                 y no haber sido despachadas anteriormente.
               </p>
               <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded">
@@ -151,6 +160,8 @@ export function CreateDispatchDialog({
                   <li>"recibido" - Encomiendas que han llegado</li>
                   <li>"bodega" - Encomiendas en bodega</li>
                   <li>"procesado" - Encomiendas impresas (listas para despacho)</li>
+                  <li>"pending" - Encomiendas pendientes</li>
+                  <li>"arrived" - Encomiendas que han llegado</li>
                 </ul>
                 <p className="mt-3"><strong>Estados NO elegibles:</strong></p>
                 <ul className="list-disc list-inside space-y-1">
@@ -158,6 +169,9 @@ export function CreateDispatchDialog({
                   <li>"in_transit" / "transito" - En tránsito</li>
                   <li>"en_destino" - En destino</li>
                 </ul>
+                <p className="mt-3 text-amber-600">
+                  <strong>💡 Consejo:</strong> Revisa la consola del navegador (F12) para ver el diagnóstico detallado.
+                </p>
               </div>
             </div>
           ) : (
@@ -193,8 +207,9 @@ export function CreateDispatchDialog({
             <Button
               type="submit"
               disabled={selectedPackages.length === 0 || createDispatch.isPending}
+              className={`${selectedPackages.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {createDispatch.isPending ? 'Creando...' : 'Crear Despacho'}
+              {createDispatch.isPending ? 'Creando...' : `Crear Despacho ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
             </Button>
           </div>
         </form>

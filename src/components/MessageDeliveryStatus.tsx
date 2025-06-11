@@ -16,9 +16,9 @@ export function MessageDeliveryStatus() {
         .from('message_delivery_status')
         .select(`
           *,
-          notification_log (
+          notification_log!message_delivery_status_notification_id_fkey (
             message,
-            customers!fk_notification_log_customer (
+            customers!notification_log_customer_id_fkey (
               name,
               phone
             )
@@ -160,4 +160,49 @@ export function MessageDeliveryStatus() {
       </CardContent>
     </Card>
   );
+
+  function getStatusIcon(status: string) {
+    switch (status) {
+      case 'delivered':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'read':
+        return <CheckCircle className="h-4 w-4 text-blue-600" />;
+      case 'sent':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'failed':
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  }
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'delivered':
+        return "bg-green-100 text-green-800";
+      case 'read':
+        return "bg-blue-100 text-blue-800";
+      case 'sent':
+        return "bg-yellow-100 text-yellow-800";
+      case 'failed':
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  }
+
+  function getStatusLabel(status: string) {
+    switch (status) {
+      case 'delivered':
+        return 'Entregado';
+      case 'read':
+        return 'Leído';
+      case 'sent':
+        return 'Enviado';
+      case 'failed':
+        return 'Falló';
+      default:
+        return status;
+    }
+  }
 }

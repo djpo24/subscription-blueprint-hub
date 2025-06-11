@@ -14,12 +14,12 @@ export function useNotificationLog() {
           .from('notification_log')
           .select(`
             *,
-            customers!customer_id (
+            customers!notification_log_customer_id_fkey (
               name,
               phone,
               whatsapp_number
             ),
-            packages!package_id (
+            packages!notification_log_package_id_fkey (
               tracking_number,
               destination,
               amount_to_collect,

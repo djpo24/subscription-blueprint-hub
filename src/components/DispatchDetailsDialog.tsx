@@ -76,7 +76,11 @@ export function DispatchDetailsDialog({
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
   const firstPackage = packages[0];
-  const canMarkAsInTransit = firstPackage && packages.some(pkg => pkg.status === 'procesado');
+  
+  // Actualizar la lógica para incluir el estado "despachado"
+  const canMarkAsInTransit = firstPackage && packages.some(pkg => 
+    pkg.status === 'procesado' || pkg.status === 'despachado'
+  );
   const canMarkAsArrived = currentDispatch?.status === 'en_transito';
 
   const handleMarkAsInTransit = () => {

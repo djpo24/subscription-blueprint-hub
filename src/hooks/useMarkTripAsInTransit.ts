@@ -10,17 +10,17 @@ export function useMarkTripAsInTransit() {
 
   const markTripAsInTransitMutation = useMutation({
     mutationFn: async (tripId: string) => {
-      // Get all packages that are "procesado" (dispatched but not in transit) for this trip
+      // Actualizar para incluir el estado "despachado" además de "procesado"
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select('id, tracking_number')
         .eq('trip_id', tripId)
-        .eq('status', 'procesado');
+        .in('status', ['procesado', 'despachado']);
 
       if (packagesError) throw packagesError;
 
       if (!packages || packages.length === 0) {
-        throw new Error('No packages found in "procesado" status for this trip');
+        throw new Error('No packages found in "procesado" or "despachado" status for this trip');
       }
 
       // Update all packages to "transito" status
@@ -31,7 +31,7 @@ export function useMarkTripAsInTransit() {
           updated_at: new Date().toISOString()
         })
         .eq('trip_id', tripId)
-        .eq('status', 'procesado');
+        .in('status', ['procesado', 'despachado']);
 
       if (updateError) throw updateError;
 

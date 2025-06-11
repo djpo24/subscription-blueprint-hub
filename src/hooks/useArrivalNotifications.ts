@@ -35,7 +35,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
               phone,
               whatsapp_number
             ),
-            packages!package_id (
+            packages!notification_log_package_id_fkey (
               tracking_number,
               destination,
               amount_to_collect,

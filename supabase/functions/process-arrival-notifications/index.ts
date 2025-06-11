@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -54,7 +53,7 @@ async function prepareArrivalNotifications(supabaseClient: any) {
     .from('notification_log')
     .select(`
       *,
-      packages!package_id (
+      packages!notification_log_package_id_fkey (
         tracking_number,
         destination,
         amount_to_collect,
@@ -243,7 +242,7 @@ async function executeArrivalNotifications(supabaseClient: any) {
     .from('notification_log')
     .select(`
       *,
-      packages!package_id (
+      packages!notification_log_package_id_fkey (
         tracking_number,
         destination,
         amount_to_collect,

@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useEditCustomerForm } from '@/hooks/useEditCustomerForm';
 import { useEditCustomerSubmission } from '@/hooks/useEditCustomerSubmission';
 import { useEditCustomerValidation } from '@/hooks/useEditCustomerValidation';
-import { EditCustomerForm } from './EditCustomerForm';
+import { CustomerNameFields } from '@/components/CustomerNameFields';
+import { CustomerContactFields } from '@/components/CustomerContactFields';
+import { CustomerEmailField } from '@/components/CustomerEmailField';
+import { AddressSelector } from '@/components/AddressSelector';
+import { CustomerFormActions } from '@/components/CustomerFormActions';
 
 interface Customer {
   id: string;
@@ -29,7 +33,7 @@ export function EditCustomerDialog({
   customer, 
   onSuccess 
 }: EditCustomerDialogProps) {
-  const [showEmailField, setShowEmailField] = useState(true);
+  const [showEmailField, setShowEmailField] = useState(!!customer.email);
   
   const { formData, updateFormData } = useEditCustomerForm(customer);
   const { isLoading, handleSubmit } = useEditCustomerSubmission(customer, onSuccess);
@@ -63,6 +67,10 @@ export function EditCustomerDialog({
     await handleSubmit(formData, validationError);
   };
 
+  const handleCancel = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
@@ -74,31 +82,49 @@ export function EditCustomerDialog({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto min-h-0">
-          <form onSubmit={onSubmit} className="space-y-6">
-            <EditCustomerForm
-              formData={formData}
-              validationError={validationError}
-              isChecking={isChecking}
-              showEmailField={showEmailField}
-              onFormDataChange={updateFormData}
-              onPhoneNumberChange={onPhoneNumberChange}
-              onIdNumberChange={onIdNumberChangeHandler}
-              onCountryCodeChange={handleCountryCodeChange}
-              onToggleEmailField={() => setShowEmailField(true)}
-            />
+          <div className="space-y-6">
+            <form onSubmit={onSubmit} className="space-y-6">
+              <CustomerNameFields
+                firstName={formData.firstName}
+                lastName={formData.lastName}
+                onFirstNameChange={(value) => updateFormData('firstName', value)}
+                onLastNameChange={(value) => updateFormData('lastName', value)}
+              />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading || !!validationError}
-              >
-                {isLoading ? 'Actualizando...' : 'Actualizar Cliente'}
-              </Button>
-            </div>
-          </form>
+              <CustomerContactFields
+                idNumber={formData.idNumber}
+                countryCode={formData.countryCode}
+                phoneNumber={formData.phoneNumber}
+                validationError={validationError}
+                isChecking={isChecking}
+                onIdNumberChange={onIdNumberChangeHandler}
+                onCountryCodeChange={handleCountryCodeChange}
+                onPhoneNumberChange={onPhoneNumberChange}
+              />
+
+              <CustomerEmailField
+                email={formData.email}
+                showEmailField={showEmailField}
+                onEmailChange={(value) => updateFormData('email', value)}
+                onToggleEmailField={() => setShowEmailField(true)}
+              />
+
+              <div>
+                <AddressSelector
+                  value={formData.address}
+                  onChange={(value) => updateFormData('address', value)}
+                />
+              </div>
+
+              <CustomerFormActions
+                isLoading={isLoading}
+                hasValidationError={!!validationError}
+                onCancel={handleCancel}
+                submitText="Actualizar Cliente"
+                loadingText="Actualizando..."
+              />
+            </form>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

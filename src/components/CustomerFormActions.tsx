@@ -5,34 +5,27 @@ interface CustomerFormActionsProps {
   isLoading: boolean;
   hasValidationError: boolean;
   onCancel: () => void;
+  submitText?: string;
+  loadingText?: string;
 }
 
-export function CustomerFormActions({
-  isLoading,
-  hasValidationError,
-  onCancel
+export function CustomerFormActions({ 
+  isLoading, 
+  hasValidationError, 
+  onCancel,
+  submitText = "Crear Cliente",
+  loadingText = "Creando..."
 }: CustomerFormActionsProps) {
   return (
-    <div className="flex gap-3 pt-4">
-      <Button 
-        type="submit" 
-        disabled={isLoading || hasValidationError} 
-        className="px-6"
-      >
-        {isLoading ? 'Creando...' : 'Crear Cliente'}
+    <div className="flex justify-end gap-2 pt-4">
+      <Button type="button" variant="outline" onClick={onCancel}>
+        Cancelar
       </Button>
       <Button 
-        type="button" 
-        variant="outline" 
-        onClick={(e) => {
-          console.log('🟢 Cancel button clicked');
-          e.preventDefault();
-          e.stopPropagation();
-          onCancel();
-        }} 
-        className="px-6"
+        type="submit" 
+        disabled={isLoading || hasValidationError}
       >
-        Cancelar
+        {isLoading ? loadingText : submitText}
       </Button>
     </div>
   );

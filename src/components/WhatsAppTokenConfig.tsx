@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ export function WhatsAppTokenConfig() {
     phoneNumberId: 'unknown'
   });
 
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v2';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -316,20 +315,21 @@ export function WhatsAppTokenConfig() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Paso 4: Configurar Webhook en Meta</h3>
             <p className="text-sm text-gray-600">
-              Ahora configura el webhook en Meta Developer Console con los datos correctos.
+              Ahora configura el webhook en Meta Developer Console con la nueva URL V3.
             </p>
 
             <div className="space-y-4">
-              <div className="p-3 border rounded bg-gray-50">
-                <h4 className="font-medium mb-2">📡 URL del Webhook</h4>
+              <div className="p-3 border rounded bg-emerald-50 border-emerald-200">
+                <h4 className="font-medium mb-2 text-emerald-800">📡 Nueva URL del Webhook V3</h4>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm bg-white p-2 rounded border font-mono break-all">
+                  <code className="flex-1 text-sm bg-white p-2 rounded border font-mono break-all text-emerald-700">
                     {webhookUrl}
                   </code>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(webhookUrl, 'URL del webhook')}
+                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-100"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -357,7 +357,7 @@ export function WhatsAppTokenConfig() {
                 <ol className="text-sm space-y-1 list-decimal list-inside">
                   <li>Ve a tu aplicación → WhatsApp → Configuration</li>
                   <li>En "Webhook", haz clic en "Edit"</li>
-                  <li>Pega la URL del webhook</li>
+                  <li>Reemplaza la URL anterior con la nueva URL V3 de arriba</li>
                   <li>Pega el token de verificación</li>
                   <li>Selecciona "messages" en Webhook fields</li>
                   <li>Haz clic en "Verify and save"</li>
@@ -373,10 +373,11 @@ export function WhatsAppTokenConfig() {
                 Abrir Meta Developer Console
               </Button>
 
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Una vez que hayas configurado el webhook en Meta, los tokens estarán sincronizados y el webhook funcionará correctamente.
+              <Alert className="border-emerald-200 bg-emerald-50">
+                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                <AlertDescription className="text-emerald-700">
+                  <strong>✅ Webhook V3 Actualizado:</strong> Esta nueva URL reemplaza cualquier webhook anterior. 
+                  Una vez configurada en Meta, el webhook estará completamente funcional.
                 </AlertDescription>
               </Alert>
             </div>

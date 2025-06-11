@@ -14,7 +14,7 @@ export function useCreateDispatchSimple() {
       packageIds: string[]; 
       notes?: string;
     }) => {
-      console.log('🚀 [SOLUCIÓN RADICAL] === CREANDO DESPACHO SIMPLE ===');
+      console.log('🚀 [SOLUCIÓN RADICAL] === CREANDO DESPACHO CON ESTADO DESPACHADO ===');
       console.log('📦 [SOLUCIÓN RADICAL] Paquetes a despachar:', packageIds.length);
       
       if (packageIds.length === 0) {
@@ -81,11 +81,11 @@ export function useCreateDispatchSimple() {
 
       console.log('✅ [SOLUCIÓN RADICAL] Relaciones creadas:', dispatchPackages.length);
 
-      // 5. Actualizar estado de paquetes a "procesado"
+      // 5. Actualizar estado de paquetes a "despachado" (nuevo estado)
       const { error: updateError } = await supabase
         .from('packages')
         .update({ 
-          status: 'procesado',
+          status: 'despachado', // Cambiar al nuevo estado "despachado"
           updated_at: new Date().toISOString()
         })
         .in('id', packageIds);
@@ -94,17 +94,17 @@ export function useCreateDispatchSimple() {
         console.error('⚠️ [SOLUCIÓN RADICAL] Error actualizando paquetes:', updateError);
         // No lanzar error para no fallar todo el proceso
       } else {
-        console.log('✅ [SOLUCIÓN RADICAL] Estados de paquetes actualizados');
+        console.log('✅ [SOLUCIÓN RADICAL] Estados de paquetes actualizados a "despachado"');
       }
 
       return { dispatch, packageCount: packageIds.length };
     },
     onSuccess: (data) => {
-      console.log('🎉 [SOLUCIÓN RADICAL] DESPACHO CREADO EXITOSAMENTE');
+      console.log('🎉 [SOLUCIÓN RADICAL] DESPACHO CREADO CON ESTADO DESPACHADO');
       
       toast({
         title: "Despacho creado",
-        description: `Se creó el despacho con ${data.packageCount} encomiendas`,
+        description: `Se creó el despacho con ${data.packageCount} encomiendas (estado: despachado)`,
       });
       
       // Invalidar todas las queries relevantes

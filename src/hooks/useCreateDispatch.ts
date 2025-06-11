@@ -64,11 +64,11 @@ export function useCreateDispatch() {
 
       if (relationError) throw relationError;
 
-      // Actualizar el estado de las encomiendas a "procesado"
+      // Actualizar el estado de las encomiendas a "despachado" (nuevo estado)
       const { error: updateError } = await supabase
         .from('packages')
         .update({ 
-          status: 'procesado',
+          status: 'despachado', // Cambiar a nuevo estado "despachado"
           updated_at: new Date().toISOString()
         })
         .in('id', packageIds);
@@ -81,9 +81,9 @@ export function useCreateDispatch() {
       // Crear eventos de tracking para cada paquete
       const trackingEvents = packageIds.map(packageId => ({
         package_id: packageId,
-        event_type: 'processed',
-        description: 'Encomienda procesada para despacho',
-        location: 'Centro de procesamiento'
+        event_type: 'dispatched',
+        description: 'Encomienda despachada',
+        location: 'Centro de distribución'
       }));
 
       const { error: trackingError } = await supabase

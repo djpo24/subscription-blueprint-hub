@@ -27,11 +27,12 @@ interface Trip {
   packages: Package[];
 }
 
-// Estados que SÍ pueden ser despachados - CORREGIDO para incluir los estados correctos
+// Estados que SÍ pueden ser despachados - INCLUYE "despachado" para re-despachos
 const ELIGIBLE_STATES = [
   'recibido',     // Paquetes que han llegado y están listos para despacho
   'procesado',    // Paquetes con etiqueta impresa - SÍ pueden ser despachados
   'bodega',       // Paquetes en bodega listos para despacho
+  'despachado',   // Paquetes despachados pueden ser re-despachados si es necesario
   'pending',      // Paquetes pendientes también pueden ser despachados
   'arrived',      // Paquetes que han llegado
 ] as const;
@@ -72,7 +73,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
   });
 
   return useMemo(() => {
-    console.log('🔍 [useDispatchEligiblePackages] === ANÁLISIS FINAL CORREGIDO ===');
+    console.log('🔍 [useDispatchEligiblePackages] === ANÁLISIS CON ESTADO DESPACHADO ===');
     
     // Add safety check for trips parameter
     if (!trips || !Array.isArray(trips)) {
@@ -85,7 +86,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     // Log all package statuses for debugging
     const allPackages = trips.flatMap(trip => trip.packages || []);
     
-    console.log('📦 [useDispatchEligiblePackages] === ANÁLISIS DE ESTADOS FINAL ===');
+    console.log('📦 [useDispatchEligiblePackages] === ANÁLISIS DE ESTADOS ACTUALIZADO ===');
     console.log('📋 [useDispatchEligiblePackages] Total paquetes encontrados:', allPackages.length);
     
     if (allPackages.length === 0) {
@@ -99,7 +100,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     }, {} as Record<string, number>);
     
     console.log('📊 [useDispatchEligiblePackages] Distribución de estados:', statusCounts);
-    console.log('✅ [useDispatchEligiblePackages] Estados ELEGIBLES:', ELIGIBLE_STATES);
+    console.log('✅ [useDispatchEligiblePackages] Estados ELEGIBLES (incluye despachado):', ELIGIBLE_STATES);
     console.log('❌ [useDispatchEligiblePackages] Estados NO ELEGIBLES:', INELIGIBLE_STATES);
 
     // Crear un Set con los IDs de paquetes ya despachados
@@ -118,7 +119,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
             return false;
           }
 
-          // Verificar si el estado es elegible - INCLUYE "recibido" y "procesado"
+          // Verificar si el estado es elegible - INCLUYE "despachado" para re-despachos
           const isEligible = ELIGIBLE_STATES.includes(pkg.status as any);
           
           if (!isEligible) {
@@ -143,7 +144,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
         }))
     );
 
-    console.log('🎯 [useDispatchEligiblePackages] === RESULTADO FINAL ===');
+    console.log('🎯 [useDispatchEligiblePackages] === RESULTADO FINAL CON DESPACHADO ===');
     console.log(`✅ [useDispatchEligiblePackages] Paquetes ELEGIBLES para despacho: ${eligiblePackages.length}`);
     console.log(`📊 [useDispatchEligiblePackages] De ${allPackages.length} paquetes totales en ${trips.length} viajes`);
     
@@ -151,7 +152,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
       console.log('❌ [useDispatchEligiblePackages] === NO HAY PAQUETES ELEGIBLES ===');
       console.log('🔍 [useDispatchEligiblePackages] Posibles razones:');
       console.log('   1. Los paquetes ya están despachados');
-      console.log('   2. Los paquetes no tienen estados "recibido" o "procesado"');
+      console.log('   2. Los paquetes no tienen estados elegibles');
       console.log('   3. No hay paquetes en los viajes de esta fecha');
     } else {
       console.log(`🎉 [useDispatchEligiblePackages] ENCONTRADOS ${eligiblePackages.length} paquetes elegibles!`);

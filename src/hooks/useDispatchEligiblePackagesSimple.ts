@@ -25,12 +25,12 @@ interface Trip {
   packages: Package[];
 }
 
-// Estados que pueden ser despachados - SIMPLIFICADO
-const DISPATCHABLE_STATES = ['recibido', 'procesado', 'pending', 'arrived'];
+// Estados que pueden ser despachados - INCLUYE "despachado" 
+const DISPATCHABLE_STATES = ['recibido', 'procesado', 'despachado', 'pending', 'arrived'];
 
 export function useDispatchEligiblePackagesSimple(trips: Trip[] = []) {
   return useMemo(() => {
-    console.log('🚀 [SOLUCIÓN RADICAL] === NUEVO HOOK SIMPLIFICADO ===');
+    console.log('🚀 [SOLUCIÓN RADICAL] === HOOK SIMPLIFICADO CON DESPACHADO ===');
     
     if (!trips || !Array.isArray(trips)) {
       console.log('❌ [SOLUCIÓN RADICAL] No hay viajes');
@@ -42,7 +42,7 @@ export function useDispatchEligiblePackagesSimple(trips: Trip[] = []) {
     const eligiblePackages = trips.flatMap(trip => 
       (trip.packages || [])
         .filter(pkg => {
-          // LÓGICA SIMPLIFICADA: Solo verificar estado
+          // LÓGICA SIMPLIFICADA: Solo verificar estado (incluye "despachado")
           const isEligible = DISPATCHABLE_STATES.includes(pkg.status);
           
           console.log(`📋 [SOLUCIÓN RADICAL] Paquete ${pkg.tracking_number}: ${pkg.status} -> ${isEligible ? 'ELEGIBLE' : 'NO ELEGIBLE'}`);
@@ -63,7 +63,7 @@ export function useDispatchEligiblePackagesSimple(trips: Trip[] = []) {
         }))
     );
 
-    console.log('✅ [SOLUCIÓN RADICAL] RESULTADO FINAL:', eligiblePackages.length, 'paquetes elegibles');
+    console.log('✅ [SOLUCIÓN RADICAL] RESULTADO CON DESPACHADO:', eligiblePackages.length, 'paquetes elegibles');
     
     return eligiblePackages;
   }, [trips]);

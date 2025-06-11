@@ -3,6 +3,8 @@ export const getStatusColor = (status: string) => {
   switch (status) {
     case 'procesado':
       return 'bg-orange-100 text-orange-800';
+    case 'despachado':
+      return 'bg-purple-100 text-purple-800';
     case 'en_transito':
       return 'bg-blue-100 text-blue-800';
     case 'llegado':
@@ -16,6 +18,8 @@ export const getStatusLabel = (status: string) => {
   switch (status) {
     case 'procesado':
       return 'Procesado';
+    case 'despachado':
+      return 'Despachado';
     case 'en_transito':
       return 'En Tránsito';
     case 'llegado':

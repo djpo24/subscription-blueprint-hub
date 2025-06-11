@@ -282,13 +282,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_notification_log_customer"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "notification_log_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -389,6 +382,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "packages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sent_messages: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          delivery_status: string | null
+          id: string
+          message_content: string
+          phone_number: string
+          sent_at: string | null
+          updated_at: string | null
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_status?: string | null
+          id?: string
+          message_content: string
+          phone_number: string
+          sent_at?: string | null
+          updated_at?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_status?: string | null
+          id?: string
+          message_content?: string
+          phone_number?: string
+          sent_at?: string | null
+          updated_at?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sent_messages_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"

@@ -23,12 +23,16 @@ export function DispatchSummaryCards({
 }: DispatchSummaryCardsProps) {
   const isMobile = useIsMobile();
 
+  console.log('💰 [DispatchSummaryCards] Received primary currency:', primaryCurrency);
+  console.log('💰 [DispatchSummaryCards] Total amount to collect:', totalAmountToCollect);
+
   const formatFreightValue = (freight: number) => {
     if (!freight) return '$0';
     return `$${formatNumberWithThousandsSeparator(freight)}`;
   };
 
   const formatAmountToCollectValue = (amount: number) => {
+    console.log('💰 [DispatchSummaryCards] Formatting amount:', amount, 'with currency:', primaryCurrency);
     return formatAmountToCollectWithCurrency(amount, primaryCurrency);
   };
 

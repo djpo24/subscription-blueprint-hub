@@ -41,20 +41,26 @@ export function DispatchDetailsDialog({
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
 
-  // Determinar la divisa predominante de los paquetes
+  // Mejorar la detección de la divisa predominante
   const currencyCount = packages.reduce((acc, pkg) => {
-    const currency = parseCurrencyString(pkg.currency);
-    acc[currency] = (acc[currency] || 0) + 1;
+    // Solo contar paquetes que tienen amount_to_collect > 0
+    if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
+      const currency = parseCurrencyString(pkg.currency);
+      acc[currency] = (acc[currency] || 0) + 1;
+    }
     return acc;
   }, {} as Record<Currency, number>);
 
+  // Determinar la divisa principal basada en los paquetes con monto a cobrar
   const primaryCurrency: Currency = Object.keys(currencyCount).length > 0 
     ? (Object.keys(currencyCount).reduce((a, b) => 
         currencyCount[a as Currency] > currencyCount[b as Currency] ? a : b
       ) as Currency)
     : 'COP';
 
+  console.log('💰 [DispatchDetailsDialog] Currency count:', currencyCount);
   console.log('💰 [DispatchDetailsDialog] Primary currency detected:', primaryCurrency);
+  console.log('💰 [DispatchDetailsDialog] Packages with amount to collect:', packages.filter(p => p.amount_to_collect > 0).length);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);

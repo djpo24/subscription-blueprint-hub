@@ -13,7 +13,7 @@ interface BulkUserCreationDialogProps {
   onSuccess: () => void;
 }
 
-const USERS_TO_CREATE = [
+const CUSTOMERS_TO_CREATE = [
   'TATIANA MONTALVO',
   'ADELBERT CIJNTJO',
   'DOMINGO CURACAO',
@@ -73,8 +73,8 @@ const USERS_TO_CREATE = [
 export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUserCreationDialogProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
-  const [createdUsers, setCreatedUsers] = useState<string[]>([]);
-  const [failedUsers, setFailedUsers] = useState<string[]>([]);
+  const [createdCustomers, setCreatedCustomers] = useState<string[]>([]);
+  const [failedCustomers, setFailedCustomers] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -91,60 +91,31 @@ export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUs
     return `${cleanName}.${index + 1}@temp.com`;
   };
 
-  const splitName = (fullName: string) => {
-    const parts = fullName.trim().split(' ');
-    if (parts.length === 1) {
-      return { firstName: parts[0], lastName: 'Usuario' };
-    }
-    const firstName = parts[0];
-    const lastName = parts.slice(1).join(' ');
-    return { firstName, lastName };
-  };
-
-  const createSingleUser = async (fullName: string, index: number) => {
-    const { firstName, lastName } = splitName(fullName);
+  const createSingleCustomer = async (fullName: string, index: number) => {
     const phoneNumber = generatePhoneNumber(index);
     const email = generateEmailFromName(fullName, index);
+    const fullPhone = `+599${phoneNumber}`;
     
-    const userData = {
+    const customerData = {
+      name: fullName,
       email,
-      password: 'temp123456', // Temporary password
-      first_name: firstName,
-      last_name: lastName,
-      countryCode: '+599',
-      phoneNumber,
-      role: 'employee' as const
+      phone: fullPhone,
+      whatsapp_number: fullPhone,
+      address: 'Dirección pendiente',
+      id_number: `ID${(index + 1).toString().padStart(6, '0')}`
     };
 
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.access_token) {
-      throw new Error('No active session');
-    }
+    console.log(`Creating customer: ${fullName} with data:`, customerData);
 
-    // Prepare user data with full phone number
-    const fullPhone = `${userData.countryCode}${userData.phoneNumber}`;
-    const userDataToSend = {
-      ...userData,
-      phone: fullPhone
-    };
-
-    // Call the Edge Function to create user
-    const { data, error } = await supabase.functions.invoke('create-user', {
-      body: userDataToSend,
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
+    const { data, error } = await supabase
+      .from('customers')
+      .insert([customerData])
+      .select()
+      .single();
 
     if (error) {
-      console.error('Edge function error:', error);
+      console.error('Error creating customer:', error);
       throw error;
-    }
-
-    if (data.error) {
-      throw new Error(data.error);
     }
 
     return data;
@@ -153,48 +124,48 @@ export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUs
   const handleBulkCreation = async () => {
     setIsCreating(true);
     setCurrentIndex(0);
-    setCreatedUsers([]);
-    setFailedUsers([]);
+    setCreatedCustomers([]);
+    setFailedCustomers([]);
 
-    for (let i = 0; i < USERS_TO_CREATE.length; i++) {
-      const userName = USERS_TO_CREATE[i];
+    for (let i = 0; i < CUSTOMERS_TO_CREATE.length; i++) {
+      const customerName = CUSTOMERS_TO_CREATE[i];
       setCurrentIndex(i + 1);
       
       try {
-        await createSingleUser(userName, i);
-        setCreatedUsers(prev => [...prev, userName]);
-        console.log(`✅ Usuario creado: ${userName}`);
+        await createSingleCustomer(customerName, i);
+        setCreatedCustomers(prev => [...prev, customerName]);
+        console.log(`✅ Cliente creado: ${customerName}`);
         
         // Small delay to avoid overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
-        console.error(`❌ Error creando usuario ${userName}:`, error);
-        setFailedUsers(prev => [...prev, userName]);
+        console.error(`❌ Error creando cliente ${customerName}:`, error);
+        setFailedCustomers(prev => [...prev, customerName]);
       }
     }
 
     setIsCreating(false);
     
-    // Invalidate queries to refresh the user list
-    queryClient.invalidateQueries({ queryKey: ['user-profiles'] });
+    // Invalidate queries to refresh any customer lists
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
     
     toast({
       title: "Creación masiva completada",
-      description: `${createdUsers.length + 1} usuarios creados exitosamente, ${failedUsers.length} fallaron`,
+      description: `${createdCustomers.length + 1} clientes creados exitosamente, ${failedCustomers.length} fallaron`,
     });
 
     onSuccess();
   };
 
-  const progress = USERS_TO_CREATE.length > 0 ? (currentIndex / USERS_TO_CREATE.length) * 100 : 0;
+  const progress = CUSTOMERS_TO_CREATE.length > 0 ? (currentIndex / CUSTOMERS_TO_CREATE.length) * 100 : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Creación Masiva de Usuarios</DialogTitle>
+          <DialogTitle>Creación Masiva de Clientes</DialogTitle>
           <DialogDescription>
-            Se crearán {USERS_TO_CREATE.length} usuarios con código de país +599 (Curaçao) 
+            Se crearán {CUSTOMERS_TO_CREATE.length} clientes con código de país +599 (Curaçao) 
             y números de teléfono de 10 dígitos secuenciales.
           </DialogDescription>
         </DialogHeader>
@@ -203,29 +174,29 @@ export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUs
           {isCreating && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Creando usuarios...</span>
-                <span>{currentIndex} / {USERS_TO_CREATE.length}</span>
+                <span>Creando clientes...</span>
+                <span>{currentIndex} / {CUSTOMERS_TO_CREATE.length}</span>
               </div>
               <Progress value={progress} className="w-full" />
               {currentIndex > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Procesando: {USERS_TO_CREATE[currentIndex - 1]}
+                  Procesando: {CUSTOMERS_TO_CREATE[currentIndex - 1]}
                 </p>
               )}
             </div>
           )}
 
-          {!isCreating && (createdUsers.length > 0 || failedUsers.length > 0) && (
+          {!isCreating && (createdCustomers.length > 0 || failedCustomers.length > 0) && (
             <div className="space-y-2">
               <div className="text-sm font-medium">Resultados:</div>
               <div className="text-sm text-green-600">
-                ✅ Usuarios creados: {createdUsers.length}
+                ✅ Clientes creados: {createdCustomers.length}
               </div>
-              {failedUsers.length > 0 && (
+              {failedCustomers.length > 0 && (
                 <div className="text-sm text-red-600">
-                  ❌ Usuarios fallidos: {failedUsers.length}
+                  ❌ Clientes fallidos: {failedCustomers.length}
                   <div className="mt-1 text-xs">
-                    {failedUsers.join(', ')}
+                    {failedCustomers.join(', ')}
                   </div>
                 </div>
               )}
@@ -233,9 +204,9 @@ export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUs
           )}
 
           <div className="max-h-40 overflow-y-auto border rounded p-2">
-            <div className="text-sm font-medium mb-2">Lista de usuarios a crear:</div>
+            <div className="text-sm font-medium mb-2">Lista de clientes a crear:</div>
             <div className="text-xs space-y-1">
-              {USERS_TO_CREATE.map((name, index) => (
+              {CUSTOMERS_TO_CREATE.map((name, index) => (
                 <div key={index} className="flex justify-between">
                   <span>{name}</span>
                   <span className="text-muted-foreground">
@@ -262,7 +233,7 @@ export function BulkUserCreationDialog({ open, onOpenChange, onSuccess }: BulkUs
               onClick={handleBulkCreation}
               disabled={isCreating}
             >
-              Crear Todos los Usuarios
+              Crear Todos los Clientes
             </Button>
           )}
         </DialogFooter>

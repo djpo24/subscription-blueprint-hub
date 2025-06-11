@@ -28,7 +28,7 @@ export function UserManagement() {
             <div className="flex gap-2">
               <Button onClick={() => setShowBulkCreateDialog(true)} variant="outline">
                 <Users className="h-4 w-4 mr-2" />
-                Crear Usuarios Masivamente
+                Crear Clientes Masivamente
               </Button>
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />

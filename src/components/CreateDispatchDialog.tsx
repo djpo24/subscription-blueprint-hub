@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -52,13 +53,13 @@ export function CreateDispatchDialog({
   const [notes, setNotes] = useState('');
   const createDispatch = useCreateDispatch();
 
-  // Obtener solo paquetes elegibles para despacho
+  // Obtener paquetes elegibles con estados "recibido" y "procesado"
   const eligiblePackages = useDispatchEligiblePackages(trips);
 
-  console.log('🔍 [CreateDispatchDialog] === DIAGNÓSTICO CORREGIDO ===');
+  console.log('🔍 [CreateDispatchDialog] === ESTADO DEL DIÁLOGO ===');
   console.log('🔍 [CreateDispatchDialog] Diálogo abierto:', open);
   console.log('🔍 [CreateDispatchDialog] Viajes recibidos:', trips.length);
-  console.log('🔍 [CreateDispatchDialog] Paquetes elegibles:', eligiblePackages.length);
+  console.log('🔍 [CreateDispatchDialog] Paquetes elegibles encontrados:', eligiblePackages.length);
   console.log('🔍 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
@@ -82,9 +83,9 @@ export function CreateDispatchDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🚀 [CreateDispatchDialog] === INTENTO DE ENVÍO CORREGIDO ===');
+    console.log('🚀 [CreateDispatchDialog] === INTENTO DE CREAR DESPACHO ===');
     console.log('🚀 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
-    console.log('🚀 [CreateDispatchDialog] Está pendiente:', createDispatch.isPending);
+    console.log('🚀 [CreateDispatchDialog] Estado mutación:', createDispatch.isPending);
     console.log('🚀 [CreateDispatchDialog] IDs seleccionados:', selectedPackages);
     
     if (selectedPackages.length === 0) {
@@ -115,9 +116,9 @@ export function CreateDispatchDialog({
   // Fecha actual para mostrar en el diálogo
   const currentDate = new Date();
 
-  // Debug: Check if button should be disabled
+  // Estado del botón de crear despacho
   const isButtonDisabled = selectedPackages.length === 0 || createDispatch.isPending;
-  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN CORREGIDO ===');
+  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN ===');
   console.log('🔘 [CreateDispatchDialog] Botón deshabilitado:', isButtonDisabled);
   console.log('🔘 [CreateDispatchDialog] Razón:', 
     selectedPackages.length === 0 ? 'no hay paquetes seleccionados' : 
@@ -137,21 +138,15 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Los paquetes mostrados ya fueron despachados o están en estados no elegibles para despacho.
+                Solo se pueden despachar encomiendas en estados "recibido" o "procesado" que no hayan sido despachadas previamente.
               </p>
               <div className="text-xs text-gray-400 bg-gray-50 p-4 rounded">
-                <p className="mb-3"><strong>🔍 DIAGNÓSTICO:</strong></p>
+                <p className="mb-3"><strong>🔍 INFORMACIÓN:</strong></p>
                 <ul className="list-disc list-inside space-y-1 text-left">
-                  <li><strong>Estados elegibles:</strong> "recibido", "bodega", "pending", "arrived", "procesado"</li>
+                  <li><strong>Estados válidos para despacho:</strong> "recibido", "procesado"</li>
+                  <li><strong>El estado "procesado"</strong> solo indica que se imprimió la etiqueta</li>
                   <li><strong>Estados NO elegibles:</strong> "delivered", "in_transit", "transito", "en_destino"</li>
                 </ul>
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-blue-800 font-medium">💡 Nota importante:</p>
-                  <p className="text-blue-700 text-sm mt-1">
-                    Los paquetes en estado "procesado" SÍ pueden ser despachados. 
-                    Este estado solo indica que la etiqueta ha sido impresa, no que hayan sido despachados.
-                  </p>
-                </div>
               </div>
             </div>
           ) : (
@@ -187,8 +182,8 @@ export function CreateDispatchDialog({
             {eligiblePackages.length > 0 && (
               <Button
                 type="submit"
-                disabled={selectedPackages.length === 0 || createDispatch.isPending}
-                className={`${selectedPackages.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isButtonDisabled}
+                className={`${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {createDispatch.isPending ? 'Creando...' : `Crear Despacho ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
               </Button>

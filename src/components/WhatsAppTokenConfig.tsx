@@ -128,13 +128,19 @@ export function WhatsAppTokenConfig() {
 
     setLoading(true);
     try {
+      console.log('Actualizando Phone Number ID:', tokens.phoneNumberId);
+      
       const { error } = await supabase.rpc('update_app_secret', {
-        secret_name: 'META_PHONE_NUMBER_ID',
+        secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID',
         secret_value: tokens.phoneNumberId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error RPC updatePhoneNumberId:', error);
+        throw error;
+      }
 
+      console.log('Phone Number ID actualizado exitosamente');
       setTokenStatus(prev => ({ ...prev, phoneNumberId: 'valid' }));
       toast({
         title: "Phone Number ID actualizado",
@@ -164,13 +170,19 @@ export function WhatsAppTokenConfig() {
 
     setLoading(true);
     try {
+      console.log('Actualizando Verify Token:', tokens.verifyToken);
+      
       const { error } = await supabase.rpc('update_app_secret', {
-        secret_name: 'META_VERIFY_TOKEN',
+        secret_name: 'META_WHATSAPP_VERIFY_TOKEN',
         secret_value: tokens.verifyToken
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error RPC updateVerifyToken:', error);
+        throw error;
+      }
 
+      console.log('Verify Token actualizado exitosamente');
       setTokenStatus(prev => ({ ...prev, verifyToken: 'valid' }));
       toast({
         title: "Token de verificación actualizado",

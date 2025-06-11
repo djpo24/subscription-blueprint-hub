@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
@@ -32,25 +33,45 @@ export function DispatchDetailsDialog({
 
   if (!dispatchId) return null;
 
-  // Calcular totales básicos
+  console.log('📦 [DispatchDetailsDialog] Packages loaded:', packages);
+
+  // Calcular totales básicos desde los paquetes reales
   const totals = packages.reduce(
-    (acc, pkg) => ({
-      weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0)
-    }),
+    (acc, pkg) => {
+      console.log('📊 [DispatchDetailsDialog] Processing package for totals:', {
+        id: pkg.id,
+        weight: pkg.weight,
+        freight: pkg.freight
+      });
+      
+      return {
+        weight: acc.weight + (pkg.weight ? Number(pkg.weight) : 0),
+        freight: acc.freight + (pkg.freight ? Number(pkg.freight) : 0)
+      };
+    },
     { weight: 0, freight: 0 }
   );
 
-  // Calcular el total a cobrar agrupado por moneda (igual que en la página de viajes)
+  console.log('📊 [DispatchDetailsDialog] Calculated totals:', totals);
+
+  // Calcular el total a cobrar agrupado por moneda
   const amountsByCurrency = packages.reduce((acc, pkg) => {
     if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
       const currency = parseCurrencyString(pkg.currency);
-      acc[currency] = (acc[currency] || 0) + pkg.amount_to_collect;
+      const amount = Number(pkg.amount_to_collect);
+      acc[currency] = (acc[currency] || 0) + amount;
+      
+      console.log('💰 [DispatchDetailsDialog] Adding amount:', {
+        package: pkg.id,
+        currency,
+        amount,
+        total: acc[currency]
+      });
     }
     return acc;
   }, {} as Record<Currency, number>);
 
-  console.log('💰 [DispatchDetailsDialog] Amounts by currency:', amountsByCurrency);
+  console.log('💰 [DispatchDetailsDialog] Final amounts by currency:', amountsByCurrency);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);

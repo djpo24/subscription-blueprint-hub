@@ -32,25 +32,47 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     );
   }
 
-  // Calcular totales básicos
+  console.log('📦 [DispatchDetailsView] Packages loaded:', packages);
+  console.log('📊 [DispatchDetailsView] Dispatch ID:', dispatchId);
+
+  // Calcular totales básicos desde los paquetes reales
   const totals = packages.reduce(
-    (acc, pkg) => ({
-      weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0)
-    }),
+    (acc, pkg) => {
+      console.log('📊 Processing package for totals:', {
+        id: pkg.id,
+        weight: pkg.weight,
+        freight: pkg.freight,
+        amount_to_collect: pkg.amount_to_collect
+      });
+      
+      return {
+        weight: acc.weight + (pkg.weight ? Number(pkg.weight) : 0),
+        freight: acc.freight + (pkg.freight ? Number(pkg.freight) : 0)
+      };
+    },
     { weight: 0, freight: 0 }
   );
 
-  // Calcular el total a cobrar agrupado por moneda (igual que en DispatchDetailsDialog)
+  console.log('📊 [DispatchDetailsView] Calculated totals:', totals);
+
+  // Calcular el total a cobrar agrupado por moneda
   const amountsByCurrency = packages.reduce((acc, pkg) => {
     if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
       const currency = parseCurrencyString(pkg.currency);
-      acc[currency] = (acc[currency] || 0) + pkg.amount_to_collect;
+      const amount = Number(pkg.amount_to_collect);
+      acc[currency] = (acc[currency] || 0) + amount;
+      
+      console.log('💰 [DispatchDetailsView] Adding amount:', {
+        package: pkg.id,
+        currency,
+        amount,
+        total: acc[currency]
+      });
     }
     return acc;
   }, {} as Record<Currency, number>);
 
-  console.log('💰 [DispatchDetailsView] Amounts by currency:', amountsByCurrency);
+  console.log('💰 [DispatchDetailsView] Final amounts by currency:', amountsByCurrency);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);

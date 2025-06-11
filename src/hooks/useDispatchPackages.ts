@@ -32,12 +32,14 @@ export function useDispatchPackages(dispatchId: string) {
           throw error;
         }
 
+        console.log('✅ Raw dispatch packages data:', data);
+
         // Transform data to match PackageInDispatch interface
-        return (data || []).map(dispatchPackage => {
+        const transformedPackages = (data || []).map(dispatchPackage => {
           const pkg = dispatchPackage.packages;
           if (!pkg) return null;
           
-          return {
+          const transformed = {
             id: pkg.id,
             tracking_number: pkg.tracking_number || '',
             origin: pkg.origin || '',
@@ -53,7 +55,13 @@ export function useDispatchPackages(dispatchId: string) {
             delivered_by: pkg.delivered_by,
             customers: pkg.customers
           };
+          
+          console.log('📦 Transformed package:', transformed);
+          return transformed;
         }).filter(Boolean) as PackageInDispatch[];
+
+        console.log('✅ Final transformed packages:', transformedPackages);
+        return transformedPackages;
       } catch (error) {
         console.error('❌ Error in useDispatchPackages:', error);
         return [];

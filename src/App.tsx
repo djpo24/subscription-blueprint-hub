@@ -1,4 +1,5 @@
 
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +11,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,7 +83,7 @@ function AppRoutes() {
   );
 }
 
-const App = () => {
+const App: React.FC = () => {
   console.log('App component rendering');
   
   return (

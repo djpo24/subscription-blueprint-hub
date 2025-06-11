@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Truck, Package, Weight, DollarSign, Calendar, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { getStatusColor, getStatusLabel, formatCurrency, formatWeight } from './dispatchUtils';
+import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
 
 interface DispatchRelation {
   id: string;
@@ -23,6 +24,13 @@ interface DispatchesDesktopViewProps {
 }
 
 export function DispatchesDesktopView({ dispatches, onViewDispatch }: DispatchesDesktopViewProps) {
+  const formatAmountToCollectDisplay = (amount: number | null | undefined, currencyStr: string | null | undefined) => {
+    if (!amount || amount === 0) return '---';
+    
+    const currency = parseCurrencyString(currencyStr);
+    return formatAmountToCollectWithCurrency(amount, currency);
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -68,7 +76,7 @@ export function DispatchesDesktopView({ dispatches, onViewDispatch }: Dispatches
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-green-500" />
                 <span className="font-medium text-green-700">
-                  {formatCurrency(dispatch.total_amount_to_collect)}
+                  {formatAmountToCollectDisplay(dispatch.total_amount_to_collect, 'COP')}
                 </span>
               </div>
             </TableCell>

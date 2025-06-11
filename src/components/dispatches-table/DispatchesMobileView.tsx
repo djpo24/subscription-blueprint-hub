@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Package, Weight, Calendar, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { getStatusColor, getStatusLabel, formatCurrency, formatWeight } from './dispatchUtils';
+import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
 
 interface DispatchRelation {
   id: string;
@@ -23,6 +24,13 @@ interface DispatchesMobileViewProps {
 }
 
 export function DispatchesMobileView({ dispatches, onViewDispatch }: DispatchesMobileViewProps) {
+  const formatAmountToCollectDisplay = (amount: number | null | undefined, currencyStr: string | null | undefined) => {
+    if (!amount || amount === 0) return '---';
+    
+    const currency = parseCurrencyString(currencyStr);
+    return formatAmountToCollectWithCurrency(amount, currency);
+  };
+
   return (
     <div className="space-y-3">
       {dispatches.map((dispatch) => (
@@ -61,7 +69,7 @@ export function DispatchesMobileView({ dispatches, onViewDispatch }: DispatchesM
                 <div>
                   <span className="text-gray-500">A Cobrar:</span>
                   <span className="font-medium text-green-600 ml-1">
-                    {formatCurrency(dispatch.total_amount_to_collect)}
+                    {formatAmountToCollectDisplay(dispatch.total_amount_to_collect, 'COP')}
                   </span>
                 </div>
               </div>

@@ -7,16 +7,20 @@ interface PackageLabelsDialogActionsProps {
   selectedPrintedPackageIds: Set<string>;
   onPrintSelected: () => void;
   onReprintSelected: () => void;
+  variant?: 'header' | 'footer';
 }
 
 export function PackageLabelsDialogActions({
   selectedPackageIds,
   selectedPrintedPackageIds,
   onPrintSelected,
-  onReprintSelected
+  onReprintSelected,
+  variant = 'footer'
 }: PackageLabelsDialogActionsProps) {
+  const containerClass = variant === 'header' ? 'flex gap-2 pt-4' : 'flex gap-2';
+  
   return (
-    <div className="flex gap-2">
+    <div className={containerClass}>
       {selectedPackageIds.size > 0 && (
         <Button
           onClick={onPrintSelected}

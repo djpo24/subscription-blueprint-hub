@@ -1,25 +1,51 @@
 
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Package } from 'lucide-react';
-import { formatTripDate } from '@/utils/dateUtils';
+import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Printer } from 'lucide-react';
 
 interface PackageLabelsDialogHeaderProps {
-  tripDate: Date;
+  selectedPackageIds: Set<string>;
+  selectedPrintedPackageIds: Set<string>;
+  onPrintSelected: () => void;
+  onReprintSelected: () => void;
 }
 
-export function PackageLabelsDialogHeader({ tripDate }: PackageLabelsDialogHeaderProps) {
-  const dateString = tripDate.toISOString().split('T')[0];
-  const formattedDate = formatTripDate(dateString);
-  
+export function PackageLabelsDialogHeader({
+  selectedPackageIds,
+  selectedPrintedPackageIds,
+  onPrintSelected,
+  onReprintSelected
+}: PackageLabelsDialogHeaderProps) {
   return (
     <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
-        <Package className="h-5 w-5" />
-        Gestión de Etiquetas - {formattedDate}
-      </DialogTitle>
+      <DialogTitle>Etiquetas de Encomiendas</DialogTitle>
       <DialogDescription>
-        Gestiona las etiquetas de las encomiendas del viaje
+        Gestiona e imprime etiquetas para las encomiendas seleccionadas
       </DialogDescription>
+      
+      {/* Botones de acción en la parte superior */}
+      <div className="flex gap-2 pt-4">
+        {selectedPackageIds.size > 0 && (
+          <Button
+            onClick={onPrintSelected}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimir Seleccionadas ({selectedPackageIds.size})
+          </Button>
+        )}
+
+        {selectedPrintedPackageIds.size > 0 && (
+          <Button
+            onClick={onReprintSelected}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Printer className="h-4 w-4" />
+            Re-imprimir Seleccionadas ({selectedPrintedPackageIds.size})
+          </Button>
+        )}
+      </div>
     </DialogHeader>
   );
 }

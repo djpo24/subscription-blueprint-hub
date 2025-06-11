@@ -64,6 +64,9 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
     return pkg.status === 'en_destino';
   };
 
+  // Verificar si algún paquete tiene acciones disponibles
+  const hasAnyActions = packages.some(pkg => canDeliverPackage(pkg));
+
   const handleDeliverPackage = (pkg: PackageInDispatch) => {
     setSelectedPackage(pkg);
     setShowDeliveryDialog(true);
@@ -96,6 +99,7 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
           packages={packages} 
           onDeliverPackage={handleDeliverPackage}
           onPackageClick={handlePackageClick}
+          hasAnyActions={hasAnyActions}
         />
         <DeliverPackageDialog
           open={showDeliveryDialog}
@@ -126,7 +130,7 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
               <TableHead>Peso</TableHead>
               <TableHead>Flete</TableHead>
               <TableHead>A Cobrar</TableHead>
-              <TableHead>Acciones</TableHead>
+              {hasAnyActions && <TableHead>Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,23 +188,25 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>
-                  {/* Solo mostrar botón de entrega si el paquete está en destino y no entregado */}
-                  {canDeliverPackage(pkg) && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Evitar que se abra el dialog de info
-                        handleDeliverPackage(pkg);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <Truck className="h-3 w-3" />
-                      Entregar
-                    </Button>
-                  )}
-                </TableCell>
+                {hasAnyActions && (
+                  <TableCell>
+                    {/* Solo mostrar botón de entrega si el paquete está en destino y no entregado */}
+                    {canDeliverPackage(pkg) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Evitar que se abra el dialog de info
+                          handleDeliverPackage(pkg);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <Truck className="h-3 w-3" />
+                        Entregar
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -8,9 +8,15 @@ interface DispatchPackagesMobileProps {
   packages: PackageInDispatch[];
   onDeliverPackage: (pkg: PackageInDispatch) => void;
   onPackageClick: (pkg: PackageInDispatch) => void;
+  hasAnyActions?: boolean;
 }
 
-export function DispatchPackagesMobile({ packages, onDeliverPackage, onPackageClick }: DispatchPackagesMobileProps) {
+export function DispatchPackagesMobile({ 
+  packages, 
+  onDeliverPackage, 
+  onPackageClick, 
+  hasAnyActions = true 
+}: DispatchPackagesMobileProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -127,8 +133,8 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage, onPackageCl
               </div>
             </div>
 
-            {/* Botón de acción - Solo mostrar si el paquete está en destino y no entregado */}
-            {canDeliverPackage(pkg) && (
+            {/* Botón de acción - Solo mostrar si hay acciones disponibles y el paquete está en destino */}
+            {hasAnyActions && canDeliverPackage(pkg) && (
               <Button
                 size="sm"
                 variant="outline"

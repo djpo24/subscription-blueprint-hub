@@ -66,56 +66,45 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Try to update using the secrets table directly
+    // Use the new app_secrets table
     try {
-      const { error: secretsError } = await supabase
-        .from('vault.secrets')
-        .upsert({
-          name: 'META_WHATSAPP_TOKEN',
-          secret: token.trim(),
-        });
+      console.log('Storing token in app_secrets table...');
+      
+      const { error: updateError } = await supabase.rpc('update_app_secret', {
+        secret_name: 'META_WHATSAPP_TOKEN',
+        secret_value: token.trim()
+      });
 
-      if (secretsError) {
-        console.error('Vault.secrets approach failed:', secretsError);
+      if (updateError) {
+        console.error('Error updating secret via RPC:', updateError);
         
-        // Fallback: Try using RPC call to update secret
-        const { error: rpcError } = await supabase.rpc('update_secret', {
-          secret_name: 'META_WHATSAPP_TOKEN',
-          secret_value: token.trim()
-        });
+        // Fallback: Direct table insert/update
+        const { error: tableError } = await supabase
+          .from('app_secrets')
+          .upsert({
+            name: 'META_WHATSAPP_TOKEN',
+            value: token.trim(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'name'
+          });
 
-        if (rpcError) {
-          console.error('RPC approach also failed:', rpcError);
-          
-          // Final fallback: Store in a regular table for now
-          const { error: tableError } = await supabase
-            .from('app_secrets')
-            .upsert({
-              name: 'META_WHATSAPP_TOKEN',
-              value: token.trim(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'name'
-            });
-
-          if (tableError) {
-            console.error('All approaches failed:', tableError);
-            return new Response(
-              JSON.stringify({ error: 'Error al guardar el token en la base de datos' }),
-              { 
-                status: 500, 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-              }
-            );
-          }
-
-          console.log('Token stored in app_secrets table as fallback');
-        } else {
-          console.log('Token updated successfully via RPC');
+        if (tableError) {
+          console.error('Error updating secret via table:', tableError);
+          return new Response(
+            JSON.stringify({ error: 'Error al guardar el token en la base de datos' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
+
+        console.log('Token stored successfully via direct table access');
       } else {
-        console.log('Token updated successfully in vault.secrets');
+        console.log('Token updated successfully via RPC function');
       }
+
     } catch (error) {
       console.error('Error storing token:', error);
       return new Response(

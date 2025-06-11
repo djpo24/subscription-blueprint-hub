@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,10 +17,31 @@ serve(async (req) => {
     
     console.log('Iniciando validación Meta:', testType)
 
-    // Get WhatsApp API credentials from secrets
-    const whatsappToken = Deno.env.get('META_WHATSAPP_TOKEN')
-    const phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID')
-    const verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN')
+    // Create a Supabase client with service role to get secrets
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get WhatsApp API credentials from app_secrets table
+    let whatsappToken, phoneNumberId, verifyToken;
+
+    try {
+      // Try to get from app_secrets table first
+      const { data: tokenData } = await supabase.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_TOKEN' });
+      const { data: phoneData } = await supabase.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' });
+      const { data: verifyData } = await supabase.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_VERIFY_TOKEN' });
+
+      whatsappToken = tokenData || Deno.env.get('META_WHATSAPP_TOKEN');
+      phoneNumberId = phoneData || Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
+      verifyToken = verifyData || Deno.env.get('META_WHATSAPP_VERIFY_TOKEN');
+    } catch (error) {
+      console.log('Error getting from app_secrets, falling back to env vars:', error);
+      // Fallback to environment variables
+      whatsappToken = Deno.env.get('META_WHATSAPP_TOKEN');
+      phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
+      verifyToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN');
+    }
 
     console.log('Credenciales encontradas:', {
       token: whatsappToken ? 'Sí' : 'No',

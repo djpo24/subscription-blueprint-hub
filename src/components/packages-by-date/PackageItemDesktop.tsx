@@ -86,7 +86,7 @@ export function PackageItemDesktop({
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <Truck className="h-3 w-3 text-orange-600" />
-          <span className="text-sm">${pkg.freight}</span>
+          <span className="text-sm">{formatCurrency(parseFloat(pkg.freight), 'COP')}</span>
         </div>
       </div>
 

@@ -10,30 +10,51 @@ interface DispatchSummaryCardsProps {
   packageCount: number;
   totalWeight: number;
   totalFreight: number;
-  totalAmountToCollect: number;
-  primaryCurrency?: Currency;
+  amountsByCurrency: Record<Currency, number>;
 }
 
 export function DispatchSummaryCards({
   packageCount,
   totalWeight,
   totalFreight,
-  totalAmountToCollect,
-  primaryCurrency = 'COP'
+  amountsByCurrency
 }: DispatchSummaryCardsProps) {
   const isMobile = useIsMobile();
 
-  console.log('💰 [DispatchSummaryCards] Received primary currency:', primaryCurrency);
-  console.log('💰 [DispatchSummaryCards] Total amount to collect:', totalAmountToCollect);
+  console.log('💰 [DispatchSummaryCards] Amounts by currency:', amountsByCurrency);
 
   const formatFreightValue = (freight: number) => {
     if (!freight) return '$0';
     return `$${formatNumberWithThousandsSeparator(freight)}`;
   };
 
-  const formatAmountToCollectValue = (amount: number) => {
-    console.log('💰 [DispatchSummaryCards] Formatting amount:', amount, 'with currency:', primaryCurrency);
-    return formatAmountToCollectWithCurrency(amount, primaryCurrency);
+  // Renderizar los montos por moneda, igual que en la página de viajes
+  const renderAmountToCollect = () => {
+    const currencies = Object.keys(amountsByCurrency).filter(currency => amountsByCurrency[currency as Currency] > 0);
+    const hasMultipleCurrencies = currencies.length > 1;
+    const hasAnyAmountToCollect = currencies.some(currency => amountsByCurrency[currency as Currency] > 0);
+
+    if (!hasAnyAmountToCollect) {
+      return <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-700`}>---</div>;
+    }
+
+    if (hasMultipleCurrencies) {
+      return (
+        <div className="space-y-1">
+          {currencies.map((currency) => (
+            <div key={currency} className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-green-700`}>
+              {formatAmountToCollectWithCurrency(amountsByCurrency[currency as Currency], currency as Currency)}
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      return (
+        <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-700`}>
+          {formatAmountToCollectWithCurrency(amountsByCurrency[currencies[0] as Currency], currencies[0] as Currency)}
+        </div>
+      );
+    }
   };
 
   return (
@@ -79,7 +100,7 @@ export function DispatchSummaryCards({
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" />
             <div>
-              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-700`}>{formatAmountToCollectValue(totalAmountToCollect)}</div>
+              {renderAmountToCollect()}
               <div className="text-xs text-gray-600">A Cobrar</div>
             </div>
           </div>

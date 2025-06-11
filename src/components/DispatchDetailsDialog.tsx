@@ -32,17 +32,16 @@ export function DispatchDetailsDialog({
 
   if (!dispatchId) return null;
 
-  // Calcular totales por moneda
+  // Calcular totales básicos
   const totals = packages.reduce(
     (acc, pkg) => ({
       weight: acc.weight + (pkg.weight || 0),
-      freight: acc.freight + (pkg.freight || 0),
-      amount_to_collect: acc.amount_to_collect + (pkg.amount_to_collect || 0)
+      freight: acc.freight + (pkg.freight || 0)
     }),
-    { weight: 0, freight: 0, amount_to_collect: 0 }
+    { weight: 0, freight: 0 }
   );
 
-  // Calcular el total a cobrar agrupado por moneda
+  // Calcular el total a cobrar agrupado por moneda (igual que en la página de viajes)
   const amountsByCurrency = packages.reduce((acc, pkg) => {
     if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
       const currency = parseCurrencyString(pkg.currency);
@@ -51,19 +50,7 @@ export function DispatchDetailsDialog({
     return acc;
   }, {} as Record<Currency, number>);
 
-  // Usar la moneda con mayor monto total como primaria
-  const primaryCurrency: Currency = Object.keys(amountsByCurrency).length > 0 
-    ? (Object.keys(amountsByCurrency).reduce((a, b) => 
-        amountsByCurrency[a as Currency] > amountsByCurrency[b as Currency] ? a : b
-      ) as Currency)
-    : 'COP';
-
-  // El total a mostrar será el de la moneda primaria
-  const totalAmountToCollect = amountsByCurrency[primaryCurrency] || 0;
-
   console.log('💰 [DispatchDetailsDialog] Amounts by currency:', amountsByCurrency);
-  console.log('💰 [DispatchDetailsDialog] Primary currency (highest amount):', primaryCurrency);
-  console.log('💰 [DispatchDetailsDialog] Total amount for primary currency:', totalAmountToCollect);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
@@ -120,8 +107,7 @@ export function DispatchDetailsDialog({
               packageCount={packages.length}
               totalWeight={totals.weight}
               totalFreight={totals.freight}
-              totalAmountToCollect={totalAmountToCollect}
-              primaryCurrency={primaryCurrency}
+              amountsByCurrency={amountsByCurrency}
             />
 
             <DispatchPackagesTable packages={packages} />

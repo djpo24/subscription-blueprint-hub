@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useArrivalNotifications } from '@/hooks/useArrivalNotifications';
-import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye } from 'lucide-react';
+import { useCreateArrivalNotifications } from '@/hooks/useCreateArrivalNotifications';
+import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -17,6 +18,11 @@ export function ArrivalNotificationsPanel() {
     isPreparing,
     isExecuting
   } = useArrivalNotifications();
+
+  const {
+    createNotifications,
+    isCreating
+  } = useCreateArrivalNotifications();
 
   if (isLoading) {
     return (
@@ -55,6 +61,28 @@ export function ArrivalNotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Botón para cargar paquetes en destino */}
+          <div className="mb-6 p-4 bg-orange-50 rounded border border-orange-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-orange-800 mb-1">
+                  Cargar Paquetes en Destino
+                </h4>
+                <p className="text-sm text-orange-600">
+                  Crear notificaciones para todos los paquetes con estado "En Destino"
+                </p>
+              </div>
+              <Button
+                onClick={() => createNotifications()}
+                disabled={isCreating}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {isCreating ? 'Cargando...' : 'Cargar Paquetes'}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Panel de Notificaciones Pendientes (para preparar) */}
             <div className="space-y-3">
@@ -209,6 +237,15 @@ export function ArrivalNotificationsPanel() {
               ¿Cómo funciona el nuevo sistema de revisión?
             </h4>
             <div className="space-y-2 text-sm text-blue-700">
+              <div className="flex items-start gap-2">
+                <Plus className="h-4 w-4 mt-0.5 text-blue-600" />
+                <div>
+                  <p className="font-medium">0. Cargar paquetes en destino</p>
+                  <p className="text-blue-600">
+                    Haz clic en "Cargar Paquetes" para crear notificaciones para todos los paquetes en estado "En Destino".
+                  </p>
+                </div>
+              </div>
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 mt-0.5 text-blue-600" />
                 <div>

@@ -56,24 +56,11 @@ export function CreateDispatchDialog({
   // Obtener solo paquetes elegibles para despacho
   const eligiblePackages = useDispatchEligiblePackages(trips);
 
-  console.log('🔍 [CreateDispatchDialog] === DIAGNÓSTICO DEL DIÁLOGO ===');
+  console.log('🔍 [CreateDispatchDialog] === DIAGNÓSTICO CORREGIDO ===');
   console.log('🔍 [CreateDispatchDialog] Diálogo abierto:', open);
   console.log('🔍 [CreateDispatchDialog] Viajes recibidos:', trips.length);
   console.log('🔍 [CreateDispatchDialog] Paquetes elegibles:', eligiblePackages.length);
   console.log('🔍 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
-
-  // Log detallado de viajes
-  console.log('📊 [CreateDispatchDialog] Detalles de viajes:');
-  trips.forEach((trip, index) => {
-    console.log(`🚗 [CreateDispatchDialog] Viaje ${index + 1}:`, {
-      id: trip.id,
-      packagesCount: trip.packages?.length || 0,
-      packages: trip.packages?.map(p => ({
-        tracking: p.tracking_number,
-        status: p.status
-      })) || []
-    });
-  });
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
     console.log('🔄 [CreateDispatchDialog] Toggle paquete:', packageId, checked);
@@ -96,7 +83,7 @@ export function CreateDispatchDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🚀 [CreateDispatchDialog] === INTENTO DE ENVÍO ===');
+    console.log('🚀 [CreateDispatchDialog] === INTENTO DE ENVÍO CORREGIDO ===');
     console.log('🚀 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
     console.log('🚀 [CreateDispatchDialog] Está pendiente:', createDispatch.isPending);
     console.log('🚀 [CreateDispatchDialog] IDs seleccionados:', selectedPackages);
@@ -131,7 +118,7 @@ export function CreateDispatchDialog({
 
   // Debug: Check if button should be disabled
   const isButtonDisabled = selectedPackages.length === 0 || createDispatch.isPending;
-  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN ===');
+  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN CORREGIDO ===');
   console.log('🔘 [CreateDispatchDialog] Botón deshabilitado:', isButtonDisabled);
   console.log('🔘 [CreateDispatchDialog] Razón:', 
     selectedPackages.length === 0 ? 'no hay paquetes seleccionados' : 
@@ -151,27 +138,21 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Para que las encomiendas aparezcan aquí, deben estar en estado "recibido", "bodega", "procesado", "pending" o "arrived"
-                y no haber sido despachadas anteriormente.
+                Los paquetes mostrados ya fueron procesados o están en estados no elegibles para despacho.
               </p>
-              <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded">
-                <p className="mb-2"><strong>Estados elegibles para despacho:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>"recibido" - Encomiendas que han llegado</li>
-                  <li>"bodega" - Encomiendas en bodega</li>
-                  <li>"procesado" - Encomiendas impresas (listas para despacho)</li>
-                  <li>"pending" - Encomiendas pendientes</li>
-                  <li>"arrived" - Encomiendas que han llegado</li>
+              <div className="text-xs text-gray-400 bg-gray-50 p-4 rounded">
+                <p className="mb-3"><strong>🔍 DIAGNÓSTICO:</strong></p>
+                <ul className="list-disc list-inside space-y-1 text-left">
+                  <li><strong>Estados elegibles:</strong> "recibido", "bodega", "pending", "arrived"</li>
+                  <li><strong>Estados NO elegibles:</strong> "procesado" (ya despachado), "delivered", "in_transit", etc.</li>
                 </ul>
-                <p className="mt-3"><strong>Estados NO elegibles:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>"delivered" - Ya entregadas</li>
-                  <li>"in_transit" / "transito" - En tránsito</li>
-                  <li>"en_destino" - En destino</li>
-                </ul>
-                <p className="mt-3 text-amber-600">
-                  <strong>💡 Consejo:</strong> Revisa la consola del navegador (F12) para ver el diagnóstico detallado.
-                </p>
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded">
+                  <p className="text-amber-800 font-medium">💡 Nota importante:</p>
+                  <p className="text-amber-700 text-sm mt-1">
+                    Los paquetes en estado "procesado" ya fueron incluidos en un despacho anterior. 
+                    Solo se pueden despachar paquetes que aún no han sido procesados.
+                  </p>
+                </div>
               </div>
             </div>
           ) : (
@@ -204,13 +185,15 @@ export function CreateDispatchDialog({
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={selectedPackages.length === 0 || createDispatch.isPending}
-              className={`${selectedPackages.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {createDispatch.isPending ? 'Creando...' : `Crear Despacho ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
-            </Button>
+            {eligiblePackages.length > 0 && (
+              <Button
+                type="submit"
+                disabled={selectedPackages.length === 0 || createDispatch.isPending}
+                className={`${selectedPackages.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {createDispatch.isPending ? 'Creando...' : `Crear Despacho ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

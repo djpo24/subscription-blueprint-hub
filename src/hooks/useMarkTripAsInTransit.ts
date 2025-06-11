@@ -65,7 +65,7 @@ export function useMarkTripAsInTransit() {
 
       console.log('✅ [useMarkTripAsInTransit] Paquetes actualizados a transito');
 
-      // Update only the specific dispatch status to "en_transito"
+      // Update the specific dispatch status to "en_transito" - ESTA ES LA CORRECIÓN PRINCIPAL
       const { error: dispatchUpdateError } = await supabase
         .from('dispatch_relations')
         .update({
@@ -98,26 +98,20 @@ export function useMarkTripAsInTransit() {
         throw trackingError;
       }
 
-      // Update trip status to "in_progress" only if this is the first dispatch being marked as in transit
-      const { data: otherDispatches, error: otherDispatchesError } = await supabase
-        .from('dispatch_packages')
-        .select(`
-          dispatch_id,
-          dispatch_relations!inner(status)
-        `)
-        .neq('dispatch_id', dispatchId)
-        .eq('packages.trip_id', tripId);
+      // Update trip status to "in_progress" if not already
+      const { data: currentTrip, error: tripQueryError } = await supabase
+        .from('trips')
+        .select('status')
+        .eq('id', tripId)
+        .single();
 
-      if (otherDispatchesError) {
-        console.error('❌ Error verificando otros despachos:', otherDispatchesError);
+      if (tripQueryError) {
+        console.error('❌ Error obteniendo estado del trip:', tripQueryError);
         // Continue anyway, this is not critical
       }
 
-      // Check if we should update the trip status
-      const shouldUpdateTrip = !otherDispatches || otherDispatches.length === 0 || 
-        otherDispatches.every(d => d.dispatch_relations?.status !== 'en_transito');
-
-      if (shouldUpdateTrip) {
+      // Solo actualizar el trip si no está ya en progreso
+      if (currentTrip && currentTrip.status !== 'in_progress') {
         const { error: tripUpdateError } = await supabase
           .from('trips')
           .update({

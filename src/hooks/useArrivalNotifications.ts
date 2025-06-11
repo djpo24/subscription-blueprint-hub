@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,54 +18,87 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Obtener notificaciones de llegada (pendientes y preparadas) con datos actualizados
+  // Obtener notificaciones de llegada con datos del cliente SIEMPRE ACTUALIZADOS
   const query = useQuery({
     queryKey: ['arrival-notifications'],
     queryFn: async (): Promise<PendingNotification[]> => {
-      console.log('🔍 Fetching arrival notifications with updated customer data...');
+      console.log('🔍 Fetching arrival notifications with FRESH customer data...');
       
       try {
-        const { data, error } = await supabase
+        // Primero obtenemos las notificaciones básicas
+        const { data: notifications, error: notificationsError } = await supabase
           .from('notification_log')
           .select(`
             *,
-            customers!customer_id (
-              name,
-              phone,
-              whatsapp_number,
-              updated_at
-            ),
             packages!notification_log_package_id_fkey (
               tracking_number,
               destination,
               amount_to_collect,
               currency,
-              updated_at
+              updated_at,
+              customer_id
             )
           `)
           .eq('notification_type', 'package_arrival')
           .in('status', ['pending', 'prepared'])
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('❌ Error fetching arrival notifications:', error);
-          throw error;
+        if (notificationsError) {
+          console.error('❌ Error fetching notifications:', notificationsError);
+          throw notificationsError;
         }
 
-        // Filtrar solo notificaciones que tienen datos completos
-        const validNotifications = (data || []).filter(notification => 
-          notification.customers && 
-          notification.packages && 
-          (notification.customers.whatsapp_number || notification.customers.phone)
+        if (!notifications || notifications.length === 0) {
+          console.log('ℹ️ No arrival notifications found');
+          return [];
+        }
+
+        // Ahora para cada notificación, obtenemos los datos FRESCOS del cliente
+        const enrichedNotifications = await Promise.all(
+          notifications.map(async (notification) => {
+            if (!notification.customer_id) {
+              console.warn(`⚠️ Notification ${notification.id} has no customer_id`);
+              return null;
+            }
+
+            // Consulta FRESCA de los datos del cliente
+            const { data: customerData, error: customerError } = await supabase
+              .from('customers')
+              .select('name, phone, whatsapp_number, updated_at')
+              .eq('id', notification.customer_id)
+              .single();
+
+            if (customerError) {
+              console.error(`❌ Error fetching fresh customer data for ${notification.customer_id}:`, customerError);
+              return null;
+            }
+
+            if (!customerData) {
+              console.warn(`⚠️ No customer data found for ${notification.customer_id}`);
+              return null;
+            }
+
+            // Verificar que el cliente tiene un número válido
+            const hasValidPhone = customerData.whatsapp_number?.trim() || customerData.phone?.trim();
+            if (!hasValidPhone) {
+              console.warn(`⚠️ Customer ${customerData.name} has no valid phone number`);
+              return null;
+            }
+
+            console.log(`📱 Customer ${customerData.name} - Phone: ${customerData.whatsapp_number || customerData.phone} (Updated: ${customerData.updated_at})`);
+
+            // Retornar la notificación con datos FRESCOS del cliente
+            return {
+              ...notification,
+              customers: customerData
+            };
+          })
         );
 
-        console.log(`✅ Arrival notifications fetched: ${validNotifications.length} valid notifications`);
-        
-        // Log para debugging - mostrar algunos números de teléfono
-        if (validNotifications.length > 0) {
-          const samplePhone = validNotifications[0].customers?.whatsapp_number || validNotifications[0].customers?.phone;
-          console.log(`📱 Sample phone number: ${samplePhone}`);
-        }
+        // Filtrar notificaciones nulas y retornar solo las válidas
+        const validNotifications = enrichedNotifications.filter(Boolean) as PendingNotification[];
+
+        console.log(`✅ Processed ${validNotifications.length} valid notifications with fresh customer data`);
         
         return validNotifications;
       } catch (error) {
@@ -74,8 +106,8 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         return [];
       }
     },
-    refetchInterval: 30000, // Actualizar cada 30 segundos
-    staleTime: 10000, // Considerar datos obsoletos después de 10 segundos
+    refetchInterval: 15000, // Reducir a 15 segundos para datos más frescos
+    staleTime: 5000, // Considerar datos obsoletos después de 5 segundos
   });
 
   // Mutación para preparar notificaciones

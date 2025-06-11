@@ -46,7 +46,7 @@ export function usePackagesByDateView(selectedDate: Date) {
       weight: pkg.weight,
       freight: pkg.freight,
       amount_to_collect: pkg.amount_to_collect,
-      currency: pkg.currency,
+      currency: (pkg.currency || 'COP') as 'COP' | 'AWG', // Type assertion to fix currency type
       status: pkg.status,
       customers: pkg.customers || undefined
     }))

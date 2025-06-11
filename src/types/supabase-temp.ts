@@ -1,4 +1,5 @@
 
+
 // Temporary type definitions to resolve TypeScript errors
 // These should be replaced once Supabase types are properly regenerated
 

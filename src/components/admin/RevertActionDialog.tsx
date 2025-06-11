@@ -11,9 +11,10 @@ interface RevertActionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   activity: UserActivity | null;
+  onRevertSuccess?: () => void;
 }
 
-export function RevertActionDialog({ open, onOpenChange, activity }: RevertActionDialogProps) {
+export function RevertActionDialog({ open, onOpenChange, activity, onRevertSuccess }: RevertActionDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -33,6 +34,7 @@ export function RevertActionDialog({ open, onOpenChange, activity }: RevertActio
         description: "La acción ha sido revertida exitosamente",
       });
       queryClient.invalidateQueries({ queryKey: ['user-activities'] });
+      onRevertSuccess?.();
       onOpenChange(false);
     },
     onError: (error: any) => {

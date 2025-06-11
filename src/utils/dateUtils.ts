@@ -79,3 +79,7 @@ export function formatDateDisplay(dateString: string, formatStr: string): string
     return 'Error en fecha';
   }
 }
+
+export function formatDateForQuery(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}

@@ -56,9 +56,19 @@ export function CreateDispatchDialog({
   // Obtener solo paquetes elegibles para despacho
   const eligiblePackages = useDispatchEligiblePackages(trips);
 
-  console.log('🔍 CreateDispatchDialog - trips received:', trips.length);
-  console.log('📦 CreateDispatchDialog - eligible packages:', eligiblePackages.length);
-  console.log('📊 CreateDispatchDialog - all package statuses:', trips.flatMap(t => t.packages).map(p => `${p.tracking_number}: ${p.status}`));
+  console.log('🔍 [CreateDispatchDialog] Component rendered with:', {
+    open,
+    tripsReceived: trips.length,
+    eligiblePackages: eligiblePackages.length,
+    selectedPackages: selectedPackages.length
+  });
+
+  // Log adicional para debugging
+  console.log('📦 [CreateDispatchDialog] All trips data:', trips.map(t => ({
+    id: t.id,
+    packagesCount: t.packages.length,
+    packageStatuses: t.packages.map(p => `${p.tracking_number}: ${p.status}`)
+  })));
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
     if (checked) {
@@ -79,12 +89,21 @@ export function CreateDispatchDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedPackages.length === 0) return;
+    console.log('🚀 [CreateDispatchDialog] Submit attempt:', {
+      selectedPackagesCount: selectedPackages.length,
+      eligiblePackagesCount: eligiblePackages.length,
+      isPending: createDispatch.isPending
+    });
+    
+    if (selectedPackages.length === 0) {
+      console.log('⚠️ [CreateDispatchDialog] Submit blocked: no packages selected');
+      return;
+    }
 
     try {
       const currentDate = new Date();
-      console.log('📅 Creando despacho con fecha actual:', currentDate);
-      console.log('📦 Paquetes seleccionados:', selectedPackages.length);
+      console.log('📅 [CreateDispatchDialog] Creating dispatch with current date:', currentDate);
+      console.log('📦 [CreateDispatchDialog] Selected packages:', selectedPackages.length);
       
       await createDispatch.mutateAsync({
         date: currentDate,
@@ -97,12 +116,19 @@ export function CreateDispatchDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      console.error('❌ Error creating dispatch:', error);
+      console.error('❌ [CreateDispatchDialog] Error creating dispatch:', error);
     }
   };
 
   // Fecha actual para mostrar en el diálogo
   const currentDate = new Date();
+
+  // Debug: Check if button should be disabled
+  const isButtonDisabled = selectedPackages.length === 0 || createDispatch.isPending;
+  console.log('🔘 [CreateDispatchDialog] Button state:', {
+    disabled: isButtonDisabled,
+    reason: selectedPackages.length === 0 ? 'no packages selected' : createDispatch.isPending ? 'request pending' : 'enabled'
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

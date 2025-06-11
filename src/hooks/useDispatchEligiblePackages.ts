@@ -71,25 +71,39 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
   });
 
   return useMemo(() => {
-    console.log('🔍 Filtering dispatch-eligible packages...');
+    console.log('🔍 [useDispatchEligiblePackages] Filtering dispatch-eligible packages...');
     
     // Add safety check for trips parameter
     if (!trips || !Array.isArray(trips)) {
-      console.log('⚠️ No trips provided or trips is not an array');
+      console.log('⚠️ [useDispatchEligiblePackages] No trips provided or trips is not an array');
       return [];
     }
+
+    // Log all package statuses for debugging
+    const allPackages = trips.flatMap(trip => trip.packages);
+    const statusCounts = allPackages.reduce((acc, pkg) => {
+      acc[pkg.status] = (acc[pkg.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log('📊 [useDispatchEligiblePackages] Package status distribution:', statusCounts);
+    console.log('📋 [useDispatchEligiblePackages] Total packages found:', allPackages.length);
+    console.log('✅ [useDispatchEligiblePackages] Eligible states:', ELIGIBLE_STATES);
+    console.log('❌ [useDispatchEligiblePackages] Ineligible states:', INELIGIBLE_STATES);
 
     // Crear un Set con los IDs de paquetes ya despachados
     const dispatchedPackageIds = new Set(
       dispatchedPackages.map(dp => dp.package_id)
     );
     
+    console.log('📦 [useDispatchEligiblePackages] Already dispatched packages:', dispatchedPackageIds.size);
+    
     const eligiblePackages = trips.flatMap(trip => 
       trip.packages
         .filter(pkg => {
           // Verificar si el paquete ya está despachado
           if (dispatchedPackageIds.has(pkg.id)) {
-            console.log(`⚠️ Package ${pkg.tracking_number} excluded (already dispatched)`);
+            console.log(`⚠️ [useDispatchEligiblePackages] Package ${pkg.tracking_number} excluded (already dispatched)`);
             return false;
           }
 
@@ -97,9 +111,9 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
           const isEligible = ELIGIBLE_STATES.includes(pkg.status as any);
           
           if (!isEligible) {
-            console.log(`⚠️ Package ${pkg.tracking_number} excluded (status: ${pkg.status}). Eligible states: ${ELIGIBLE_STATES.join(', ')}`);
+            console.log(`⚠️ [useDispatchEligiblePackages] Package ${pkg.tracking_number} excluded (status: ${pkg.status}). Eligible states: ${ELIGIBLE_STATES.join(', ')}`);
           } else {
-            console.log(`✅ Package ${pkg.tracking_number} is eligible (status: ${pkg.status})`);
+            console.log(`✅ [useDispatchEligiblePackages] Package ${pkg.tracking_number} is eligible (status: ${pkg.status})`);
           }
           
           return isEligible;
@@ -118,8 +132,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
         }))
     );
 
-    console.log(`✅ Found ${eligiblePackages.length} dispatch-eligible packages from ${trips.length} trips`);
-    console.log('📊 Package statuses found:', trips.flatMap(t => t.packages).map(p => p.status));
+    console.log(`✅ [useDispatchEligiblePackages] Found ${eligiblePackages.length} dispatch-eligible packages from ${trips.length} trips`);
     
     return eligiblePackages;
   }, [trips, dispatchedPackages]);

@@ -6,8 +6,7 @@ import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBad
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PackageItemMobile } from './PackageItemMobile';
 import { PackageItemDesktop } from './PackageItemDesktop';
-import { formatAmountToCollect } from '@/utils/formatters';
-import { formatWeight, formatFreight } from '@/utils/formatters';
+import { formatWeight } from '@/utils/formatters';
 import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
@@ -51,7 +50,8 @@ export function PackageItem({
     ...pkg,
     weight: formatWeight(pkg.weight),
     freight: pkg.freight ? formatNumberWithThousandsSeparator(pkg.freight) : '0',
-    amount_to_collect: formatAmountToCollect(pkg.amount_to_collect, pkg.currency)
+    // Cambio: mantener amount_to_collect como número para que el formato funcione correctamente
+    amount_to_collect: pkg.amount_to_collect
   };
 
   if (isMobile) {

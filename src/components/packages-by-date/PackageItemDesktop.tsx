@@ -14,7 +14,7 @@ interface Package {
   description: string;
   weight: string;
   freight: string;
-  amount_to_collect: string;
+  amount_to_collect: number | null; // Cambio: mantener como número
   currency: Currency;
   status: string;
   customers?: {
@@ -93,7 +93,7 @@ export function PackageItemDesktop({
       <div className="col-span-1 text-center">
         <div className="flex items-center justify-center gap-1">
           <DollarSign className="h-3 w-3 text-green-600" />
-          <span className="text-sm">{formatAmountToCollectWithCurrency(parseFloat(pkg.amount_to_collect), pkg.currency)}</span>
+          <span className="text-sm">{formatAmountToCollectWithCurrency(pkg.amount_to_collect, pkg.currency)}</span>
         </div>
       </div>
 

@@ -9,9 +9,9 @@ export function useCreateArrivalNotifications() {
 
   const createNotificationsMutation = useMutation({
     mutationFn: async () => {
-      console.log('🔄 Creando notificaciones para paquetes en destino con números actualizados de clientes...');
+      console.log('🔄 NUEVA IMPLEMENTACIÓN: Creando notificaciones con números DIRECTOS del perfil del cliente...');
 
-      // Obtener todos los paquetes en estado "en_destino"
+      // 1. Obtener paquetes en estado "en_destino" SIN datos de clientes
       const { data: packagesInDestination, error: packagesError } = await supabase
         .from('packages')
         .select(`
@@ -38,54 +38,58 @@ export function useCreateArrivalNotifications() {
 
       console.log(`📦 Encontrados ${packagesInDestination.length} paquetes en destino`);
 
-      // Para cada paquete, obtener datos ACTUALIZADOS del cliente
-      const packagesWithCurrentCustomerData = await Promise.all(
+      // 2. Para CADA paquete, obtener datos FRESCOS Y DIRECTOS del perfil del cliente
+      const packagesWithFreshCustomerData = await Promise.all(
         packagesInDestination.map(async (pkg) => {
-          // Consulta ACTUALIZADA de los datos del cliente
-          const { data: customerData, error: customerError } = await supabase
+          console.log(`📱 Consultando perfil DIRECTO del cliente ${pkg.customer_id} para paquete ${pkg.tracking_number}...`);
+          
+          // CONSULTA DIRECTA del perfil del cliente - IGNORANDO cualquier dato almacenado
+          const { data: freshCustomerProfile, error: customerError } = await supabase
             .from('customers')
             .select('id, name, phone, whatsapp_number, updated_at')
             .eq('id', pkg.customer_id)
             .single();
 
           if (customerError) {
-            console.error(`❌ Error obteniendo datos actualizados del cliente ${pkg.customer_id}:`, customerError);
+            console.error(`❌ Error obteniendo perfil FRESCO del cliente ${pkg.customer_id}:`, customerError);
             return null;
           }
 
-          if (!customerData) {
-            console.warn(`⚠️ No se encontró cliente para paquete ${pkg.tracking_number}`);
+          if (!freshCustomerProfile) {
+            console.warn(`⚠️ No se encontró perfil para cliente ${pkg.customer_id} del paquete ${pkg.tracking_number}`);
             return null;
           }
 
-          // Verificar teléfono válido con datos ACTUALIZADOS
-          const hasValidPhone = (customerData.whatsapp_number && customerData.whatsapp_number.trim() !== '') ||
-                               (customerData.phone && customerData.phone.trim() !== '');
-
-          if (!hasValidPhone) {
-            console.warn(`⚠️ Cliente ${customerData.name} sin teléfono válido para paquete ${pkg.tracking_number}`);
+          // Verificar teléfono ACTUAL del perfil
+          const currentPhoneNumber = freshCustomerProfile.whatsapp_number || freshCustomerProfile.phone;
+          
+          if (!currentPhoneNumber || currentPhoneNumber.trim() === '') {
+            console.warn(`⚠️ Cliente ${freshCustomerProfile.name} (${pkg.customer_id}) NO tiene teléfono válido en su perfil actual`);
             return null;
           }
 
-          console.log(`📱 Cliente ${customerData.name} - Teléfono Actualizado: ${customerData.whatsapp_number || customerData.phone} (Perfil Actualizado: ${customerData.updated_at})`);
+          console.log(`✅ PERFIL FRESCO obtenido para paquete ${pkg.tracking_number}:`);
+          console.log(`👤 Cliente: ${freshCustomerProfile.name}`);
+          console.log(`📱 Número DIRECTO del perfil: "${currentPhoneNumber}"`);
+          console.log(`🕒 Perfil actualizado: ${freshCustomerProfile.updated_at}`);
 
           return {
             ...pkg,
-            customers: customerData
+            customers: freshCustomerProfile
           };
         })
       );
 
-      // Filtrar paquetes válidos
-      const validPackages = packagesWithCurrentCustomerData.filter(Boolean);
+      // Filtrar paquetes válidos con perfiles frescos
+      const validPackages = packagesWithFreshCustomerData.filter(Boolean);
 
       if (validPackages.length === 0) {
-        throw new Error('No hay paquetes con información de contacto válida actualizada');
+        throw new Error('No hay paquetes con perfiles de clientes válidos y números de teléfono actuales');
       }
 
-      console.log(`📱 Paquetes con teléfono válido y datos actualizados: ${validPackages.length}`);
+      console.log(`📱 Paquetes con perfiles FRESCOS y teléfonos válidos: ${validPackages.length}`);
 
-      // Verificar cuáles ya tienen notificaciones pendientes o preparadas
+      // 3. Verificar cuáles ya tienen notificaciones pendientes o preparadas
       const packageIds = validPackages.map(pkg => pkg.id);
       const { data: existingNotifications } = await supabase
         .from('notification_log')
@@ -107,9 +111,9 @@ export function useCreateArrivalNotifications() {
         throw new Error('Todos los paquetes ya tienen notificaciones pendientes o preparadas');
       }
 
-      console.log(`📱 Creando notificaciones para ${packagesToProcess.length} paquetes con números de teléfono actualizados`);
+      console.log(`📱 Creando notificaciones para ${packagesToProcess.length} paquetes con números DIRECTOS del perfil`);
 
-      // Crear notificaciones de llegada para revisión
+      // 4. Crear notificaciones de llegada para revisión
       const arrivalNotifications = packagesToProcess.map(pkg => ({
         customer_id: pkg.customer_id,
         package_id: pkg.id,
@@ -127,7 +131,13 @@ export function useCreateArrivalNotifications() {
         throw notificationError;
       }
 
-      console.log(`✅ Creadas ${arrivalNotifications.length} notificaciones pendientes con números de teléfono actualizados`);
+      console.log(`✅ Creadas ${arrivalNotifications.length} notificaciones pendientes que usarán números DIRECTOS del perfil`);
+
+      // Log de verificación
+      packagesToProcess.forEach(pkg => {
+        const phone = pkg.customers.whatsapp_number || pkg.customers.phone;
+        console.log(`📋 Paquete ${pkg.tracking_number} - Cliente: ${pkg.customers.name} - Teléfono DIRECTO: "${phone}"`);
+      });
 
       return {
         created: arrivalNotifications.length,
@@ -137,7 +147,7 @@ export function useCreateArrivalNotifications() {
       };
     },
     onSuccess: (data) => {
-      console.log('✅ Notificaciones creadas exitosamente con números actualizados:', data);
+      console.log('✅ Notificaciones creadas exitosamente con perfiles FRESCOS:', data);
       
       // Invalidar queries para refrescar los datos
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
@@ -146,7 +156,7 @@ export function useCreateArrivalNotifications() {
       
       toast({
         title: "Notificaciones Creadas",
-        description: `${data.created} notificaciones creadas con números actualizados. ${data.skipped > 0 ? `${data.skipped} ya tenían notificaciones.` : ''}`,
+        description: `${data.created} notificaciones creadas que usarán números DIRECTOS del perfil del cliente. ${data.skipped > 0 ? `${data.skipped} ya tenían notificaciones.` : ''}`,
       });
     },
     onError: (error: any) => {

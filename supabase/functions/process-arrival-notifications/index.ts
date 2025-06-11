@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -20,14 +21,14 @@ serve(async (req) => {
 
     const { mode = 'prepare' } = await req.json().catch(() => ({}))
     
-    console.log(`🔄 Procesando notificaciones de llegada en modo: ${mode}`)
+    console.log(`🔄 NUEVA IMPLEMENTACIÓN: Procesando notificaciones en modo: ${mode} con números DIRECTOS del perfil`)
 
     if (mode === 'prepare') {
-      // MODO PREPARACIÓN: Solo crear notificaciones para revisión (NO enviar)
-      return await prepareArrivalNotifications(supabaseClient)
+      // MODO PREPARACIÓN: Usar números DIRECTOS del perfil del cliente
+      return await prepareArrivalNotificationsWithFreshData(supabaseClient)
     } else if (mode === 'execute') {
-      // MODO EJECUCIÓN: Enviar notificaciones pendientes ya revisadas
-      return await executeArrivalNotifications(supabaseClient)
+      // MODO EJECUCIÓN: Usar números DIRECTOS del perfil del cliente
+      return await executeArrivalNotificationsWithFreshData(supabaseClient)
     } else {
       throw new Error('Modo no válido. Use "prepare" o "execute"')
     }
@@ -45,26 +46,26 @@ serve(async (req) => {
   }
 })
 
-async function prepareArrivalNotifications(supabaseClient: any) {
-  console.log('📋 MODO PREPARACIÓN: Creando notificaciones para revisión...')
+async function prepareArrivalNotificationsWithFreshData(supabaseClient: any) {
+  console.log('📋 MODO PREPARACIÓN con números DIRECTOS del perfil del cliente...')
 
-  // Obtener notificaciones pendientes de llegada que AÚN NO han sido preparadas
+  // Obtener notificaciones pendientes SIN datos de clientes (los obtendremos frescos)
   const { data: pendingNotifications, error: fetchError } = await supabaseClient
     .from('notification_log')
     .select(`
-      *,
+      id,
+      customer_id,
+      package_id,
+      notification_type,
+      message,
+      status,
+      created_at,
       packages!notification_log_package_id_fkey (
         tracking_number,
         destination,
         amount_to_collect,
         currency,
-        customer_id,
-        customers!customer_id (
-          id,
-          name,
-          phone,
-          whatsapp_number
-        )
+        customer_id
       )
     `)
     .eq('notification_type', 'package_arrival')
@@ -77,7 +78,7 @@ async function prepareArrivalNotifications(supabaseClient: any) {
   }
 
   if (!pendingNotifications || pendingNotifications.length === 0) {
-    console.log('ℹ️ No hay notificaciones pendientes de llegada para preparar')
+    console.log('ℹ️ No hay notificaciones pendientes para preparar')
     return new Response(
       JSON.stringify({ prepared: 0, message: 'No hay notificaciones pendientes para preparar' }),
       { 
@@ -115,11 +116,10 @@ async function prepareArrivalNotifications(supabaseClient: any) {
       return destinationAddress.address
     }
     
-    // Si no se encuentra dirección específica, marcar como error
     throw new Error(`No se encontró dirección específica para "${destination}"`)
   }
 
-  // Función para generar el mensaje exacto según el formato requerido
+  // Función para generar el mensaje con datos FRESCOS del cliente
   const generateArrivalMessage = (customerName: string, trackingNumber: string, destination: string, address: string, currency: string, amount: string) => {
     const currencySymbol = currency === 'AWG' ? 'ƒ' : '$'
     
@@ -134,18 +134,79 @@ async function prepareArrivalNotifications(supabaseClient: any) {
   for (const notification of pendingNotifications) {
     try {
       const pkg = notification.packages
-      if (!pkg || !pkg.customers) {
-        console.warn(`⚠️ Paquete o cliente no encontrado para notificación ${notification.id}`)
+      if (!pkg) {
+        console.warn(`⚠️ Paquete no encontrado para notificación ${notification.id}`)
         continue
       }
 
-      const customer = pkg.customers
-      const customerPhone = customer.whatsapp_number || customer.phone
-      
-      if (!customerPhone) {
-        console.warn(`⚠️ No hay teléfono para el cliente ${customer.id}`)
+      // Determinar customer_id (puede venir de la notificación o del paquete)
+      const customerId = notification.customer_id || pkg.customer_id
+      if (!customerId) {
+        console.warn(`⚠️ No se pudo determinar customer_id para notificación ${notification.id}`)
         continue
       }
+
+      // CONSULTA DIRECTA Y FRESCA del perfil del cliente - IGNORAR cualquier dato almacenado
+      console.log(`📱 Obteniendo perfil FRESCO del cliente ${customerId} para notificación ${notification.id}...`)
+      
+      const { data: freshCustomerProfile, error: customerError } = await supabaseClient
+        .from('customers')
+        .select('id, name, phone, whatsapp_number, updated_at')
+        .eq('id', customerId)
+        .single()
+
+      if (customerError) {
+        console.error(`❌ Error obteniendo perfil FRESCO del cliente ${customerId}:`, customerError)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `Error obteniendo perfil del cliente: ${customerError.message}`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
+        continue
+      }
+
+      if (!freshCustomerProfile) {
+        console.warn(`⚠️ No se encontró perfil para cliente ${customerId}`)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `No se encontró perfil para cliente ${customerId}`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
+        continue
+      }
+
+      // Verificar número de teléfono ACTUAL del perfil
+      const currentPhoneNumber = freshCustomerProfile.whatsapp_number || freshCustomerProfile.phone
+      
+      if (!currentPhoneNumber || currentPhoneNumber.trim() === '') {
+        console.warn(`⚠️ Cliente ${freshCustomerProfile.name} (${customerId}) NO tiene número de teléfono válido en su perfil`)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `Cliente sin número de teléfono válido en su perfil actual`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
+        continue
+      }
+
+      console.log(`✅ PERFIL FRESCO obtenido para notificación ${notification.id}:`)
+      console.log(`👤 Cliente: ${freshCustomerProfile.name}`)
+      console.log(`📱 Número DIRECTO del perfil: "${currentPhoneNumber}"`)
+      console.log(`🕒 Perfil actualizado: ${freshCustomerProfile.updated_at}`)
 
       const destination = pkg.destination
       if (!destination) {
@@ -160,7 +221,6 @@ async function prepareArrivalNotifications(supabaseClient: any) {
       } catch (error) {
         console.error(`❌ No se pudo obtener dirección para ${destination}:`, error)
         
-        // Marcar como fallido por falta de dirección
         await supabaseClient
           .from('notification_log')
           .update({ 
@@ -173,9 +233,9 @@ async function prepareArrivalNotifications(supabaseClient: any) {
         continue
       }
 
-      // Generar el mensaje para revisión
+      // Generar el mensaje para revisión con datos FRESCOS
       const messageContent = generateArrivalMessage(
-        customer.name || 'Cliente',
+        freshCustomerProfile.name,
         pkg.tracking_number || '',
         destination,
         address,
@@ -183,14 +243,14 @@ async function prepareArrivalNotifications(supabaseClient: any) {
         pkg.amount_to_collect?.toString() || '0'
       )
 
-      console.log(`📝 Preparando notificación para revisión: ${pkg.tracking_number}`)
+      console.log(`📝 Preparando notificación ${notification.id} con número DIRECTO: "${currentPhoneNumber}"`)
 
       // Actualizar la notificación con el mensaje preparado y cambiar status a 'prepared'
       const { error: updateError } = await supabaseClient
         .from('notification_log')
         .update({ 
           message: messageContent,
-          status: 'prepared',  // Nuevo estado: preparado para revisión
+          status: 'prepared',
           updated_at: new Date().toISOString()
         })
         .eq('id', notification.id)
@@ -200,7 +260,7 @@ async function prepareArrivalNotifications(supabaseClient: any) {
         errorCount++
       } else {
         preparedCount++
-        console.log(`✅ Notificación ${notification.id} preparada para revisión`)
+        console.log(`✅ Notificación ${notification.id} preparada con número DIRECTO del perfil`)
       }
 
     } catch (error: any) {
@@ -218,14 +278,14 @@ async function prepareArrivalNotifications(supabaseClient: any) {
     }
   }
 
-  console.log(`📊 Preparación completada: ${preparedCount} preparadas, ${errorCount} errores`)
+  console.log(`📊 Preparación completada: ${preparedCount} preparadas con números DIRECTOS, ${errorCount} errores`)
 
   return new Response(
     JSON.stringify({ 
       prepared: preparedCount,
       errors: errorCount,
       total: pendingNotifications.length,
-      message: `${preparedCount} notificaciones preparadas para revisión`
+      message: `${preparedCount} notificaciones preparadas con números DIRECTOS del perfil`
     }),
     { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -234,26 +294,26 @@ async function prepareArrivalNotifications(supabaseClient: any) {
   )
 }
 
-async function executeArrivalNotifications(supabaseClient: any) {
-  console.log('🚀 MODO EJECUCIÓN: Enviando notificaciones preparadas...')
+async function executeArrivalNotificationsWithFreshData(supabaseClient: any) {
+  console.log('🚀 MODO EJECUCIÓN con números DIRECTOS del perfil del cliente...')
 
-  // Obtener notificaciones preparadas para envío
+  // Obtener notificaciones preparadas SIN datos de clientes (los obtendremos frescos)
   const { data: preparedNotifications, error: fetchError } = await supabaseClient
     .from('notification_log')
     .select(`
-      *,
+      id,
+      customer_id,
+      package_id,
+      notification_type,
+      message,
+      status,
+      created_at,
       packages!notification_log_package_id_fkey (
         tracking_number,
         destination,
         amount_to_collect,
         currency,
-        customer_id,
-        customers!customer_id (
-          id,
-          name,
-          phone,
-          whatsapp_number
-        )
+        customer_id
       )
     `)
     .eq('notification_type', 'package_arrival')
@@ -282,21 +342,75 @@ async function executeArrivalNotifications(supabaseClient: any) {
   for (const notification of preparedNotifications) {
     try {
       const pkg = notification.packages
-      const customer = pkg?.customers
       
-      if (!customer) {
-        console.warn(`⚠️ Cliente no encontrado para notificación ${notification.id}`)
+      // Determinar customer_id (puede venir de la notificación o del paquete)
+      const customerId = notification.customer_id || pkg?.customer_id
+      if (!customerId) {
+        console.warn(`⚠️ No se pudo determinar customer_id para notificación ${notification.id}`)
         continue
       }
 
-      const customerPhone = customer.whatsapp_number || customer.phone
+      // CONSULTA DIRECTA Y FRESCA del perfil del cliente en el momento del envío
+      console.log(`📱 Obteniendo perfil FRESCO del cliente ${customerId} para ENVÍO de notificación ${notification.id}...`)
       
-      if (!customerPhone) {
-        console.warn(`⚠️ No hay teléfono para el cliente ${customer.id}`)
+      const { data: freshCustomerProfile, error: customerError } = await supabaseClient
+        .from('customers')
+        .select('id, name, phone, whatsapp_number, updated_at')
+        .eq('id', customerId)
+        .single()
+
+      if (customerError) {
+        console.error(`❌ Error obteniendo perfil FRESCO del cliente ${customerId} para envío:`, customerError)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `Error obteniendo perfil del cliente para envío: ${customerError.message}`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
         continue
       }
 
-      console.log(`📱 Enviando notificación ${notification.id} a ${customerPhone}`)
+      if (!freshCustomerProfile) {
+        console.warn(`⚠️ No se encontró perfil para cliente ${customerId} al momento del envío`)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `No se encontró perfil para cliente ${customerId} al momento del envío`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
+        continue
+      }
+
+      // Obtener número de teléfono ACTUAL del perfil en el momento del envío
+      const currentPhoneNumber = freshCustomerProfile.whatsapp_number || freshCustomerProfile.phone
+      
+      if (!currentPhoneNumber || currentPhoneNumber.trim() === '') {
+        console.warn(`⚠️ Cliente ${freshCustomerProfile.name} (${customerId}) NO tiene número válido en el momento del envío`)
+        
+        await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'failed',
+            error_message: `Cliente sin número de teléfono válido en su perfil al momento del envío`
+          })
+          .eq('id', notification.id)
+        
+        errorCount++
+        continue
+      }
+
+      console.log(`🚀 ENVIANDO notificación ${notification.id} con datos FRESCOS del perfil:`)
+      console.log(`👤 Cliente: ${freshCustomerProfile.name}`)
+      console.log(`📱 Número DIRECTO del perfil: "${currentPhoneNumber}"`)
+      console.log(`🕒 Perfil actualizado: ${freshCustomerProfile.updated_at}`)
 
       // Marcar como enviándose
       await supabaseClient
@@ -304,18 +418,18 @@ async function executeArrivalNotifications(supabaseClient: any) {
         .update({ status: 'sending' })
         .eq('id', notification.id)
 
-      // Enviar vía WhatsApp
+      // Enviar vía WhatsApp usando el número DIRECTO del perfil
       const { data: responseData, error: functionError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notification.id,
-          phone: customerPhone,
+          phone: currentPhoneNumber, // Usar número DIRECTO del perfil
           message: notification.message,
-          customerId: customer.id,
+          customerId: customerId,
           useTemplate: true,
           templateName: 'package_arrival_notification',
           templateLanguage: 'es_CO',
           templateParameters: {
-            customerName: customer.name || 'Cliente',
+            customerName: freshCustomerProfile.name,
             trackingNumber: pkg?.tracking_number || '',
             destination: pkg?.destination || '',
             address: notification.message.match(/dirección: (.+?)\./)?.[1] || '',
@@ -326,7 +440,7 @@ async function executeArrivalNotifications(supabaseClient: any) {
       })
 
       if (functionError) {
-        console.error(`❌ Error enviando notificación ${notification.id}:`, functionError)
+        console.error(`❌ Error enviando notificación ${notification.id} a número DIRECTO "${currentPhoneNumber}":`, functionError)
         
         await supabaseClient
           .from('notification_log')
@@ -338,14 +452,14 @@ async function executeArrivalNotifications(supabaseClient: any) {
         
         errorCount++
       } else if (responseData?.success) {
-        console.log(`✅ Notificación ${notification.id} enviada exitosamente`)
+        console.log(`✅ Notificación ${notification.id} enviada exitosamente a número DIRECTO "${currentPhoneNumber}"`)
         
-        // Registrar el mensaje en sent_messages
+        // Registrar el mensaje en sent_messages con el número DIRECTO
         await supabaseClient
           .from('sent_messages')
           .insert({
-            customer_id: customer.id,
-            phone: customerPhone,
+            customer_id: customerId,
+            phone: currentPhoneNumber, // Usar número DIRECTO del perfil
             message: notification.message,
             status: 'sent'
           })
@@ -368,14 +482,14 @@ async function executeArrivalNotifications(supabaseClient: any) {
     }
   }
 
-  console.log(`📊 Ejecución completada: ${executedCount} enviadas, ${errorCount} errores`)
+  console.log(`📊 Ejecución completada: ${executedCount} enviadas con números DIRECTOS, ${errorCount} errores`)
 
   return new Response(
     JSON.stringify({ 
       executed: executedCount,
       errors: errorCount,
       total: preparedNotifications.length,
-      message: `${executedCount} notificaciones enviadas exitosamente`
+      message: `${executedCount} notificaciones enviadas con números DIRECTOS del perfil`
     }),
     { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

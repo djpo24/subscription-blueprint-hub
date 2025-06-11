@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -20,24 +21,29 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Obtener notificaciones de llegada con datos del cliente SIEMPRE ACTUALIZADOS
+  // Obtener notificaciones con datos del cliente SIEMPRE FRESCOS desde la tabla customers
   const query = useQuery({
     queryKey: ['arrival-notifications'],
     queryFn: async (): Promise<PendingNotification[]> => {
-      console.log('🔍 Fetching arrival notifications with FRESH customer data...');
+      console.log('🔍 NUEVA IMPLEMENTACIÓN: Obteniendo notificaciones con números de teléfono DIRECTOS del perfil...');
       
       try {
-        // Primero obtenemos las notificaciones básicas
+        // 1. Obtener notificaciones básicas SIN datos de clientes
         const { data: notifications, error: notificationsError } = await supabase
           .from('notification_log')
           .select(`
-            *,
+            id,
+            customer_id,
+            package_id,
+            notification_type,
+            message,
+            status,
+            created_at,
             packages!notification_log_package_id_fkey (
               tracking_number,
               destination,
               amount_to_collect,
               currency,
-              updated_at,
               customer_id
             )
           `)
@@ -46,101 +52,123 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
           .order('created_at', { ascending: false });
 
         if (notificationsError) {
-          console.error('❌ Error fetching notifications:', notificationsError);
+          console.error('❌ Error obteniendo notificaciones:', notificationsError);
           throw notificationsError;
         }
 
         if (!notifications || notifications.length === 0) {
-          console.log('ℹ️ No arrival notifications found');
+          console.log('ℹ️ No hay notificaciones de llegada');
           return [];
         }
 
-        // Ahora para cada notificación, obtenemos los datos FRESCOS del cliente
-        const enrichedNotifications = await Promise.all(
+        // 2. Para CADA notificación, hacer consulta DIRECTA Y FRESCA al perfil del cliente
+        const notificationsWithFreshCustomerData = await Promise.all(
           notifications.map(async (notification) => {
-            if (!notification.customer_id) {
-              console.warn(`⚠️ Notification ${notification.id} has no customer_id`);
+            // Determinar customer_id (puede venir de la notificación o del paquete)
+            const customerId = notification.customer_id || notification.packages?.customer_id;
+            
+            if (!customerId) {
+              console.warn(`⚠️ Notificación ${notification.id} sin customer_id válido`);
               return null;
             }
 
-            // Consulta FRESCA de los datos del cliente
-            const { data: customerData, error: customerError } = await supabase
+            // CONSULTA DIRECTA Y FRESCA del perfil del cliente - IGNORAMOS cualquier dato previo
+            console.log(`📱 Consultando perfil DIRECTO del cliente ${customerId}...`);
+            
+            const { data: freshCustomerProfile, error: customerError } = await supabase
               .from('customers')
-              .select('name, phone, whatsapp_number, updated_at')
-              .eq('id', notification.customer_id)
+              .select('id, name, phone, whatsapp_number, updated_at')
+              .eq('id', customerId)
               .single();
 
             if (customerError) {
-              console.error(`❌ Error fetching fresh customer data for ${notification.customer_id}:`, customerError);
+              console.error(`❌ Error obteniendo perfil FRESCO del cliente ${customerId}:`, customerError);
               return null;
             }
 
-            if (!customerData) {
-              console.warn(`⚠️ No customer data found for ${notification.customer_id}`);
+            if (!freshCustomerProfile) {
+              console.warn(`⚠️ No se encontró perfil para cliente ${customerId}`);
               return null;
             }
 
-            // Verificar que el cliente tiene un número válido
-            const hasValidPhone = customerData.whatsapp_number?.trim() || customerData.phone?.trim();
-            if (!hasValidPhone) {
-              console.warn(`⚠️ Customer ${customerData.name} has no valid phone number`);
+            // Determinar el número de teléfono ACTUAL del perfil
+            const currentPhoneNumber = freshCustomerProfile.whatsapp_number || freshCustomerProfile.phone;
+            
+            if (!currentPhoneNumber || currentPhoneNumber.trim() === '') {
+              console.warn(`⚠️ Cliente ${freshCustomerProfile.name} (${customerId}) NO tiene número de teléfono válido en su perfil`);
               return null;
             }
 
-            console.log(`📱 Customer ${customerData.name} - Current Phone: ${customerData.whatsapp_number || customerData.phone} (Profile Updated: ${customerData.updated_at})`);
+            console.log(`✅ PERFIL FRESCO obtenido para ${freshCustomerProfile.name}:`);
+            console.log(`📱 Número actual en perfil: "${currentPhoneNumber}"`);
+            console.log(`🕒 Perfil actualizado: ${freshCustomerProfile.updated_at}`);
 
-            // Retornar la notificación con datos FRESCOS del cliente
+            // Construir notificación con datos FRESCOS del perfil
             return {
               ...notification,
-              customers: customerData
+              customer_id: customerId,
+              customers: {
+                id: freshCustomerProfile.id,
+                name: freshCustomerProfile.name,
+                phone: freshCustomerProfile.phone,
+                whatsapp_number: freshCustomerProfile.whatsapp_number,
+                updated_at: freshCustomerProfile.updated_at
+              }
             };
           })
         );
 
-        // Filtrar notificaciones nulas y retornar solo las válidas
-        const validNotifications = enrichedNotifications.filter(Boolean) as PendingNotification[];
+        // Filtrar notificaciones válidas
+        const validNotifications = notificationsWithFreshCustomerData.filter(Boolean) as PendingNotification[];
 
-        console.log(`✅ Processed ${validNotifications.length} valid notifications with synchronized customer phone numbers`);
+        console.log(`🎯 RESULTADO FINAL: ${validNotifications.length} notificaciones con números de teléfono DIRECTOS del perfil`);
+        
+        // Log de todos los números obtenidos para verificación
+        validNotifications.forEach(notif => {
+          const phone = notif.customers?.whatsapp_number || notif.customers?.phone;
+          console.log(`📋 Notificación ${notif.id} - Cliente: ${notif.customers?.name} - Teléfono DIRECTO: "${phone}"`);
+        });
         
         return validNotifications;
+
       } catch (error) {
-        console.error('❌ Error in useArrivalNotifications:', error);
+        console.error('❌ Error en consulta de notificaciones con perfiles frescos:', error);
         return [];
       }
     },
-    refetchInterval: 10000, // Refrescar cada 10 segundos para datos más actuales
-    staleTime: 3000, // Considerar datos obsoletos después de 3 segundos
+    refetchInterval: 5000, // Refrescar cada 5 segundos para datos más actuales
+    staleTime: 1000, // Considerar datos obsoletos después de 1 segundo
   });
 
   // Mutación para preparar notificaciones
   const prepareMutation = useMutation({
     mutationFn: async () => {
-      console.log('📋 Preparing arrival notifications with current customer phone numbers...');
+      console.log('📋 PREPARANDO notificaciones con números de teléfono DIRECTOS del perfil...');
       
       const { data, error } = await supabase.functions.invoke('process-arrival-notifications', {
         body: { mode: 'prepare' }
       });
 
       if (error) {
-        console.error('❌ Error preparing notifications:', error);
+        console.error('❌ Error preparando notificaciones:', error);
         throw error;
       }
 
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Notifications prepared successfully with current phone numbers:', data);
+      console.log('✅ Notificaciones preparadas exitosamente con números DIRECTOS del perfil:', data);
       toast({
         title: "Notificaciones Preparadas",
-        description: `${data.prepared} notificaciones preparadas con números actualizados`,
+        description: `${data.prepared} notificaciones preparadas con números DIRECTOS del perfil del cliente`,
       });
-      // Invalidar múltiples queries para asegurar datos actualizados
+      // Invalidar todas las queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error: any) => {
-      console.error('❌ Error preparing notifications:', error);
+      console.error('❌ Error preparando notificaciones:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudieron preparar las notificaciones",
@@ -152,24 +180,24 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   // Mutación para ejecutar notificaciones preparadas
   const executeMutation = useMutation({
     mutationFn: async () => {
-      console.log('🚀 Executing prepared notifications with synchronized phone numbers...');
+      console.log('🚀 EJECUTANDO notificaciones con números de teléfono DIRECTOS del perfil...');
       
       const { data, error } = await supabase.functions.invoke('process-arrival-notifications', {
         body: { mode: 'execute' }
       });
 
       if (error) {
-        console.error('❌ Error executing notifications:', error);
+        console.error('❌ Error ejecutando notificaciones:', error);
         throw error;
       }
 
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Notifications executed successfully with current phone numbers:', data);
+      console.log('✅ Notificaciones ejecutadas exitosamente con números DIRECTOS del perfil:', data);
       toast({
         title: "Notificaciones Enviadas",
-        description: `${data.executed} notificaciones enviadas con números actualizados`,
+        description: `${data.executed} notificaciones enviadas con números DIRECTOS del perfil del cliente`,
       });
       // Invalidar todas las queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
@@ -178,7 +206,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error: any) => {
-      console.error('❌ Error executing notifications:', error);
+      console.error('❌ Error ejecutando notificaciones:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudieron enviar las notificaciones",
@@ -190,7 +218,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   // Nueva mutación para limpiar notificaciones preparadas
   const clearPreparedMutation = useMutation({
     mutationFn: async () => {
-      console.log('🗑️ Clearing prepared arrival notifications...');
+      console.log('🗑️ Limpiando notificaciones preparadas...');
       
       const { data, error } = await supabase
         .from('notification_log')
@@ -199,14 +227,14 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         .eq('status', 'prepared');
 
       if (error) {
-        console.error('❌ Error clearing prepared notifications:', error);
+        console.error('❌ Error limpiando notificaciones preparadas:', error);
         throw error;
       }
 
       return data;
     },
     onSuccess: () => {
-      console.log('✅ Prepared notifications cleared successfully');
+      console.log('✅ Notificaciones preparadas limpiadas exitosamente');
       toast({
         title: "Notificaciones Limpiadas",
         description: "Las notificaciones preparadas han sido eliminadas exitosamente",
@@ -216,7 +244,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
     },
     onError: (error: any) => {
-      console.error('❌ Error clearing prepared notifications:', error);
+      console.error('❌ Error limpiando notificaciones preparadas:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudieron limpiar las notificaciones preparadas",

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNotificationLog } from '@/hooks/useNotificationLog';
 import { NotificationValidationDialog } from './NotificationValidationDialog';
-import { MessageCircle, Settings, RotateCcw } from 'lucide-react';
+import { MessageCircle, Settings, RotateCcw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function NotificationLogTable() {
@@ -37,6 +37,36 @@ export function NotificationLogTable() {
         return "Fallido";
       default:
         return status;
+    }
+  };
+
+  const getNotificationTypeColor = (type: string) => {
+    switch (type) {
+      case "consulta_encomienda":
+        return "bg-blue-100 text-blue-800";
+      case "arrival_notification":
+        return "bg-purple-100 text-purple-800";
+      case "delivery_notification":
+        return "bg-green-100 text-green-800";
+      case "manual":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getNotificationTypeLabel = (type: string) => {
+    switch (type) {
+      case "consulta_encomienda":
+        return "Consulta";
+      case "arrival_notification":
+        return "Llegada";
+      case "delivery_notification":
+        return "Entrega";
+      case "manual":
+        return "Manual";
+      default:
+        return type || "Manual";
     }
   };
 
@@ -73,6 +103,7 @@ export function NotificationLogTable() {
                 <TableRow>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Tracking</TableHead>
                   <TableHead>Mensaje</TableHead>
                   <TableHead>Estado</TableHead>
@@ -92,6 +123,11 @@ export function NotificationLogTable() {
                         <div className="text-sm text-gray-500">{notification.customers?.phone || 'N/A'}</div>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <Badge className={getNotificationTypeColor(notification.notification_type)} variant="secondary">
+                        {getNotificationTypeLabel(notification.notification_type)}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">
                       {notification.packages?.tracking_number || 'N/A'}
                     </TableCell>
@@ -99,6 +135,14 @@ export function NotificationLogTable() {
                       <div className="truncate" title={notification.message}>
                         {notification.message}
                       </div>
+                      {notification.error_message && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span className="truncate" title={notification.error_message}>
+                            {notification.error_message}
+                          </span>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(notification.status)}>

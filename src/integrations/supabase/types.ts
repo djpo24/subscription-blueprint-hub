@@ -286,8 +286,10 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_id: string | null
+          error_message: string | null
           id: string
           message: string
+          notification_type: string | null
           package_id: string | null
           sent_at: string | null
           status: string | null
@@ -295,8 +297,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           customer_id?: string | null
+          error_message?: string | null
           id?: string
           message: string
+          notification_type?: string | null
           package_id?: string | null
           sent_at?: string | null
           status?: string | null
@@ -304,15 +308,17 @@ export type Database = {
         Update: {
           created_at?: string | null
           customer_id?: string | null
+          error_message?: string | null
           id?: string
           message?: string
+          notification_type?: string | null
           package_id?: string | null
           sent_at?: string | null
           status?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "notification_log_customer_id_fkey"
+            foreignKeyName: "fk_notification_log_customer"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"

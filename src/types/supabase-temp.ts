@@ -76,6 +76,8 @@ export interface NotificationLog {
   package_id?: string;
   message: string;
   status?: string;
+  notification_type?: string;
+  error_message?: string;
   created_at?: string;
   sent_at?: string;
   customers?: {

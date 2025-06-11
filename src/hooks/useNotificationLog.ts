@@ -42,8 +42,8 @@ export function useNotificationLog() {
           status: log.status,
           created_at: log.created_at,
           sent_at: log.sent_at,
-          notification_type: 'whatsapp', // Default type
-          error_message: undefined,
+          notification_type: log.notification_type || 'manual',
+          error_message: log.error_message || undefined,
           customers: log.customers,
           packages: log.packages
         }));

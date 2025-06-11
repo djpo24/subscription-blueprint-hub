@@ -17,7 +17,7 @@ export function useConsultaEncomienda() {
         customerId 
       });
       
-      // Paso 1: Crear entrada de notificación
+      // Paso 1: Crear entrada de notificación con los campos actualizados
       console.log('📝 [CONSULTA] Paso 1: Creando entrada de notificación...');
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
@@ -64,7 +64,7 @@ export function useConsultaEncomienda() {
       if (functionError) {
         console.error('❌ [CONSULTA] Error en función de WhatsApp:', functionError);
         
-        // Actualizar el log de notificación como fallido
+        // Actualizar el log de notificación como fallido con el mensaje de error
         await supabase
           .from('notification_log')
           .update({ 
@@ -79,6 +79,16 @@ export function useConsultaEncomienda() {
       // Verificar respuesta de la función
       if (responseData?.success) {
         console.log('✅ [CONSULTA] Plantilla enviada exitosamente:', responseData);
+        
+        // Actualizar el log de notificación como exitoso
+        await supabase
+          .from('notification_log')
+          .update({ 
+            status: 'sent',
+            sent_at: new Date().toISOString()
+          })
+          .eq('id', notificationData.id);
+        
         toast({
           title: "✅ Consulta iniciada",
           description: `Se envió la plantilla de consulta a ${customerName}`,
@@ -91,7 +101,7 @@ export function useConsultaEncomienda() {
           errorMsg
         });
         
-        // Actualizar el log de notificación como fallido
+        // Actualizar el log de notificación como fallido con el mensaje de error
         await supabase
           .from('notification_log')
           .update({ 

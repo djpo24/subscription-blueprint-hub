@@ -14,8 +14,8 @@ export function useCreateDispatchSimple() {
       packageIds: string[]; 
       notes?: string;
     }) => {
-      console.log('🚀 [SOLUCIÓN RADICAL] === CREANDO DESPACHO CON ESTADO DESPACHADO ===');
-      console.log('📦 [SOLUCIÓN RADICAL] Paquetes a despachar:', packageIds.length);
+      console.log('🚀 [ESTADO DESPACHADO] === CREANDO DESPACHO Y ACTUALIZANDO ESTADOS ===');
+      console.log('📦 [ESTADO DESPACHADO] Paquetes a despachar:', packageIds.length);
       
       if (packageIds.length === 0) {
         throw new Error('No hay paquetes seleccionados');
@@ -24,15 +24,16 @@ export function useCreateDispatchSimple() {
       // 1. Obtener información de los paquetes
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
-        .select('weight, freight, amount_to_collect')
+        .select('id, weight, freight, amount_to_collect, status, tracking_number')
         .in('id', packageIds);
 
       if (packagesError) {
-        console.error('❌ [SOLUCIÓN RADICAL] Error obteniendo paquetes:', packagesError);
+        console.error('❌ [ESTADO DESPACHADO] Error obteniendo paquetes:', packagesError);
         throw packagesError;
       }
 
-      console.log('📋 [SOLUCIÓN RADICAL] Paquetes obtenidos:', packages?.length);
+      console.log('📋 [ESTADO DESPACHADO] Paquetes obtenidos:', packages?.length);
+      console.log('📋 [ESTADO DESPACHADO] Estados actuales:', packages?.map(p => `${p.tracking_number}: ${p.status}`));
 
       // 2. Calcular totales
       const totals = (packages || []).reduce(
@@ -44,7 +45,7 @@ export function useCreateDispatchSimple() {
         { weight: 0, freight: 0, amount_to_collect: 0 }
       );
 
-      console.log('📊 [SOLUCIÓN RADICAL] Totales calculados:', totals);
+      console.log('📊 [ESTADO DESPACHADO] Totales calculados:', totals);
 
       // 3. Crear despacho
       const currentDate = new Date();
@@ -58,11 +59,11 @@ export function useCreateDispatchSimple() {
         .single();
 
       if (dispatchError) {
-        console.error('❌ [SOLUCIÓN RADICAL] Error creando despacho:', dispatchError);
+        console.error('❌ [ESTADO DESPACHADO] Error creando despacho:', dispatchError);
         throw dispatchError;
       }
 
-      console.log('✅ [SOLUCIÓN RADICAL] Despacho creado:', dispatch.id);
+      console.log('✅ [ESTADO DESPACHADO] Despacho creado:', dispatch.id);
 
       // 4. Crear relaciones paquete-despacho
       const dispatchPackages = packageIds.map(packageId => ({
@@ -75,50 +76,88 @@ export function useCreateDispatchSimple() {
         .insert(dispatchPackages);
 
       if (relationError) {
-        console.error('❌ [SOLUCIÓN RADICAL] Error creando relaciones:', relationError);
+        console.error('❌ [ESTADO DESPACHADO] Error creando relaciones:', relationError);
         throw relationError;
       }
 
-      console.log('✅ [SOLUCIÓN RADICAL] Relaciones creadas:', dispatchPackages.length);
+      console.log('✅ [ESTADO DESPACHADO] Relaciones creadas:', dispatchPackages.length);
 
-      // 5. Actualizar estado de paquetes a "despachado" (nuevo estado)
-      const { error: updateError } = await supabase
+      // 5. *** CRÍTICO *** Actualizar estado de paquetes a "despachado"
+      console.log('🔄 [ESTADO DESPACHADO] === ACTUALIZANDO ESTADOS A DESPACHADO ===');
+      
+      const { data: updatedPackages, error: updateError } = await supabase
         .from('packages')
         .update({ 
-          status: 'despachado', // Cambiar al nuevo estado "despachado"
+          status: 'despachado',
           updated_at: new Date().toISOString()
         })
-        .in('id', packageIds);
+        .in('id', packageIds)
+        .select('id, tracking_number, status');
 
       if (updateError) {
-        console.error('⚠️ [SOLUCIÓN RADICAL] Error actualizando paquetes:', updateError);
-        // No lanzar error para no fallar todo el proceso
-      } else {
-        console.log('✅ [SOLUCIÓN RADICAL] Estados de paquetes actualizados a "despachado"');
+        console.error('❌ [ESTADO DESPACHADO] ERROR CRÍTICO actualizando estados:', updateError);
+        throw new Error(`Error actualizando estados de paquetes: ${updateError.message}`);
       }
 
-      return { dispatch, packageCount: packageIds.length };
+      console.log('✅ [ESTADO DESPACHADO] Estados actualizados exitosamente:');
+      updatedPackages?.forEach(pkg => {
+        console.log(`   ✓ ${pkg.tracking_number}: ${pkg.status}`);
+      });
+
+      // 6. Crear eventos de tracking
+      const trackingEvents = packageIds.map(packageId => ({
+        package_id: packageId,
+        event_type: 'dispatched',
+        description: 'Encomienda despachada',
+        location: 'Centro de distribución'
+      }));
+
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert(trackingEvents);
+
+      if (trackingError) {
+        console.error('⚠️ [ESTADO DESPACHADO] Error creando eventos de tracking:', trackingError);
+        // No lanzar error para no fallar todo el proceso
+      } else {
+        console.log('✅ [ESTADO DESPACHADO] Eventos de tracking creados');
+      }
+
+      return { 
+        dispatch, 
+        packageCount: packageIds.length,
+        updatedPackages: updatedPackages || []
+      };
     },
     onSuccess: (data) => {
-      console.log('🎉 [SOLUCIÓN RADICAL] DESPACHO CREADO CON ESTADO DESPACHADO');
+      console.log('🎉 [ESTADO DESPACHADO] === DESPACHO COMPLETADO ===');
+      console.log('📊 [ESTADO DESPACHADO] Resumen:');
+      console.log(`   • Despacho creado: ${data.dispatch.id}`);
+      console.log(`   • Paquetes procesados: ${data.packageCount}`);
+      console.log(`   • Estados actualizados: ${data.updatedPackages.length}`);
       
       toast({
-        title: "Despacho creado",
-        description: `Se creó el despacho con ${data.packageCount} encomiendas (estado: despachado)`,
+        title: "Despacho creado exitosamente",
+        description: `Se despacharon ${data.packageCount} encomiendas. Todos los estados fueron actualizados a "despachado".`,
       });
       
-      // Invalidar todas las queries relevantes
+      // Invalidar todas las queries relevantes para refrescar la UI
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       queryClient.invalidateQueries({ queryKey: ['trips'] });
+      
+      // Refetch inmediato para actualización dinámica
+      queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
+      queryClient.refetchQueries({ queryKey: ['packages-by-date'] });
+      queryClient.refetchQueries({ queryKey: ['packages'] });
     },
     onError: (error) => {
-      console.error('❌ [SOLUCIÓN RADICAL] ERROR EN DESPACHO:', error);
+      console.error('❌ [ESTADO DESPACHADO] ERROR GENERAL:', error);
       
       toast({
-        title: "Error",
-        description: `Error al crear despacho: ${error.message}`,
+        title: "Error al crear despacho",
+        description: `Error: ${error.message}`,
         variant: "destructive",
       });
     }

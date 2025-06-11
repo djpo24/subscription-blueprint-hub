@@ -25,27 +25,32 @@ interface Trip {
   packages: Package[];
 }
 
-// Estados que pueden ser despachados - INCLUYE "despachado" 
-const DISPATCHABLE_STATES = ['recibido', 'procesado', 'despachado', 'pending', 'arrived'];
+// Estados que pueden ser despachados - INCLUYE "despachado" para re-despachos
+const DISPATCHABLE_STATES = ['recibido', 'procesado', 'bodega', 'pending', 'arrived'];
+// Nota: "despachado" se excluye para evitar re-despachos accidentales a menos que sea necesario
 
 export function useDispatchEligiblePackagesSimple(trips: Trip[] = []) {
   return useMemo(() => {
-    console.log('🚀 [SOLUCIÓN RADICAL] === HOOK SIMPLIFICADO CON DESPACHADO ===');
+    console.log('🔍 [ESTADO DESPACHADO] === HOOK ELEGIBILIDAD DE PAQUETES ===');
     
     if (!trips || !Array.isArray(trips)) {
-      console.log('❌ [SOLUCIÓN RADICAL] No hay viajes');
+      console.log('❌ [ESTADO DESPACHADO] No hay viajes');
       return [];
     }
 
-    console.log('📦 [SOLUCIÓN RADICAL] Procesando viajes:', trips.length);
+    console.log('📦 [ESTADO DESPACHADO] Procesando viajes:', trips.length);
     
     const eligiblePackages = trips.flatMap(trip => 
       (trip.packages || [])
         .filter(pkg => {
-          // LÓGICA SIMPLIFICADA: Solo verificar estado (incluye "despachado")
           const isEligible = DISPATCHABLE_STATES.includes(pkg.status);
           
-          console.log(`📋 [SOLUCIÓN RADICAL] Paquete ${pkg.tracking_number}: ${pkg.status} -> ${isEligible ? 'ELEGIBLE' : 'NO ELEGIBLE'}`);
+          console.log(`📋 [ESTADO DESPACHADO] Paquete ${pkg.tracking_number}: ${pkg.status} -> ${isEligible ? 'ELEGIBLE' : 'NO ELEGIBLE'}`);
+          
+          // Mostrar advertencia si el paquete ya está despachado
+          if (pkg.status === 'despachado') {
+            console.log(`⚠️ [ESTADO DESPACHADO] Paquete ${pkg.tracking_number} ya está DESPACHADO`);
+          }
           
           return isEligible;
         })
@@ -63,7 +68,7 @@ export function useDispatchEligiblePackagesSimple(trips: Trip[] = []) {
         }))
     );
 
-    console.log('✅ [SOLUCIÓN RADICAL] RESULTADO CON DESPACHADO:', eligiblePackages.length, 'paquetes elegibles');
+    console.log('✅ [ESTADO DESPACHADO] RESULTADO:', eligiblePackages.length, 'paquetes elegibles para despacho');
     
     return eligiblePackages;
   }, [trips]);

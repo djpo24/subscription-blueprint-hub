@@ -15,7 +15,7 @@ export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
       case "procesado":
         return "bg-orange-100 text-orange-800";
       case "despachado":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 text-purple-800 font-semibold"; // Destacar el estado despachado
       case "transito":
         return "bg-purple-100 text-purple-800";
       case "en_destino":
@@ -47,7 +47,7 @@ export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
       case "procesado":
         return "Procesado";
       case "despachado":
-        return "Despachado";
+        return "Despachado"; // Estado claramente definido
       case "transito":
         return "Tránsito";
       case "en_destino":

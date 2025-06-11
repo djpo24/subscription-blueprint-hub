@@ -1,4 +1,3 @@
-
 import { Package, User, MessageCircle, DollarSign, Weight, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +6,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { PackageItemMobile } from './PackageItemMobile';
 import { PackageItemDesktop } from './PackageItemDesktop';
 import { formatCurrency } from '@/utils/currencyFormatter';
-import { formatWeight, formatFreight, formatAmountToCollect } from '@/utils/formatters';
+import { formatWeight, formatAmountToCollect } from '@/utils/formatters';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -49,7 +49,7 @@ export function PackageItem({
   const formattedPackage = {
     ...pkg,
     weight: formatWeight(pkg.weight),
-    freight: formatFreight(pkg.freight),
+    freight: pkg.freight ? formatNumberWithThousandsSeparator(pkg.freight) : '0',
     amount_to_collect: formatAmountToCollect(pkg.amount_to_collect)
   };
 

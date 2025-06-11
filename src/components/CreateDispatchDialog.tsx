@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { useCreateDispatch } from '@/hooks/useCreateDispatch';
-import { useDispatchEligiblePackages } from '@/hooks/useDispatchEligiblePackages';
+import { useDispatchEligiblePackagesSimple } from '@/hooks/useDispatchEligiblePackagesSimple';
+import { useCreateDispatchSimple } from '@/hooks/useCreateDispatchSimple';
 import { DispatchDialogHeader } from './dispatch/DispatchDialogHeader';
 import { DispatchDateInfo } from './dispatch/DispatchDateInfo';
 import { DispatchPackageSelector } from './dispatch/DispatchPackageSelector';
@@ -51,19 +50,19 @@ export function CreateDispatchDialog({
 }: CreateDispatchDialogProps) {
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
-  const createDispatch = useCreateDispatch();
+  const createDispatch = useCreateDispatchSimple();
 
-  // Obtener paquetes elegibles con estados "recibido" y "procesado"
-  const eligiblePackages = useDispatchEligiblePackages(trips);
+  // Usar el nuevo hook simplificado
+  const eligiblePackages = useDispatchEligiblePackagesSimple(trips);
 
-  console.log('🔍 [CreateDispatchDialog] === ESTADO DEL DIÁLOGO ===');
-  console.log('🔍 [CreateDispatchDialog] Diálogo abierto:', open);
-  console.log('🔍 [CreateDispatchDialog] Viajes recibidos:', trips.length);
-  console.log('🔍 [CreateDispatchDialog] Paquetes elegibles encontrados:', eligiblePackages.length);
-  console.log('🔍 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
+  console.log('🚀 [SOLUCIÓN RADICAL] === DIÁLOGO SIMPLIFICADO ===');
+  console.log('🚀 [SOLUCIÓN RADICAL] Diálogo abierto:', open);
+  console.log('🚀 [SOLUCIÓN RADICAL] Viajes:', trips.length);
+  console.log('🚀 [SOLUCIÓN RADICAL] Paquetes elegibles:', eligiblePackages.length);
+  console.log('🚀 [SOLUCIÓN RADICAL] Paquetes seleccionados:', selectedPackages.length);
 
   const handlePackageToggle = (packageId: string, checked: boolean) => {
-    console.log('🔄 [CreateDispatchDialog] Toggle paquete:', packageId, checked);
+    console.log('🔄 [SOLUCIÓN RADICAL] Toggle paquete:', packageId, checked);
     if (checked) {
       setSelectedPackages(prev => [...prev, packageId]);
     } else {
@@ -72,7 +71,7 @@ export function CreateDispatchDialog({
   };
 
   const handleSelectAll = () => {
-    console.log('🔄 [CreateDispatchDialog] Seleccionar todo. Estado actual:', selectedPackages.length, 'de', eligiblePackages.length);
+    console.log('🔄 [SOLUCIÓN RADICAL] Seleccionar todo');
     if (selectedPackages.length === eligiblePackages.length) {
       setSelectedPackages([]);
     } else {
@@ -83,48 +82,39 @@ export function CreateDispatchDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🚀 [CreateDispatchDialog] === INTENTO DE CREAR DESPACHO ===');
-    console.log('🚀 [CreateDispatchDialog] Paquetes seleccionados:', selectedPackages.length);
-    console.log('🚀 [CreateDispatchDialog] Estado mutación:', createDispatch.isPending);
-    console.log('🚀 [CreateDispatchDialog] IDs seleccionados:', selectedPackages);
+    console.log('🚀 [SOLUCIÓN RADICAL] === ENVIANDO DESPACHO ===');
+    console.log('🚀 [SOLUCIÓN RADICAL] Paquetes seleccionados:', selectedPackages.length);
     
     if (selectedPackages.length === 0) {
-      console.log('❌ [CreateDispatchDialog] ENVÍO BLOQUEADO: no hay paquetes seleccionados');
+      console.log('❌ [SOLUCIÓN RADICAL] No hay paquetes seleccionados');
       return;
     }
 
     try {
-      const currentDate = new Date();
-      console.log('📅 [CreateDispatchDialog] Creando despacho para fecha:', currentDate);
+      console.log('📤 [SOLUCIÓN RADICAL] Ejecutando mutación...');
       
       await createDispatch.mutateAsync({
-        date: currentDate,
         packageIds: selectedPackages,
         notes: notes.trim() || undefined
       });
       
-      console.log('✅ [CreateDispatchDialog] Despacho creado exitosamente');
+      console.log('✅ [SOLUCIÓN RADICAL] Despacho creado exitosamente');
+      
+      // Limpiar y cerrar
       setSelectedPackages([]);
       setNotes('');
       onOpenChange(false);
       onSuccess?.();
+      
     } catch (error) {
-      console.error('❌ [CreateDispatchDialog] Error creando despacho:', error);
+      console.error('❌ [SOLUCIÓN RADICAL] Error en submit:', error);
     }
   };
 
-  // Fecha actual para mostrar en el diálogo
   const currentDate = new Date();
-
-  // Estado del botón de crear despacho
   const isButtonDisabled = selectedPackages.length === 0 || createDispatch.isPending;
-  console.log('🔘 [CreateDispatchDialog] === ESTADO DEL BOTÓN ===');
-  console.log('🔘 [CreateDispatchDialog] Botón deshabilitado:', isButtonDisabled);
-  console.log('🔘 [CreateDispatchDialog] Razón:', 
-    selectedPackages.length === 0 ? 'no hay paquetes seleccionados' : 
-    createDispatch.isPending ? 'petición pendiente' : 
-    'habilitado'
-  );
+
+  console.log('🔘 [SOLUCIÓN RADICAL] Botón deshabilitado:', isButtonDisabled);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -138,14 +128,14 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Solo se pueden despachar encomiendas en estados "recibido" o "procesado" que no hayan sido despachadas previamente.
+                Solo se pueden despachar encomiendas en estados válidos.
               </p>
               <div className="text-xs text-gray-400 bg-gray-50 p-4 rounded">
-                <p className="mb-3"><strong>🔍 INFORMACIÓN:</strong></p>
+                <p className="mb-3"><strong>🔍 SOLUCIÓN RADICAL ACTIVADA:</strong></p>
                 <ul className="list-disc list-inside space-y-1 text-left">
-                  <li><strong>Estados válidos para despacho:</strong> "recibido", "procesado"</li>
-                  <li><strong>El estado "procesado"</strong> solo indica que se imprimió la etiqueta</li>
-                  <li><strong>Estados NO elegibles:</strong> "delivered", "in_transit", "transito", "en_destino"</li>
+                  <li><strong>Estados válidos:</strong> recibido, procesado, pending, arrived</li>
+                  <li><strong>Lógica simplificada:</strong> sin verificaciones complejas</li>
+                  <li><strong>Creación directa:</strong> sin filtros adicionales</li>
                 </ul>
               </div>
             </div>
@@ -170,7 +160,6 @@ export function CreateDispatchDialog({
             </>
           )}
 
-          {/* Botones */}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -183,9 +172,9 @@ export function CreateDispatchDialog({
               <Button
                 type="submit"
                 disabled={isButtonDisabled}
-                className={`${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
               >
-                {createDispatch.isPending ? 'Creando...' : `Crear Despacho ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
+                {createDispatch.isPending ? 'Creando...' : `🚀 CREAR DESPACHO ${selectedPackages.length > 0 ? `(${selectedPackages.length})` : ''}`}
               </Button>
             )}
           </div>

@@ -26,11 +26,6 @@ serve(async (req) => {
       .from('notification_log')
       .select(`
         *,
-        customers!customer_id (
-          name,
-          phone,
-          whatsapp_number
-        ),
         packages!fk_notification_log_package (
           tracking_number,
           destination,
@@ -112,10 +107,32 @@ serve(async (req) => {
 
     for (const notification of pendingNotifications) {
       try {
-        const customerPhone = notification.customers?.whatsapp_number || notification.customers?.phone
+        // OBTENER DATOS ACTUALIZADOS DEL CLIENTE DIRECTAMENTE
+        if (!notification.customer_id) {
+          console.warn(`⚠️ No hay customer_id para la notificación ${notification.id}`)
+          continue
+        }
+
+        console.log(`👤 Obteniendo datos actualizados del cliente ${notification.customer_id}`)
+        
+        // Obtener los datos más recientes del cliente
+        const { data: customerData, error: customerError } = await supabaseClient
+          .from('customers')
+          .select('name, phone, whatsapp_number')
+          .eq('id', notification.customer_id)
+          .single()
+
+        if (customerError || !customerData) {
+          console.error(`❌ Error obteniendo datos del cliente ${notification.customer_id}:`, customerError)
+          continue
+        }
+
+        // Usar el número de WhatsApp actualizado o el teléfono como fallback
+        const customerPhone = customerData.whatsapp_number || customerData.phone
+        console.log(`📱 Teléfono actualizado del cliente: ${customerPhone}`)
         
         if (!customerPhone) {
-          console.warn(`⚠️ No hay teléfono para la notificación ${notification.id}`)
+          console.warn(`⚠️ No hay teléfono actualizado para el cliente ${notification.customer_id}`)
           continue
         }
 
@@ -165,7 +182,7 @@ serve(async (req) => {
 
         // Generar el mensaje exacto según el formato requerido
         const messageContent = generateArrivalMessage(
-          notification.customers?.name || 'Cliente',
+          customerData.name || 'Cliente',
           notification.packages?.tracking_number || '',
           destination,
           address,
@@ -175,6 +192,7 @@ serve(async (req) => {
 
         console.log(`📱 Enviando notificación para ${notification.packages?.tracking_number} a ${destination}`)
         console.log(`📍 Dirección confirmada: "${address}"`)
+        console.log(`📞 Teléfono actualizado: "${customerPhone}"`)
 
         // Actualizar el mensaje en notification_log para que coincida exactamente
         await supabaseClient
@@ -189,14 +207,14 @@ serve(async (req) => {
         const { data: responseData, error: functionError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notification.id,
-            phone: customerPhone,
+            phone: customerPhone, // Usar el teléfono actualizado
             message: messageContent,
             customerId: notification.customer_id,
             useTemplate: true,
             templateName: 'package_arrival_notification',
             templateLanguage: 'es_CO',
             templateParameters: {
-              customerName: notification.customers?.name || 'Cliente',
+              customerName: customerData.name || 'Cliente',
               trackingNumber: notification.packages?.tracking_number || '',
               destination: destination,
               address: address, // Dirección ya validada y específica
@@ -220,7 +238,7 @@ serve(async (req) => {
           
           errorCount++
         } else if (responseData?.success) {
-          console.log(`✅ Notificación ${notification.id} enviada con dirección: "${address}"`)
+          console.log(`✅ Notificación ${notification.id} enviada con dirección: "${address}" y teléfono: "${customerPhone}"`)
           
           // Registrar el mensaje en sent_messages para que aparezca en el chat
           console.log('📝 Registrando mensaje de notificación en sent_messages...')
@@ -228,7 +246,7 @@ serve(async (req) => {
             .from('sent_messages')
             .insert({
               customer_id: notification.customer_id,
-              phone: customerPhone,
+              phone: customerPhone, // Usar el teléfono actualizado
               message: messageContent,
               status: 'sent'
             })
@@ -236,7 +254,7 @@ serve(async (req) => {
           if (sentMessageError) {
             console.error('Error registrando mensaje en sent_messages:', sentMessageError)
           } else {
-            console.log('✅ Mensaje de notificación registrado en chat')
+            console.log('✅ Mensaje de notificación registrado en chat con teléfono actualizado')
           }
           
           processedCount++
@@ -265,7 +283,7 @@ serve(async (req) => {
         processed: processedCount,
         errors: errorCount,
         total: pendingNotifications.length,
-        message: `Procesadas ${processedCount} notificaciones con direcciones específicas`
+        message: `Procesadas ${processedCount} notificaciones con teléfonos actualizados`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -55,7 +55,6 @@ export function usePackageByTrackingNumber(trackingNumber: string | null) {
         trip_id: packageData.trip_id,
         delivered_at: packageData.delivered_at,
         delivered_by: packageData.delivered_by,
-        customer_id: packageData.customer_id,
         customers: customerData ? {
           name: customerData.name,
           email: customerData.email,

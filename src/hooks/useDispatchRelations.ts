@@ -49,6 +49,8 @@ export function useDispatchRelations(selectedDate?: Date) {
         // Para cada despacho, calcular los totales reales desde dispatch_packages
         const dispatchesWithTotals = await Promise.all(
           (data || []).map(async (dispatch) => {
+            console.log(`🔍 Processing dispatch ${dispatch.id} with DB status: ${dispatch.status}`);
+            
             // Obtener los paquetes del despacho con información completa incluyendo moneda
             const { data: dispatchPackages, error: packagesError } = await supabase
               .from('dispatch_packages')
@@ -69,7 +71,7 @@ export function useDispatchRelations(selectedDate?: Date) {
               console.error('❌ Error fetching packages for dispatch:', dispatch.id, packagesError);
               return {
                 ...dispatch,
-                status: 'pending',
+                status: dispatch.status || 'pending', // Usar el estado de la DB
                 total_packages: 0,
                 total_weight: 0,
                 total_freight: 0,
@@ -126,17 +128,26 @@ export function useDispatchRelations(selectedDate?: Date) {
             console.log(`📊 Calculated totals for dispatch ${dispatch.id}:`, totals);
             console.log(`💰 Amounts by currency for dispatch ${dispatch.id}:`, amountsByCurrency);
 
-            // Determinar el estado del despacho
-            let status = 'pending';
-            if (totals.delivered_count === totals.total_packages && totals.total_packages > 0) {
-              status = 'completed';
-            } else if (totals.delivered_count > 0) {
-              status = 'in_progress';
+            // IMPORTANTE: Usar el estado de la base de datos directamente, no calcularlo
+            // Solo calcular el estado si no existe en la DB o es null
+            let finalStatus = dispatch.status;
+            
+            if (!finalStatus || finalStatus === 'pending') {
+              // Solo recalcular si el estado está vacío o es pending
+              if (totals.delivered_count === totals.total_packages && totals.total_packages > 0) {
+                finalStatus = 'completed';
+              } else if (totals.delivered_count > 0) {
+                finalStatus = 'in_progress';
+              } else {
+                finalStatus = 'pending';
+              }
             }
+
+            console.log(`✅ Final status for dispatch ${dispatch.id}: ${finalStatus} (DB: ${dispatch.status})`);
 
             return {
               ...dispatch,
-              status,
+              status: finalStatus,
               ...totals,
               amounts_by_currency: amountsByCurrency,
               primary_currency: primaryCurrency,
@@ -146,7 +157,7 @@ export function useDispatchRelations(selectedDate?: Date) {
           })
         );
 
-        console.log('✅ Dispatches with calculated totals and currency info:', dispatchesWithTotals);
+        console.log('✅ Dispatches with calculated totals and preserved DB status:', dispatchesWithTotals);
         return dispatchesWithTotals;
       } catch (error) {
         console.error('❌ Error in useDispatchRelations:', error);

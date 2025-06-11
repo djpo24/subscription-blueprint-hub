@@ -8,6 +8,7 @@ import type { PackageInDispatch } from '@/types/dispatch';
 import { DeliverPackageDialog } from './DeliverPackageDialog';
 import { DispatchPackagesMobile } from './DispatchPackagesMobile';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatAmountToCollectWithCurrency, parseCurrencyString, type Currency } from '@/utils/currencyFormatter';
 
 interface DispatchPackagesTableProps {
   packages: PackageInDispatch[];
@@ -47,6 +48,13 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
   const formatCurrency = (value: number | null | undefined) => {
     if (!value) return '$0';
     return `$${value.toLocaleString('es-CO')}`;
+  };
+
+  const formatAmountToCollectDisplay = (amount: number | null | undefined, currencyStr: string | null | undefined) => {
+    if (!amount || amount === 0) return '---';
+    
+    const currency = parseCurrencyString(currencyStr);
+    return formatAmountToCollectWithCurrency(amount, currency);
   };
 
   const handleDeliverPackage = (pkg: PackageInDispatch) => {
@@ -150,7 +158,7 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-500" />
                     <span className="font-medium text-green-700">
-                      {formatCurrency(pkg.amount_to_collect)}
+                      {formatAmountToCollectDisplay(pkg.amount_to_collect, pkg.currency)}
                     </span>
                   </div>
                 </TableCell>

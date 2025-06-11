@@ -80,6 +80,10 @@ export function AllPackagesTable() {
     }
   };
 
+  const handlePackagesUpdate = () => {
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+  };
+
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId);
 
   // Transform package data to match dialog expectations
@@ -238,7 +242,7 @@ export function AllPackagesTable() {
                         ) : (
                           <PackageActionsDropdown 
                             package={getTypedPackageForActions(pkg)} 
-                            onAction={(action) => handleAction(action, pkg.id)}
+                            onUpdate={handlePackagesUpdate}
                           />
                         )}
                       </TableCell>

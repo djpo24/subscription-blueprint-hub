@@ -26,15 +26,15 @@ export class DeliveryService {
     try {
       // Validar parámetros de entrada
       if (!packageId) {
-        throw new Error('packageId es requerido');
+        throw new Error('ID del paquete es requerido');
       }
       if (!deliveredBy) {
-        throw new Error('deliveredBy es requerido');
+        throw new Error('Información del entregador es requerida');
       }
 
       console.log('✅ [DeliveryService] Parámetros validados correctamente');
 
-      // Como las funciones RPC no existen, usaremos actualización directa
+      // Obtener información del paquete
       const { data: packageData, error: packageError } = await supabase
         .from('packages')
         .select('*')
@@ -43,8 +43,19 @@ export class DeliveryService {
 
       if (packageError) {
         console.error('❌ [DeliveryService] Error obteniendo paquete:', packageError);
-        throw packageError;
+        throw new Error('No se pudo encontrar el paquete especificado');
       }
+
+      // Verificar que el paquete se puede entregar
+      if (packageData.status === 'delivered') {
+        throw new Error('Este paquete ya ha sido entregado');
+      }
+
+      console.log('📦 [DeliveryService] Paquete encontrado:', {
+        tracking: packageData.tracking_number,
+        status: packageData.status,
+        customer: packageData.customer_id
+      });
 
       // Actualizar el estado del paquete
       const { data: updateData, error: updateError } = await supabase
@@ -52,38 +63,69 @@ export class DeliveryService {
         .update({
           status: 'delivered',
           delivered_by: deliveredBy,
-          delivered_at: new Date().toISOString()
+          delivered_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('id', packageId)
-        .select();
+        .select()
+        .single();
 
       if (updateError) {
         console.error('❌ [DeliveryService] Error actualizando paquete:', updateError);
-        throw updateError;
+        throw new Error('No se pudo actualizar el estado del paquete');
       }
 
-      // Si hay pagos, registrarlos
-      if (payments && payments.length > 0) {
-        for (const payment of payments) {
-          const { error: paymentError } = await supabase
-            .from('customer_payments')
-            .insert({
-              package_id: packageId,
-              amount: payment.amount,
-              currency: payment.currency,
-              payment_method: payment.method_id,
-              notes: `Pago registrado durante entrega - ${payment.type}`,
-              created_by: deliveredBy
-            });
+      console.log('✅ [DeliveryService] Paquete actualizado exitosamente');
 
-          if (paymentError) {
-            console.error('❌ [DeliveryService] Error registrando pago:', paymentError);
+      // Crear evento de tracking
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert({
+          package_id: packageId,
+          event_type: 'delivered',
+          description: `Paquete entregado por ${deliveredBy}`,
+          location: packageData.destination || 'Destino',
+          created_at: new Date().toISOString()
+        });
+
+      if (trackingError) {
+        console.warn('⚠️ [DeliveryService] Error creando evento de tracking:', trackingError);
+        // No lanzar error, es secundario
+      }
+
+      // Registrar pagos si existen
+      if (payments && payments.length > 0) {
+        console.log('💰 [DeliveryService] Procesando pagos:', payments.length);
+        
+        for (const payment of payments) {
+          try {
+            const { error: paymentError } = await supabase
+              .from('customer_payments')
+              .insert({
+                package_id: packageId,
+                amount: Number(payment.amount),
+                currency: payment.currency,
+                payment_method: payment.method_id,
+                notes: `Pago registrado durante entrega - ${payment.type}`,
+                created_by: deliveredBy,
+                created_at: new Date().toISOString()
+              });
+
+            if (paymentError) {
+              console.error('❌ [DeliveryService] Error registrando pago:', paymentError);
+            } else {
+              console.log('✅ [DeliveryService] Pago registrado exitosamente');
+            }
+          } catch (paymentError) {
+            console.error('❌ [DeliveryService] Error procesando pago:', paymentError);
+            // Continuar con otros pagos
           }
         }
       }
 
-      console.log('✅ [DeliveryService] Entrega completada exitosamente');
+      console.log('🎉 [DeliveryService] Entrega completada exitosamente');
       return updateData;
+
     } catch (error) {
       console.error('❌ [DeliveryService] Error completo en entrega:', error);
       throw error;

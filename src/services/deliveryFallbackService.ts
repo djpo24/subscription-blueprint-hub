@@ -8,118 +8,100 @@ interface DeliveryPayment {
   type: 'full' | 'partial';
 }
 
-interface FallbackDeliveryParams {
+interface DeliverPackageParams {
   packageId: string;
   deliveredBy: string;
   payments?: DeliveryPayment[];
 }
 
 export class DeliveryFallbackService {
-  static async deliverPackageWithFallback({ packageId, deliveredBy, payments }: FallbackDeliveryParams) {
-    console.log('🔄 [DeliveryFallbackService] Iniciando método alternativo...');
-    console.log('📋 [DeliveryFallbackService] Parámetros:', { packageId, deliveredBy, payments });
-    
+  static async deliverPackageWithFallback({ packageId, deliveredBy, payments }: DeliverPackageParams) {
+    console.log('🔄 [DeliveryFallbackService] Iniciando método alternativo de entrega:', {
+      packageId,
+      deliveredBy,
+      payments
+    });
+
     try {
-      // Primero obtenemos la información del paquete
-      console.log('📦 [DeliveryFallbackService] Obteniendo datos del paquete...');
+      // PASO 1: Obtener información del paquete
       const { data: packageData, error: packageError } = await supabase
         .from('packages')
-        .select('amount_to_collect, currency, status')
+        .select('*')
         .eq('id', packageId)
         .single();
 
       if (packageError) {
-        console.error('❌ [DeliveryFallbackService] Error obteniendo datos del paquete:', packageError);
-        throw packageError;
+        console.error('❌ [DeliveryFallbackService] Error obteniendo paquete:', packageError);
+        throw new Error('No se pudo obtener la información del paquete');
       }
 
-      console.log('📦 [DeliveryFallbackService] Datos del paquete:', packageData);
+      console.log('✅ [DeliveryFallbackService] Paquete obtenido:', packageData);
 
-      // Verificar que el paquete se puede entregar
-      if (packageData.status === 'delivered') {
-        throw new Error('El paquete ya ha sido entregado');
-      }
-
-      // Método alternativo: actualizar directamente la tabla packages
-      console.log('📝 [DeliveryFallbackService] Actualizando estado del paquete...');
-      const { data: updateData, error: updateError } = await supabase
+      // PASO 2: Actualizar el paquete a entregado (método simplificado)
+      const { data: updatedPackage, error: updateError } = await supabase
         .from('packages')
-        .update({ 
+        .update({
           status: 'delivered',
           delivered_by: deliveredBy,
-          delivered_at: new Date().toISOString()
+          delivered_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('id', packageId)
-        .select();
+        .select()
+        .single();
 
       if (updateError) {
-        console.error('❌ [DeliveryFallbackService] Error en actualización de paquete:', updateError);
-        throw updateError;
+        console.error('❌ [DeliveryFallbackService] Error actualizando paquete:', updateError);
+        throw new Error('No se pudo actualizar el estado del paquete');
       }
 
-      console.log('✅ [DeliveryFallbackService] Paquete actualizado:', updateData);
+      console.log('✅ [DeliveryFallbackService] Paquete actualizado:', updatedPackage);
 
-      // Calcular total cobrado de los pagos
-      const totalCollected = payments ? payments.reduce((sum, p) => sum + p.amount, 0) : 0;
-      console.log('💰 [DeliveryFallbackService] Total cobrado:', totalCollected);
-      console.log('💰 [DeliveryFallbackService] Monto a cobrar del paquete:', packageData.amount_to_collect);
+      // PASO 3: Registrar evento de tracking
+      const { error: trackingError } = await supabase
+        .from('tracking_events')
+        .insert({
+          package_id: packageId,
+          event_type: 'delivered',
+          description: `Paquete entregado por ${deliveredBy} - Método alternativo`,
+          location: packageData.destination || 'Destino'
+        });
 
-      // Si hay pagos, registrarlos en customer_payments
+      if (trackingError) {
+        console.warn('⚠️ [DeliveryFallbackService] Error creando evento de tracking:', trackingError);
+        // No lanzar error, es secundario
+      }
+
+      // PASO 4: Registrar pagos si existen
       if (payments && payments.length > 0) {
-        await this.createCustomerPayments(packageId, payments);
+        console.log('💰 [DeliveryFallbackService] Registrando pagos:', payments);
+        
+        for (const payment of payments) {
+          const { error: paymentError } = await supabase
+            .from('customer_payments')
+            .insert({
+              package_id: packageId,
+              amount: payment.amount,
+              currency: payment.currency,
+              payment_method: payment.method_id,
+              notes: `Pago registrado durante entrega - ${payment.type} - Método alternativo`,
+              created_by: deliveredBy,
+              created_at: new Date().toISOString()
+            });
+
+          if (paymentError) {
+            console.warn('⚠️ [DeliveryFallbackService] Error registrando pago:', paymentError);
+            // No lanzar error, continuar con otros pagos
+          }
+        }
       }
 
-      console.log('✅ [DeliveryFallbackService] Entrega procesada con método alternativo');
-      return updateData;
+      console.log('🎉 [DeliveryFallbackService] Entrega completada exitosamente con método alternativo');
+      return updatedPackage;
+
     } catch (error) {
       console.error('❌ [DeliveryFallbackService] Error en método alternativo:', error);
       throw error;
-    }
-  }
-
-  private static async createCustomerPayments(
-    packageId: string, 
-    payments: DeliveryPayment[]
-  ) {
-    console.log('💰 [DeliveryFallbackService] Registrando pagos en customer_payments...');
-    
-    try {
-      // Obtener el customer_id del paquete
-      const { data: packageData, error: packageError } = await supabase
-        .from('packages')
-        .select('customer_id')
-        .eq('id', packageId)
-        .single();
-
-      if (packageError) {
-        console.error('❌ [DeliveryFallbackService] Error obteniendo customer_id:', packageError);
-        return;
-      }
-
-      // Crear registros de pago en customer_payments
-      for (const payment of payments) {
-        console.log('💳 [DeliveryFallbackService] Creando pago:', payment);
-        const { error: paymentError } = await supabase
-          .from('customer_payments')
-          .insert({
-            package_id: packageId,
-            amount: payment.amount,
-            currency: payment.currency,
-            payment_method: payment.method_id,
-            notes: `Pago registrado durante entrega - ${payment.type}`,
-            created_by: 'Sistema - Entrega'
-          });
-
-        if (paymentError) {
-          console.error('❌ [DeliveryFallbackService] Error creando pago:', paymentError);
-          // No lanzamos error aquí para no bloquear la entrega
-        } else {
-          console.log('✅ [DeliveryFallbackService] Pago creado exitosamente');
-        }
-      }
-    } catch (error) {
-      console.error('❌ [DeliveryFallbackService] Error en createCustomerPayments:', error);
-      // No lanzamos error para no bloquear la entrega principal
     }
   }
 }

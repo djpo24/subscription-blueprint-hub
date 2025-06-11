@@ -23,7 +23,15 @@ export function useDeliverPackage() {
   
   return useMutation({
     mutationFn: async (params: DeliverPackageParams) => {
-      console.log('🎯 [useDeliverPackage] Iniciando mutación con parámetros:', params);
+      console.log('🎯 [useDeliverPackage] Iniciando proceso de entrega:', params);
+      
+      // Validaciones iniciales
+      if (!params.packageId) {
+        throw new Error('ID del paquete es requerido');
+      }
+      if (!params.deliveredBy) {
+        throw new Error('Información del entregador es requerida');
+      }
       
       try {
         console.log('🚀 [useDeliverPackage] Intentando método principal...');
@@ -54,12 +62,12 @@ export function useDeliverPackage() {
       }
     },
     onSuccess: (data, variables) => {
-      console.log('🎉 [useDeliverPackage] Mutación exitosa:', { data, variables });
+      console.log('🎉 [useDeliverPackage] Entrega exitosa:', { data, variables });
       DeliverySuccessHandler.handleDeliverySuccess(queryClient, variables.deliveredBy);
     },
     onError: (error: any) => {
-      console.error('💥 [useDeliverPackage] Error final en mutación:', error);
-      // El error ya fue manejado en mutationFn, aquí solo loggeamos
+      console.error('💥 [useDeliverPackage] Error final en entrega:', error);
+      // El error ya fue manejado, aquí solo loggeamos
     }
   });
 }

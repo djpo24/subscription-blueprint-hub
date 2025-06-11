@@ -2,84 +2,67 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface FinancialSummary {
+  totalCollected: number;
+  totalPending: number;
+  totalPayments: number;
+  totalPendingPackages: number;
+  totalFreight: number;
+  pendingCollections: number;
+  deliveredPackages: number;
+  totalPackages: number;
+}
+
 export function useFinancialData() {
   return useQuery({
     queryKey: ['financial-data'],
     queryFn: async () => {
-      console.log('🔍 Fetching financial data...');
-      
-      try {
-        // Get collected payments
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('customer_payments')
-          .select(`
-            id,
-            amount,
-            currency,
-            payment_date,
-            payment_method
-          `)
-          .order('payment_date', { ascending: false });
+      // Get packages data
+      const { data: packages, error: packagesError } = await supabase
+        .from('packages')
+        .select('*');
 
-        if (paymentsError) {
-          console.error('❌ Error fetching payments:', paymentsError);
-          throw paymentsError;
+      if (packagesError) throw packagesError;
+
+      // Get payments data
+      const { data: payments, error: paymentsError } = await supabase
+        .from('customer_payments')
+        .select('*');
+
+      if (paymentsError) throw paymentsError;
+
+      // Calculate summary
+      const totalPackages = packages?.length || 0;
+      const deliveredPackages = packages?.filter(p => p.status === 'delivered').length || 0;
+      const totalFreight = packages?.reduce((sum, p) => sum + (p.freight || 0), 0) || 0;
+      const pendingCollections = packages?.reduce((sum, p) => {
+        if (p.status !== 'delivered' && p.amount_to_collect) {
+          return sum + p.amount_to_collect;
         }
+        return sum;
+      }, 0) || 0;
 
-        // Get pending packages
-        const { data: pendingData, error: pendingError } = await supabase
-          .from('packages')
-          .select(`
-            id,
-            amount_to_collect,
-            currency,
-            customers (
-              name,
-              phone
-            )
-          `)
-          .gt('amount_to_collect', 0)
-          .neq('status', 'delivered');
+      const totalPayments = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const totalCollected = totalPayments;
+      const totalPending = pendingCollections;
+      const totalPendingPackages = packages?.filter(p => p.status === 'pending').length || 0;
 
-        if (pendingError) {
-          console.error('❌ Error fetching pending packages:', pendingError);
-          throw pendingError;
-        }
+      const summary: FinancialSummary = {
+        totalCollected,
+        totalPending,
+        totalPayments,
+        totalPendingPackages,
+        totalFreight,
+        pendingCollections,
+        deliveredPackages,
+        totalPackages
+      };
 
-        // Calculate totals
-        const collectedTotal = paymentsData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
-        const pendingTotal = pendingData?.reduce((sum, pkg) => sum + (pkg.amount_to_collect || 0), 0) || 0;
-
-        return {
-          collected: {
-            total: collectedTotal,
-            payments: paymentsData || []
-          },
-          pending: {
-            total: pendingTotal,
-            packages: pendingData || []
-          },
-          summary: {
-            totalCollected: collectedTotal,
-            totalPending: pendingTotal,
-            totalPayments: paymentsData?.length || 0,
-            totalPendingPackages: pendingData?.length || 0
-          }
-        };
-      } catch (error) {
-        console.error('❌ Error in useFinancialData:', error);
-        return {
-          collected: { total: 0, payments: [] },
-          pending: { total: 0, packages: [] },
-          summary: {
-            totalCollected: 0,
-            totalPending: 0,
-            totalPayments: 0,
-            totalPendingPackages: 0
-          }
-        };
-      }
-    },
-    refetchInterval: 30000,
+      return {
+        summary,
+        packages: packages || [],
+        payments: payments || []
+      };
+    }
   });
 }

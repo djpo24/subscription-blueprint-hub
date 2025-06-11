@@ -11,6 +11,8 @@ export interface DispatchRelation {
   updated_at: string;
   created_by: string | null;
   notes: string | null;
+  pending_count: number;
+  delivered_count: number;
 }
 
 export interface PackageInDispatch {

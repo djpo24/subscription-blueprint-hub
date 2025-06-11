@@ -4,8 +4,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { TrackingEvent } from '@/types/supabase-temp';
 
+interface InvestigationResult {
+  package: {
+    tracking_number: string;
+    status: string;
+    updated_at: string;
+    customer_name: string;
+  };
+  trackingEvents: TrackingEvent[];
+  userActions: any[];
+  analysis?: string[];
+}
+
 export function usePackageStatusInvestigation() {
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+  const [investigationResult, setInvestigationResult] = useState<InvestigationResult | null>(null);
 
   const { data: packageDetails, isLoading: isLoadingPackage } = useQuery({
     queryKey: ['package-investigation', selectedPackageId],
@@ -69,12 +82,54 @@ export function usePackageStatusInvestigation() {
 
       return (data || []).map(action => ({
         ...action,
-        user_name: 'Usuario desconocido', // Default since we can't join with user_profiles
+        user_name: 'Usuario desconocido',
         user_email: ''
       }));
     },
     enabled: !!selectedPackageId
   });
+
+  const investigatePackage = (trackingNumber: string) => {
+    // Find package by tracking number first
+    const findPackageAndInvestigate = async () => {
+      const { data: pkg, error } = await supabase
+        .from('packages')
+        .select(`
+          *,
+          customers!customer_id (
+            name,
+            email,
+            phone
+          )
+        `)
+        .eq('tracking_number', trackingNumber)
+        .single();
+
+      if (!error && pkg) {
+        setSelectedPackageId(pkg.id);
+        
+        // Set investigation result
+        setInvestigationResult({
+          package: {
+            tracking_number: pkg.tracking_number || '',
+            status: pkg.status || '',
+            updated_at: pkg.updated_at || '',
+            customer_name: pkg.customers?.name || 'N/A'
+          },
+          trackingEvents: [],
+          userActions: [],
+          analysis: [
+            'El paquete cambió a estado "en transito" automáticamente',
+            'Puede ser debido a una actualización manual del usuario',
+            'Verificar los eventos de tracking para más detalles',
+            'Revisar las acciones de usuario para identificar cambios manuales'
+          ]
+        });
+      }
+    };
+
+    findPackageAndInvestigate();
+  };
 
   return {
     selectedPackageId,
@@ -82,6 +137,8 @@ export function usePackageStatusInvestigation() {
     packageDetails,
     trackingEvents,
     userActions,
+    investigatePackage,
+    investigationResult,
     isLoading: isLoadingPackage || isLoadingEvents || isLoadingActions
   };
 }

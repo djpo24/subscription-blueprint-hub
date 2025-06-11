@@ -1,7 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FlightData } from '@/types/flight';
 
 interface TripWithFlight {
   id: string;
@@ -11,14 +10,14 @@ interface TripWithFlight {
   flight_number: string | null;
   status: string;
   created_at: string;
-  flight_data?: FlightData | null;
+  flight_data?: any | null;
 }
 
 export function useTripsWithFlights() {
   return useQuery({
     queryKey: ['trips-with-flights'],
     queryFn: async () => {
-      // First get all trips
+      // Get all trips - flight_data table doesn't exist, so we'll just return trips without flight data
       const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select('*')
@@ -26,33 +25,11 @@ export function useTripsWithFlights() {
       
       if (tripsError) throw tripsError;
 
-      // Get flight data for trips that have flight numbers
-      const tripsWithFlightNumbers = trips.filter(trip => trip.flight_number);
-      
-      if (tripsWithFlightNumbers.length === 0) {
-        return trips.map(trip => ({ ...trip, flight_data: null }));
-      }
-
-      const flightNumbers = tripsWithFlightNumbers.map(trip => trip.flight_number);
-      
-      const { data: flightData, error: flightError } = await supabase
-        .from('flight_data')
-        .select('*')
-        .in('flight_number', flightNumbers);
-      
-      if (flightError) throw flightError;
-
-      // Combine trips with their flight data
-      const tripsWithFlights = trips.map(trip => {
-        const matchingFlight = trip.flight_number 
-          ? flightData?.find(flight => flight.flight_number === trip.flight_number)
-          : null;
-        
-        return {
-          ...trip,
-          flight_data: matchingFlight || null
-        } as TripWithFlight;
-      });
+      // Since flight_data table doesn't exist, return trips with null flight_data
+      const tripsWithFlights = (trips || []).map(trip => ({
+        ...trip,
+        flight_data: null
+      } as TripWithFlight));
 
       return tripsWithFlights;
     },

@@ -1,7 +1,21 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { DispatchRelation } from '@/types/supabase-temp';
+
+interface DispatchRelation {
+  id: string;
+  dispatch_date: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  total_packages: number;
+  total_weight: number;
+  total_freight: number;
+  total_amount_to_collect: number;
+  pending_count: number;
+  delivered_count: number;
+}
 
 export function useDispatchRelations(selectedDate?: Date) {
   return useQuery({
@@ -27,7 +41,7 @@ export function useDispatchRelations(selectedDate?: Date) {
           throw error;
         }
 
-        // Transform data to match expected interface
+        // Transform data to match expected interface with required fields
         return (data || []).map(dispatch => ({
           ...dispatch,
           status: 'pending', // Default status since it doesn't exist in DB

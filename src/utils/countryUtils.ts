@@ -40,4 +40,3 @@ export const getCountryCodeFromPhone = (phone: string): string => {
   
   return '';
 };
-

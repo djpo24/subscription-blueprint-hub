@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,159 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Animaciones de banderas para el popup de información del paquete */
+@keyframes wave-flag {
+  0% {
+    background-position: 0% 50%;
+    transform: perspective(400px) rotateY(0deg) rotateX(0deg);
+  }
+  25% {
+    background-position: 25% 25%;
+    transform: perspective(400px) rotateY(2deg) rotateX(1deg);
+  }
+  50% {
+    background-position: 50% 0%;
+    transform: perspective(400px) rotateY(0deg) rotateX(2deg);
+  }
+  75% {
+    background-position: 75% 25%;
+    transform: perspective(400px) rotateY(-2deg) rotateX(1deg);
+  }
+  100% {
+    background-position: 100% 50%;
+    transform: perspective(400px) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+/* Bandera de Colombia */
+.flag-animation-colombia {
+  background: linear-gradient(
+    to bottom,
+    #FFCD00 0%,
+    #FFCD00 50%,
+    #003893 50%,
+    #003893 75%,
+    #C8102E 75%,
+    #C8102E 100%
+  );
+  background-size: 400% 100%;
+  animation: wave-flag 4s ease-in-out infinite;
+}
+
+/* Bandera de Curaçao */
+.flag-animation-curacao {
+  background: linear-gradient(
+    to bottom,
+    #002B7F 0%,
+    #002B7F 70%,
+    #F9E814 70%,
+    #F9E814 100%
+  );
+  background-size: 400% 100%;
+  animation: wave-flag 4s ease-in-out infinite;
+}
+
+/* Bandera de México */
+.flag-animation-mexico {
+  background: linear-gradient(
+    to right,
+    #006847 0%,
+    #006847 33%,
+    #FFFFFF 33%,
+    #FFFFFF 66%,
+    #CE1126 66%,
+    #CE1126 100%
+  );
+  background-size: 400% 100%;
+  animation: wave-flag 4s ease-in-out infinite;
+}
+
+/* Bandera de Estados Unidos */
+.flag-animation-usa {
+  background: linear-gradient(
+    to bottom,
+    #B22234 0%,
+    #B22234 7.7%,
+    #FFFFFF 7.7%,
+    #FFFFFF 15.4%,
+    #B22234 15.4%,
+    #B22234 23.1%,
+    #FFFFFF 23.1%,
+    #FFFFFF 30.8%,
+    #B22234 30.8%,
+    #B22234 38.5%,
+    #FFFFFF 38.5%,
+    #FFFFFF 46.2%,
+    #B22234 46.2%,
+    #B22234 53.9%,
+    #FFFFFF 53.9%,
+    #FFFFFF 61.6%,
+    #B22234 61.6%,
+    #B22234 69.3%,
+    #FFFFFF 69.3%,
+    #FFFFFF 77%,
+    #B22234 77%,
+    #B22234 84.7%,
+    #FFFFFF 84.7%,
+    #FFFFFF 92.4%,
+    #B22234 92.4%,
+    #B22234 100%
+  );
+  background-size: 400% 100%;
+  animation: wave-flag 4s ease-in-out infinite;
+}
+
+/* Bandera de Belice */
+.flag-animation-belize {
+  background: linear-gradient(
+    to bottom,
+    #003F88 0%,
+    #003F88 20%,
+    #FFFFFF 20%,
+    #FFFFFF 25%,
+    #ED2839 25%,
+    #ED2839 75%,
+    #FFFFFF 75%,
+    #FFFFFF 80%,
+    #003F88 80%,
+    #003F88 100%
+  );
+  background-size: 400% 100%;
+  animation: wave-flag 4s ease-in-out infinite;
+}
+
+/* Efecto adicional para el movimiento ondulante */
+.flag-animation-colombia::before,
+.flag-animation-curacao::before,
+.flag-animation-mexico::before,
+.flag-animation-usa::before,
+.flag-animation-belize::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  animation: shine 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  50% {
+    transform: translateX(0%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+  }
 }

@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle the temporary admin user sync
+        // Handle the temporary admin user sync - using string comparison since event is a string
         if (event === 'SIGNED_UP' && session?.user) {
           console.log('New user signed up, checking for admin sync...');
           

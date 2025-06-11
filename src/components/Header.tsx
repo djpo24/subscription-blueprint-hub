@@ -13,18 +13,22 @@ interface HeaderProps {
 }
 
 export function Header({ searchTerm, onSearchChange }: HeaderProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, loading } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
+    if (loading) return; // Prevent multiple clicks
+    
     try {
+      console.log('Header: Starting sign out process');
       await signOut();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente",
       });
     } catch (error) {
+      console.error('Header: Sign out error:', error);
       toast({
         title: "Error",
         description: "No se pudo cerrar la sesión",
@@ -69,10 +73,13 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
               variant="secondary"
               size={isMobile ? "sm" : "sm"}
               onClick={handleSignOut}
+              disabled={loading}
               className="flex items-center gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
             >
               <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              {!isMobile && <span className="hidden sm:inline text-sm">Salir</span>}
+              {!isMobile && <span className="hidden sm:inline text-sm">
+                {loading ? "Cerrando..." : "Salir"}
+              </span>}
             </Button>
           </div>
         </div>

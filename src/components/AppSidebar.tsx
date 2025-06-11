@@ -23,7 +23,8 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const {
     data: userRole,
-    isLoading
+    isLoading,
+    error
   } = useCurrentUserRoleWithPreview(previewRole);
   const {
     state,
@@ -32,16 +33,20 @@ export function AppSidebar({
   } = useSidebar();
   const isMobile = useIsMobile();
 
-  // Show tabs based on user role - Notifications now available for travelers too
-  const showUsersTab = userRole?.role === 'admin';
-  const showNotificationsTab = userRole?.role === 'admin' || userRole?.role === 'traveler';
-  const showSettingsTab = userRole?.role === 'admin';
-  const showChatTab = userRole?.role === 'admin';
-  const showFinancesTab = userRole?.role === 'admin';
-  
+  // If there's an error or still loading, show loading state or default menu
   if (isLoading) {
     return <SidebarLoadingState />;
   }
+
+  // Default to employee role if no data or error
+  const roleToUse = userRole?.role || 'employee';
+  
+  // Show tabs based on user role - Notifications now available for travelers too
+  const showUsersTab = roleToUse === 'admin';
+  const showNotificationsTab = roleToUse === 'admin' || roleToUse === 'traveler';
+  const showSettingsTab = roleToUse === 'admin';
+  const showChatTab = roleToUse === 'admin';
+  const showFinancesTab = roleToUse === 'admin';
   
   const menuItems = createMenuItems(showUsersTab, showNotificationsTab, showSettingsTab, showChatTab, showFinancesTab, unreadCount);
   

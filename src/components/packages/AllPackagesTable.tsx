@@ -1,203 +1,227 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Package, MapPin, Calendar, User } from 'lucide-react';
-import { format } from 'date-fns';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Search, Package, ExternalLink } from 'lucide-react';
 import { usePackages } from '@/hooks/usePackages';
-import { formatCurrency } from '@/utils/currencyFormatter';
+import { PackageActionsDropdown } from '@/components/PackageActionsDropdown';
+import { PackageLabelDialog } from '@/components/PackageLabelDialog';
+import { PackageDialog } from '@/components/PackageDialog';
+import { EditPackageDialog } from '@/components/EditPackageDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { formatCurrency, type Currency } from '@/utils/currencyFormatter';
 
 export function AllPackagesTable() {
-  const isMobile = useIsMobile();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { data: packages = [], isLoading } = usePackages();
+  const isMobile = useIsMobile();
+
+  const filteredPackages = packages.filter(pkg => 
+    pkg.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pkg.customers?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pkg.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "delivered":
-        return "bg-green-100 text-green-800";
-      case "en_destino":
-      case "arrived":
-        return "bg-blue-100 text-blue-800";
-      case "transito":
-      case "in_transit":
-        return "bg-yellow-100 text-yellow-800";
-      case "procesado":
-        return "bg-purple-100 text-purple-800";
-      case "bodega":
-        return "bg-gray-100 text-gray-800";
-      case "recibido":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'in_transit': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
-      case "delivered":
-        return "Entregado";
-      case "en_destino":
-      case "arrived":
-        return "En Destino";
-      case "transito":
-      case "in_transit":
-        return "En Tránsito";
-      case "procesado":
-        return "Procesado";
-      case "bodega":
-        return "En Bodega";
-      case "recibido":
-        return "Recibido";
-      default:
-        return status;
+      case 'delivered': return 'Entregado';
+      case 'in_transit': return 'En tránsito';
+      case 'pending': return 'Pendiente';
+      default: return status;
     }
   };
+
+  const handleAction = (action: string, packageId: string) => {
+    setSelectedPackageId(packageId);
+    switch (action) {
+      case 'label':
+        setIsLabelDialogOpen(true);
+        break;
+      case 'view':
+        setIsDetailsDialogOpen(true);
+        break;
+      case 'edit':
+        setIsEditDialogOpen(true);
+        break;
+    }
+  };
+
+  const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId);
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader className="px-3 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl">Todas las Encomiendas</CardTitle>
-          <CardDescription className="text-sm">
-            Lista completa de todas las encomiendas registradas
-          </CardDescription>
+        <CardHeader>
+          <CardTitle>Todas las Encomiendas</CardTitle>
         </CardHeader>
-        <CardContent className="px-3 sm:px-6">
-          <div className="flex justify-center py-8">
-            <div className="text-gray-500 text-sm">Cargando encomiendas...</div>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-500">Cargando encomiendas...</p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Vista móvil con cards
-  if (isMobile) {
-    return (
-      <Card>
-        <CardHeader className="px-3 pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Todas las Encomiendas
-          </CardTitle>
-          <CardDescription className="text-sm">
-            Total: {packages.length} encomiendas
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-3 pb-3">
-          <div className="space-y-3">
-            {packages.map((pkg) => (
-              <Card key={pkg.id} className="border border-gray-200">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm mb-1">
-                          {pkg.tracking_number}
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{pkg.customers?.name || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{pkg.origin}</span>
-                          <span className="text-xs text-gray-400">→</span>
-                          <span className="text-sm">{pkg.destination}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            {format(new Date(pkg.created_at), 'dd/MM/yyyy')}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Peso: {pkg.weight || 0} kg | Flete: {formatCurrency(pkg.freight, 'COP')}
-                        </div>
-                        {pkg.amount_to_collect && (
-                          <div className="text-sm text-orange-600">
-                            A cobrar: {formatCurrency(pkg.amount_to_collect, pkg.currency)}
-                          </div>
-                        )}
-                      </div>
-                      <Badge className={`${getStatusColor(pkg.status)} text-xs`}>
-                        {getStatusLabel(pkg.status)}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Vista desktop con tabla
   return (
-    <Card>
-      <CardHeader className="px-6">
-        <CardTitle className="text-xl flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Todas las Encomiendas
-        </CardTitle>
-        <CardDescription>
-          Lista completa de todas las encomiendas registradas - Total: {packages.length}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>N° Seguimiento</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Ruta</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Peso</TableHead>
-              <TableHead>Flete</TableHead>
-              <TableHead>A Cobrar</TableHead>
-              <TableHead>Fecha</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {packages.map((pkg) => (
-              <TableRow key={pkg.id} className="hover:bg-gray-50">
-                <TableCell className="font-medium">
-                  {pkg.tracking_number}
-                </TableCell>
-                <TableCell>
-                  {pkg.customers?.name || 'N/A'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <span className="text-sm">{pkg.origin}</span>
-                    <span className="mx-2">→</span>
-                    <span className="text-sm">{pkg.destination}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(pkg.status)}>
-                    {getStatusLabel(pkg.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{pkg.weight || 0} kg</TableCell>
-                <TableCell>{formatCurrency(pkg.freight, 'COP')}</TableCell>
-                <TableCell>
-                  {pkg.amount_to_collect ? 
-                    formatCurrency(pkg.amount_to_collect, pkg.currency) : 
-                    '-'
-                  }
-                </TableCell>
-                <TableCell>
-                  {format(new Date(pkg.created_at), 'dd/MM/yyyy')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Todas las Encomiendas
+              <Badge variant="secondary">{filteredPackages.length}</Badge>
+            </CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar encomiendas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredPackages.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No se encontraron encomiendas</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Destino</TableHead>
+                    <TableHead>Cobrar</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPackages.map((pkg) => (
+                    <TableRow key={pkg.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <span className="font-mono text-sm">
+                          {pkg.tracking_number || 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{pkg.customers?.name || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{pkg.customers?.phone || 'N/A'}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{pkg.description || 'Sin descripción'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(pkg.status || 'pending')}>
+                          {getStatusText(pkg.status || 'pending')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{pkg.destination || 'N/A'}</span>
+                      </TableCell>
+                      <TableCell>
+                        {pkg.amount_to_collect && pkg.amount_to_collect > 0 ? (
+                          <span className="font-medium text-green-600">
+                            {formatCurrency(pkg.amount_to_collect, (pkg.currency as Currency) || 'COP')}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">$0</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isMobile ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleAction('view', pkg.id)}>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Ver detalles
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAction('edit', pkg.id)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAction('label', pkg.id)}>
+                                Imprimir etiqueta
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <PackageActionsDropdown 
+                            package={pkg} 
+                            onAction={(action) => handleAction(action, pkg.id)}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialogs */}
+      {selectedPackage && (
+        <>
+          <PackageLabelDialog
+            package={selectedPackage}
+            isOpen={isLabelDialogOpen}
+            onClose={() => {
+              setIsLabelDialogOpen(false);
+              setSelectedPackageId(null);
+            }}
+          />
+          <PackageDialog
+            package={selectedPackage}
+            isOpen={isDetailsDialogOpen}
+            onClose={() => {
+              setIsDetailsDialogOpen(false);
+              setSelectedPackageId(null);
+            }}
+          />
+          <EditPackageDialog
+            package={selectedPackage}
+            isOpen={isEditDialogOpen}
+            onClose={() => {
+              setIsEditDialogOpen(false);
+              setSelectedPackageId(null);
+            }}
+          />
+        </>
+      )}
+    </>
   );
 }

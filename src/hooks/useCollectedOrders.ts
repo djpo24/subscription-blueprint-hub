@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { CustomerPayment } from '@/types/supabase-temp';
 
 export function useCollectedOrders() {
   return useQuery({
@@ -49,8 +50,8 @@ export function useCollectedOrders() {
 
         // Transformar los datos para el formato esperado
         const transformedData = data
-          .filter(payment => payment.packages) // Solo pagos con paquetes válidos
-          .map(payment => ({
+          .filter((payment: CustomerPayment) => payment.packages) // Solo pagos con paquetes válidos
+          .map((payment: CustomerPayment) => ({
             payment_id: payment.id,
             amount: payment.amount,
             payment_method: payment.payment_method,

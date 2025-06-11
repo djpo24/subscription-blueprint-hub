@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          package_id: string | null
+          payment_date: string
+          payment_method: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          package_id?: string | null
+          payment_date?: string
+          payment_method?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          package_id?: string | null
+          payment_date?: string
+          payment_method?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -134,6 +181,7 @@ export type Database = {
           customer_id: string | null
           from_phone: string
           id: string
+          media_url: string | null
           message_content: string | null
           message_type: string | null
           timestamp: string | null
@@ -143,6 +191,7 @@ export type Database = {
           customer_id?: string | null
           from_phone: string
           id?: string
+          media_url?: string | null
           message_content?: string | null
           message_type?: string | null
           timestamp?: string | null
@@ -152,6 +201,7 @@ export type Database = {
           customer_id?: string | null
           from_phone?: string
           id?: string
+          media_url?: string | null
           message_content?: string | null
           message_type?: string | null
           timestamp?: string | null

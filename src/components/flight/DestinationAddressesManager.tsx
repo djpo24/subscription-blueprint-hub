@@ -24,7 +24,7 @@ export function DestinationAddressesManager() {
     queryKey: ['destination-addresses'],
     queryFn: async (): Promise<DestinationAddress[]> => {
       const { data, error } = await supabase
-        .from('destination_addresses' as any)
+        .from('destination_addresses')
         .select('*')
         .order('city');
 
@@ -41,7 +41,7 @@ export function DestinationAddressesManager() {
   const addAddressMutation = useMutation({
     mutationFn: async ({ city, address }: { city: string; address: string }) => {
       const { error } = await supabase
-        .from('destination_addresses' as any)
+        .from('destination_addresses')
         .insert({ city, address });
 
       if (error) throw error;
@@ -69,7 +69,7 @@ export function DestinationAddressesManager() {
   const updateAddressMutation = useMutation({
     mutationFn: async ({ id, city, address }: { id: string; city: string; address: string }) => {
       const { error } = await supabase
-        .from('destination_addresses' as any)
+        .from('destination_addresses')
         .update({ city, address, updated_at: new Date().toISOString() })
         .eq('id', id);
 
@@ -98,7 +98,7 @@ export function DestinationAddressesManager() {
   const deleteAddressMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('destination_addresses' as any)
+        .from('destination_addresses')
         .delete()
         .eq('id', id);
 

@@ -42,6 +42,7 @@ export interface IncomingMessage {
   message_type?: string;
   timestamp?: string;
   whatsapp_message_id?: string;
+  media_url?: string; // Added missing field
   customers?: {
     name: string;
   };
@@ -90,7 +91,7 @@ export interface UserProfile {
   email: string;
   first_name: string;
   last_name: string;
-  phone?: string;
+  phone: string; // Made required to match the interface expectation
   role?: string;
   is_active?: boolean;
   created_at?: string;
@@ -169,6 +170,29 @@ export interface DestinationAddress {
   address: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface CustomerPayment {
+  id: string;
+  package_id?: string;
+  amount: number;
+  payment_method: string;
+  currency: string;
+  payment_date: string;
+  notes?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  packages?: {
+    tracking_number: string;
+    destination: string;
+    delivered_at?: string;
+    customer_id?: string;
+    customers?: {
+      name: string;
+      phone: string;
+    };
+  };
 }
 
 // Currency type for consistent usage across the app

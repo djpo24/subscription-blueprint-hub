@@ -45,6 +45,30 @@ export type Database = {
         }
         Relationships: []
       }
+      destination_addresses: {
+        Row: {
+          address: string
+          city: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dispatch_packages: {
         Row: {
           created_at: string | null

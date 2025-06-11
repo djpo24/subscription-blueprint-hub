@@ -23,7 +23,7 @@ export function RevertActionDialog({ open, onOpenChange, activity, onRevertSucce
       if (!activity) throw new Error('No activity selected');
 
       const { error } = await supabase.rpc('revert_user_action', {
-        action_id: activity.id
+        action_id: activity.id as any // Type assertion to handle the RPC call
       });
 
       if (error) throw error;

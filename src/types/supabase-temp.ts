@@ -1,5 +1,4 @@
 
-
 // Temporary type definitions to resolve TypeScript errors
 // These should be replaced once Supabase types are properly regenerated
 
@@ -87,7 +86,7 @@ export interface NotificationLog {
 
 export interface UserProfile {
   id: string;
-  user_id?: string;
+  user_id: string; // Made required to match actual usage
   email: string;
   first_name: string;
   last_name: string;
@@ -171,3 +170,6 @@ export interface DestinationAddress {
   created_at: string;
   updated_at: string;
 }
+
+// Currency type for consistent usage across the app
+export type Currency = 'COP' | 'AWG';

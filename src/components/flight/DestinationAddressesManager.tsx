@@ -9,14 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Plus, Edit, Trash2 } from 'lucide-react';
-
-interface DestinationAddress {
-  id: string;
-  city: string;
-  address: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { DestinationAddress } from '@/types/supabase-temp';
 
 export function DestinationAddressesManager() {
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -29,9 +22,9 @@ export function DestinationAddressesManager() {
   // Fetch destination addresses
   const { data: addresses = [], isLoading } = useQuery({
     queryKey: ['destination-addresses'],
-    queryFn: async () => {
+    queryFn: async (): Promise<DestinationAddress[]> => {
       const { data, error } = await supabase
-        .from('destination_addresses')
+        .from('destination_addresses' as any)
         .select('*')
         .order('city');
 
@@ -40,7 +33,7 @@ export function DestinationAddressesManager() {
         throw error;
       }
 
-      return data as DestinationAddress[];
+      return (data || []) as DestinationAddress[];
     }
   });
 
@@ -48,7 +41,7 @@ export function DestinationAddressesManager() {
   const addAddressMutation = useMutation({
     mutationFn: async ({ city, address }: { city: string; address: string }) => {
       const { error } = await supabase
-        .from('destination_addresses')
+        .from('destination_addresses' as any)
         .insert({ city, address });
 
       if (error) throw error;
@@ -76,7 +69,7 @@ export function DestinationAddressesManager() {
   const updateAddressMutation = useMutation({
     mutationFn: async ({ id, city, address }: { id: string; city: string; address: string }) => {
       const { error } = await supabase
-        .from('destination_addresses')
+        .from('destination_addresses' as any)
         .update({ city, address, updated_at: new Date().toISOString() })
         .eq('id', id);
 
@@ -105,7 +98,7 @@ export function DestinationAddressesManager() {
   const deleteAddressMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('destination_addresses')
+        .from('destination_addresses' as any)
         .delete()
         .eq('id', id);
 

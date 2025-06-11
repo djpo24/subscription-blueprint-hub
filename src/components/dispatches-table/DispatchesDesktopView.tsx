@@ -16,6 +16,8 @@ interface DispatchRelation {
   total_weight: number;
   total_freight: number;
   total_amount_to_collect: number;
+  amounts_by_currency: Record<string, number>;
+  primary_currency: string | null;
 }
 
 interface DispatchesDesktopViewProps {
@@ -24,11 +26,31 @@ interface DispatchesDesktopViewProps {
 }
 
 export function DispatchesDesktopView({ dispatches, onViewDispatch }: DispatchesDesktopViewProps) {
-  const formatAmountToCollectDisplay = (amount: number | null | undefined, currencyStr: string | null | undefined) => {
-    if (!amount || amount === 0) return '---';
+  const formatAmountToCollectDisplay = (dispatch: DispatchRelation) => {
+    // Si no hay montos a cobrar, mostrar ---
+    if (!dispatch.amounts_by_currency || Object.keys(dispatch.amounts_by_currency).length === 0) {
+      return '---';
+    }
+
+    // Si solo hay una moneda, mostrarla directamente
+    const currencies = Object.keys(dispatch.amounts_by_currency);
+    if (currencies.length === 1) {
+      const currency = currencies[0];
+      const amount = dispatch.amounts_by_currency[currency];
+      const parsedCurrency = parseCurrencyString(currency);
+      return formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    }
+
+    // Si hay múltiples monedas, mostrar la principal o la primera
+    const primaryCurrency = dispatch.primary_currency || currencies[0];
+    const amount = dispatch.amounts_by_currency[primaryCurrency];
+    const parsedCurrency = parseCurrencyString(primaryCurrency);
     
-    const currency = parseCurrencyString(currencyStr);
-    return formatAmountToCollectWithCurrency(amount, currency);
+    // Si hay múltiples monedas, agregar un indicador
+    const totalCurrencies = currencies.length;
+    const formattedAmount = formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    
+    return totalCurrencies > 1 ? `${formattedAmount} (+${totalCurrencies - 1} más)` : formattedAmount;
   };
 
   return (
@@ -76,7 +98,7 @@ export function DispatchesDesktopView({ dispatches, onViewDispatch }: Dispatches
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-green-500" />
                 <span className="font-medium text-green-700">
-                  {formatAmountToCollectDisplay(dispatch.total_amount_to_collect, 'COP')}
+                  {formatAmountToCollectDisplay(dispatch)}
                 </span>
               </div>
             </TableCell>

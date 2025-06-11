@@ -15,6 +15,9 @@ interface DispatchRelation {
   total_amount_to_collect: number;
   pending_count: number;
   delivered_count: number;
+  // Agregar información de monedas
+  amounts_by_currency: Record<string, number>;
+  primary_currency: string | null;
 }
 
 export function useDispatchRelations(selectedDate?: Date) {
@@ -46,7 +49,7 @@ export function useDispatchRelations(selectedDate?: Date) {
         // Para cada despacho, calcular los totales reales desde dispatch_packages
         const dispatchesWithTotals = await Promise.all(
           (data || []).map(async (dispatch) => {
-            // Obtener los paquetes del despacho
+            // Obtener los paquetes del despacho con información completa incluyendo moneda
             const { data: dispatchPackages, error: packagesError } = await supabase
               .from('dispatch_packages')
               .select(`
@@ -73,6 +76,8 @@ export function useDispatchRelations(selectedDate?: Date) {
                 total_amount_to_collect: 0,
                 pending_count: 0,
                 delivered_count: 0,
+                amounts_by_currency: {},
+                primary_currency: null,
               };
             }
 
@@ -82,16 +87,32 @@ export function useDispatchRelations(selectedDate?: Date) {
 
             console.log(`📦 Packages for dispatch ${dispatch.id}:`, packages);
 
-            // Calcular totales
+            // Calcular totales y agrupar por moneda
+            const amountsByCurrency: Record<string, number> = {};
+            let primaryCurrency: string | null = null;
+            
             const totals = packages.reduce(
-              (acc, pkg) => ({
-                total_packages: acc.total_packages + 1,
-                total_weight: acc.total_weight + (pkg.weight || 0),
-                total_freight: acc.total_freight + (pkg.freight || 0),
-                total_amount_to_collect: acc.total_amount_to_collect + (pkg.amount_to_collect || 0),
-                pending_count: acc.pending_count + (pkg.status !== 'delivered' ? 1 : 0),
-                delivered_count: acc.delivered_count + (pkg.status === 'delivered' ? 1 : 0),
-              }),
+              (acc, pkg) => {
+                // Agrupar montos por moneda
+                if (pkg.amount_to_collect && pkg.amount_to_collect > 0) {
+                  const currency = pkg.currency || 'COP'; // Usar COP como fallback
+                  amountsByCurrency[currency] = (amountsByCurrency[currency] || 0) + pkg.amount_to_collect;
+                  
+                  // Establecer la moneda principal (la primera que encontremos con monto)
+                  if (!primaryCurrency) {
+                    primaryCurrency = currency;
+                  }
+                }
+
+                return {
+                  total_packages: acc.total_packages + 1,
+                  total_weight: acc.total_weight + (pkg.weight || 0),
+                  total_freight: acc.total_freight + (pkg.freight || 0),
+                  total_amount_to_collect: acc.total_amount_to_collect + (pkg.amount_to_collect || 0),
+                  pending_count: acc.pending_count + (pkg.status !== 'delivered' ? 1 : 0),
+                  delivered_count: acc.delivered_count + (pkg.status === 'delivered' ? 1 : 0),
+                };
+              },
               {
                 total_packages: 0,
                 total_weight: 0,
@@ -103,6 +124,7 @@ export function useDispatchRelations(selectedDate?: Date) {
             );
 
             console.log(`📊 Calculated totals for dispatch ${dispatch.id}:`, totals);
+            console.log(`💰 Amounts by currency for dispatch ${dispatch.id}:`, amountsByCurrency);
 
             // Determinar el estado del despacho
             let status = 'pending';
@@ -116,13 +138,15 @@ export function useDispatchRelations(selectedDate?: Date) {
               ...dispatch,
               status,
               ...totals,
+              amounts_by_currency: amountsByCurrency,
+              primary_currency: primaryCurrency,
               created_at: dispatch.created_at || new Date().toISOString(),
               updated_at: dispatch.updated_at || new Date().toISOString()
             };
           })
         );
 
-        console.log('✅ Dispatches with calculated totals:', dispatchesWithTotals);
+        console.log('✅ Dispatches with calculated totals and currency info:', dispatchesWithTotals);
         return dispatchesWithTotals;
       } catch (error) {
         console.error('❌ Error in useDispatchRelations:', error);

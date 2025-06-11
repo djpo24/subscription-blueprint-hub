@@ -1,26 +1,25 @@
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './use-toast';
+import type { NotificationLogEntry } from '@/types/supabase-temp';
 
 export function useNotifications() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSendingTest, setIsSendingTest] = useState(false);
-  const [isManualSending, setIsManualSending] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: notificationLog = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ['notifications'],
-    queryFn: async () => {
+    queryFn: async (): Promise<NotificationLogEntry[]> => {
       console.log('🔍 Fetching notifications...');
       
       try {
+        // Use the specific foreign key relationship to avoid ambiguity
         const { data, error } = await supabase
           .from('notification_log')
           .select(`
             *,
-            customers!customer_id (
+            customers!fk_notification_log_customer (
               name,
               phone,
               whatsapp_number
@@ -40,7 +39,19 @@ export function useNotifications() {
           throw error;
         }
 
-        return data || [];
+        return (data || []).map(notification => ({
+          id: notification.id,
+          customer_id: notification.customer_id,
+          package_id: notification.package_id,
+          message: notification.message,
+          status: notification.status,
+          created_at: notification.created_at,
+          sent_at: notification.sent_at,
+          notification_type: notification.notification_type || 'manual',
+          error_message: notification.error_message || undefined,
+          customers: notification.customers,
+          packages: notification.packages
+        }));
       } catch (error) {
         console.error('❌ Error in useNotifications:', error);
         return [];
@@ -49,80 +60,87 @@ export function useNotifications() {
     refetchInterval: 30000,
   });
 
-  const processNotifications = async () => {
-    setIsProcessing(true);
-    try {
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Notificaciones procesadas",
-        description: "Se han procesado todas las notificaciones pendientes",
-      });
-    } catch (error) {
-      console.error('❌ Error processing notifications:', error);
-      toast({
-        title: "Error",
-        description: "Error al procesar las notificaciones",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const sendManualNotification = useMutation({
+    mutationFn: async ({ customerId, packageId, message, phone, imageUrl }: {
+      customerId: string;
+      packageId?: string;
+      message: string;
+      phone: string;
+      imageUrl?: string;
+    }) => {
+      console.log('📤 Sending manual notification...', { customerId, packageId, message, phone, imageUrl });
 
-  const sendTestNotification = async (params: { phone: string; message: string }) => {
-    setIsSendingTest(true);
-    try {
-      // Simulate sending test notification
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Notificación de prueba enviada",
-        description: `Mensaje enviado a ${params.phone}`,
-      });
-    } catch (error) {
-      console.error('❌ Error sending test notification:', error);
-      toast({
-        title: "Error",
-        description: "Error al enviar la notificación de prueba",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSendingTest(false);
-    }
-  };
+      // Create notification log entry
+      const { data: notificationData, error: logError } = await supabase
+        .from('notification_log')
+        .insert({
+          customer_id: customerId,
+          package_id: packageId || null,
+          notification_type: 'manual',
+          message: message,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-  const sendManualNotification = async (params: { customerId: string; message: string }) => {
-    setIsManualSending(true);
-    try {
-      // Simulate sending manual notification
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Notificación manual enviada",
-        description: "El mensaje se ha enviado correctamente",
+      if (logError) {
+        console.error('❌ Error creating notification log:', logError);
+        throw new Error(`Error al crear registro de notificación: ${logError.message}`);
+      }
+
+      console.log('✅ Notification log created:', notificationData);
+
+      // Send WhatsApp message
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          notificationId: notificationData.id,
+          phone: phone,
+          message: message,
+          imageUrl: imageUrl,
+          customerId: customerId
+        }
       });
-    } catch (error) {
+
+      if (functionError) {
+        console.error('❌ Error sending WhatsApp message:', functionError);
+        throw new Error(`Error enviando mensaje: ${functionError.message}`);
+      }
+
+      if (!responseData?.success) {
+        const errorMsg = responseData?.error || 'Error desconocido';
+        console.error('❌ WhatsApp API error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log('✅ Manual notification sent successfully');
+      return responseData;
+    },
+    onSuccess: () => {
+      toast({
+        title: "✅ Mensaje enviado",
+        description: "El mensaje se envió correctamente por WhatsApp",
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error: any) => {
       console.error('❌ Error sending manual notification:', error);
+      const userFriendlyMessage = error.message.includes('Token de WhatsApp') 
+        ? error.message 
+        : `Error al enviar mensaje: ${error.message}`;
+      
       toast({
-        title: "Error",
-        description: "Error al enviar la notificación manual",
+        title: "❌ Error al enviar mensaje",
+        description: userFriendlyMessage,
         variant: "destructive"
       });
-    } finally {
-      setIsManualSending(false);
     }
-  };
+  });
 
   return {
-    notificationLog,
+    notifications,
     isLoading,
-    processNotifications,
-    sendTestNotification,
-    sendManualNotification,
-    isProcessing,
-    isSendingTest,
-    isManualSending
+    error,
+    sendManualNotification: sendManualNotification.mutate,
+    isManualSending: sendManualNotification.isPending
   };
 }

@@ -25,32 +25,54 @@ serve(async (req) => {
       customerId 
     } = await req.json()
 
+    console.log('📱 Starting WhatsApp notification send...', { 
+      notificationId, 
+      phone, 
+      message: message?.substring(0, 50) + '...', 
+      useTemplate,
+      templateName,
+      customerId
+    });
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get WhatsApp API credentials from secrets
-    const whatsappToken = Deno.env.get('META_WHATSAPP_TOKEN')
-    const phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID')
+    // Get WhatsApp API credentials from app_secrets table
+    console.log('🔑 Retrieving WhatsApp credentials from app_secrets...');
+    
+    let whatsappToken, phoneNumberId;
 
-    if (!whatsappToken || !phoneNumberId) {
-      console.error('Missing WhatsApp API credentials')
-      throw new Error('WhatsApp API credentials not configured')
+    try {
+      const { data: tokenData } = await supabaseClient.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_TOKEN' });
+      const { data: phoneData } = await supabaseClient.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' });
+
+      whatsappToken = tokenData;
+      phoneNumberId = phoneData;
+
+      console.log('🔑 Credentials retrieved:', {
+        tokenExists: !!whatsappToken,
+        phoneIdExists: !!phoneNumberId
+      });
+    } catch (error) {
+      console.error('❌ Error retrieving credentials from app_secrets:', error);
+      
+      // Fallback to environment variables
+      whatsappToken = Deno.env.get('META_WHATSAPP_TOKEN');
+      phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
+      
+      console.log('🔄 Using fallback environment variables:', {
+        tokenExists: !!whatsappToken,
+        phoneIdExists: !!phoneNumberId
+      });
     }
 
-    console.log('Enviando notificación WhatsApp:', { 
-      notificationId, 
-      phone, 
-      message, 
-      imageUrl,
-      useTemplate, 
-      templateName, 
-      templateLanguage,
-      templateParameters,
-      customerId
-    })
+    if (!whatsappToken || !phoneNumberId) {
+      console.error('❌ Missing WhatsApp API credentials');
+      throw new Error('WhatsApp API credentials not configured')
+    }
 
     // Clean phone number (remove spaces, dashes, etc.)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
@@ -70,7 +92,7 @@ serve(async (req) => {
     // Remove the '+' for the API call
     const apiPhone = formattedPhone.replace('+', '')
 
-    console.log('Teléfono formateado:', { original: phone, formatted: apiPhone })
+    console.log('📞 Phone formatting:', { original: phone, formatted: apiPhone })
 
     // AUTO-DETECT: Check if we need to use a template
     let shouldUseTemplate = useTemplate
@@ -91,21 +113,21 @@ serve(async (req) => {
         const now = new Date()
         const hoursSinceLastInteraction = (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60)
 
-        console.log('Última interacción hace:', hoursSinceLastInteraction, 'horas')
+        console.log('⏰ Last interaction was:', hoursSinceLastInteraction, 'hours ago')
 
         // If more than 24 hours, we need to use a template
         if (hoursSinceLastInteraction > 24) {
           shouldUseTemplate = true
           autoSelectedTemplate = 'customer_service_followup'
           autoSelectedLanguage = 'es_CO'
-          console.log('🔄 Auto-seleccionando plantilla por regla de 24 horas')
+          console.log('🔄 Auto-selecting template due to 24-hour rule')
         }
       } else {
         // No previous interaction found, use template for first contact
         shouldUseTemplate = true
         autoSelectedTemplate = 'customer_service_hello'
         autoSelectedLanguage = 'es_CO'
-        console.log('🔄 Auto-seleccionando plantilla para primer contacto')
+        console.log('🔄 Auto-selecting template for first contact')
       }
     }
 
@@ -128,7 +150,7 @@ serve(async (req) => {
 
       // Add parameters for specific templates
       if (autoSelectedTemplate === 'package_arrival_notification' && templateParameters) {
-        // Obtener dirección del destino si no se proporcionó
+        // Get destination address if not provided
         let address = templateParameters.address || 'nuestras oficinas'
         
         if (!templateParameters.address && templateParameters.destination) {
@@ -137,14 +159,14 @@ serve(async (req) => {
             .select('address')
             .ilike('city', templateParameters.destination)
             .limit(1)
-            .single()
+            .maybeSingle()
           
           if (destinationAddress) {
             address = destinationAddress.address
           }
         }
 
-        // Validar y usar parámetros con valores por defecto seguros
+        // Validate and use parameters with safe defaults
         const customerName = templateParameters.customerName || 'Cliente'
         const trackingNumber = templateParameters.trackingNumber || 'N/A'
         const destination = templateParameters.destination || 'destino'
@@ -165,14 +187,7 @@ serve(async (req) => {
           }
         ]
 
-        console.log('✅ Parámetros de plantilla package_arrival_notification configurados:', {
-          customerName,
-          trackingNumber,
-          destination,
-          address,
-          currency,
-          amount
-        })
+        console.log('✅ Package arrival template parameters configured')
       } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
         const customerName = templateParameters.customerName || 'Cliente'
         templatePayload.template.components = [
@@ -198,8 +213,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('Usando plantilla de WhatsApp:', autoSelectedTemplate, 'con idioma:', autoSelectedLanguage)
-      console.log('Payload completo:', JSON.stringify(whatsappPayload, null, 2))
+      console.log('📋 Using WhatsApp template:', autoSelectedTemplate)
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -211,7 +225,7 @@ serve(async (req) => {
           caption: message || ''
         }
       }
-      console.log('Enviando imagen con WhatsApp:', imageUrl)
+      console.log('🖼️ Sending image message')
     } else {
       // Use regular text message
       whatsappPayload = {
@@ -222,10 +236,10 @@ serve(async (req) => {
           body: message
         }
       }
-      console.log('Usando mensaje de texto regular')
+      console.log('💬 Sending text message')
     }
 
-    console.log('Payload final para WhatsApp API:', JSON.stringify(whatsappPayload, null, 2))
+    console.log('📤 Final WhatsApp payload prepared')
 
     // Send message via WhatsApp Business API
     const whatsappResponse = await fetch(
@@ -241,7 +255,11 @@ serve(async (req) => {
     )
 
     const whatsappResult = await whatsappResponse.json()
-    console.log('Respuesta de WhatsApp API:', whatsappResult)
+    console.log('📱 WhatsApp API response:', { 
+      status: whatsappResponse.status, 
+      ok: whatsappResponse.ok,
+      hasMessages: !!whatsappResult.messages 
+    })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
       // Update notification status to sent
@@ -254,11 +272,10 @@ serve(async (req) => {
         .eq('id', notificationId)
 
       if (updateError) {
-        console.error('Error updating notification status:', updateError)
-        throw updateError
+        console.error('❌ Error updating notification status:', updateError)
       }
 
-      console.log('Notificación enviada exitosamente:', notificationId)
+      console.log('✅ WhatsApp message sent successfully')
 
       return new Response(
         JSON.stringify({ 
@@ -277,14 +294,14 @@ serve(async (req) => {
     } else {
       // Handle WhatsApp API error
       const errorMessage = whatsappResult.error?.message || 'Error enviando mensaje WhatsApp'
-      console.error('Error de WhatsApp API:', whatsappResult)
+      console.error('❌ WhatsApp API error:', whatsappResult)
 
       // Check if it's a 24-hour window error
       if (whatsappResult.error?.code === 131047 || 
           (whatsappResult.error?.error_data?.details && 
            whatsappResult.error.error_data.details.includes('24 hours'))) {
         
-        console.log('🔄 Error de ventana de 24 horas detectado, reintentando con plantilla...')
+        console.log('🔄 24-hour window error detected, retrying with template...')
         
         // Retry with template if we haven't already
         if (!shouldUseTemplate) {
@@ -324,7 +341,7 @@ serve(async (req) => {
           )
 
           const retryResult = await retryResponse.json()
-          console.log('Respuesta del reintento con plantilla:', retryResult)
+          console.log('🔄 Template retry response:', retryResponse.status, retryResponse.ok)
 
           if (retryResponse.ok && retryResult.messages) {
             await supabaseClient
@@ -378,7 +395,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error en send-whatsapp-notification:', error)
+    console.error('❌ Error in send-whatsapp-notification:', error)
     
     return new Response(
       JSON.stringify({ error: error.message }),

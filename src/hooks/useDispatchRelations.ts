@@ -1,51 +1,40 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDateForQuery } from '@/utils/dateUtils';
-import type { DispatchRelation } from '@/types/dispatch';
+import type { DispatchRelation } from '@/types/supabase-temp';
 
-export function useDispatchRelations(date?: Date) {
+export function useDispatchRelations() {
   return useQuery({
-    queryKey: ['dispatch-relations', date ? formatDateForQuery(date) : 'all'],
+    queryKey: ['dispatch-relations'],
     queryFn: async (): Promise<DispatchRelation[]> => {
-      console.log('🔍 Fecha recibida en useDispatchRelations:', date);
-      console.log('🔍 Fecha original (getDate):', date ? date.getDate() : 'undefined');
-      console.log('🔍 Fecha original (getMonth):', date ? date.getMonth() + 1 : 'undefined');
-      console.log('🔍 Fecha original (getFullYear):', date ? date.getFullYear() : 'undefined');
+      console.log('🔍 Fetching dispatch relations...');
       
-      let query = supabase
-        .from('dispatch_relations')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('dispatch_relations')
+          .select('*')
+          .order('dispatch_date', { ascending: false });
 
-      if (date) {
-        const formattedDate = formatDateForQuery(date);
-        console.log('📅 Fecha formateada para consulta (nueva función):', formattedDate);
-        query = query.eq('dispatch_date', formattedDate);
-      }
+        if (error) {
+          console.error('❌ Error fetching dispatch relations:', error);
+          throw error;
+        }
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('❌ Error en consulta de despachos:', error);
-        throw error;
+        // Transform data to include calculated fields
+        return (data || []).map(dispatch => ({
+          ...dispatch,
+          total_packages: 0,
+          total_weight: 0,
+          total_freight: 0,
+          total_amount_to_collect: 0,
+          pending_count: 0,
+          delivered_count: 0
+        }));
+      } catch (error) {
+        console.error('❌ Error in useDispatchRelations:', error);
+        return [];
       }
-      
-      console.log('📦 Despachos encontrados:', data);
-      console.log('📊 Número de despachos:', data?.length || 0);
-      
-      if (data && data.length > 0) {
-        console.log('🗓️ Fechas de despacho en los datos:', data.map(d => d.dispatch_date));
-      }
-      
-      return data || [];
     },
-    refetchOnWindowFocus: true,
-    refetchInterval: 15000, // Refetch cada 15 segundos para despachos
-    staleTime: 3000 // Los datos se consideran obsoletos después de 3 segundos
+    refetchInterval: 30000,
   });
 }
-
-// Re-export the other hooks for convenience
-export { useDispatchPackages } from './useDispatchPackages';
-export { useCreateDispatch } from './useCreateDispatch';

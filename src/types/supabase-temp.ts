@@ -32,6 +32,11 @@ export interface Package {
   delivered_by?: string;
   created_at?: string;
   updated_at?: string;
+  customers?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 export interface IncomingMessage {
@@ -42,7 +47,7 @@ export interface IncomingMessage {
   message_type?: string;
   timestamp?: string;
   whatsapp_message_id?: string;
-  media_url?: string; // Added missing field
+  media_url?: string;
   customers?: {
     name: string;
   };
@@ -87,12 +92,12 @@ export interface NotificationLog {
 
 export interface UserProfile {
   id: string;
-  user_id: string; // Made required to match actual usage
+  user_id: string;
   email: string;
   first_name: string;
   last_name: string;
-  phone: string; // Made required to match the interface expectation
-  role?: string;
+  phone: string;
+  role?: 'admin' | 'employee' | 'traveler';
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -140,6 +145,12 @@ export interface DispatchRelation {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  total_packages?: number;
+  total_weight?: number;
+  total_freight?: number;
+  total_amount_to_collect?: number;
+  pending_count?: number;
+  delivered_count?: number;
 }
 
 export interface DispatchPackage {
@@ -192,6 +203,28 @@ export interface CustomerPayment {
       name: string;
       phone: string;
     };
+  };
+}
+
+// Types for hooks that query non-existent tables or columns
+export interface PendingNotification {
+  id: string;
+  customer_id: string;
+  package_id: string;
+  message: string;
+  status: string;
+  created_at: string;
+  sent_at?: string;
+  customers: {
+    name: string;
+    phone: string;
+    whatsapp_number?: string;
+  };
+  packages: {
+    tracking_number: string;
+    destination: string;
+    amount_to_collect: number;
+    currency: string;
   };
 }
 

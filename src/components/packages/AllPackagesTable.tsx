@@ -133,7 +133,7 @@ export function AllPackagesTable() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{pkg.customers?.name || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{pkg.customers?.phone || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{pkg.customers?.phone || pkg.customers?.email || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -198,15 +198,15 @@ export function AllPackagesTable() {
         <>
           <PackageLabelDialog
             package={selectedPackage}
-            isOpen={isLabelDialogOpen}
+            open={isLabelDialogOpen}
             onClose={() => {
               setIsLabelDialogOpen(false);
               setSelectedPackageId(null);
             }}
           />
           <PackageDialog
-            package={selectedPackage}
-            isOpen={isDetailsDialogOpen}
+            pkg={selectedPackage}
+            open={isDetailsDialogOpen}
             onClose={() => {
               setIsDetailsDialogOpen(false);
               setSelectedPackageId(null);
@@ -214,7 +214,7 @@ export function AllPackagesTable() {
           />
           <EditPackageDialog
             package={selectedPackage}
-            isOpen={isEditDialogOpen}
+            open={isEditDialogOpen}
             onClose={() => {
               setIsEditDialogOpen(false);
               setSelectedPackageId(null);

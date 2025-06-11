@@ -1,5 +1,5 @@
 
-import type { Currency } from '@/types/supabase-temp';
+export type Currency = 'COP' | 'AWG';
 
 export const formatCurrency = (amount: number, currency: Currency = 'COP'): string => {
   const formatters = {

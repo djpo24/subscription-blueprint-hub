@@ -2,6 +2,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Package, Weight, Truck, DollarSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatWeight, formatAmountToCollect } from '@/utils/formatters';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 interface DispatchSummaryCardsProps {
   packageCount: number;
@@ -18,14 +20,13 @@ export function DispatchSummaryCards({
 }: DispatchSummaryCardsProps) {
   const isMobile = useIsMobile();
 
-  const formatCurrency = (value: number | null | undefined) => {
-    if (!value) return '$0';
-    return `$${value.toLocaleString('es-CO')}`;
+  const formatFreightValue = (freight: number) => {
+    if (!freight) return '$0';
+    return `$${formatNumberWithThousandsSeparator(freight)}`;
   };
 
-  const formatWeight = (weight: number) => {
-    // Formatear peso con máximo 1 decimal, eliminando decimales innecesarios
-    return parseFloat(weight.toFixed(1)).toString();
+  const formatAmountToCollectValue = (amount: number) => {
+    return formatAmountToCollect(amount, 'COP');
   };
 
   return (
@@ -59,7 +60,7 @@ export function DispatchSummaryCards({
           <div className="flex items-center gap-2">
             <Truck className="h-4 w-4 text-orange-500" />
             <div>
-              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold`}>{formatCurrency(totalFreight)}</div>
+              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold`}>{formatFreightValue(totalFreight)}</div>
               <div className="text-xs text-gray-600">Flete Total</div>
             </div>
           </div>
@@ -71,7 +72,7 @@ export function DispatchSummaryCards({
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" />
             <div>
-              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-700`}>{formatCurrency(totalAmountToCollect)}</div>
+              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-700`}>{formatAmountToCollectValue(totalAmountToCollect)}</div>
               <div className="text-xs text-gray-600">A Cobrar</div>
             </div>
           </div>

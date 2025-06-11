@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,6 +101,21 @@ export function AllPackagesTable() {
       created_at: pkg.created_at || new Date().toISOString(),
       trip_id: pkg.trip_id,
       customers: pkg.customers
+    };
+  };
+
+  // Transform package data for components that expect strict Package type
+  const getTypedPackageForActions = (pkg: any) => {
+    return {
+      ...pkg,
+      currency: parseCurrencyString(pkg.currency),
+      tracking_number: pkg.tracking_number || '',
+      customer_id: pkg.customer_id || '',
+      description: pkg.description || '',
+      status: pkg.status || 'pending',
+      origin: pkg.origin || '',
+      destination: pkg.destination || '',
+      created_at: pkg.created_at || new Date().toISOString()
     };
   };
 
@@ -221,7 +237,7 @@ export function AllPackagesTable() {
                           </DropdownMenu>
                         ) : (
                           <PackageActionsDropdown 
-                            package={pkg} 
+                            package={getTypedPackageForActions(pkg)} 
                             onAction={(action) => handleAction(action, pkg.id)}
                           />
                         )}

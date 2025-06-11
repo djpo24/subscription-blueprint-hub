@@ -19,6 +19,8 @@ export function useUserProfiles() {
   return useQuery({
     queryKey: ['user-profiles'],
     queryFn: async (): Promise<UserProfile[]> => {
+      console.log('Fetching user profiles...');
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -28,6 +30,8 @@ export function useUserProfiles() {
         console.error('Error fetching user profiles:', error);
         throw error;
       }
+
+      console.log('User profiles fetched successfully:', data?.length || 0, 'records');
 
       // Transform the data to ensure all required fields are present and properly typed
       return (data || []).map(profile => ({

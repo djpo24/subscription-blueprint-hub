@@ -14,6 +14,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Create user function called');
+
     // Create a Supabase client with service role key
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -34,11 +36,14 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     
     if (userError || !user) {
+      console.error('Authentication failed:', userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('Authenticated user:', user.email);
 
     // Check if the current user has admin or employee role
     const { data: userProfile, error: profileError } = await supabaseAdmin
@@ -47,7 +52,10 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
+    console.log('User profile check:', userProfile, profileError);
+
     if (profileError || !userProfile || !userProfile.is_active || !['admin', 'employee'].includes(userProfile.role)) {
+      console.error('Insufficient permissions for user:', user.email, 'Profile:', userProfile);
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -57,7 +65,7 @@ serve(async (req) => {
     // Parse request body
     const { email, password, first_name, last_name, phone, role } = await req.json()
 
-    console.log('Creating user with role:', role)
+    console.log('Creating user with role:', role, 'email:', email);
 
     // Create user with admin client
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -78,6 +86,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('Auth user created successfully:', authData.user.id);
+
     // Create user profile
     const { error: profileCreateError } = await supabaseAdmin
       .from('user_profiles')
@@ -88,19 +98,21 @@ serve(async (req) => {
         last_name: last_name,
         phone: phone || null,
         role: role,
-        created_by: user.id
+        is_active: true
       })
 
     if (profileCreateError) {
       // If profile creation fails, we should clean up the auth user
+      console.error('Error creating user profile:', profileCreateError);
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       
-      console.error('Error creating user profile:', profileCreateError)
       return new Response(
-        JSON.stringify({ error: 'Failed to create user profile' }),
+        JSON.stringify({ error: 'Failed to create user profile: ' + profileCreateError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('User profile created successfully');
 
     // If the user role is 'traveler', automatically create a traveler record linked to the user
     if (role === 'traveler') {
@@ -141,7 +153,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in create-user function:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error: ' + error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

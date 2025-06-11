@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Plus, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Plus, Edit, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import type { DestinationAddress } from '@/types/supabase-temp';
 
 export function DestinationAddressesManager() {
@@ -20,19 +20,22 @@ export function DestinationAddressesManager() {
   const queryClient = useQueryClient();
 
   // Fetch destination addresses
-  const { data: addresses = [], isLoading } = useQuery({
+  const { data: addresses = [], isLoading, error } = useQuery({
     queryKey: ['destination-addresses'],
     queryFn: async (): Promise<DestinationAddress[]> => {
+      console.log('🔍 Fetching destination addresses...');
+      
       const { data, error } = await supabase
         .from('destination_addresses')
         .select('*')
         .order('city');
 
       if (error) {
-        console.error('Error fetching destination addresses:', error);
+        console.error('❌ Error fetching destination addresses:', error);
         throw error;
       }
 
+      console.log('✅ Destination addresses fetched:', data?.length || 0, 'addresses');
       return (data || []) as DestinationAddress[];
     }
   });
@@ -40,11 +43,18 @@ export function DestinationAddressesManager() {
   // Add new address
   const addAddressMutation = useMutation({
     mutationFn: async ({ city, address }: { city: string; address: string }) => {
+      console.log('➕ Adding new destination address:', { city, address });
+      
       const { error } = await supabase
         .from('destination_addresses')
         .insert({ city, address });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error adding destination address:', error);
+        throw error;
+      }
+      
+      console.log('✅ Destination address added successfully');
     },
     onSuccess: () => {
       toast({
@@ -57,6 +67,7 @@ export function DestinationAddressesManager() {
       setEditAddress('');
     },
     onError: (error: any) => {
+      console.error('❌ Mutation error adding address:', error);
       toast({
         title: "❌ Error agregando dirección",
         description: error.message,
@@ -68,12 +79,19 @@ export function DestinationAddressesManager() {
   // Update address
   const updateAddressMutation = useMutation({
     mutationFn: async ({ id, city, address }: { id: string; city: string; address: string }) => {
+      console.log('✏️ Updating destination address:', { id, city, address });
+      
       const { error } = await supabase
         .from('destination_addresses')
         .update({ city, address, updated_at: new Date().toISOString() })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error updating destination address:', error);
+        throw error;
+      }
+      
+      console.log('✅ Destination address updated successfully');
     },
     onSuccess: () => {
       toast({
@@ -86,6 +104,7 @@ export function DestinationAddressesManager() {
       setEditAddress('');
     },
     onError: (error: any) => {
+      console.error('❌ Mutation error updating address:', error);
       toast({
         title: "❌ Error actualizando dirección",
         description: error.message,
@@ -97,12 +116,19 @@ export function DestinationAddressesManager() {
   // Delete address
   const deleteAddressMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('🗑️ Deleting destination address:', id);
+      
       const { error } = await supabase
         .from('destination_addresses')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error deleting destination address:', error);
+        throw error;
+      }
+      
+      console.log('✅ Destination address deleted successfully');
     },
     onSuccess: () => {
       toast({
@@ -112,6 +138,7 @@ export function DestinationAddressesManager() {
       queryClient.invalidateQueries({ queryKey: ['destination-addresses'] });
     },
     onError: (error: any) => {
+      console.error('❌ Mutation error deleting address:', error);
       toast({
         title: "❌ Error eliminando dirección",
         description: error.message,
@@ -145,10 +172,29 @@ export function DestinationAddressesManager() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Direcciones de Destino</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Direcciones de Destino
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-gray-500">Cargando direcciones...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-50 border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="h-5 w-5" />
+            Error al cargar direcciones
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-600">No se pudieron cargar las direcciones de destino.</p>
         </CardContent>
       </Card>
     );
@@ -160,13 +206,29 @@ export function DestinationAddressesManager() {
         <CardTitle className="flex items-center gap-2 text-green-800">
           <MapPin className="h-5 w-5" />
           Direcciones de Destino
+          {addresses.length > 0 && (
+            <Badge variant="outline" className="bg-green-100 text-green-700">
+              {addresses.length} configuradas
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription className="text-green-600">
-          Administra las direcciones que se incluyen en las notificaciones de llegada
+          Administra las direcciones que se incluyen en las notificaciones automáticas de llegada.
+          {addresses.length === 0 && " Agrega al menos una dirección para activar las notificaciones automáticas."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Status indicator */}
+          {addresses.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-green-100 border border-green-200 rounded">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-700 font-medium">
+                Las notificaciones automáticas están activas con direcciones específicas
+              </span>
+            </div>
+          )}
+
           {/* Add button */}
           {!isAdding && !isEditing && (
             <Button
@@ -194,13 +256,16 @@ export function DestinationAddressesManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Dirección</label>
+                  <label className="block text-sm font-medium mb-1">Dirección Específica</label>
                   <Textarea
                     value={editAddress}
                     onChange={(e) => setEditAddress(e.target.value)}
-                    placeholder="Ej: Calle 45B # 22 -124"
+                    placeholder="Ej: Calle 45B # 22 -124, Local 101, Centro Comercial"
                     rows={2}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Esta dirección aparecerá en las notificaciones de WhatsApp enviadas a los clientes
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -230,13 +295,16 @@ export function DestinationAddressesManager() {
                 key={address.id}
                 className="p-3 bg-white rounded border border-green-200 flex items-start justify-between"
               >
-                <div className="space-y-1">
+                <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-green-100 text-green-700">
                       {address.city}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-700">{address.address}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{address.address}</p>
+                  <p className="text-xs text-gray-500">
+                    Actualizada: {new Date(address.updated_at).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -263,11 +331,14 @@ export function DestinationAddressesManager() {
           </div>
 
           {addresses.length === 0 && !isAdding && (
-            <div className="text-center py-6">
-              <MapPin className="h-12 w-12 mx-auto text-green-300 mb-3" />
-              <p className="text-green-600 font-medium">No hay direcciones configuradas</p>
-              <p className="text-green-500 text-sm">
-                Agrega direcciones para incluirlas en las notificaciones automáticas
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-orange-300 mb-3" />
+              <p className="text-orange-600 font-medium">No hay direcciones configuradas</p>
+              <p className="text-orange-500 text-sm">
+                Las notificaciones automáticas usarán direcciones genéricas hasta que agregues direcciones específicas
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Agrega direcciones para mejorar la experiencia del cliente con información precisa de ubicación
               </p>
             </div>
           )}

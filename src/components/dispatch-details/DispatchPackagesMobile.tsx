@@ -7,9 +7,10 @@ import type { PackageInDispatch } from '@/types/dispatch';
 interface DispatchPackagesMobileProps {
   packages: PackageInDispatch[];
   onDeliverPackage: (pkg: PackageInDispatch) => void;
+  onPackageClick: (pkg: PackageInDispatch) => void;
 }
 
-export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchPackagesMobileProps) {
+export function DispatchPackagesMobile({ packages, onDeliverPackage, onPackageClick }: DispatchPackagesMobileProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -63,7 +64,11 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchP
   return (
     <div className="space-y-3">
       {packages.map((pkg) => (
-        <Card key={pkg.id} className="border border-gray-200">
+        <Card 
+          key={pkg.id} 
+          className="border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onPackageClick(pkg)}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -127,7 +132,10 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchP
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onDeliverPackage(pkg)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Evitar que se abra el dialog de info
+                  onDeliverPackage(pkg);
+                }}
                 className="w-full flex items-center gap-2 mt-3"
               >
                 <Truck className="h-3 w-3" />

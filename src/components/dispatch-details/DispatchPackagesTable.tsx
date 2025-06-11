@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, Truck, MapPin, User, Weight, DollarSign } from 'lucide-react';
 import type { PackageInDispatch } from '@/types/dispatch';
 import { DeliverPackageDialog } from './DeliverPackageDialog';
+import { PackageInfoDialog } from './PackageInfoDialog';
 import { DispatchPackagesMobile } from './DispatchPackagesMobile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatAmountToCollectWithCurrency, parseCurrencyString, type Currency } from '@/utils/currencyFormatter';
@@ -16,6 +18,7 @@ interface DispatchPackagesTableProps {
 export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<PackageInDispatch | null>(null);
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
   const isMobile = useIsMobile();
 
   const getStatusColor = (status: string) => {
@@ -66,6 +69,11 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
     setShowDeliveryDialog(true);
   };
 
+  const handlePackageClick = (pkg: PackageInDispatch) => {
+    setSelectedPackage(pkg);
+    setShowInfoDialog(true);
+  };
+
   if (packages.length === 0) {
     return (
       <div className="text-center py-12">
@@ -87,10 +95,16 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
         <DispatchPackagesMobile 
           packages={packages} 
           onDeliverPackage={handleDeliverPackage}
+          onPackageClick={handlePackageClick}
         />
         <DeliverPackageDialog
           open={showDeliveryDialog}
           onOpenChange={setShowDeliveryDialog}
+          package={selectedPackage}
+        />
+        <PackageInfoDialog
+          open={showInfoDialog}
+          onOpenChange={setShowInfoDialog}
           package={selectedPackage}
         />
       </>
@@ -117,7 +131,11 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
           </TableHeader>
           <TableBody>
             {packages.map((pkg) => (
-              <TableRow key={pkg.id}>
+              <TableRow 
+                key={pkg.id} 
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => handlePackageClick(pkg)}
+              >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-blue-500" />
@@ -172,7 +190,10 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeliverPackage(pkg)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Evitar que se abra el dialog de info
+                        handleDeliverPackage(pkg);
+                      }}
                       className="flex items-center gap-1"
                     >
                       <Truck className="h-3 w-3" />
@@ -189,6 +210,12 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
       <DeliverPackageDialog
         open={showDeliveryDialog}
         onOpenChange={setShowDeliveryDialog}
+        package={selectedPackage}
+      />
+
+      <PackageInfoDialog
+        open={showInfoDialog}
+        onOpenChange={setShowInfoDialog}
         package={selectedPackage}
       />
     </>

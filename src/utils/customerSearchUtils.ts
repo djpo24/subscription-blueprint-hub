@@ -27,5 +27,10 @@ export const formatPhoneForDisplay = (phone: string): string => {
   return phone;
 };
 
+// Helper function to check if ID number is valid (not empty)
+export const isValidIdNumber = (idNumber: string | null): boolean => {
+  return !!(idNumber && idNumber.trim() !== '');
+};
+
 // Re-export for convenience
 export { formatPhoneNumber, formatNumber };

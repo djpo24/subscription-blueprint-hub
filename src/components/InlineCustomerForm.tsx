@@ -51,11 +51,11 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
 
       const customerData = {
         name: fullName,
-        email: formData.email.trim() || '', // Solo usar el email si se proporcionó, sino dejar en blanco
+        email: formData.email.trim() || '', // Permitir email vacío
         phone: fullPhone,
         whatsapp_number: null,
         address: formData.address || null,
-        id_number: formData.idNumber || null
+        id_number: formData.idNumber.trim() || null // Permitir id_number vacío
       };
 
       const { data, error } = await supabase
@@ -105,7 +105,8 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
   const handleIdNumberChange = useCallback(async (value: string) => {
     updateFormData('idNumber', value);
     
-    if (value.length >= 6) { // Validar cuando tenga al menos 6 dígitos
+    // Solo validar si se proporciona un ID number
+    if (value.trim() && value.length >= 6) {
       await checkCustomerByIdNumber(value);
     } else {
       clearValidationError();

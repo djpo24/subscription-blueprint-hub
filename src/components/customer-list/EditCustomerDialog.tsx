@@ -51,11 +51,11 @@ export function EditCustomerDialog({
   const [formData, setFormData] = useState<CustomerFormData>({
     firstName,
     lastName,
-    email: customer.email,
+    email: customer.email || '', // Manejar email vacío
     countryCode: initialCountryCode,
     phoneNumber: initialPhoneNumber,
     address: customer.address || '',
-    idNumber: customer.id_number || ''
+    idNumber: customer.id_number || '' // Manejar id_number vacío/null
   });
 
   const { 
@@ -89,9 +89,9 @@ export function EditCustomerDialog({
   const handleIdNumberChange = async (value: string) => {
     updateFormData('idNumber', value);
     
+    // Solo validar si se proporciona un ID y es diferente del actual
     if (value.length >= 6) {
-      // Only check if ID is different from current customer's ID
-      if (value !== customer.id_number) {
+      if (value !== (customer.id_number || '')) {
         await checkCustomerByIdNumber(value);
       } else {
         clearValidationError();
@@ -132,10 +132,10 @@ export function EditCustomerDialog({
         .from('customers')
         .update({
           name: fullName,
-          email: formData.email.trim() || '', // Solo usar el email si se proporcionó, sino dejar en blanco
+          email: formData.email.trim() || '', // Permitir email vacío
           phone: fullPhone,
           address: formData.address || null,
-          id_number: formData.idNumber || null
+          id_number: formData.idNumber.trim() || null // Permitir id_number vacío
         })
         .eq('id', customer.id);
 

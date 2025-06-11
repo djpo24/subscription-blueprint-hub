@@ -4,9 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Package, Weight, Calendar, Eye, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
 import { getStatusColor, getStatusLabel, formatCurrency, formatWeight } from './dispatchUtils';
 import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
+import { formatDispatchDate } from '@/utils/dateUtils';
 import { DeleteDispatchDialog } from './DeleteDispatchDialog';
 import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
 
@@ -62,7 +62,7 @@ export function DispatchesMobileView({ dispatches, onViewDispatch }: DispatchesM
   const handleDeleteClick = (dispatch: DispatchRelation) => {
     setSelectedDispatch({
       id: dispatch.id,
-      date: format(new Date(dispatch.dispatch_date), 'dd/MM/yyyy')
+      date: formatDispatchDate(dispatch.dispatch_date)
     });
     setDeleteDialogOpen(true);
   };
@@ -79,7 +79,7 @@ export function DispatchesMobileView({ dispatches, onViewDispatch }: DispatchesM
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="h-4 w-4 text-gray-500" />
                       <span className="font-medium text-sm">
-                        {format(new Date(dispatch.dispatch_date), 'dd/MM/yyyy')}
+                        {formatDispatchDate(dispatch.dispatch_date)}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">

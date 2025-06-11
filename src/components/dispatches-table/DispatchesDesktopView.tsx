@@ -4,9 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Truck, Package, Weight, DollarSign, Calendar, Eye, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
 import { getStatusColor, getStatusLabel, formatCurrency, formatWeight } from './dispatchUtils';
 import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
+import { formatDispatchDate } from '@/utils/dateUtils';
 import { DeleteDispatchDialog } from './DeleteDispatchDialog';
 import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
 
@@ -62,7 +62,7 @@ export function DispatchesDesktopView({ dispatches, onViewDispatch }: Dispatches
   const handleDeleteClick = (dispatch: DispatchRelation) => {
     setSelectedDispatch({
       id: dispatch.id,
-      date: format(new Date(dispatch.dispatch_date), 'dd/MM/yyyy')
+      date: formatDispatchDate(dispatch.dispatch_date)
     });
     setDeleteDialogOpen(true);
   };
@@ -88,7 +88,7 @@ export function DispatchesDesktopView({ dispatches, onViewDispatch }: Dispatches
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  {format(new Date(dispatch.dispatch_date), 'dd/MM/yyyy')}
+                  {formatDispatchDate(dispatch.dispatch_date)}
                 </div>
               </TableCell>
               <TableCell>

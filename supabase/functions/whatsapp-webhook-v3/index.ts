@@ -13,14 +13,23 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 Webhook V3 request received:', {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    })
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Use the same verify token as configured in Meta Developer Console
-    const verifyToken = 'ojitos_webhook_verify'
+    // Get verify token from app secrets
+    const { data: verifyTokenData } = await supabaseClient.rpc('get_app_secret', { 
+      secret_name: 'META_WHATSAPP_VERIFY_TOKEN' 
+    })
+    const verifyToken = verifyTokenData || 'ojitos_webhook_verify'
 
     if (req.method === 'GET') {
       // Webhook verification - Meta requires this
@@ -29,7 +38,7 @@ serve(async (req) => {
       const token = url.searchParams.get('hub.verify_token')
       const challenge = url.searchParams.get('hub.challenge')
 
-      console.log('Webhook V3 verification attempt:', { 
+      console.log('🔍 Webhook V3 verification attempt:', { 
         mode, 
         token, 
         challenge,
@@ -38,7 +47,7 @@ serve(async (req) => {
       })
 
       if (mode === 'subscribe' && token === verifyToken) {
-        console.log('Webhook V3 verified successfully')
+        console.log('✅ Webhook V3 verified successfully')
         return new Response(challenge, { 
           status: 200,
           headers: { 
@@ -47,7 +56,7 @@ serve(async (req) => {
           }
         })
       } else {
-        console.log('Webhook V3 verification failed - token mismatch')
+        console.log('❌ Webhook V3 verification failed - token mismatch')
         console.log(`Expected: ${verifyToken}, Received: ${token}`)
         return new Response('Forbidden', { 
           status: 403,
@@ -59,7 +68,7 @@ serve(async (req) => {
     if (req.method === 'POST') {
       // Handle webhook events
       const body = await req.json()
-      console.log('Webhook V3 received:', JSON.stringify(body, null, 2))
+      console.log('📨 Webhook V3 received POST:', JSON.stringify(body, null, 2))
 
       // Process webhook entries
       if (body.entry && Array.isArray(body.entry)) {
@@ -86,7 +95,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error in webhook V3:', error)
+    console.error('❌ Error in webhook V3:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
@@ -321,6 +330,11 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     video: video?.id
   })
 
+  // Get access token from app secrets
+  const { data: accessTokenData } = await supabaseClient.rpc('get_app_secret', { 
+    secret_name: 'META_WHATSAPP_TOKEN' 
+  })
+
   // Try to find customer by phone number with more flexible matching
   const { data: existingCustomers, error: customerError } = await supabaseClient
     .from('customers')
@@ -355,44 +369,32 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     
     case 'image':
       messageContent = image?.caption || ''
-      if (image?.id) {
-        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
-        if (accessToken) {
-          mediaUrl = await downloadWhatsAppMedia(image.id, accessToken)
-          console.log('Image media URL processed V3:', mediaUrl)
-        } else {
-          console.error('META_WHATSAPP_TOKEN not found for image download V3')
-        }
+      if (image?.id && accessTokenData) {
+        mediaUrl = await downloadWhatsAppMedia(image.id, accessTokenData)
+        console.log('Image media URL processed V3:', mediaUrl)
+      } else {
+        console.error('No access token found for image download V3')
       }
       break
     
     case 'document':
       messageContent = document?.caption || `📄 Documento: ${document?.filename || 'archivo'}`
-      if (document?.id) {
-        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
-        if (accessToken) {
-          mediaUrl = await downloadWhatsAppMedia(document.id, accessToken)
-        }
+      if (document?.id && accessTokenData) {
+        mediaUrl = await downloadWhatsAppMedia(document.id, accessTokenData)
       }
       break
     
     case 'audio':
       messageContent = '🎵 Mensaje de voz'
-      if (audio?.id) {
-        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
-        if (accessToken) {
-          mediaUrl = await downloadWhatsAppMedia(audio.id, accessToken)
-        }
+      if (audio?.id && accessTokenData) {
+        mediaUrl = await downloadWhatsAppMedia(audio.id, accessTokenData)
       }
       break
     
     case 'video':
       messageContent = video?.caption || '🎥 Video'
-      if (video?.id) {
-        const accessToken = Deno.env.get('META_WHATSAPP_TOKEN')
-        if (accessToken) {
-          mediaUrl = await downloadWhatsAppMedia(video.id, accessToken)
-        }
+      if (video?.id && accessTokenData) {
+        mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData)
       }
       break
     

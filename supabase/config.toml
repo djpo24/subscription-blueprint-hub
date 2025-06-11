@@ -1,1 +1,30 @@
+
 project_id = "tkwffswlgpzxyyuhdrrp"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[graphql]
+enabled = true
+port = 54329
+
+[inbound_email]
+enabled = false
+
+[db]
+port = 54322
+
+[functions.whatsapp-webhook-v3]
+verify_jwt = false
+
+[realtime]
+enabled = true
+port = 54323
+
+[studio]
+enabled = true
+port = 54324

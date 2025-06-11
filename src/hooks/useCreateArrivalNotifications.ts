@@ -124,7 +124,7 @@ export function useCreateArrivalNotifications() {
   });
 
   return {
-    createNotifications: notificationsMutation.mutate,
-    isCreating: notificationsMutation.isPending,
+    createNotifications: createNotificationsMutation.mutate,
+    isCreating: createNotificationsMutation.isPending,
   };
 }

@@ -34,7 +34,12 @@ export function useSentMessages() {
       }
       
       console.log('Sent messages fetched:', data?.length || 0);
-      return data || [];
+      
+      // Asegurar que el status sea del tipo correcto
+      return (data || []).map(msg => ({
+        ...msg,
+        status: (['pending', 'sent', 'failed'].includes(msg.status)) ? msg.status : 'sent'
+      })) as SentMessage[];
     },
     refetchInterval: 5000,
   });

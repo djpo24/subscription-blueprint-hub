@@ -3,12 +3,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
 
 interface CustomerAvatarProps {
-  name: string;
+  name?: string;
+  customerName?: string; // Agregar compatibilidad con ambos nombres
   profileImageUrl?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function CustomerAvatar({ name, profileImageUrl, size = 'md' }: CustomerAvatarProps) {
+export function CustomerAvatar({ 
+  name, 
+  customerName, 
+  profileImageUrl, 
+  size = 'md' 
+}: CustomerAvatarProps) {
+  // Usar customerName si está disponible, si no usar name
+  const displayName = customerName || name || 'Cliente';
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -29,12 +38,12 @@ export function CustomerAvatar({ name, profileImageUrl, size = 'md' }: CustomerA
       {profileImageUrl && (
         <AvatarImage 
           src={profileImageUrl} 
-          alt={name}
+          alt={displayName}
           className="object-cover"
         />
       )}
       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-        {name ? getInitials(name) : <User className="h-4 w-4" />}
+        {displayName ? getInitials(displayName) : <User className="h-4 w-4" />}
       </AvatarFallback>
     </Avatar>
   );

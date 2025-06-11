@@ -39,7 +39,10 @@ export function IncomingMessages() {
         message_content: msg.message_content,
         media_url: msg.media_url,
         timestamp: msg.timestamp,
-        customers: msg.customers
+        customers: msg.customers ? {
+          name: msg.customers.name,
+          profile_image_url: msg.customers.profile_image_url || undefined
+        } : undefined
       }));
     },
     refetchInterval: 5000, // Refresh every 5 seconds
@@ -101,7 +104,7 @@ export function IncomingMessages() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <CustomerAvatar 
-                        name={message.customers?.name || 'Cliente Desconocido'}
+                        customerName={message.customers?.name || 'Cliente Desconocido'}
                         profileImageUrl={message.customers?.profile_image_url}
                         size="sm"
                       />

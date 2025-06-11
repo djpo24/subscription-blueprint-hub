@@ -58,7 +58,10 @@ export function useChatData(): ChatData {
           message_content: msg.message_content,
           media_url: msg.media_url,
           timestamp: msg.timestamp,
-          customers: msg.customers
+          customers: msg.customers ? {
+            name: msg.customers.name,
+            profile_image_url: msg.customers.profile_image_url || undefined
+          } : undefined
         }));
       } catch (error) {
         console.error('❌ Error in useChatData:', error);

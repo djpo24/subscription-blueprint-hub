@@ -2,21 +2,24 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Package, Weight, Truck, DollarSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatWeight, formatAmountToCollect } from '@/utils/formatters';
+import { formatWeight } from '@/utils/formatters';
 import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
+import { formatAmountToCollectWithCurrency, type Currency } from '@/utils/currencyFormatter';
 
 interface DispatchSummaryCardsProps {
   packageCount: number;
   totalWeight: number;
   totalFreight: number;
   totalAmountToCollect: number;
+  primaryCurrency?: Currency;
 }
 
 export function DispatchSummaryCards({
   packageCount,
   totalWeight,
   totalFreight,
-  totalAmountToCollect
+  totalAmountToCollect,
+  primaryCurrency = 'COP'
 }: DispatchSummaryCardsProps) {
   const isMobile = useIsMobile();
 
@@ -26,7 +29,7 @@ export function DispatchSummaryCards({
   };
 
   const formatAmountToCollectValue = (amount: number) => {
-    return formatAmountToCollect(amount, 'COP');
+    return formatAmountToCollectWithCurrency(amount, primaryCurrency);
   };
 
   return (

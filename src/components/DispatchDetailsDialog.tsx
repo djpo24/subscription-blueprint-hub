@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
@@ -7,6 +6,7 @@ import { DispatchDetailsHeader } from './dispatch-details/DispatchDetailsHeader'
 import { DispatchSummaryCards } from './dispatch-details/DispatchSummaryCards';
 import { DispatchPackagesTable } from './dispatch-details/DispatchPackagesTable';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { parseCurrencyString, type Currency } from '@/utils/currencyFormatter';
 
 interface DispatchDetailsDialogProps {
   open: boolean;
@@ -40,6 +40,21 @@ export function DispatchDetailsDialog({
     }),
     { weight: 0, freight: 0, amount_to_collect: 0 }
   );
+
+  // Determinar la divisa predominante de los paquetes
+  const currencyCount = packages.reduce((acc, pkg) => {
+    const currency = parseCurrencyString(pkg.currency);
+    acc[currency] = (acc[currency] || 0) + 1;
+    return acc;
+  }, {} as Record<Currency, number>);
+
+  const primaryCurrency: Currency = Object.keys(currencyCount).length > 0 
+    ? (Object.keys(currencyCount).reduce((a, b) => 
+        currencyCount[a as Currency] > currencyCount[b as Currency] ? a : b
+      ) as Currency)
+    : 'COP';
+
+  console.log('💰 [DispatchDetailsDialog] Primary currency detected:', primaryCurrency);
 
   // Obtener información del despacho y del viaje
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
@@ -97,6 +112,7 @@ export function DispatchDetailsDialog({
               totalWeight={totals.weight}
               totalFreight={totals.freight}
               totalAmountToCollect={totals.amount_to_collect}
+              primaryCurrency={primaryCurrency}
             />
 
             <DispatchPackagesTable packages={packages} />

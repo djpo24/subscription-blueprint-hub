@@ -32,7 +32,7 @@ export function AppSidebar({
   } = useSidebar();
   const isMobile = useIsMobile();
 
-  // Show tabs based on user role - Notifications now available for travelers too
+  // Show tabs based on user role - Updated permissions for traveler
   const showUsersTab = userRole?.role === 'admin';
   const showNotificationsTab = userRole?.role === 'admin' || userRole?.role === 'traveler';
   const showSettingsTab = userRole?.role === 'admin';

@@ -87,6 +87,9 @@ export function MainTabs({
 
   const isAdmin = userRole.role === 'admin';
   const isAdminOrEmployee = userRole.role === 'admin' || userRole.role === 'employee';
+  // Updated: Travelers can now access dispatches and notifications
+  const canAccessDispatches = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
+  const canAccessNotifications = userRole.role === 'admin' || userRole.role === 'traveler';
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -106,21 +109,35 @@ export function MainTabs({
           <>
             <TabsTrigger value="packages">Encomiendas</TabsTrigger>
             <TabsTrigger value="trips">Viajes</TabsTrigger>
-            <TabsTrigger value="dispatches">Despachos</TabsTrigger>
+          </>
+        )}
+        
+        {canAccessDispatches && (
+          <TabsTrigger value="dispatches">Despachos</TabsTrigger>
+        )}
+        
+        {isAdminOrEmployee && (
+          <>
             <TabsTrigger value="finances">Finanzas</TabsTrigger>
             <TabsTrigger value="customers">Clientes</TabsTrigger>
           </>
         )}
         
         {isAdmin && (
+          <TabsTrigger value="chat" className="relative">
+            Chat
+            {unreadCount > 0 && (
+              <NotificationBadge count={unreadCount} />
+            )}
+          </TabsTrigger>
+        )}
+        
+        {canAccessNotifications && (
+          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+        )}
+        
+        {isAdmin && (
           <>
-            <TabsTrigger value="chat" className="relative">
-              Chat
-              {unreadCount > 0 && (
-                <NotificationBadge count={unreadCount} />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="investigation">Investigación</TabsTrigger>
             <TabsTrigger value="settings">Configuración</TabsTrigger>
@@ -177,10 +194,6 @@ export function MainTabs({
             />
           </TabsContent>
 
-          <TabsContent value="dispatches">
-            <DispatchesTab />
-          </TabsContent>
-
           <TabsContent value="finances">
             <FinancesTab />
           </TabsContent>
@@ -191,16 +204,26 @@ export function MainTabs({
         </>
       )}
 
+      {canAccessDispatches && (
+        <TabsContent value="dispatches">
+          <DispatchesTab />
+        </TabsContent>
+      )}
+
+      {isAdmin && (
+        <TabsContent value="chat">
+          <ChatTab />
+        </TabsContent>
+      )}
+
+      {canAccessNotifications && (
+        <TabsContent value="notifications">
+          <NotificationsTab />
+        </TabsContent>
+      )}
+
       {isAdmin && (
         <>
-          <TabsContent value="chat">
-            <ChatTab />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <NotificationsTab />
-          </TabsContent>
-
           <TabsContent value="users">
             <UsersTab />
           </TabsContent>

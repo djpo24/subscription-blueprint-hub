@@ -13,37 +13,23 @@ interface HeaderProps {
 }
 
 export function Header({ searchTerm, onSearchChange }: HeaderProps) {
-  const { signOut, user, loading } = useAuth();
+  const { signOut, user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
-    if (loading) {
-      console.log('⏳ Sign out already in progress, ignoring click');
-      return;
-    }
-    
     try {
-      console.log('🚪 Header: Starting sign out process');
-      
-      // Show loading toast immediately
-      toast({
-        title: "Cerrando sesión...",
-        description: "Por favor espera",
-      });
-      
-      // Call signOut which handles everything including redirect
       await signOut();
-      
-    } catch (error) {
-      console.error('❌ Header: Sign out error:', error);
       toast({
         title: "Sesión cerrada",
-        description: "Has sido desconectado del sistema",
+        description: "Has cerrado sesión exitosamente",
       });
-      
-      // Force redirect even on error
-      window.location.href = '/';
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión",
+        variant: "destructive"
+      });
     }
   };
 
@@ -83,13 +69,10 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
               variant="secondary"
               size={isMobile ? "sm" : "sm"}
               onClick={handleSignOut}
-              disabled={loading}
               className="flex items-center gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
             >
               <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              {!isMobile && <span className="hidden sm:inline text-sm">
-                {loading ? "Cerrando..." : "Salir"}
-              </span>}
+              {!isMobile && <span className="hidden sm:inline text-sm">Salir</span>}
             </Button>
           </div>
         </div>

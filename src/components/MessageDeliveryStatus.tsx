@@ -16,9 +16,9 @@ export function MessageDeliveryStatus() {
         .from('message_delivery_status')
         .select(`
           *,
-          notification_log!message_delivery_status_notification_id_fkey (
+          notification_log (
             message,
-            customers!notification_log_customer_id_fkey (
+            customers!fk_notification_log_customer (
               name,
               phone
             )

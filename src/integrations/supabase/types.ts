@@ -652,20 +652,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_first_admin_user: {
-        Args: {
-          admin_email: string
-          admin_password: string
-          admin_first_name: string
-          admin_last_name: string
-          admin_phone?: string
-        }
-        Returns: {
-          success: boolean
-          message: string
-          user_id: string
-        }[]
-      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

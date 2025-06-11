@@ -9,8 +9,6 @@ import { PhoneNumberInput } from '@/components/PhoneNumberInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -34,17 +32,12 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
-      console.log('🚀 Starting user creation process...');
-      
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
-        console.error('❌ No active session found');
-        throw new Error('No tienes una sesión activa. Por favor inicia sesión como administrador.');
+        throw new Error('No active session');
       }
-
-      console.log('✅ Session found, calling create-user function...');
 
       // Prepare user data with full phone number
       const fullPhone = userData.phoneNumber ? `${userData.countryCode}${userData.phoneNumber}` : '';
@@ -52,12 +45,6 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         ...userData,
         phone: fullPhone
       };
-
-      console.log('📤 Sending data to create-user function:', {
-        email: userDataToSend.email,
-        role: userDataToSend.role,
-        phone: userDataToSend.phone
-      });
 
       // Call the Edge Function to create user
       const { data, error } = await supabase.functions.invoke('create-user', {
@@ -68,20 +55,17 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
-        throw new Error(`Error en la función: ${error.message || 'Error desconocido'}`);
+        console.error('Edge function error:', error);
+        throw error;
       }
 
-      if (data?.error) {
-        console.error('❌ Function returned error:', data.error);
+      if (data.error) {
         throw new Error(data.error);
       }
 
-      console.log('✅ User created successfully:', data);
       return data;
     },
     onSuccess: () => {
-      console.log('✅ User creation completed successfully');
       toast({
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente",
@@ -108,7 +92,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       onSuccess();
     },
     onError: (error: any) => {
-      console.error('❌ Error creating user:', error);
+      console.error('Error creating user:', error);
       let errorMessage = "No se pudo crear el usuario";
       
       if (error.message) {
@@ -117,11 +101,9 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         } else if (error.message.includes('Invalid email')) {
           errorMessage = "Email inválido";
         } else if (error.message.includes('Insufficient permissions')) {
-          errorMessage = "No tienes permisos suficientes para crear usuarios. Asegúrate de estar autenticado como administrador.";
-        } else if (error.message.includes('Unauthorized') || error.message.includes('sesión activa')) {
-          errorMessage = "Sesión expirada o no válida. Por favor inicia sesión nuevamente como administrador.";
-        } else if (error.message.includes('Auth session missing')) {
-          errorMessage = "No hay sesión de autenticación. Por favor inicia sesión como administrador.";
+          errorMessage = "No tienes permisos suficientes para crear usuarios";
+        } else if (error.message.includes('Unauthorized')) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
         } else {
           errorMessage = error.message;
         }
@@ -156,7 +138,6 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       return;
     }
 
-    console.log('📝 Form submitted, starting user creation...');
     createUserMutation.mutate(formData);
   };
 
@@ -178,14 +159,6 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
             )}
           </DialogDescription>
         </DialogHeader>
-        
-        <Alert className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Nota:</strong> Debes estar autenticado como administrador para crear usuarios. 
-            Si ves errores de permisos, asegúrate de haber iniciado sesión correctamente.
-          </AlertDescription>
-        </Alert>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">

@@ -10,6 +10,8 @@ export function useMarkTripAsInTransit() {
 
   const markTripAsInTransitMutation = useMutation({
     mutationFn: async (tripId: string) => {
+      console.log('🚀 [useMarkTripAsInTransit] Iniciando proceso para trip:', tripId);
+      
       // Actualizar para incluir el estado "despachado" además de "procesado"
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
@@ -17,11 +19,16 @@ export function useMarkTripAsInTransit() {
         .eq('trip_id', tripId)
         .in('status', ['procesado', 'despachado']);
 
-      if (packagesError) throw packagesError;
+      if (packagesError) {
+        console.error('❌ Error obteniendo paquetes:', packagesError);
+        throw packagesError;
+      }
 
       if (!packages || packages.length === 0) {
         throw new Error('No packages found in "procesado" or "despachado" status for this trip');
       }
+
+      console.log('📦 [useMarkTripAsInTransit] Paquetes encontrados:', packages);
 
       // Update all packages to "transito" status
       const { error: updateError } = await supabase
@@ -33,19 +40,31 @@ export function useMarkTripAsInTransit() {
         .eq('trip_id', tripId)
         .in('status', ['procesado', 'despachado']);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Error actualizando paquetes:', updateError);
+        throw updateError;
+      }
 
-      // Update dispatch status to "en_transito" for all dispatches containing these packages
+      console.log('✅ [useMarkTripAsInTransit] Paquetes actualizados a transito');
+
+      // Obtener los despachos que contienen estos paquetes
       const packageIds = packages.map(pkg => pkg.id);
       const { data: dispatchPackages, error: dispatchPackagesError } = await supabase
         .from('dispatch_packages')
         .select('dispatch_id')
         .in('package_id', packageIds);
 
-      if (dispatchPackagesError) throw dispatchPackagesError;
+      if (dispatchPackagesError) {
+        console.error('❌ Error obteniendo dispatch_packages:', dispatchPackagesError);
+        throw dispatchPackagesError;
+      }
+
+      console.log('📋 [useMarkTripAsInTransit] Dispatch packages encontrados:', dispatchPackages);
 
       if (dispatchPackages && dispatchPackages.length > 0) {
         const dispatchIds = [...new Set(dispatchPackages.map(dp => dp.dispatch_id))];
+        console.log('🎯 [useMarkTripAsInTransit] Actualizando despachos:', dispatchIds);
+        
         const { error: dispatchUpdateError } = await supabase
           .from('dispatch_relations')
           .update({
@@ -54,7 +73,12 @@ export function useMarkTripAsInTransit() {
           })
           .in('id', dispatchIds);
 
-        if (dispatchUpdateError) throw dispatchUpdateError;
+        if (dispatchUpdateError) {
+          console.error('❌ Error actualizando dispatch_relations:', dispatchUpdateError);
+          throw dispatchUpdateError;
+        }
+
+        console.log('✅ [useMarkTripAsInTransit] Despachos actualizados a en_transito');
       }
 
       // Create tracking events for each package
@@ -69,7 +93,10 @@ export function useMarkTripAsInTransit() {
         .from('tracking_events')
         .insert(trackingEvents);
 
-      if (trackingError) throw trackingError;
+      if (trackingError) {
+        console.error('❌ Error creando tracking events:', trackingError);
+        throw trackingError;
+      }
 
       // Update trip status to "in_progress"
       const { error: tripUpdateError } = await supabase
@@ -80,11 +107,17 @@ export function useMarkTripAsInTransit() {
         })
         .eq('id', tripId);
 
-      if (tripUpdateError) throw tripUpdateError;
+      if (tripUpdateError) {
+        console.error('❌ Error actualizando trip:', tripUpdateError);
+        throw tripUpdateError;
+      }
 
+      console.log('✅ [useMarkTripAsInTransit] Proceso completado exitosamente');
       return { updatedPackages: packages.length, tripId };
     },
     onSuccess: (data) => {
+      console.log('🎉 [useMarkTripAsInTransit] Mutación exitosa, invalidando queries');
+      
       // Invalidar todas las queries relevantes inmediatamente
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
@@ -110,7 +143,7 @@ export function useMarkTripAsInTransit() {
       });
     },
     onError: (error: any) => {
-      console.error('Error marking trip as in transit:', error);
+      console.error('💥 [useMarkTripAsInTransit] Error en mutación:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudo marcar el viaje como en tránsito",

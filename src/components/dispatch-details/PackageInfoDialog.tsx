@@ -23,6 +23,7 @@ import {
 import type { PackageInDispatch } from '@/types/dispatch';
 import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
 import { formatDateTime } from '@/utils/dateUtils';
+import { PhoneWithFlag } from '@/components/PhoneWithFlag';
 
 interface PackageInfoDialogProps {
   open: boolean;
@@ -171,7 +172,13 @@ export function PackageInfoDialog({ open, onOpenChange, package: pkg }: PackageI
                   <Phone className="h-4 w-4 text-gray-500" />
                   <div>
                     <div className="text-sm text-gray-500">Teléfono</div>
-                    <div className="font-medium">{pkg.customers?.phone || 'No especificado'}</div>
+                    <div className="font-medium">
+                      {pkg.customers?.phone ? (
+                        <PhoneWithFlag phone={pkg.customers.phone} />
+                      ) : (
+                        'No especificado'
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

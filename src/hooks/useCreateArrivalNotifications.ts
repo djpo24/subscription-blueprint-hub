@@ -12,6 +12,7 @@ export function useCreateArrivalNotifications() {
       console.log('🔄 Creando notificaciones para paquetes en destino...');
 
       // Obtener todos los paquetes en estado "en_destino" que tengan cliente con teléfono
+      // Incluir datos de cliente actualizados
       const { data: packagesInDestination, error: packagesError } = await supabase
         .from('packages')
         .select(`
@@ -21,15 +22,18 @@ export function useCreateArrivalNotifications() {
           destination,
           amount_to_collect,
           currency,
+          updated_at,
           customers!customer_id (
             id,
             name,
             phone,
-            whatsapp_number
+            whatsapp_number,
+            updated_at
           )
         `)
         .eq('status', 'en_destino')
-        .not('customer_id', 'is', null);
+        .not('customer_id', 'is', null)
+        .order('updated_at', { ascending: false });
 
       if (packagesError) {
         console.error('❌ Error obteniendo paquetes en destino:', packagesError);
@@ -42,14 +46,26 @@ export function useCreateArrivalNotifications() {
 
       console.log(`📦 Encontrados ${packagesInDestination.length} paquetes en destino`);
 
-      // Filtrar paquetes que tienen cliente con teléfono
-      const packagesWithPhone = packagesInDestination.filter(pkg => 
-        pkg.customers && (pkg.customers.whatsapp_number || pkg.customers.phone)
-      );
+      // Filtrar paquetes que tienen cliente con teléfono válido
+      const packagesWithPhone = packagesInDestination.filter(pkg => {
+        const customer = pkg.customers;
+        const hasValidPhone = customer && (
+          (customer.whatsapp_number && customer.whatsapp_number.trim() !== '') ||
+          (customer.phone && customer.phone.trim() !== '')
+        );
+        
+        if (!hasValidPhone) {
+          console.warn(`⚠️ Cliente ${customer?.name || 'desconocido'} sin teléfono válido para paquete ${pkg.tracking_number}`);
+        }
+        
+        return hasValidPhone;
+      });
 
       if (packagesWithPhone.length === 0) {
         throw new Error('No hay paquetes con información de contacto válida');
       }
+
+      console.log(`📱 Paquetes con teléfono válido: ${packagesWithPhone.length}`);
 
       // Verificar cuáles ya tienen notificaciones pendientes o preparadas
       const packageIds = packagesWithPhone.map(pkg => pkg.id);
@@ -75,6 +91,13 @@ export function useCreateArrivalNotifications() {
 
       console.log(`📱 Creando notificaciones para ${packagesToProcess.length} paquetes`);
 
+      // Log de números de teléfono para debugging
+      packagesToProcess.forEach(pkg => {
+        const customer = pkg.customers;
+        const phoneNumber = customer?.whatsapp_number || customer?.phone;
+        console.log(`📞 Cliente: ${customer?.name}, Teléfono: ${phoneNumber}, Paquete: ${pkg.tracking_number}`);
+      });
+
       // Crear notificaciones de llegada para revisión
       const arrivalNotifications = packagesToProcess.map(pkg => ({
         customer_id: pkg.customer_id,
@@ -98,7 +121,8 @@ export function useCreateArrivalNotifications() {
       return {
         created: arrivalNotifications.length,
         total: packagesInDestination.length,
-        skipped: packagesInDestination.length - arrivalNotifications.length
+        skipped: packagesInDestination.length - arrivalNotifications.length,
+        withValidPhone: packagesWithPhone.length
       };
     },
     onSuccess: (data) => {
@@ -107,6 +131,7 @@ export function useCreateArrivalNotifications() {
       // Invalidar queries para refrescar los datos
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       
       toast({
         title: "Notificaciones Creadas",

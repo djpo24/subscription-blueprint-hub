@@ -19,11 +19,11 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Obtener notificaciones de llegada (pendientes y preparadas)
+  // Obtener notificaciones de llegada (pendientes y preparadas) con datos actualizados
   const query = useQuery({
     queryKey: ['arrival-notifications'],
     queryFn: async (): Promise<PendingNotification[]> => {
-      console.log('🔍 Fetching arrival notifications...');
+      console.log('🔍 Fetching arrival notifications with updated customer data...');
       
       try {
         const { data, error } = await supabase
@@ -33,13 +33,15 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
             customers!customer_id (
               name,
               phone,
-              whatsapp_number
+              whatsapp_number,
+              updated_at
             ),
             packages!notification_log_package_id_fkey (
               tracking_number,
               destination,
               amount_to_collect,
-              currency
+              currency,
+              updated_at
             )
           `)
           .eq('notification_type', 'package_arrival')
@@ -51,14 +53,29 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
           throw error;
         }
 
-        console.log('✅ Arrival notifications fetched:', data?.length || 0);
-        return data || [];
+        // Filtrar solo notificaciones que tienen datos completos
+        const validNotifications = (data || []).filter(notification => 
+          notification.customers && 
+          notification.packages && 
+          (notification.customers.whatsapp_number || notification.customers.phone)
+        );
+
+        console.log(`✅ Arrival notifications fetched: ${validNotifications.length} valid notifications`);
+        
+        // Log para debugging - mostrar algunos números de teléfono
+        if (validNotifications.length > 0) {
+          const samplePhone = validNotifications[0].customers?.whatsapp_number || validNotifications[0].customers?.phone;
+          console.log(`📱 Sample phone number: ${samplePhone}`);
+        }
+        
+        return validNotifications;
       } catch (error) {
         console.error('❌ Error in useArrivalNotifications:', error);
         return [];
       }
     },
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Actualizar cada 30 segundos
+    staleTime: 10000, // Considerar datos obsoletos después de 10 segundos
   });
 
   // Mutación para preparar notificaciones
@@ -83,8 +100,10 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         title: "Notificaciones Preparadas",
         description: `${data.prepared} notificaciones preparadas para revisión`,
       });
+      // Invalidar múltiples queries para asegurar datos actualizados
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error: any) => {
       console.error('❌ Error preparing notifications:', error);
@@ -118,9 +137,11 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         title: "Notificaciones Enviadas",
         description: `${data.executed} notificaciones enviadas exitosamente`,
       });
+      // Invalidar todas las queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-log'] });
       queryClient.invalidateQueries({ queryKey: ['sent-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error: any) => {
       console.error('❌ Error executing notifications:', error);

@@ -15,9 +15,11 @@ export function ArrivalNotificationsPanel() {
     prepareNotifications,
     executeNotifications,
     clearPreparedNotifications,
+    clearPendingNotifications,
     isPreparing,
     isExecuting,
-    isClearing
+    isClearing,
+    isClearingPending
   } = useArrivalNotifications();
 
   const {
@@ -97,18 +99,32 @@ export function ArrivalNotificationsPanel() {
                     </Badge>
                   )}
                 </h4>
-                {pendingNotifications.length > 0 && (
-                  <Button
-                    onClick={() => prepareNotifications()}
-                    disabled={isPreparing}
-                    size="sm"
-                    variant="outline"
-                    className="text-orange-600 border-orange-300 hover:bg-orange-50"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    {isPreparing ? 'Preparando...' : 'Preparar para Revisión'}
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {pendingNotifications.length > 0 && (
+                    <>
+                      <Button
+                        onClick={() => clearPendingNotifications()}
+                        disabled={isClearingPending}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isClearingPending ? 'Limpiando...' : 'Limpiar'}
+                      </Button>
+                      <Button
+                        onClick={() => prepareNotifications()}
+                        disabled={isPreparing}
+                        size="sm"
+                        variant="outline"
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {isPreparing ? 'Preparando...' : 'Preparar para Revisión'}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {pendingNotifications.length > 0 ? (

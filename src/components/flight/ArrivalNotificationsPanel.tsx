@@ -57,7 +57,7 @@ export function ArrivalNotificationsPanel() {
             )}
           </CardTitle>
           <CardDescription className="text-blue-600">
-            Sistema de revisión manual para notificaciones de llegada por WhatsApp
+            Sistema de revisión manual con números de teléfono sincronizados del perfil del cliente
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -69,7 +69,7 @@ export function ArrivalNotificationsPanel() {
                   Cargar Paquetes en Destino
                 </h4>
                 <p className="text-sm text-orange-600">
-                  Crear notificaciones para todos los paquetes con estado "En Destino"
+                  Crear notificaciones para todos los paquetes con estado "En Destino" usando números actualizados
                 </p>
               </div>
               <Button
@@ -130,6 +130,9 @@ export function ArrivalNotificationsPanel() {
                           </div>
                           <p className="text-xs text-gray-600">
                             Cliente: {notification.customers?.name}
+                          </p>
+                          <p className="text-xs text-green-600 font-medium">
+                            📱 {notification.customers?.whatsapp_number || notification.customers?.phone}
                           </p>
                         </div>
                         <Badge variant="secondary" className="text-orange-600">
@@ -197,7 +200,7 @@ export function ArrivalNotificationsPanel() {
                           <p className="text-xs text-gray-600">
                             Cliente: {notification.customers?.name}
                           </p>
-                          <p className="text-xs text-green-600">
+                          <p className="text-xs text-green-600 font-medium">
                             📱 {notification.customers?.whatsapp_number || notification.customers?.phone}
                           </p>
                           {notification.packages?.amount_to_collect && notification.packages.amount_to_collect > 0 && (
@@ -234,24 +237,24 @@ export function ArrivalNotificationsPanel() {
           {/* Información del Sistema */}
           <div className="mt-6 p-4 bg-blue-100 rounded border border-blue-200">
             <h4 className="font-medium text-sm text-blue-800 mb-2">
-              ¿Cómo funciona el nuevo sistema de revisión?
+              Sistema Sincronizado de Números de Teléfono
             </h4>
             <div className="space-y-2 text-sm text-blue-700">
               <div className="flex items-start gap-2">
-                <Plus className="h-4 w-4 mt-0.5 text-blue-600" />
+                <CheckCircle className="h-4 w-4 mt-0.5 text-green-600" />
                 <div>
-                  <p className="font-medium">0. Cargar paquetes en destino</p>
+                  <p className="font-medium">Números Sincronizados</p>
                   <p className="text-blue-600">
-                    Haz clic en "Cargar Paquetes" para crear notificaciones para todos los paquetes en estado "En Destino".
+                    El sistema ahora usa automáticamente el número de teléfono más actualizado del perfil del cliente.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 text-blue-600" />
+                <Plus className="h-4 w-4 mt-0.5 text-blue-600" />
                 <div>
-                  <p className="font-medium">1. Detección automática</p>
+                  <p className="font-medium">1. Cargar paquetes en destino</p>
                   <p className="text-blue-600">
-                    Cuando un paquete cambia a "En Destino", se crea una notificación pendiente.
+                    Crea notificaciones para todos los paquetes "En Destino" con números actualizados.
                   </p>
                 </div>
               </div>
@@ -260,25 +263,16 @@ export function ArrivalNotificationsPanel() {
                 <div>
                   <p className="font-medium">2. Preparación para revisión</p>
                   <p className="text-blue-600">
-                    Haz clic en "Preparar para Revisión" para generar los mensajes y verificar direcciones.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 mt-0.5 text-blue-600" />
-                <div>
-                  <p className="font-medium">3. Revisión manual</p>
-                  <p className="text-blue-600">
-                    Revisa cada mensaje preparado con cliente, tracking, destino y monto.
+                    Genera mensajes y verifica direcciones con los números de teléfono actuales.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Send className="h-4 w-4 mt-0.5 text-blue-600" />
                 <div>
-                  <p className="font-medium">4. Ejecución controlada</p>
+                  <p className="font-medium">3. Envío con número actualizado</p>
                   <p className="text-blue-600">
-                    Solo cuando apruebes, haz clic en "Ejecutar Envío" para enviar por WhatsApp.
+                    Los mensajes se envían al número de teléfono que aparece en el perfil del cliente.
                   </p>
                 </div>
               </div>

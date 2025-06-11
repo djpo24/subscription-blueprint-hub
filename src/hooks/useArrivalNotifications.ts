@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -85,7 +86,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
               return null;
             }
 
-            console.log(`📱 Customer ${customerData.name} - Phone: ${customerData.whatsapp_number || customerData.phone} (Updated: ${customerData.updated_at})`);
+            console.log(`📱 Customer ${customerData.name} - Current Phone: ${customerData.whatsapp_number || customerData.phone} (Profile Updated: ${customerData.updated_at})`);
 
             // Retornar la notificación con datos FRESCOS del cliente
             return {
@@ -98,7 +99,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         // Filtrar notificaciones nulas y retornar solo las válidas
         const validNotifications = enrichedNotifications.filter(Boolean) as PendingNotification[];
 
-        console.log(`✅ Processed ${validNotifications.length} valid notifications with fresh customer data`);
+        console.log(`✅ Processed ${validNotifications.length} valid notifications with synchronized customer phone numbers`);
         
         return validNotifications;
       } catch (error) {
@@ -106,14 +107,14 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
         return [];
       }
     },
-    refetchInterval: 15000, // Reducir a 15 segundos para datos más frescos
-    staleTime: 5000, // Considerar datos obsoletos después de 5 segundos
+    refetchInterval: 10000, // Refrescar cada 10 segundos para datos más actuales
+    staleTime: 3000, // Considerar datos obsoletos después de 3 segundos
   });
 
   // Mutación para preparar notificaciones
   const prepareMutation = useMutation({
     mutationFn: async () => {
-      console.log('📋 Preparing arrival notifications...');
+      console.log('📋 Preparing arrival notifications with current customer phone numbers...');
       
       const { data, error } = await supabase.functions.invoke('process-arrival-notifications', {
         body: { mode: 'prepare' }
@@ -127,10 +128,10 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Notifications prepared successfully:', data);
+      console.log('✅ Notifications prepared successfully with current phone numbers:', data);
       toast({
         title: "Notificaciones Preparadas",
-        description: `${data.prepared} notificaciones preparadas para revisión`,
+        description: `${data.prepared} notificaciones preparadas con números actualizados`,
       });
       // Invalidar múltiples queries para asegurar datos actualizados
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });
@@ -150,7 +151,7 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
   // Mutación para ejecutar notificaciones preparadas
   const executeMutation = useMutation({
     mutationFn: async () => {
-      console.log('🚀 Executing prepared notifications...');
+      console.log('🚀 Executing prepared notifications with synchronized phone numbers...');
       
       const { data, error } = await supabase.functions.invoke('process-arrival-notifications', {
         body: { mode: 'execute' }
@@ -164,10 +165,10 @@ export function useArrivalNotifications(): ArrivalNotificationsResult {
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Notifications executed successfully:', data);
+      console.log('✅ Notifications executed successfully with current phone numbers:', data);
       toast({
         title: "Notificaciones Enviadas",
-        description: `${data.executed} notificaciones enviadas exitosamente`,
+        description: `${data.executed} notificaciones enviadas con números actualizados`,
       });
       // Invalidar todas las queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['arrival-notifications'] });

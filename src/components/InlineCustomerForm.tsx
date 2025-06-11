@@ -150,7 +150,7 @@ export function InlineCustomerForm({
           idNumber={formData.idNumber}
           countryCode={formData.countryCode}
           phoneNumber={formData.phoneNumber}
-          validationError={validationError}
+          validationError={validationError?.message || null}
           isChecking={isChecking}
           onIdNumberChange={handleIdNumberChange}
           onCountryCodeChange={(value) => updateFormData('countryCode', value)}

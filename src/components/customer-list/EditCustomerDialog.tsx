@@ -64,7 +64,7 @@ export function EditCustomerDialog({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleSubmit(formData, validationError);
+    await handleSubmit(formData, validationError?.message || null);
   };
 
   const handleCancel = () => {
@@ -95,7 +95,7 @@ export function EditCustomerDialog({
                 idNumber={formData.idNumber}
                 countryCode={formData.countryCode}
                 phoneNumber={formData.phoneNumber}
-                validationError={validationError}
+                validationError={validationError?.message || null}
                 isChecking={isChecking}
                 onIdNumberChange={onIdNumberChangeHandler}
                 onCountryCodeChange={handleCountryCodeChange}

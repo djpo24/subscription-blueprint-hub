@@ -103,7 +103,7 @@ export function useChatData(): ChatData {
             name: msg.customers.name,
             profile_image_url: msg.customers.profile_image_url || undefined
           } : undefined
-        }));
+        } as IncomingMessage & { is_from_customer: boolean }));
 
         // Convert sent messages to unified format
         const sentMessages = (sentData || []).map(msg => ({
@@ -120,7 +120,7 @@ export function useChatData(): ChatData {
             name: msg.customers.name,
             profile_image_url: msg.customers.profile_image_url || undefined
           } : undefined
-        }));
+        } as IncomingMessage & { is_from_customer: boolean }));
 
         // Convert template notifications to unified format
         const templateMessages = (notificationData || []).map(notification => ({
@@ -137,7 +137,7 @@ export function useChatData(): ChatData {
             name: notification.customers.name,
             profile_image_url: notification.customers.profile_image_url || undefined
           } : undefined
-        }));
+        } as IncomingMessage & { is_from_customer: boolean }));
 
         // For template messages, we need to get the customer's phone number
         for (const templateMsg of templateMessages) {
@@ -209,10 +209,11 @@ export function useChatData(): ChatData {
   Object.entries(conversationsByPhone).forEach(([phone, conversation]) => {
     const lastMessage = conversation.messages[0];
     if (lastMessage) {
+      const messageWithFlag = lastMessage as IncomingMessage & { is_from_customer?: boolean };
       let displayMessage = lastMessage.message_content || '';
       if (lastMessage.message_type === 'template') {
         displayMessage = `📋 ${displayMessage}`;
-      } else if (lastMessage.is_from_customer === false) {
+      } else if (messageWithFlag.is_from_customer === false) {
         displayMessage = `Tú: ${displayMessage}`;
       }
 

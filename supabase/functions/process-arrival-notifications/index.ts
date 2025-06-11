@@ -61,6 +61,36 @@ serve(async (req) => {
     let processedCount = 0
     let errorCount = 0
 
+    // Función para obtener la dirección del destino con mejor manejo
+    const getDestinationAddress = async (destination: string) => {
+      if (!destination) return 'nuestras oficinas'
+      
+      console.log(`🏢 Buscando dirección para destino: ${destination}`)
+      
+      // Normalizar el nombre del destino para la búsqueda
+      const normalizedDestination = destination.toLowerCase().trim()
+      
+      const { data: destinationAddress, error } = await supabaseClient
+        .from('destination_addresses')
+        .select('address, city')
+        .or(`city.ilike.%${normalizedDestination}%,city.ilike.%${destination}%`)
+        .limit(1)
+        .maybeSingle()
+      
+      if (error) {
+        console.error(`❌ Error buscando dirección para ${destination}:`, error)
+        return 'nuestras oficinas'
+      }
+      
+      if (destinationAddress) {
+        console.log(`✅ Dirección encontrada para ${destination}: ${destinationAddress.address}`)
+        return destinationAddress.address
+      }
+      
+      console.warn(`⚠️ No se encontró dirección específica para ${destination}, usando dirección por defecto`)
+      return 'nuestras oficinas'
+    }
+
     // Función para generar el mensaje exacto según el formato requerido
     const generateArrivalMessage = (customerName: string, trackingNumber: string, destination: string, address: string, currency: string, amount: string) => {
       const currencySymbol = currency === 'AWG' ? 'ƒ' : '$'
@@ -82,20 +112,8 @@ serve(async (req) => {
           continue
         }
 
-        // Obtener dirección del destino
-        let address = 'nuestras oficinas'
-        if (notification.packages?.destination) {
-          const { data: destinationAddress } = await supabaseClient
-            .from('destination_addresses')
-            .select('address')
-            .ilike('city', notification.packages.destination)
-            .limit(1)
-            .single()
-          
-          if (destinationAddress) {
-            address = destinationAddress.address
-          }
-        }
+        // Obtener dirección del destino con mejor manejo
+        const address = await getDestinationAddress(notification.packages?.destination || '')
 
         // Generar el mensaje exacto según el formato requerido
         const messageContent = generateArrivalMessage(
@@ -108,6 +126,7 @@ serve(async (req) => {
         )
 
         console.log(`📱 Enviando notificación automática para ${notification.packages?.tracking_number}`)
+        console.log(`📍 Dirección a usar: ${address}`)
 
         // Actualizar el mensaje en notification_log para que coincida exactamente
         await supabaseClient

@@ -131,6 +131,33 @@ serve(async (req) => {
       }
     }
 
+    // Función auxiliar para obtener dirección del destino
+    const getDestinationAddress = async (destination: string) => {
+      if (!destination) return 'nuestras oficinas'
+      
+      console.log(`🏢 Obteniendo dirección para destino: ${destination}`)
+      
+      const { data: destinationAddress, error } = await supabaseClient
+        .from('destination_addresses')
+        .select('address, city')
+        .or(`city.ilike.%${destination.toLowerCase()}%,city.ilike.%${destination}%`)
+        .limit(1)
+        .maybeSingle()
+      
+      if (error) {
+        console.error(`❌ Error obteniendo dirección para ${destination}:`, error)
+        return 'nuestras oficinas'
+      }
+      
+      if (destinationAddress) {
+        console.log(`✅ Dirección encontrada: ${destinationAddress.address}`)
+        return destinationAddress.address
+      }
+      
+      console.warn(`⚠️ No se encontró dirección para ${destination}`)
+      return 'nuestras oficinas'
+    }
+
     // Prepare WhatsApp message payload
     let whatsappPayload
 
@@ -150,19 +177,12 @@ serve(async (req) => {
 
       // Add parameters for specific templates
       if (autoSelectedTemplate === 'package_arrival_notification' && templateParameters) {
-        // Get destination address if not provided
+        // Obtener dirección actualizada si no se proporcionó o es genérica
         let address = templateParameters.address || 'nuestras oficinas'
         
-        if (!templateParameters.address && templateParameters.destination) {
-          const { data: destinationAddress } = await supabaseClient
-            .from('destination_addresses')
-            .select('address')
-            .ilike('city', templateParameters.destination)
-            .limit(1)
-            .maybeSingle()
-          
-          if (destinationAddress) {
-            address = destinationAddress.address
+        if (!templateParameters.address || templateParameters.address === 'nuestras oficinas') {
+          if (templateParameters.destination) {
+            address = await getDestinationAddress(templateParameters.destination)
           }
         }
 
@@ -172,6 +192,8 @@ serve(async (req) => {
         const destination = templateParameters.destination || 'destino'
         const currency = templateParameters.currency || '$'
         const amount = templateParameters.amount || '0'
+
+        console.log(`📍 Usando dirección final en template: ${address}`)
 
         templatePayload.template.components = [
           {
@@ -187,7 +209,7 @@ serve(async (req) => {
           }
         ]
 
-        console.log('✅ Package arrival template parameters configured')
+        console.log('✅ Package arrival template parameters configured with address:', address)
       } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
         const customerName = templateParameters.customerName || 'Cliente'
         templatePayload.template.components = [

@@ -23,6 +23,11 @@ export function DispatchSummaryCards({
     return `$${value.toLocaleString('es-CO')}`;
   };
 
+  const formatWeight = (weight: number) => {
+    // Formatear peso con máximo 1 decimal, eliminando decimales innecesarios
+    return parseFloat(weight.toFixed(1)).toString();
+  };
+
   return (
     <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-4 gap-4'}`}>
       <Card>
@@ -42,7 +47,7 @@ export function DispatchSummaryCards({
           <div className="flex items-center gap-2">
             <Weight className="h-4 w-4 text-purple-500" />
             <div>
-              <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{totalWeight} kg</div>
+              <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{formatWeight(totalWeight)} kg</div>
               <div className="text-xs text-gray-600">Peso Total</div>
             </div>
           </div>

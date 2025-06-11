@@ -3,28 +3,13 @@ import { formatPhoneNumber } from './phoneFormatter';
 import { formatNumber } from './numberFormatter';
 import { getCountryCodeFromPhone } from './countryUtils';
 
-// Helper function to check if email is valid (not empty and not temporary)
+// Helper function to check if email is valid (not empty)
 export const isValidEmail = (email: string): boolean => {
   if (!email || email.trim() === '') return false;
   
-  // List of common temporary email domains
-  const tempEmailDomains = [
-    'tempmail.org',
-    '10minutemail.com',
-    'guerrillamail.com',
-    'mailinator.com',
-    'temp-mail.org',
-    'throwaway.email',
-    'maildrop.cc',
-    'yopmail.com',
-    'exemplo.com',
-    'test.com',
-    'temp.com',
-    'temporal.com'
-  ];
-  
-  const emailDomain = email.split('@')[1]?.toLowerCase();
-  return emailDomain && !tempEmailDomains.includes(emailDomain);
+  // Verificación básica de formato de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
 };
 
 // Helper function to format phone for display

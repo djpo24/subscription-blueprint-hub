@@ -51,7 +51,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
 
       const customerData = {
         name: fullName,
-        email: formData.email || `${Date.now()}@temp.com`,
+        email: formData.email.trim() || '', // Solo usar el email si se proporcionó, sino dejar en blanco
         phone: fullPhone,
         whatsapp_number: null,
         address: formData.address || null,

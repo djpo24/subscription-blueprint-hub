@@ -90,6 +90,8 @@ export function MainTabs({
   // Updated: Travelers can now access dispatches and notifications
   const canAccessDispatches = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
   const canAccessNotifications = userRole.role === 'admin' || userRole.role === 'traveler';
+  // Updated: Chat is now available for admin, employee and traveler
+  const canAccessChat = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -123,7 +125,7 @@ export function MainTabs({
           </>
         )}
         
-        {isAdmin && (
+        {canAccessChat && !disableChat && (
           <TabsTrigger value="chat" className="relative">
             Chat
             {unreadCount > 0 && (
@@ -210,7 +212,7 @@ export function MainTabs({
         </TabsContent>
       )}
 
-      {isAdmin && (
+      {canAccessChat && !disableChat && (
         <TabsContent value="chat">
           <ChatTab />
         </TabsContent>

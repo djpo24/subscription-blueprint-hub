@@ -37,6 +37,9 @@ export const createMenuItems = (
     items.push({ value: 'finances', title: 'Finanzas', icon: DollarSign });
   }
 
+  // Customers tab is now visible for ALL users
+  items.push({ value: 'customers', title: 'Clientes', icon: UserCheck });
+
   if (showChatTab) {
     items.push({ 
       value: 'chat', 
@@ -49,9 +52,6 @@ export const createMenuItems = (
   if (showNotificationsTab) {
     items.push({ value: 'notifications', title: 'Notificaciones', icon: Bell });
   }
-
-  // Customers tab is now visible for ALL users
-  items.push({ value: 'customers', title: 'Clientes', icon: UserCheck });
 
   if (showUsersTab) {
     items.push({ value: 'users', title: 'Usuarios', icon: Users });

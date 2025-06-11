@@ -2,16 +2,10 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { getCountryCodeFromPhone } from '@/utils/countryUtils';
-import { CustomerNameFields } from '@/components/CustomerNameFields';
-import { CustomerContactFields } from '@/components/CustomerContactFields';
-import { CustomerEmailField } from '@/components/CustomerEmailField';
-import { useCustomerValidation } from '@/hooks/useCustomerValidation';
-import { CustomerFormData } from '@/types/CustomerFormData';
+import { useEditCustomerForm } from '@/hooks/useEditCustomerForm';
+import { useEditCustomerSubmission } from '@/hooks/useEditCustomerSubmission';
+import { useEditCustomerValidation } from '@/hooks/useEditCustomerValidation';
+import { EditCustomerForm } from './EditCustomerForm';
 
 interface Customer {
   id: string;
@@ -35,70 +29,25 @@ export function EditCustomerDialog({
   customer, 
   onSuccess 
 }: EditCustomerDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [showEmailField, setShowEmailField] = useState(true);
-  const { toast } = useToast();
   
-  // Extract country code from phone number
-  const initialCountryCode = getCountryCodeFromPhone(customer.phone) || '+57';
-  const initialPhoneNumber = customer.phone.replace(initialCountryCode, '');
-  
-  // Split full name into first and last name
-  const nameParts = customer.name.split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-  
-  const [formData, setFormData] = useState<CustomerFormData>({
-    firstName,
-    lastName,
-    email: customer.email || '', // Manejar email vacío
-    countryCode: initialCountryCode,
-    phoneNumber: initialPhoneNumber,
-    address: customer.address || '',
-    idNumber: customer.id_number || '' // Manejar id_number vacío/null
-  });
-
+  const { formData, updateFormData } = useEditCustomerForm(customer);
+  const { isLoading, handleSubmit } = useEditCustomerSubmission(customer, onSuccess);
   const { 
     isChecking, 
-    validationError,
-    checkCustomerByPhone, 
-    checkCustomerByIdNumber, 
-    clearValidationError 
-  } = useCustomerValidation();
+    validationError, 
+    handlePhoneNumberChange, 
+    handleIdNumberChange 
+  } = useEditCustomerValidation(customer);
 
-  const updateFormData = (field: keyof CustomerFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handlePhoneNumberChange = async (value: string) => {
+  const onPhoneNumberChange = async (value: string) => {
     updateFormData('phoneNumber', value);
-    
-    if (value.length >= 7) {
-      const fullPhone = `${formData.countryCode}${value}`;
-      // Only check if phone is different from current customer's phone
-      if (fullPhone !== customer.phone) {
-        await checkCustomerByPhone(fullPhone);
-      } else {
-        clearValidationError();
-      }
-    } else {
-      clearValidationError();
-    }
+    await handlePhoneNumberChange(value, formData.countryCode);
   };
 
-  const handleIdNumberChange = async (value: string) => {
+  const onIdNumberChangeHandler = async (value: string) => {
     updateFormData('idNumber', value);
-    
-    // Solo validar si se proporciona un ID y es diferente del actual
-    if (value.length >= 6) {
-      if (value !== (customer.id_number || '')) {
-        await checkCustomerByIdNumber(value);
-      } else {
-        clearValidationError();
-      }
-    } else {
-      clearValidationError();
-    }
+    await handleIdNumberChange(value);
   };
 
   const handleCountryCodeChange = (value: string) => {
@@ -109,54 +58,9 @@ export function EditCustomerDialog({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // No permitir envío si hay errores de validación
-    if (validationError) {
-      toast({
-        title: "Error de validación",
-        description: "Por favor corrige los errores antes de continuar",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
-      
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          name: fullName,
-          email: formData.email.trim() || '', // Permitir email vacío
-          phone: fullPhone,
-          address: formData.address || null,
-          id_number: formData.idNumber.trim() || null // Permitir id_number vacío
-        })
-        .eq('id', customer.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Cliente actualizado",
-        description: `${fullName} ha sido actualizado exitosamente`,
-      });
-
-      onSuccess();
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el cliente",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await handleSubmit(formData, validationError);
   };
 
   return (
@@ -170,43 +74,18 @@ export function EditCustomerDialog({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto min-h-0">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <CustomerNameFields
-              firstName={formData.firstName}
-              lastName={formData.lastName}
-              onFirstNameChange={(value) => updateFormData('firstName', value)}
-              onLastNameChange={(value) => updateFormData('lastName', value)}
-            />
-
-            <CustomerContactFields
-              idNumber={formData.idNumber}
-              countryCode={formData.countryCode}
-              phoneNumber={formData.phoneNumber}
+          <form onSubmit={onSubmit} className="space-y-6">
+            <EditCustomerForm
+              formData={formData}
               validationError={validationError}
               isChecking={isChecking}
-              onIdNumberChange={handleIdNumberChange}
-              onCountryCodeChange={handleCountryCodeChange}
-              onPhoneNumberChange={handlePhoneNumberChange}
-            />
-
-            <CustomerEmailField
-              email={formData.email}
               showEmailField={showEmailField}
-              onEmailChange={(value) => updateFormData('email', value)}
+              onFormDataChange={updateFormData}
+              onPhoneNumberChange={onPhoneNumberChange}
+              onIdNumberChange={onIdNumberChangeHandler}
+              onCountryCodeChange={handleCountryCodeChange}
               onToggleEmailField={() => setShowEmailField(true)}
             />
-
-            <div>
-              <Label htmlFor="address">Dirección</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => updateFormData('address', e.target.value)}
-                placeholder="Dirección completa..."
-                rows={3}
-                className="mt-1"
-              />
-            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

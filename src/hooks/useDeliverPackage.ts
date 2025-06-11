@@ -4,6 +4,7 @@ import { DeliveryService } from '@/services/deliveryService';
 import { DeliveryFallbackService } from '@/services/deliveryFallbackService';
 import { DeliveryErrorHandler } from '@/utils/deliveryErrorHandler';
 import { DeliverySuccessHandler } from '@/utils/deliverySuccessHandler';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DeliveryPayment {
   method_id: string;
@@ -14,12 +15,13 @@ interface DeliveryPayment {
 
 interface DeliverPackageParams {
   packageId: string;
-  deliveredBy: string;
+  deliveredBy: string; // Este es el UUID del usuario
   payments?: DeliveryPayment[];
 }
 
 export function useDeliverPackage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (params: DeliverPackageParams) => {
@@ -63,7 +65,9 @@ export function useDeliverPackage() {
     },
     onSuccess: (data, variables) => {
       console.log('🎉 [useDeliverPackage] Entrega exitosa:', { data, variables });
-      DeliverySuccessHandler.handleDeliverySuccess(queryClient, variables.deliveredBy);
+      // Pasar el email del usuario al success handler
+      const deliveredByEmail = user?.email || 'Usuario no identificado';
+      DeliverySuccessHandler.handleDeliverySuccess(queryClient, deliveredByEmail);
     },
     onError: (error: any) => {
       console.error('💥 [useDeliverPackage] Error final en entrega:', error);

@@ -8,7 +8,7 @@ import type { PaymentEntryData } from '@/types/payment';
 interface MobileDeliveryActionsProps {
   package: PackageInDispatch;
   payments: PaymentEntryData[];
-  deliveredBy: string;
+  deliveredBy: string; // Este es ahora el UUID del usuario
   isPending: boolean;
   onCancel: () => void;
   onSubmit: () => void;
@@ -35,6 +35,7 @@ export function MobileDeliveryActions({
   
   console.log('🎯 [MobileDeliveryActions] Package currency:', packageCurrency);
   console.log('🎯 [MobileDeliveryActions] Remaining amount:', remainingAmount);
+  console.log('🎯 [MobileDeliveryActions] Delivered by UUID:', deliveredBy);
   
   // Obtener símbolo de divisa
   const getCurrencySymbol = (currency: string) => {

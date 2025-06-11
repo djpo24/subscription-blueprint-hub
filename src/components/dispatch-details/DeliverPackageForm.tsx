@@ -30,6 +30,9 @@ export function DeliverPackageForm({
   console.log('🎯 [DeliverPackageForm] Tracking number:', pkg.tracking_number);
   console.log('🎯 [DeliverPackageForm] Currency from package:', pkg.currency);
   console.log('🎯 [DeliverPackageForm] Amount to collect:', pkg.amount_to_collect);
+  console.log('👤 [DeliverPackageForm] Usuario completo:', user);
+  console.log('🆔 [DeliverPackageForm] User ID:', user?.id);
+  console.log('📧 [DeliverPackageForm] User email:', user?.email);
   
   const deliverPackage = useDeliverPackage();
   const {
@@ -42,17 +45,20 @@ export function DeliverPackageForm({
     getValidPayments
   } = usePaymentManagement(pkg.currency);
 
-  // Obtener el nombre del usuario logueado
-  const deliveredBy = user?.email || 'Usuario no identificado';
+  // Usar el ID del usuario en lugar del email
+  const deliveredBy = user?.id || '';
+  const deliveredByDisplay = user?.email || 'Usuario no identificado';
 
   const handleSubmit = async () => {
     console.log('🔄 Iniciando proceso de entrega...');
     console.log('📦 Paquete:', pkg);
     console.log('👤 Usuario:', user);
+    console.log('🆔 Delivered by (ID):', deliveredBy);
+    console.log('📧 Delivered by (Display):', deliveredByDisplay);
     console.log('💰 Pagos:', payments);
 
-    if (!user) {
-      console.error('❌ Usuario no autenticado');
+    if (!user || !deliveredBy) {
+      console.error('❌ Usuario no autenticado o ID no disponible');
       alert('No se puede procesar la entrega: usuario no autenticado');
       return;
     }
@@ -63,7 +69,7 @@ export function DeliverPackageForm({
 
       const deliveryData = {
         packageId: pkg.id,
-        deliveredBy: deliveredBy,
+        deliveredBy: deliveredBy, // Usar UUID del usuario
         payments: validPayments.length > 0 ? validPayments : undefined
       };
 
@@ -123,7 +129,7 @@ export function DeliverPackageForm({
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <h3 className="text-sm font-medium text-blue-900 mb-2">Información de Entrega</h3>
         <div className="text-sm text-blue-800">
-          <span className="font-medium">Entregado por:</span> {deliveredBy}
+          <span className="font-medium">Entregado por:</span> {deliveredByDisplay}
         </div>
       </div>
 

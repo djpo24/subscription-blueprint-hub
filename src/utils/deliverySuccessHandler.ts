@@ -3,7 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 
 export class DeliverySuccessHandler {
-  static handleDeliverySuccess(queryClient: QueryClient, deliveredBy: string) {
+  static handleDeliverySuccess(queryClient: QueryClient, deliveredByEmail: string) {
     console.log('🎉 Entrega exitosa, invalidando queries...');
     
     // Invalidar todas las queries relevantes
@@ -16,7 +16,7 @@ export class DeliverySuccessHandler {
     // Mostrar toast de éxito
     toast({
       title: "¡Entrega exitosa!",
-      description: `Paquete entregado correctamente por ${deliveredBy}`,
+      description: `Paquete entregado correctamente por ${deliveredByEmail}`,
     });
     
     console.log('✅ Queries invalidadas y toast mostrado');

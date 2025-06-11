@@ -84,29 +84,57 @@ export function formatDateForQuery(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
-// Nueva función específica para fechas de despacho que evita conversiones de zona horaria
-export function formatDispatchDate(dateString: string): string {
+/**
+ * Formatea fechas sin conversión de zona horaria (especialmente útil para fechas de despacho)
+ * Esta función evita que las fechas se muestren incorrectamente debido a las conversiones
+ * automáticas de zona horaria que hace JavaScript
+ */
+export function formatDispatchDate(dateString: string | null | undefined): string {
   if (!dateString) {
     return 'Fecha no disponible';
   }
 
   try {
-    // Para fechas de despacho, asumimos que son fechas locales sin conversión de zona horaria
-    // Parseamos manualmente para evitar interpretación como UTC
-    const parts = dateString.split('-');
+    // Para fechas tipo YYYY-MM-DD, parseamos manualmente para evitar conversiones de zona horaria
+    const parts = String(dateString).split('-');
     if (parts.length === 3) {
       const year = parseInt(parts[0]);
       const month = parseInt(parts[1]) - 1; // Los meses en JavaScript son 0-indexados
       const day = parseInt(parts[2]);
       
+      // Crear fecha local sin conversión de zona horaria
       const date = new Date(year, month, day);
       return format(date, 'dd/MM/yyyy');
     }
     
-    // Fallback al método anterior si el formato no es el esperado
+    // Para otros formatos de fecha, usar método que previene conversiones
+    // pero que maneje correctamente los casos con información de tiempo
+    if (dateString.includes('T')) {
+      const dateOnly = dateString.split('T')[0];
+      return formatDispatchDate(dateOnly);
+    }
+    
+    // Último recurso: usar el formateador genérico
+    console.warn('Formato de fecha no estándar, usando método alternativo:', dateString);
     return formatDateDisplay(dateString, 'dd/MM/yyyy');
   } catch (error) {
     console.error('Error formatting dispatch date:', dateString, error);
+    return 'Error en fecha';
+  }
+}
+
+/**
+ * Versión genérica de formatDispatchDate que acepta una fecha del tipo Date
+ */
+export function formatLocalDate(date: Date | null | undefined): string {
+  if (!date) {
+    return 'Fecha no disponible';
+  }
+  
+  try {
+    return format(date, 'dd/MM/yyyy');
+  } catch (error) {
+    console.error('Error formatting local date:', error);
     return 'Error en fecha';
   }
 }

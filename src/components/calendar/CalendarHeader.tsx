@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateDisplay } from '@/utils/dateUtils';
-import { es } from 'date-fns/locale';
 
 interface CalendarHeaderProps {
   currentDate: Date;

@@ -1,5 +1,5 @@
 
-import { formatTripDate } from '@/utils/dateUtils';
+import { formatDispatchDate } from '@/utils/dateUtils';
 
 interface FlightDateDisplayProps {
   dateTime: string | null;
@@ -12,7 +12,7 @@ export function FlightDateDisplay({ dateTime, className = '' }: FlightDateDispla
     try {
       // Extract just the date part if it's a full datetime string
       const datePart = dateTime.split('T')[0];
-      return formatTripDate(datePart);
+      return formatDispatchDate(datePart);
     } catch (error) {
       console.error('❌ [FlightDateDisplay] Error formatting date:', error);
       return '-';

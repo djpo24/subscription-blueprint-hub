@@ -1,8 +1,7 @@
 
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Truck } from 'lucide-react';
-import { formatTripDate, formatDateDisplay } from '@/utils/dateUtils';
-import { es } from 'date-fns/locale';
+import { formatDateDisplay } from '@/utils/dateUtils';
 
 interface DispatchDialogHeaderProps {
   currentDate: Date;

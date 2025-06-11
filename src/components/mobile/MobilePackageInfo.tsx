@@ -1,16 +1,18 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, MapPin, User, FileText, DollarSign, Coins, CheckCircle, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Package, MapPin, User, FileText, DollarSign, Coins, CheckCircle, ChevronDown, ChevronUp, Calendar, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useDeliveredPackagesByUser } from '@/hooks/useDeliveredPackagesByUser';
 import { format } from 'date-fns';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 interface MobilePackageInfoProps {
   package: PackageInDispatch;
+  onOpenChat?: (customerId: string, customerName?: string) => void;
 }
 
-export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
+export function MobilePackageInfo({ package: pkg, onOpenChat }: MobilePackageInfoProps) {
   const [showAllPackages, setShowAllPackages] = useState(false);
   const { data: deliveredPackages = [], isLoading: isLoadingDelivered } = useDeliveredPackagesByUser();
   
@@ -85,6 +87,13 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
   const handleToggleAllPackages = () => {
     console.log('🔄 [MobilePackageInfo] Toggling all packages view:', !showAllPackages);
     setShowAllPackages(!showAllPackages);
+  };
+
+  const handleOpenChat = () => {
+    if (onOpenChat && pkg.customer_id) {
+      console.log('💬 [MobilePackageInfo] Opening chat for customer:', pkg.customer_id);
+      onOpenChat(pkg.customer_id, pkg.customers?.name);
+    }
   };
 
   return (
@@ -162,9 +171,17 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
                     <User className="h-4 w-4 text-gray-500" />
                     <span className="font-medium">{pkg.customers?.name || 'Cliente no especificado'}</span>
                   </div>
-                  <button className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                    Ver chat
-                  </button>
+                  {onOpenChat && pkg.customer_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenChat}
+                      className="h-8 px-3 text-xs"
+                    >
+                      <MessageCircle className="h-3 w-3 mr-1" />
+                      Chat
+                    </Button>
+                  )}
                 </div>
 
                 {/* Description */}

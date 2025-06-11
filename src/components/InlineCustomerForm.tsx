@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerFormData, initialCustomerFormData } from '@/types/CustomerFormData';
@@ -13,13 +13,28 @@ import { CustomerFormActions } from './CustomerFormActions';
 interface InlineCustomerFormProps {
   onSuccess: (customerId: string) => void;
   onCancel: () => void;
+  initialPhone?: {
+    countryCode: string;
+    phoneNumber: string;
+  };
 }
 
-export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormProps) {
+export function InlineCustomerForm({ 
+  onSuccess, 
+  onCancel, 
+  initialPhone 
+}: InlineCustomerFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailField, setShowEmailField] = useState(false);
   const { toast } = useToast();
-  const [formData, setFormData] = useState<CustomerFormData>(initialCustomerFormData);
+  
+  // Inicializar formData con datos del teléfono si se proporcionan
+  const [formData, setFormData] = useState<CustomerFormData>(() => ({
+    ...initialCustomerFormData,
+    countryCode: initialPhone?.countryCode || '+57',
+    phoneNumber: initialPhone?.phoneNumber || ''
+  }));
+
   const { 
     isChecking, 
     validationError,
@@ -27,6 +42,14 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
     checkCustomerByIdNumber, 
     clearValidationError 
   } = useCustomerValidation();
+
+  // Validar teléfono inicial si se proporciona
+  useEffect(() => {
+    if (initialPhone?.phoneNumber && initialPhone.phoneNumber.length >= 7) {
+      const fullPhone = `${initialPhone.countryCode}${initialPhone.phoneNumber}`;
+      checkCustomerByPhone(fullPhone);
+    }
+  }, [initialPhone, checkCustomerByPhone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('🔴 InlineCustomerForm handleSubmit called!');
@@ -132,6 +155,7 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
           onIdNumberChange={handleIdNumberChange}
           onCountryCodeChange={(value) => updateFormData('countryCode', value)}
           onPhoneNumberChange={handlePhoneNumberChange}
+          phoneReadOnly={!!initialPhone} // Hacer el teléfono de solo lectura si viene pre-cargado
         />
 
         <CustomerEmailField

@@ -1,24 +1,20 @@
 
+import { PhoneNumberInput } from './PhoneNumberInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PhoneNumberInput } from './PhoneNumberInput';
-import { AlertCircle } from 'lucide-react';
-import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
-
-interface ValidationError {
-  field: 'phone' | 'idNumber';
-  message: string;
-}
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CustomerContactFieldsProps {
   idNumber: string;
   countryCode: string;
   phoneNumber: string;
-  validationError: ValidationError | null;
+  validationError: string | null;
   isChecking: boolean;
   onIdNumberChange: (value: string) => void;
   onCountryCodeChange: (value: string) => void;
   onPhoneNumberChange: (value: string) => void;
+  phoneReadOnly?: boolean;
 }
 
 export function CustomerContactFields({
@@ -29,73 +25,55 @@ export function CustomerContactFields({
   isChecking,
   onIdNumberChange,
   onCountryCodeChange,
-  onPhoneNumberChange
+  onPhoneNumberChange,
+  phoneReadOnly = false
 }: CustomerContactFieldsProps) {
-  const handleIdNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatNumber(value);
-    const raw = parseFormattedNumber(formatted);
-    onIdNumberChange(raw);
-  };
-
-  const getFormattedIdNumber = () => {
-    return formatNumber(idNumber);
-  };
-
-  const handleCountryCodeChange = (value: string) => {
-    onCountryCodeChange(value);
-    // Clear phone number when country changes to avoid validation issues
-    if (phoneNumber) {
-      onPhoneNumberChange('');
-    }
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-4">
       <div>
-        <Label htmlFor="idNumber">Cédula (Opcional)</Label>
-        {validationError?.field === 'idNumber' && (
-          <div className="flex items-center gap-2 mt-1 mb-2 text-red-600 text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>{validationError.message}</span>
-          </div>
-        )}
+        <Label htmlFor="idNumber">Cédula/ID</Label>
         <div className="relative">
           <Input
             id="idNumber"
-            value={getFormattedIdNumber()}
-            onChange={handleIdNumberChange}
+            value={idNumber}
+            onChange={(e) => onIdNumberChange(e.target.value)}
             placeholder="Número de identificación"
-            className={`mt-1 ${validationError?.field === 'idNumber' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-            disabled={isChecking}
+            className={validationError ? 'border-red-500' : ''}
           />
           {isChecking && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
             </div>
           )}
         </div>
       </div>
 
       <div>
-        {validationError?.field === 'phone' && (
-          <div className="flex items-center gap-2 mb-2 text-red-600 text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>{validationError.message}</span>
-          </div>
-        )}
         <PhoneNumberInput
           label="Teléfono"
           id="phone"
           countryCode={countryCode}
           phoneNumber={phoneNumber}
-          onCountryCodeChange={handleCountryCodeChange}
+          onCountryCodeChange={onCountryCodeChange}
           onPhoneNumberChange={onPhoneNumberChange}
           placeholder="Número de teléfono"
           required
-          className={validationError?.field === 'phone' ? 'border-red-500 focus-visible:ring-red-500' : ''}
+          showCountryCodeSelector={!phoneReadOnly}
+          className={`${validationError ? 'border-red-500' : ''} ${phoneReadOnly ? 'bg-gray-100' : ''}`}
         />
+        {phoneReadOnly && (
+          <p className="text-xs text-gray-500 mt-1">
+            Número pre-cargado desde el chat
+          </p>
+        )}
       </div>
+
+      {validationError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{validationError}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CountryCodeSelector } from './CountryCodeSelector';
@@ -74,6 +75,8 @@ export function PhoneNumberInput({
     return placeholder;
   };
 
+  const isReadOnly = className?.includes('bg-gray-100');
+
   return (
     <div>
       <Label htmlFor={id}>{label} {required && '*'}</Label>
@@ -99,6 +102,7 @@ export function PhoneNumberInput({
           required={required}
           inputMode="numeric"
           pattern="[0-9\s]*"
+          readOnly={isReadOnly}
         />
       </div>
     </div>

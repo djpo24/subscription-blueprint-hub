@@ -6,9 +6,18 @@ interface CustomerFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (customerId: string) => void;
+  initialPhone?: {
+    countryCode: string;
+    phoneNumber: string;
+  };
 }
 
-export function CustomerFormDialog({ open, onOpenChange, onSuccess }: CustomerFormDialogProps) {
+export function CustomerFormDialog({ 
+  open, 
+  onOpenChange, 
+  onSuccess, 
+  initialPhone 
+}: CustomerFormDialogProps) {
   const handleSuccess = (customerId: string) => {
     onSuccess(customerId);
     onOpenChange(false);
@@ -32,6 +41,7 @@ export function CustomerFormDialog({ open, onOpenChange, onSuccess }: CustomerFo
           <InlineCustomerForm
             onSuccess={handleSuccess}
             onCancel={handleCancel}
+            initialPhone={initialPhone}
           />
         </div>
       </DialogContent>

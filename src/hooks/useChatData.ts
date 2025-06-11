@@ -212,7 +212,7 @@ export function useChatData(): ChatData {
       let displayMessage = lastMessage.message_content || '';
       if (lastMessage.message_type === 'template') {
         displayMessage = `📋 ${displayMessage}`;
-      } else if (!lastMessage.is_from_customer) {
+      } else if (lastMessage.is_from_customer === false) {
         displayMessage = `Tú: ${displayMessage}`;
       }
 

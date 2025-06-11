@@ -1,14 +1,16 @@
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case 'procesado':
-      return 'bg-orange-100 text-orange-800';
-    case 'despachado':
-      return 'bg-purple-100 text-purple-800';
+    case 'pending':
+      return 'bg-gray-100 text-gray-800';
     case 'en_transito':
       return 'bg-blue-100 text-blue-800';
     case 'llegado':
       return 'bg-green-100 text-green-800';
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'in_progress':
+      return 'bg-yellow-100 text-yellow-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -16,27 +18,32 @@ export const getStatusColor = (status: string) => {
 
 export const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'procesado':
-      return 'Procesado';
-    case 'despachado':
-      return 'Despachado';
+    case 'pending':
+      return 'Pendiente';
     case 'en_transito':
       return 'En Tránsito';
     case 'llegado':
       return 'Llegado';
+    case 'completed':
+      return 'Completado';
+    case 'in_progress':
+      return 'En Progreso';
     default:
-      return status.charAt(0).toUpperCase() + status.slice(1);
+      return status;
   }
 };
 
-export const formatCurrency = (value: number | null | undefined) => {
-  if (!value) return '$0';
-  return `$${value.toLocaleString('es-CO')}`;
+export const formatCurrency = (amount: number | null | undefined) => {
+  if (!amount || amount === 0) return '$0';
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
 export const formatWeight = (weight: number | null | undefined) => {
-  if (!weight) return '0';
-  // Convertir a número y eliminar decimales innecesarios
-  const numWeight = Number(weight);
-  return numWeight % 1 === 0 ? numWeight.toString() : numWeight.toFixed(1);
+  if (!weight || weight === 0) return '0';
+  return weight.toFixed(1);
 };

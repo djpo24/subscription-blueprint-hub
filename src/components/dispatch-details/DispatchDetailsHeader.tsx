@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Truck, CheckCircle, FileText } from 'lucide-react';
+import { Truck, Plane, FileText, Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsHeaderProps {
@@ -11,8 +11,8 @@ interface DispatchDetailsHeaderProps {
   isMarkingAsInTransit: boolean;
   isMarkingAsArrived: boolean;
   hasPackages: boolean;
-  onGenerateReport?: () => void;
-  isGeneratingReport?: boolean;
+  onGenerateReport: () => void;
+  isGeneratingReport: boolean;
 }
 
 export function DispatchDetailsHeader({
@@ -24,38 +24,28 @@ export function DispatchDetailsHeader({
   isMarkingAsArrived,
   hasPackages,
   onGenerateReport,
-  isGeneratingReport = false
+  isGeneratingReport
 }: DispatchDetailsHeaderProps) {
   const isMobile = useIsMobile();
 
   return (
-    <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-row justify-between items-center'}`}>
-      <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold`}>
+    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'}`}>
+      <h2 className={`font-semibold ${isMobile ? 'text-lg' : 'text-xl'}`}>
         Detalles del Despacho
-      </h3>
+      </h2>
       
-      <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
-        {hasPackages && onGenerateReport && (
-          <Button
-            onClick={onGenerateReport}
-            disabled={isGeneratingReport}
-            variant="outline"
-            size={isMobile ? 'sm' : 'default'}
-            className="flex items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            {isGeneratingReport ? 'Generando...' : 'Excel'}
-          </Button>
-        )}
-        
+      <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
         {canMarkAsInTransit && (
           <Button
             onClick={onMarkAsInTransit}
-            disabled={isMarkingAsInTransit}
-            size={isMobile ? 'sm' : 'default'}
-            className="flex items-center gap-2"
+            disabled={isMarkingAsInTransit || !hasPackages}
+            className={`${isMobile ? 'w-full text-xs' : ''} bg-blue-600 hover:bg-blue-700`}
           >
-            <Truck className="h-4 w-4" />
+            {isMarkingAsInTransit ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Truck className="h-4 w-4 mr-2" />
+            )}
             {isMarkingAsInTransit ? 'Marcando...' : 'Marcar en Tránsito'}
           </Button>
         )}
@@ -63,15 +53,31 @@ export function DispatchDetailsHeader({
         {canMarkAsArrived && (
           <Button
             onClick={onMarkAsArrived}
-            disabled={isMarkingAsArrived}
-            variant="outline"
-            size={isMobile ? 'sm' : 'default'}
-            className="flex items-center gap-2"
+            disabled={isMarkingAsArrived || !hasPackages}
+            className={`${isMobile ? 'w-full text-xs' : ''} bg-green-600 hover:bg-green-700`}
           >
-            <CheckCircle className="h-4 w-4" />
+            {isMarkingAsArrived ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Plane className="h-4 w-4 mr-2" />
+            )}
             {isMarkingAsArrived ? 'Marcando...' : 'Marcar como Llegado'}
           </Button>
         )}
+        
+        <Button
+          onClick={onGenerateReport}
+          disabled={isGeneratingReport || !hasPackages}
+          variant="outline"
+          className={isMobile ? 'w-full text-xs' : ''}
+        >
+          {isGeneratingReport ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <FileText className="h-4 w-4 mr-2" />
+          )}
+          {isGeneratingReport ? 'Generando...' : 'Generar Reporte'}
+        </Button>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 
 export function useMarkDispatchAsInTransit() {
   const { toast } = useToast();
@@ -11,8 +10,8 @@ export function useMarkDispatchAsInTransit() {
   const markDispatchAsInTransitMutation = useMutation({
     mutationFn: async ({ dispatchId }: { dispatchId: string }) => {
       console.log('🚀 [useMarkDispatchAsInTransit] Iniciando proceso para dispatch:', dispatchId);
-      
-      // PASO 1: Verificar que el despacho existe
+
+      // PASO 1: Verificar que el despacho existe y está en estado "pending"
       const { data: dispatch, error: dispatchError } = await supabase
         .from('dispatch_relations')
         .select('*')
@@ -26,7 +25,7 @@ export function useMarkDispatchAsInTransit() {
 
       console.log('📋 [useMarkDispatchAsInTransit] Despacho encontrado:', dispatch);
 
-      // PASO 2: Obtener todos los paquetes del despacho
+      // PASO 2: Obtener SOLO los paquetes de este despacho específico
       const { data: dispatchPackages, error: packagesError } = await supabase
         .from('dispatch_packages')
         .select(`
@@ -55,19 +54,19 @@ export function useMarkDispatchAsInTransit() {
 
       console.log('📦 [useMarkDispatchAsInTransit] Paquetes del despacho:', packages);
 
-      // PASO 3: Filtrar paquetes que pueden cambiar a tránsito
-      const eligiblePackages = packages.filter(pkg => 
-        pkg.status === 'procesado' || pkg.status === 'despachado'
+      // PASO 3: Filtrar paquetes que están despachados (solo estos deben cambiar a tránsito)
+      const packagesReadyForTransit = packages.filter(pkg => 
+        pkg.status === 'despachado' || pkg.status === 'procesado'
       );
 
-      if (eligiblePackages.length === 0) {
-        throw new Error('No hay paquetes elegibles para marcar en tránsito');
+      if (packagesReadyForTransit.length === 0) {
+        throw new Error('No hay paquetes listos para tránsito en este despacho');
       }
 
-      console.log('✅ [useMarkDispatchAsInTransit] Paquetes elegibles:', eligiblePackages);
+      console.log('✅ [useMarkDispatchAsInTransit] Paquetes listos para tránsito:', packagesReadyForTransit);
 
-      // PASO 4: Actualizar estado de los paquetes a "transito"
-      const packageIds = eligiblePackages.map(pkg => pkg.id);
+      // PASO 4: Actualizar SOLO los paquetes de este despacho a "transito"
+      const packageIds = packagesReadyForTransit.map(pkg => pkg.id);
       
       const { error: updatePackagesError } = await supabase
         .from('packages')
@@ -82,9 +81,9 @@ export function useMarkDispatchAsInTransit() {
         throw updatePackagesError;
       }
 
-      console.log('✅ [useMarkDispatchAsInTransit] Paquetes actualizados a transito');
+      console.log('✅ [useMarkDispatchAsInTransit] Paquetes actualizados a tránsito');
 
-      // PASO 5: Actualizar estado del despacho a "en_transito"
+      // PASO 5: Actualizar SOLO este despacho específico a "en_transito"
       const { error: updateDispatchError } = await supabase
         .from('dispatch_relations')
         .update({
@@ -100,12 +99,12 @@ export function useMarkDispatchAsInTransit() {
 
       console.log('✅ [useMarkDispatchAsInTransit] Despacho actualizado a en_transito');
 
-      // PASO 6: Crear eventos de tracking
-      const trackingEvents = eligiblePackages.map(pkg => ({
+      // PASO 6: Crear eventos de tracking SOLO para los paquetes de este despacho
+      const trackingEvents = packagesReadyForTransit.map(pkg => ({
         package_id: pkg.id,
         event_type: 'in_transit',
-        description: 'Paquete marcado en tránsito desde despacho',
-        location: 'En vuelo'
+        description: 'Paquete en tránsito desde despacho',
+        location: 'En tránsito'
       }));
 
       const { error: trackingError } = await supabase
@@ -117,34 +116,11 @@ export function useMarkDispatchAsInTransit() {
         // No lanzar error aquí, es secundario
       }
 
-      // PASO 7: Actualizar trip si es necesario
-      const tripId = eligiblePackages[0]?.trip_id;
-      if (tripId) {
-        const { data: currentTrip } = await supabase
-          .from('trips')
-          .select('status')
-          .eq('id', tripId)
-          .single();
-
-        if (currentTrip && currentTrip.status !== 'in_progress') {
-          await supabase
-            .from('trips')
-            .update({
-              status: 'in_progress',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', tripId);
-
-          console.log('✅ [useMarkDispatchAsInTransit] Trip actualizado a in_progress');
-        }
-      }
-
       console.log('🎉 [useMarkDispatchAsInTransit] Proceso completado exitosamente');
       
       return { 
-        updatedPackages: eligiblePackages.length, 
-        dispatchId,
-        tripId 
+        updatedPackages: packagesReadyForTransit.length, 
+        dispatchId 
       };
     },
     onSuccess: (data) => {
@@ -173,7 +149,7 @@ export function useMarkDispatchAsInTransit() {
       console.error('💥 [useMarkDispatchAsInTransit] Error en mutación:', error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo marcar el despacho como en tránsito",
+        description: error.message || "No se pudo marcar el despacho en tránsito",
         variant: "destructive"
       });
     }

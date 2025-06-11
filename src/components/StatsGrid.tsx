@@ -7,6 +7,7 @@ interface StatsData {
   pending: number;
   inTransit: number;
   delivered: number;
+  transito?: number; // Agregamos el estado en español
 }
 
 interface StatsGridProps {
@@ -16,6 +17,9 @@ interface StatsGridProps {
 }
 
 export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGridProps) {
+  // Usar el estado correcto 'transito' o fallback a 'inTransit'
+  const inTransitCount = packageStats?.transito || packageStats?.inTransit || 0;
+  
   const stats = [
     {
       title: "Total Encomiendas",
@@ -35,7 +39,7 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
     },
     {
       title: "En Tránsito",
-      value: packageStats?.inTransit.toString() || "0",
+      value: inTransitCount.toString(),
       change: "-3%",
       icon: MapPin,
       color: "text-black",

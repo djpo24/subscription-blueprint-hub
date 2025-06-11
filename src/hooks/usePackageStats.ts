@@ -22,7 +22,7 @@ export function usePackageStats() {
         delivered: data.filter(p => p.status === 'delivered').length,
         // Estados legacy para compatibilidad
         pending: data.filter(p => p.status === 'pending').length,
-        inTransit: data.filter(p => p.status === 'in_transit').length,
+        inTransit: data.filter(p => p.status === 'transito').length, // Corregido: usar 'transito' en lugar de 'in_transit'
       };
       
       return stats;

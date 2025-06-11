@@ -1,6 +1,6 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
@@ -28,8 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle the temporary admin user sync - using string comparison since event is a string
-        if (event === 'SIGNED_UP' && session?.user) {
+        // Handle the temporary admin user sync - using proper AuthChangeEvent enum
+        if (event === AuthChangeEvent.SIGNED_UP && session?.user) {
           console.log('New user signed up, checking for admin sync...');
           
           // Check if this is the admin user that needs syncing

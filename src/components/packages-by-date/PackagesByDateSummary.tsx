@@ -1,6 +1,6 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatCurrency } from '@/utils/currencyFormatter';
+import { formatCurrency, formatAmountToCollectWithCurrency } from '@/utils/currencyFormatter';
 import { formatWeight, formatFreight } from '@/utils/formatters';
 import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,7 +54,7 @@ export function PackagesByDateSummary({
         <CardContent className="p-4 text-center">
           {!hasAnyAmountToCollect ? (
             <>
-              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>$0</div>
+              <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>---</div>
               <div className="text-xs text-gray-600">A Cobrar</div>
             </>
           ) : hasMultipleCurrencies ? (
@@ -62,7 +62,7 @@ export function PackagesByDateSummary({
               {currencies.map((currency) => (
                 <div key={currency}>
                   <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-green-600`}>
-                    {formatCurrency(amountsByCurrency[currency], currency as 'COP' | 'AWG')}
+                    {formatAmountToCollectWithCurrency(amountsByCurrency[currency], currency as 'COP' | 'AWG')}
                   </div>
                 </div>
               ))}
@@ -71,7 +71,7 @@ export function PackagesByDateSummary({
           ) : (
             <>
               <div className={`${isMobile ? 'text-sm' : 'text-2xl'} font-bold text-green-600`}>
-                {formatCurrency(amountsByCurrency[currencies[0]], currencies[0] as 'COP' | 'AWG')}
+                {formatAmountToCollectWithCurrency(amountsByCurrency[currencies[0]], currencies[0] as 'COP' | 'AWG')}
               </div>
               <div className="text-xs text-gray-600">A Cobrar</div>
             </>

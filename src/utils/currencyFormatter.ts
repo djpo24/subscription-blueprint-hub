@@ -20,6 +20,26 @@ export const formatCurrency = (amount: number, currency: Currency = 'COP'): stri
   return formatters[currency].format(amount);
 };
 
+export const formatAmountToCollectWithCurrency = (amount: number | null | undefined, currency: Currency = 'COP'): string => {
+  if (!amount || amount === 0) return '---';
+  
+  const formatters = {
+    COP: new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }),
+    AWG: new Intl.NumberFormat('en-AW', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }),
+  };
+
+  const formattedAmount = formatters[currency].format(amount);
+  const symbol = getCurrencySymbol(currency);
+  
+  return `${symbol}${formattedAmount} ${currency}`;
+};
+
 export const getCurrencySymbol = (currency: Currency): string => {
   const symbols = {
     COP: '$',

@@ -1,5 +1,6 @@
 
 import { formatNumberWithThousandsSeparator } from './numberFormatter';
+import { formatAmountToCollectWithCurrency, type Currency } from './currencyFormatter';
 
 // Utility functions for formatting numbers
 export const formatDecimal = (value: number | null | undefined, maxDecimals: number = 2): string => {
@@ -23,6 +24,6 @@ export const formatFreight = (freight: number | null | undefined): string => {
   return formatDecimal(freight, 2);
 };
 
-export const formatAmountToCollect = (amount: number | null | undefined): string => {
-  return formatDecimal(amount, 0); // Cambiado a 0 decimales
+export const formatAmountToCollect = (amount: number | null | undefined, currency: Currency = 'COP'): string => {
+  return formatAmountToCollectWithCurrency(amount, currency);
 };

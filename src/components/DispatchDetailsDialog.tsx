@@ -84,11 +84,14 @@ export function DispatchDetailsDialog({
   const canMarkAsArrived = currentDispatch?.status === 'en_transito';
 
   const handleMarkAsInTransit = () => {
-    if (firstPackage && firstPackage.trip_id) {
-      console.log('🚀 Marcando viaje como en tránsito:', firstPackage.trip_id);
-      markTripAsInTransit(firstPackage.trip_id);
+    if (firstPackage && firstPackage.trip_id && dispatchId) {
+      console.log('🚀 Marcando despacho como en tránsito:', { tripId: firstPackage.trip_id, dispatchId });
+      markTripAsInTransit({ tripId: firstPackage.trip_id, dispatchId });
     } else {
-      console.error('❌ No se puede marcar como en tránsito: no hay trip_id');
+      console.error('❌ No se puede marcar como en tránsito: faltan datos', {
+        tripId: firstPackage?.trip_id,
+        dispatchId
+      });
     }
   };
 

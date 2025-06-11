@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,9 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle the temporary admin user sync - using string comparison
-        if (event === 'SIGNED_UP' && session?.user) {
-          console.log('New user signed up, checking for admin sync...');
+        // Handle the temporary admin user sync - using correct event comparison
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          console.log('User authenticated, checking for admin sync...');
           
           // Check if this is the admin user that needs syncing
           const { data: adminProfile } = await supabase

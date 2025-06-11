@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
@@ -73,30 +72,28 @@ export function DispatchDetailsDialog({
 
   console.log('💰 [DispatchDetailsDialog] Final amounts by currency:', amountsByCurrency);
 
-  // Obtener información del despacho y del viaje
+  // Obtener información del despacho
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
   const firstPackage = packages[0];
   
-  // Actualizar la lógica para incluir el estado "despachado"
-  const canMarkAsInTransit = firstPackage && packages.some(pkg => 
+  // Lógica simplificada para determinar cuándo se puede marcar en tránsito
+  const canMarkAsInTransit = packages.some(pkg => 
     pkg.status === 'procesado' || pkg.status === 'despachado'
-  );
+  ) && currentDispatch?.status !== 'en_transito';
+  
   const canMarkAsArrived = currentDispatch?.status === 'en_transito';
 
   const handleMarkAsInTransit = () => {
-    if (firstPackage && firstPackage.trip_id && dispatchId) {
-      console.log('🚀 Marcando despacho como en tránsito:', { tripId: firstPackage.trip_id, dispatchId });
-      markTripAsInTransit({ tripId: firstPackage.trip_id, dispatchId });
+    if (dispatchId) {
+      console.log('🚀 [DispatchDetailsDialog] Marcando despacho como en tránsito:', dispatchId);
+      markTripAsInTransit({ dispatchId });
     } else {
-      console.error('❌ No se puede marcar como en tránsito: faltan datos', {
-        tripId: firstPackage?.trip_id,
-        dispatchId
-      });
+      console.error('❌ No se puede marcar como en tránsito: falta dispatchId');
     }
   };
 
   const handleMarkAsArrived = () => {
-    if (firstPackage && firstPackage.trip_id) {
+    if (firstPackage?.trip_id) {
       console.log('🏁 Marcando viaje como llegado:', firstPackage.trip_id);
       markTripAsArrived(firstPackage.trip_id);
     } else {

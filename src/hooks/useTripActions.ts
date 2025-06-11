@@ -1,13 +1,13 @@
 
-import { useMarkTripAsInTransit } from './useMarkTripAsInTransit';
+import { useMarkDispatchAsInTransit } from './useMarkDispatchAsInTransit';
 import { useMarkTripAsArrived } from './useMarkTripAsArrived';
 
 export function useTripActions() {
-  const { markTripAsInTransit, isMarkingAsInTransit } = useMarkTripAsInTransit();
+  const { markDispatchAsInTransit, isMarkingAsInTransit } = useMarkDispatchAsInTransit();
   const { markTripAsArrived, isMarkingAsArrived } = useMarkTripAsArrived();
 
   return {
-    markTripAsInTransit,
+    markTripAsInTransit: markDispatchAsInTransit,
     isMarkingAsInTransit,
     markTripAsArrived,
     isMarkingAsArrived,

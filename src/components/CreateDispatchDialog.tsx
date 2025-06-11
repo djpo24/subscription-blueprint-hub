@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -138,19 +137,19 @@ export function CreateDispatchDialog({
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg font-medium mb-2">No hay encomiendas disponibles para despacho</p>
               <p className="text-sm mb-4">
-                Los paquetes mostrados ya fueron procesados o están en estados no elegibles para despacho.
+                Los paquetes mostrados ya fueron despachados o están en estados no elegibles para despacho.
               </p>
               <div className="text-xs text-gray-400 bg-gray-50 p-4 rounded">
                 <p className="mb-3"><strong>🔍 DIAGNÓSTICO:</strong></p>
                 <ul className="list-disc list-inside space-y-1 text-left">
-                  <li><strong>Estados elegibles:</strong> "recibido", "bodega", "pending", "arrived"</li>
-                  <li><strong>Estados NO elegibles:</strong> "procesado" (ya despachado), "delivered", "in_transit", etc.</li>
+                  <li><strong>Estados elegibles:</strong> "recibido", "bodega", "pending", "arrived", "procesado"</li>
+                  <li><strong>Estados NO elegibles:</strong> "delivered", "in_transit", "transito", "en_destino"</li>
                 </ul>
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded">
-                  <p className="text-amber-800 font-medium">💡 Nota importante:</p>
-                  <p className="text-amber-700 text-sm mt-1">
-                    Los paquetes en estado "procesado" ya fueron incluidos en un despacho anterior. 
-                    Solo se pueden despachar paquetes que aún no han sido procesados.
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-blue-800 font-medium">💡 Nota importante:</p>
+                  <p className="text-blue-700 text-sm mt-1">
+                    Los paquetes en estado "procesado" SÍ pueden ser despachados. 
+                    Este estado solo indica que la etiqueta ha sido impresa, no que hayan sido despachados.
                   </p>
                 </div>
               </div>

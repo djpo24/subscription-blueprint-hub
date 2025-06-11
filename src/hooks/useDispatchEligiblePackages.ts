@@ -27,12 +27,13 @@ interface Trip {
   packages: Package[];
 }
 
-// Estados que SÍ pueden ser despachados (CORREGIDO - removido "procesado")
+// Estados que SÍ pueden ser despachados (CORREGIDO - incluido "procesado")
 const ELIGIBLE_STATES = [
   'recibido',     // Paquetes que han llegado y están listos para despacho
   'bodega',       // Paquetes en bodega listos para despacho
   'pending',      // Paquetes pendientes también pueden ser despachados
   'arrived',      // Paquetes que han llegado
+  'procesado',    // ¡IMPORTANTE! Solo significa "etiqueta impresa", SÍ puede ser despachado
 ] as const;
 
 // Estados que NO deben aparecer en el listado de despacho
@@ -41,7 +42,6 @@ const INELIGIBLE_STATES = [
   'in_transit',   // Ya está en tránsito
   'transito',     // Variante de in_transit
   'en_destino',   // Ya llegó al destino
-  'procesado',    // ¡CRÍTICO! Los paquetes procesados YA fueron despachados
 ] as const;
 
 export function useDispatchEligiblePackages(trips: Trip[] = []) {
@@ -85,7 +85,7 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     // Log all package statuses for debugging
     const allPackages = trips.flatMap(trip => trip.packages || []);
     
-    console.log('📦 [useDispatchEligiblePackages] === ANÁLISIS DE ESTADOS ===');
+    console.log('📦 [useDispatchEligiblePackages] === ANÁLISIS DE ESTADOS CORREGIDO ===');
     console.log('📋 [useDispatchEligiblePackages] Total paquetes encontrados:', allPackages.length);
     
     if (allPackages.length === 0) {
@@ -99,8 +99,8 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     }, {} as Record<string, number>);
     
     console.log('📊 [useDispatchEligiblePackages] Distribución de estados:', statusCounts);
-    console.log('✅ [useDispatchEligiblePackages] Estados ELEGIBLES:', ELIGIBLE_STATES);
-    console.log('❌ [useDispatchEligiblePackages] Estados NO ELEGIBLES (incluyendo "procesado"):', INELIGIBLE_STATES);
+    console.log('✅ [useDispatchEligiblePackages] Estados ELEGIBLES (incluye "procesado"):', ELIGIBLE_STATES);
+    console.log('❌ [useDispatchEligiblePackages] Estados NO ELEGIBLES:', INELIGIBLE_STATES);
 
     // Crear un Set con los IDs de paquetes ya despachados
     const dispatchedPackageIds = new Set(
@@ -112,19 +112,13 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     const eligiblePackages = trips.flatMap(trip => 
       (trip.packages || [])
         .filter(pkg => {
-          // NUEVA LÓGICA: Los paquetes "procesado" NO son elegibles
-          if (pkg.status === 'procesado') {
-            console.log(`⚠️ [useDispatchEligiblePackages] Paquete ${pkg.tracking_number} EXCLUIDO (ya procesado - no puede ser despachado de nuevo)`);
-            return false;
-          }
-
           // Verificar si el paquete ya está despachado
           if (dispatchedPackageIds.has(pkg.id)) {
             console.log(`⚠️ [useDispatchEligiblePackages] Paquete ${pkg.tracking_number} EXCLUIDO (ya en dispatch_packages)`);
             return false;
           }
 
-          // Verificar si el estado es elegible (sin incluir "procesado")
+          // Verificar si el estado es elegible (AHORA incluye "procesado")
           const isEligible = ELIGIBLE_STATES.includes(pkg.status as any);
           
           if (!isEligible) {
@@ -156,11 +150,10 @@ export function useDispatchEligiblePackages(trips: Trip[] = []) {
     if (eligiblePackages.length === 0) {
       console.log('❌ [useDispatchEligiblePackages] === NO HAY PAQUETES ELEGIBLES ===');
       console.log('🔍 [useDispatchEligiblePackages] Razones principales:');
-      console.log('   1. Los paquetes ya están en estado "procesado" (ya fueron despachados)');
-      console.log('   2. Los paquetes ya están en dispatch_packages');
-      console.log('   3. Los paquetes están en estados no elegibles para despacho');
-      console.log('   4. No hay paquetes en los viajes de esta fecha');
-      console.log('💡 [useDispatchEligiblePackages] SOLUCIÓN: Solo se pueden despachar paquetes en estado "recibido", "bodega", "pending" o "arrived"');
+      console.log('   1. Los paquetes ya están en dispatch_packages (ya fueron despachados)');
+      console.log('   2. Los paquetes están en estados no elegibles para despacho');
+      console.log('   3. No hay paquetes en los viajes de esta fecha');
+      console.log('💡 [useDispatchEligiblePackages] NOTA: "procesado" SÍ es elegible (solo significa etiqueta impresa)');
     }
     
     return eligiblePackages;

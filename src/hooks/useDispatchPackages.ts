@@ -7,66 +7,59 @@ export function useDispatchPackages(dispatchId: string) {
   return useQuery({
     queryKey: ['dispatch-packages', dispatchId],
     queryFn: async (): Promise<PackageInDispatch[]> => {
-      // First get the package IDs from dispatch_packages
-      const { data: dispatchPackages, error: dispatchError } = await supabase
-        .from('dispatch_packages')
-        .select('package_id')
-        .eq('dispatch_id', dispatchId);
+      if (!dispatchId) return [];
       
-      if (dispatchError) throw dispatchError;
+      console.log('🔍 Fetching packages for dispatch:', dispatchId);
       
-      if (!dispatchPackages || dispatchPackages.length === 0) {
-        return [];
-      }
-      
-      const packageIds = dispatchPackages.map(dp => dp.package_id);
-      
-      // Then get the package details including customer_id, delivered_at, and delivered_by
-      const { data: packages, error: packagesError } = await supabase
-        .from('packages')
-        .select(`
-          id,
-          tracking_number,
-          origin,
-          destination,
-          status,
-          description,
-          weight,
-          freight,
-          amount_to_collect,
-          currency,
-          trip_id,
-          customer_id,
-          delivered_at,
-          delivered_by
-        `)
-        .in('id', packageIds);
-      
-      if (packagesError) throw packagesError;
-      
-      // Get customer details for each package
-      const packagesWithCustomers = await Promise.all(
-        (packages || []).map(async (pkg) => {
-          const { data: customer } = await supabase
-            .from('customers')
-            .select('name, email, phone')
-            .eq('id', pkg.customer_id)
-            .single();
+      try {
+        const { data, error } = await supabase
+          .from('dispatch_packages')
+          .select(`
+            *,
+            packages!package_id (
+              *,
+              customers!customer_id (
+                name,
+                email,
+                phone
+              )
+            )
+          `)
+          .eq('dispatch_id', dispatchId);
+
+        if (error) {
+          console.error('❌ Error fetching dispatch packages:', error);
+          throw error;
+        }
+
+        // Transform data to match PackageInDispatch interface
+        return (data || []).map(dispatchPackage => {
+          const pkg = dispatchPackage.packages;
+          if (!pkg) return null;
           
           return {
-            ...pkg,
+            id: pkg.id,
+            tracking_number: pkg.tracking_number || '',
+            origin: pkg.origin || '',
+            destination: pkg.destination || '',
+            status: pkg.status || 'pending',
+            description: pkg.description || '',
+            weight: pkg.weight,
+            freight: pkg.freight,
+            amount_to_collect: pkg.amount_to_collect,
+            currency: pkg.currency,
+            trip_id: pkg.trip_id,
             delivered_at: pkg.delivered_at,
             delivered_by: pkg.delivered_by,
-            customers: customer || { name: 'N/A', email: 'N/A', phone: 'N/A' }
+            customers: pkg.customers
           };
-        })
-      );
-      
-      return packagesWithCustomers;
+        }).filter(Boolean) as PackageInDispatch[];
+      } catch (error) {
+        console.error('❌ Error in useDispatchPackages:', error);
+        return [];
+      }
     },
     enabled: !!dispatchId,
-    refetchOnWindowFocus: true,
-    refetchInterval: 20000, // Refetch cada 20 segundos
-    staleTime: 5000 // Los datos se consideran obsoletos después de 5 segundos
+    refetchInterval: 30000,
   });
 }

@@ -33,7 +33,8 @@ export function useUserActivities() {
       const transformedData: UserActivity[] = (data || []).map(activity => ({
         id: activity.id,
         created_at: activity.created_at,
-        activity_type: activity.action_type,
+        action_type: activity.action_type, // Map action_type to action_type
+        activity_type: activity.action_type, // Also map to activity_type
         description: activity.description,
         user_name: activity.user_profiles ? `${activity.user_profiles.first_name} ${activity.user_profiles.last_name}` : 'Usuario desconocido',
         user_email: activity.user_profiles?.email || '',

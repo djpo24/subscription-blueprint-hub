@@ -9,12 +9,7 @@ export function useAvailableTravelers() {
     queryFn: async (): Promise<Traveler[]> => {
       const { data, error } = await supabase
         .from('travelers')
-        .select(`
-          *,
-          user_profiles!inner (
-            email
-          )
-        `)
+        .select('*')
         .order('first_name');
 
       if (error) {
@@ -22,7 +17,10 @@ export function useAvailableTravelers() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(traveler => ({
+        ...traveler,
+        user_profiles: undefined // Remove user_profiles since it doesn't exist in this query
+      }));
     }
   });
 }

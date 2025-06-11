@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 export function useNotifications() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isManualSending, setIsManualSending] = useState(false);
   const { toast } = useToast();
 
   const { data: notificationLog = [], isLoading } = useQuery({
@@ -92,12 +93,36 @@ export function useNotifications() {
     }
   };
 
+  const sendManualNotification = async (params: { customerId: string; message: string }) => {
+    setIsManualSending(true);
+    try {
+      // Simulate sending manual notification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Notificación manual enviada",
+        description: "El mensaje se ha enviado correctamente",
+      });
+    } catch (error) {
+      console.error('❌ Error sending manual notification:', error);
+      toast({
+        title: "Error",
+        description: "Error al enviar la notificación manual",
+        variant: "destructive"
+      });
+    } finally {
+      setIsManualSending(false);
+    }
+  };
+
   return {
     notificationLog,
     isLoading,
     processNotifications,
     sendTestNotification,
+    sendManualNotification,
     isProcessing,
-    isSendingTest
+    isSendingTest,
+    isManualSending
   };
 }

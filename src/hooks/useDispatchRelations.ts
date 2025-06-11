@@ -30,13 +30,15 @@ export function useDispatchRelations(selectedDate?: Date) {
         // Transform data to match expected interface
         return (data || []).map(dispatch => ({
           ...dispatch,
-          status: dispatch.status || 'pending',
+          status: 'pending', // Default status since it doesn't exist in DB
           total_packages: 0, // Default values since these don't exist in DB
           total_weight: 0,
           total_freight: 0,
           total_amount_to_collect: 0,
           pending_count: 0,
-          delivered_count: 0
+          delivered_count: 0,
+          created_at: dispatch.created_at || new Date().toISOString(),
+          updated_at: dispatch.updated_at || new Date().toISOString()
         }));
       } catch (error) {
         console.error('❌ Error in useDispatchRelations:', error);
@@ -46,3 +48,6 @@ export function useDispatchRelations(selectedDate?: Date) {
     refetchInterval: 30000,
   });
 }
+
+// Export the useDispatchPackages function
+export { useDispatchPackages } from './useDispatchPackages';

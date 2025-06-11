@@ -10,16 +10,32 @@ import { MoreHorizontal, Search, Package, ExternalLink } from 'lucide-react';
 import { usePackages } from '@/hooks/usePackages';
 import { PackageActionsDropdown } from '@/components/PackageActionsDropdown';
 import { PackageLabelDialog } from '@/components/PackageLabelDialog';
-import { PackageDialog } from '@/components/PackageDialog';
 import { EditPackageDialog } from '@/components/EditPackageDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency, type Currency } from '@/utils/currencyFormatter';
+
+interface PackageDialogData {
+  id: string;
+  tracking_number: string;
+  customer_id: string;
+  description: string;
+  weight: number | null;
+  freight: number | null;
+  amount_to_collect: number | null;
+  currency: Currency;
+  status: string;
+  origin: string;
+  destination: string;
+  customers?: {
+    name: string;
+    email: string;
+  };
+}
 
 export function AllPackagesTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { data: packages = [], isLoading } = usePackages();
   const isMobile = useIsMobile();
@@ -54,9 +70,6 @@ export function AllPackagesTable() {
       case 'label':
         setIsLabelDialogOpen(true);
         break;
-      case 'view':
-        setIsDetailsDialogOpen(true);
-        break;
       case 'edit':
         setIsEditDialogOpen(true);
         break;
@@ -64,6 +77,28 @@ export function AllPackagesTable() {
   };
 
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId);
+
+  // Transform package data to match dialog expectations
+  const getPackageDialogData = (pkg: typeof selectedPackage): PackageDialogData | null => {
+    if (!pkg) return null;
+    
+    return {
+      id: pkg.id,
+      tracking_number: pkg.tracking_number || '',
+      customer_id: pkg.customer_id || '',
+      description: pkg.description || '',
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      currency: (pkg.currency as Currency) || 'COP',
+      status: pkg.status || 'pending',
+      origin: pkg.origin || '',
+      destination: pkg.destination || '',
+      customers: pkg.customers
+    };
+  };
+
+  const packageDialogData = getPackageDialogData(selectedPackage);
 
   if (isLoading) {
     return (
@@ -165,10 +200,6 @@ export function AllPackagesTable() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleAction('view', pkg.id)}>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                Ver detalles
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleAction('edit', pkg.id)}>
                                 Editar
                               </DropdownMenuItem>
@@ -194,39 +225,22 @@ export function AllPackagesTable() {
       </Card>
 
       {/* Dialogs */}
-      {selectedPackage && (
+      {packageDialogData && (
         <>
           <PackageLabelDialog
-            package={{
-              ...selectedPackage,
-              currency: (selectedPackage.currency as Currency) || 'COP'
-            }}
+            package={packageDialogData}
             open={isLabelDialogOpen}
             onOpenChange={(open) => {
               setIsLabelDialogOpen(open);
               if (!open) setSelectedPackageId(null);
             }}
           />
-          <PackageDialog
-            package={{
-              ...selectedPackage,
-              currency: (selectedPackage.currency as Currency) || 'COP'
-            }}
-            open={isDetailsDialogOpen}
-            onOpenChange={(open) => {
-              setIsDetailsDialogOpen(open);
-              if (!open) setSelectedPackageId(null);
-            }}
-          />
           <EditPackageDialog
-            package={{
-              ...selectedPackage,
-              currency: (selectedPackage.currency as Currency) || 'COP'
-            }}
+            package={packageDialogData}
             open={isEditDialogOpen}
-            onClose={() => {
-              setIsEditDialogOpen(false);
-              setSelectedPackageId(null);
+            onOpenChange={(open) => {
+              setIsEditDialogOpen(open);
+              if (!open) setSelectedPackageId(null);
             }}
           />
         </>

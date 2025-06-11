@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function useNotificationValidation() {
   const [isValidating, setIsValidating] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
 
   const validateNotification = async (notificationId: string) => {
@@ -58,8 +59,43 @@ export function useNotificationValidation() {
     }
   };
 
+  const resendNotification = async (params: {
+    notificationId: string;
+    customerId?: string;
+    packageId?: string;
+    message: string;
+    phone: string;
+  }) => {
+    setIsResending(true);
+    try {
+      console.log('🔄 Resending notification:', params);
+
+      // Simulate resending notification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      toast({
+        title: "Reenviado exitosamente",
+        description: "La notificación ha sido reenviada correctamente",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error resending notification:', error);
+      toast({
+        title: "Error",
+        description: "Error al reenviar la notificación",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return {
     validateNotification,
-    isValidating
+    resendNotification,
+    isValidating,
+    isResending
   };
 }

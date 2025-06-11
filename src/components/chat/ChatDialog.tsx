@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChatConversation } from './ChatConversation';
 import { useChatData } from '@/hooks/useChatData';
@@ -5,6 +6,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import type { ChatMessage } from '@/types/chatMessage';
 
 interface ChatDialogProps {
   open: boolean;
@@ -93,6 +95,20 @@ export function ChatDialog({
     refetchChats();
   };
 
+  // Convert IncomingMessage to ChatMessage
+  const convertToChatMessages = (messages: any[]): ChatMessage[] => {
+    return messages.map(msg => ({
+      id: msg.id,
+      message_content: msg.message_content || '',
+      message_type: msg.message_type || 'text',
+      timestamp: msg.timestamp || new Date().toISOString(),
+      whatsapp_message_id: msg.whatsapp_message_id,
+      from_phone: msg.from_phone,
+      is_from_customer: true,
+      media_url: msg.media_url
+    }));
+  };
+
   if (!open || !customerId) return null;
 
   const existingConversation = selectedPhone && conversationsByPhone && conversationsByPhone[selectedPhone];
@@ -121,7 +137,7 @@ export function ChatDialog({
                 phone={displayPhone}
                 customerName={displayName}
                 customerId={customerId}
-                messages={existingConversation?.messages || []}
+                messages={existingConversation ? convertToChatMessages(existingConversation.messages) : []}
                 isRegistered={true}
                 onSendMessage={handleSendMessageWrapper}
                 isLoading={isManualSending}

@@ -12,6 +12,7 @@ interface ChatItem {
   customerName?: string;
   lastMessage: string;
   lastMessageTime: string;
+  timestamp?: string;
   isRegistered: boolean;
   unreadCount: number;
   profileImageUrl?: string | null;
@@ -49,6 +50,7 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
             {chats.map((chat) => {
               // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
               const displayName = chat.customerName || 'Cliente';
+              const messageTime = chat.lastMessageTime || chat.timestamp || '';
               
               console.log('Rendering chat item:', {
                 phone: chat.phone,
@@ -106,9 +108,11 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
                         <p className="text-sm text-gray-500 truncate flex-1 mr-2">
                           {chat.lastMessage}
                         </p>
-                        <span className="text-xs text-gray-400 flex-shrink-0">
-                          {format(new Date(chat.lastMessageTime), 'HH:mm', { locale: es })}
-                        </span>
+                        {messageTime && (
+                          <span className="text-xs text-gray-400 flex-shrink-0">
+                            {format(new Date(messageTime), 'HH:mm', { locale: es })}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

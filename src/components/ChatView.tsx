@@ -8,6 +8,7 @@ import { ChatConversation } from './chat/ChatConversation';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { ChatMessage } from '@/types/chatMessage';
 
 export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
@@ -40,6 +41,33 @@ export function ChatView() {
     setSelectedPhone(null);
   };
 
+  // Convert IncomingMessage to ChatMessage
+  const convertToChatMessages = (messages: any[]): ChatMessage[] => {
+    return messages.map(msg => ({
+      id: msg.id,
+      message_content: msg.message_content || '',
+      message_type: msg.message_type || 'text',
+      timestamp: msg.timestamp || new Date().toISOString(),
+      whatsapp_message_id: msg.whatsapp_message_id,
+      from_phone: msg.from_phone,
+      is_from_customer: true,
+      media_url: msg.media_url
+    }));
+  };
+
+  // Convert chatList to proper ChatItem format
+  const formatChatList = (chats: any[]) => {
+    return chats.map(chat => ({
+      phone: chat.phone,
+      customerName: chat.customerName,
+      lastMessage: chat.lastMessage,
+      lastMessageTime: chat.timestamp,
+      isRegistered: !!chat.customerId,
+      unreadCount: chat.unreadCount || 0,
+      profileImageUrl: chat.profileImageUrl
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -48,10 +76,14 @@ export function ChatView() {
     );
   }
 
+  const formattedChatList = formatChatList(chatList);
+
   // Vista móvil - mostrar solo lista o solo conversación
   if (isMobile) {
     // Si hay una conversación seleccionada, mostrar solo la conversación
     if (selectedPhone && conversationsByPhone[selectedPhone]) {
+      const messages = convertToChatMessages(conversationsByPhone[selectedPhone].messages);
+      
       return (
         <div className="h-[calc(100vh-12rem)]">
           <div className="h-full flex flex-col">
@@ -76,7 +108,7 @@ export function ChatView() {
                 phone={selectedPhone}
                 customerName={conversationsByPhone[selectedPhone].customerName}
                 customerId={conversationsByPhone[selectedPhone].customerId}
-                messages={conversationsByPhone[selectedPhone].messages}
+                messages={messages}
                 isRegistered={!!conversationsByPhone[selectedPhone].customerId}
                 onSendMessage={handleSendMessageWrapper}
                 isLoading={isManualSending}
@@ -91,7 +123,7 @@ export function ChatView() {
     // Vista de lista de chats en móvil
     return (
       <div className="h-[calc(100vh-12rem)]">
-        {chatList.length === 0 ? (
+        {formattedChatList.length === 0 ? (
           <Card className="h-full">
             <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
               <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
@@ -103,7 +135,7 @@ export function ChatView() {
           </Card>
         ) : (
           <ChatList
-            chats={chatList}
+            chats={formattedChatList}
             selectedPhone={selectedPhone}
             onChatSelect={setSelectedPhone}
           />
@@ -118,7 +150,7 @@ export function ChatView() {
       <div className="h-full flex">
         {/* Columna izquierda - Lista de chats */}
         <div className="w-1/3 min-w-[300px] max-w-[400px]">
-          {chatList.length === 0 ? (
+          {formattedChatList.length === 0 ? (
             <Card className="h-full">
               <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
                 <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
@@ -130,7 +162,7 @@ export function ChatView() {
             </Card>
           ) : (
             <ChatList
-              chats={chatList}
+              chats={formattedChatList}
               selectedPhone={selectedPhone}
               onChatSelect={setSelectedPhone}
             />
@@ -144,7 +176,7 @@ export function ChatView() {
               phone={selectedPhone}
               customerName={conversationsByPhone[selectedPhone].customerName}
               customerId={conversationsByPhone[selectedPhone].customerId}
-              messages={conversationsByPhone[selectedPhone].messages}
+              messages={convertToChatMessages(conversationsByPhone[selectedPhone].messages)}
               isRegistered={!!conversationsByPhone[selectedPhone].customerId}
               onSendMessage={handleSendMessageWrapper}
               isLoading={isManualSending}
@@ -155,10 +187,10 @@ export function ChatView() {
               <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
                 <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">
-                  {chatList.length > 0 ? 'Selecciona un chat' : 'No hay conversaciones'}
+                  {formattedChatList.length > 0 ? 'Selecciona un chat' : 'No hay conversaciones'}
                 </h3>
                 <p className="text-gray-500">
-                  {chatList.length > 0 
+                  {formattedChatList.length > 0 
                     ? 'Haz clic en una conversación de la izquierda para ver los mensajes'
                     : 'Las conversaciones aparecerán cuando los clientes escriban'
                   }

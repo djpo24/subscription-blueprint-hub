@@ -10,6 +10,10 @@ interface GuestTrackingResult {
   isLoading: boolean;
   error: string | null;
   searchPackage: (trackingNumber: string) => void;
+  trackPackage: (trackingNumber: string) => void;
+  clearResult: () => void;
+  loading: boolean;
+  trackingResult: Package | null;
 }
 
 export function useGuestTracking(): GuestTrackingResult {
@@ -48,7 +52,10 @@ export function useGuestTracking(): GuestTrackingResult {
         }
 
         setError(null);
-        return data;
+        return {
+          ...data,
+          currency: (data.currency as 'COP' | 'AWG') || 'COP'
+        };
       } catch (error) {
         console.error('❌ Error in guest tracking:', error);
         setError('Error al buscar el paquete');
@@ -93,11 +100,24 @@ export function useGuestTracking(): GuestTrackingResult {
     setError(null);
   };
 
+  const trackPackage = (newTrackingNumber: string) => {
+    searchPackage(newTrackingNumber);
+  };
+
+  const clearResult = () => {
+    setTrackingNumber('');
+    setError(null);
+  };
+
   return {
     package: packageData || null,
     trackingEvents,
     isLoading: isLoadingPackage || isLoadingEvents,
     error,
-    searchPackage
+    searchPackage,
+    trackPackage,
+    clearResult,
+    loading: isLoadingPackage || isLoadingEvents,
+    trackingResult: packageData || null
   };
 }

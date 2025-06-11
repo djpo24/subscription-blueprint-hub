@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { PackageLabelDialog } from '@/components/PackageLabelDialog';
 import { EditPackageDialog } from '@/components/EditPackageDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency, type Currency } from '@/utils/currencyFormatter';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PackageDialogData {
   id: string;
@@ -40,6 +42,7 @@ export function AllPackagesTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { data: packages = [], isLoading } = usePackages();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   const filteredPackages = packages.filter(pkg => 
     pkg.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,6 +105,12 @@ export function AllPackagesTable() {
   };
 
   const packageDialogData = getPackageDialogData(selectedPackage);
+
+  const handleEditSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    setIsEditDialogOpen(false);
+    setSelectedPackageId(null);
+  };
 
   if (isLoading) {
     return (
@@ -245,6 +254,7 @@ export function AllPackagesTable() {
               setIsEditDialogOpen(open);
               if (!open) setSelectedPackageId(null);
             }}
+            onSuccess={handleEditSuccess}
           />
         </>
       )}

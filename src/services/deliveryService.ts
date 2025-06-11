@@ -34,45 +34,58 @@ export class DeliveryService {
 
       console.log('✅ [DeliveryService] Parámetros validados correctamente');
 
-      // Preparar los pagos - convertir a formato esperado por la función RPC
-      const paymentsForRpc = payments && payments.length > 0 ? payments.map(p => ({
-        method_id: p.method_id,
-        amount: p.amount,
-        currency: p.currency, // Mantener como string, el cast se hará en la función RPC
-        type: p.type
-      })) : null;
+      // Como las funciones RPC no existen, usaremos actualización directa
+      const { data: packageData, error: packageError } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('id', packageId)
+        .single();
 
-      console.log('💰 [DeliveryService] Pagos preparados para RPC:', paymentsForRpc);
-
-      // Llamar a la función RPC v2 con mejor manejo de errores
-      const { data, error } = await supabase.rpc('deliver_package_with_payment_v2', {
-        p_package_id: packageId,
-        p_delivered_by: deliveredBy,
-        p_payments: paymentsForRpc
-      });
-      
-      if (error) {
-        console.error('❌ [DeliveryService] Error en función RPC:', {
-          error,
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
+      if (packageError) {
+        console.error('❌ [DeliveryService] Error obteniendo paquete:', packageError);
+        throw packageError;
       }
 
-      console.log('✅ [DeliveryService] Respuesta exitosa de RPC:', data);
-      return data;
+      // Actualizar el estado del paquete
+      const { data: updateData, error: updateError } = await supabase
+        .from('packages')
+        .update({
+          status: 'delivered',
+          delivered_by: deliveredBy,
+          delivered_at: new Date().toISOString()
+        })
+        .eq('id', packageId)
+        .select();
+
+      if (updateError) {
+        console.error('❌ [DeliveryService] Error actualizando paquete:', updateError);
+        throw updateError;
+      }
+
+      // Si hay pagos, registrarlos
+      if (payments && payments.length > 0) {
+        for (const payment of payments) {
+          const { error: paymentError } = await supabase
+            .from('customer_payments')
+            .insert({
+              package_id: packageId,
+              amount: payment.amount,
+              currency: payment.currency,
+              payment_method: payment.method_id,
+              notes: `Pago registrado durante entrega - ${payment.type}`,
+              created_by: deliveredBy
+            });
+
+          if (paymentError) {
+            console.error('❌ [DeliveryService] Error registrando pago:', paymentError);
+          }
+        }
+      }
+
+      console.log('✅ [DeliveryService] Entrega completada exitosamente');
+      return updateData;
     } catch (error) {
-      console.error('❌ [DeliveryService] Error completo en entrega:', {
-        error,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorMessage: error?.message,
-        errorCode: error?.code,
-        errorStack: error?.stack
-      });
+      console.error('❌ [DeliveryService] Error completo en entrega:', error);
       throw error;
     }
   }

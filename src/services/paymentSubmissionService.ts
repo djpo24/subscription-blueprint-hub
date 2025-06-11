@@ -35,17 +35,18 @@ export class PaymentSubmissionService {
       throw new Error('No se encontró el paquete especificado');
     }
 
-    // Register all valid payments using the new database function
+    // Register all valid payments directly in customer_payments table
     for (const payment of validPayments) {
-      const { error } = await supabase.rpc('register_customer_payment', {
-        p_customer_id: packageData.customer_id,
-        p_package_id: customer.id,
-        p_amount: parseFloat(payment.amount),
-        p_payment_method: payment.methodId,
-        p_currency: payment.currency,
-        p_notes: notes || null,
-        p_created_by: 'Usuario actual' // TODO: Replace with actual user
-      });
+      const { error } = await supabase
+        .from('customer_payments')
+        .insert({
+          package_id: customer.id,
+          amount: parseFloat(payment.amount),
+          payment_method: payment.methodId,
+          currency: payment.currency,
+          notes: notes || null,
+          created_by: 'Usuario actual' // TODO: Replace with actual user
+        });
 
       if (error) {
         console.error('Error registering payment:', error);

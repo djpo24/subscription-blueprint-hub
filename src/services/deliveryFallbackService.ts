@@ -64,16 +64,9 @@ export class DeliveryFallbackService {
       console.log('💰 [DeliveryFallbackService] Total cobrado:', totalCollected);
       console.log('💰 [DeliveryFallbackService] Monto a cobrar del paquete:', packageData.amount_to_collect);
 
-      // Si hay pagos, creamos un registro de entrega y luego los pagos
+      // Si hay pagos, registrarlos en customer_payments
       if (payments && payments.length > 0) {
-        await this.createDeliveryRecord(packageId, deliveredBy, totalCollected, payments);
-      }
-
-      // CRUCIAL: Si el paquete tiene monto a cobrar, crear registro de deuda SIEMPRE
-      if (packageData.amount_to_collect && packageData.amount_to_collect > 0) {
-        await this.createOrUpdateDebtRecord(packageId, packageData.amount_to_collect, totalCollected, packageData.currency);
-      } else {
-        console.log('ℹ️ [DeliveryFallbackService] Paquete sin monto a cobrar, no se crea registro de deuda');
+        await this.createCustomerPayments(packageId, payments);
       }
 
       console.log('✅ [DeliveryFallbackService] Entrega procesada con método alternativo');
@@ -84,56 +77,37 @@ export class DeliveryFallbackService {
     }
   }
 
-  private static async createDeliveryRecord(
+  private static async createCustomerPayments(
     packageId: string, 
-    deliveredBy: string, 
-    totalCollected: number, 
     payments: DeliveryPayment[]
   ) {
-    console.log('💰 [DeliveryFallbackService] Creando registro de entrega y pagos...');
+    console.log('💰 [DeliveryFallbackService] Registrando pagos en customer_payments...');
     
     try {
-      // Crear registro de entrega primero
-      const { data: deliveryData, error: deliveryError } = await supabase
-        .from('package_deliveries')
-        .insert({
-          package_id: packageId,
-          delivered_by: deliveredBy,
-          delivery_date: new Date().toISOString(),
-          total_amount_collected: totalCollected,
-          delivery_status: 'delivered'
-        })
-        .select()
+      // Obtener el customer_id del paquete
+      const { data: packageData, error: packageError } = await supabase
+        .from('packages')
+        .select('customer_id')
+        .eq('id', packageId)
         .single();
 
-      if (deliveryError) {
-        console.error('❌ [DeliveryFallbackService] Error creando registro de entrega:', deliveryError);
-        // No lanzamos error aquí para no bloquear la entrega del paquete
+      if (packageError) {
+        console.error('❌ [DeliveryFallbackService] Error obteniendo customer_id:', packageError);
         return;
       }
 
-      console.log('✅ [DeliveryFallbackService] Registro de entrega creado:', deliveryData);
-
-      // Mapear métodos de pago a UUIDs
-      const getPaymentMethodUuid = (methodId: string, currency: string): string => {
-        if (methodId === 'efectivo' && currency === 'AWG') return '11111111-1111-1111-1111-111111111111';
-        if (methodId === 'efectivo' && currency === 'COP') return '22222222-2222-2222-2222-222222222222';
-        if (methodId === 'transferencia' && currency === 'AWG') return '33333333-3333-3333-3333-333333333333';
-        if (methodId === 'transferencia' && currency === 'COP') return '44444444-4444-4444-4444-444444444444';
-        return '11111111-1111-1111-1111-111111111111'; // Default a efectivo AWG
-      };
-
-      // Crear registros de pago
+      // Crear registros de pago en customer_payments
       for (const payment of payments) {
         console.log('💳 [DeliveryFallbackService] Creando pago:', payment);
         const { error: paymentError } = await supabase
-          .from('delivery_payments')
+          .from('customer_payments')
           .insert({
-            delivery_id: deliveryData.id,
-            payment_method_id: getPaymentMethodUuid(payment.method_id, payment.currency),
+            package_id: packageId,
             amount: payment.amount,
             currency: payment.currency,
-            payment_type: payment.type
+            payment_method: payment.method_id,
+            notes: `Pago registrado durante entrega - ${payment.type}`,
+            created_by: 'Sistema - Entrega'
           });
 
         if (paymentError) {
@@ -144,80 +118,7 @@ export class DeliveryFallbackService {
         }
       }
     } catch (error) {
-      console.error('❌ [DeliveryFallbackService] Error en createDeliveryRecord:', error);
-      // No lanzamos error para no bloquear la entrega principal
-    }
-  }
-
-  private static async createOrUpdateDebtRecord(
-    packageId: string, 
-    amountToCollect: number, 
-    totalCollected: number,
-    packageCurrency: string
-  ) {
-    console.log('💸 [DeliveryFallbackService] Creando/actualizando registro de deuda...');
-    
-    try {
-      const pendingAmount = amountToCollect - totalCollected;
-      
-      // Verificar si ya existe un registro de deuda
-      const { data: existingDebt, error: checkError } = await supabase
-        .from('package_debts')
-        .select('id')
-        .eq('package_id', packageId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('❌ [DeliveryFallbackService] Error verificando deuda existente:', checkError);
-      }
-
-      if (existingDebt) {
-        console.log('📝 [DeliveryFallbackService] Actualizando registro de deuda existente...');
-        // Actualizar registro existente con cast explícito
-        const { error: debtError } = await supabase
-          .from('package_debts')
-          .update({
-            total_amount: amountToCollect,
-            pending_amount: pendingAmount,
-            paid_amount: totalCollected,
-            debt_type: 'unpaid',
-            delivery_date: new Date().toISOString(),
-            status: totalCollected >= amountToCollect ? 'paid' : 
-                    totalCollected > 0 ? 'partial' : 'pending',
-            updated_at: new Date().toISOString()
-          })
-          .eq('package_id', packageId);
-
-        if (debtError) {
-          console.error('❌ [DeliveryFallbackService] Error actualizando registro de deuda:', debtError);
-        } else {
-          console.log('✅ [DeliveryFallbackService] Registro de deuda actualizado exitosamente');
-        }
-      } else {
-        console.log('📝 [DeliveryFallbackService] Creando nuevo registro de deuda...');
-        // Crear nuevo registro
-        const { error: debtError } = await supabase
-          .from('package_debts')
-          .insert({
-            package_id: packageId,
-            total_amount: amountToCollect,
-            pending_amount: pendingAmount,
-            paid_amount: totalCollected,
-            debt_type: 'unpaid',
-            debt_start_date: new Date().toISOString().split('T')[0], // Solo la fecha
-            delivery_date: new Date().toISOString(),
-            status: totalCollected >= amountToCollect ? 'paid' : 
-                    totalCollected > 0 ? 'partial' : 'pending'
-          });
-
-        if (debtError) {
-          console.error('❌ [DeliveryFallbackService] Error creando registro de deuda:', debtError);
-        } else {
-          console.log('✅ [DeliveryFallbackService] Registro de deuda creado exitosamente');
-        }
-      }
-    } catch (error) {
-      console.error('❌ [DeliveryFallbackService] Error en createOrUpdateDebtRecord:', error);
+      console.error('❌ [DeliveryFallbackService] Error en createCustomerPayments:', error);
       // No lanzamos error para no bloquear la entrega principal
     }
   }

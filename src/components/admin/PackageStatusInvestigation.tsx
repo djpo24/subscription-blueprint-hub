@@ -143,7 +143,7 @@ export function PackageStatusInvestigation() {
                             {event.event_type}
                           </Badge>
                           <span className="text-sm text-gray-500">
-                            {formatDate(event.timestamp)}
+                            {formatDate(event.created_at || new Date().toISOString())}
                           </span>
                         </div>
                         <p className="font-medium">{event.description}</p>

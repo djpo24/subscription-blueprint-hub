@@ -29,12 +29,15 @@ export function useUserProfiles() {
         throw error;
       }
 
-      // Transform the data to ensure all required fields are present
+      // Transform the data to ensure all required fields are present and properly typed
       return (data || []).map(profile => ({
         ...profile,
         created_at: profile.created_at || new Date().toISOString(),
         updated_at: profile.updated_at || new Date().toISOString(),
         phone: profile.phone || '',
+        user_id: profile.user_id || '',
+        is_active: profile.is_active ?? true,
+        role: (profile.role as 'admin' | 'employee' | 'traveler') || 'employee'
       }));
     }
   });

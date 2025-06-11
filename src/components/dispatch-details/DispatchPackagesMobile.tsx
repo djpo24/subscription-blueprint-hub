@@ -1,8 +1,10 @@
+
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, User, MapPin, Weight, DollarSign, Truck } from 'lucide-react';
 import type { PackageInDispatch } from '@/types/dispatch';
+import { getStatusColor, getStatusLabel, formatCurrency, canDeliverPackage } from './DispatchPackagesTableUtils';
 
 interface DispatchPackagesMobileProps {
   packages: PackageInDispatch[];
@@ -17,41 +19,6 @@ export function DispatchPackagesMobile({
   onPackageClick, 
   hasAnyActions = true 
 }: DispatchPackagesMobileProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'en_destino':
-        return 'bg-blue-100 text-blue-800';
-      case 'procesado':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'Entregado';
-      case 'en_destino':
-        return 'En Destino';
-      case 'procesado':
-        return 'Procesado';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
-
-  const formatCurrency = (value: number | null | undefined) => {
-    if (!value) return '$0';
-    return `$${value.toLocaleString('es-CO')}`;
-  };
-
-  // Función para determinar si se puede entregar el paquete
-  const canDeliverPackage = (pkg: PackageInDispatch) => {
-    return pkg.status === 'en_destino';
-  };
 
   if (packages.length === 0) {
     return (
@@ -134,7 +101,7 @@ export function DispatchPackagesMobile({
             </div>
 
             {/* Botón de acción - Solo mostrar si hay acciones disponibles y el paquete está en destino */}
-            {hasAnyActions && canDeliverPackage(pkg) && (
+            {hasAnyActions && canDeliverPackage(pkg.status) && (
               <Button
                 size="sm"
                 variant="outline"

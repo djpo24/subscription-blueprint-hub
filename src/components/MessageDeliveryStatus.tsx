@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,22 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface MessageDeliveryStatus {
-  id: string;
-  notification_id: string | null;
-  whatsapp_message_id: string;
-  status: string;
-  message_timestamp: string;
-  recipient_phone: string;
-  notification_log?: {
-    message: string;
-    customers?: {
-      name: string;
-      phone: string;
-    } | null;
-  } | null;
-}
+import type { MessageDeliveryStatus } from '@/types/supabase-temp';
 
 export function MessageDeliveryStatus() {
   const { data: deliveryStatuses = [], isLoading } = useQuery({
@@ -51,7 +37,7 @@ export function MessageDeliveryStatus() {
         notification_id: status.notification_id,
         whatsapp_message_id: status.whatsapp_message_id,
         status: status.status,
-        message_timestamp: status.timestamp,
+        timestamp: status.timestamp,
         recipient_phone: status.recipient_phone,
         notification_log: status.notification_log
       }));
@@ -164,7 +150,7 @@ export function MessageDeliveryStatus() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(status.message_timestamp), 'dd/MM/yyyy HH:mm')}
+                    {status.timestamp ? format(new Date(status.timestamp), 'dd/MM/yyyy HH:mm') : 'N/A'}
                   </TableCell>
                 </TableRow>
               ))}

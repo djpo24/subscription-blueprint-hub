@@ -66,12 +66,14 @@ export function InlineCustomerForm({ onSuccess, onCancel }: InlineCustomerFormPr
 
       if (error) throw error;
 
-      toast({
-        title: "Cliente creado",
-        description: `${fullName} ha sido agregado exitosamente`,
-      });
+      if (data) {
+        toast({
+          title: "Cliente creado",
+          description: `${fullName} ha sido agregado exitosamente`,
+        });
 
-      onSuccess(data.id);
+        onSuccess(data.id);
+      }
     } catch (error) {
       console.error('Error creating customer:', error);
       toast({

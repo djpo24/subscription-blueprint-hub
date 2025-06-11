@@ -2,14 +2,7 @@
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  id_number?: string;
-}
+import type { Customer } from '@/types/supabase-temp';
 
 interface CustomerSearchSelectorReadOnlyProps {
   selectedCustomerId: string;
@@ -18,7 +11,7 @@ interface CustomerSearchSelectorReadOnlyProps {
 export function CustomerSearchSelectorReadOnly({ selectedCustomerId }: CustomerSearchSelectorReadOnlyProps) {
   const { data: selectedCustomer, isLoading: customerLoading } = useQuery({
     queryKey: ['customer-details', selectedCustomerId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Customer | null> => {
       if (!selectedCustomerId) return null;
       
       console.log('Buscando detalles del cliente:', selectedCustomerId);

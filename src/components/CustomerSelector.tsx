@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus } from 'lucide-react';
 import { CustomerFormDialog } from './CustomerFormDialog';
+import type { Customer } from '@/types/supabase-temp';
 
 interface CustomerSelectorProps {
   selectedCustomerId: string;
@@ -19,14 +20,14 @@ export function CustomerSelector({ selectedCustomerId, onCustomerChange }: Custo
   // Fetch customers for the dropdown
   const { data: customers = [], refetch: refetchCustomers } = useQuery({
     queryKey: ['customers'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Customer[]> => {
       const { data, error } = await supabase
         .from('customers')
         .select('id, name, email')
         .order('name');
       
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 

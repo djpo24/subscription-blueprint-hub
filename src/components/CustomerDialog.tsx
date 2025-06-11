@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import type { Customer } from '@/types/supabase-temp';
 
 interface CustomerDialogProps {
   open: boolean;
@@ -32,14 +33,14 @@ export function CustomerDialog({ open, onOpenChange }: CustomerDialogProps) {
   // Fetch customers
   const { data: customers = [], refetch } = useQuery({
     queryKey: ['customers-dialog'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Customer[]> => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
         .order('name');
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: open
   });

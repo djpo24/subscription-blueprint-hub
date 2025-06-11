@@ -9,7 +9,322 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string
+          id: string
+          id_number: string | null
+          name: string
+          phone: string
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          id_number?: string | null
+          name: string
+          phone: string
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          id_number?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      incoming_messages: {
+        Row: {
+          customer_id: string | null
+          from_phone: string
+          id: string
+          message_content: string | null
+          message_type: string | null
+          timestamp: string | null
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          from_phone: string
+          id?: string
+          message_content?: string | null
+          message_type?: string | null
+          timestamp?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          from_phone?: string
+          id?: string
+          message_content?: string | null
+          message_type?: string | null
+          timestamp?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_delivery_status: {
+        Row: {
+          id: string
+          notification_id: string | null
+          recipient_phone: string
+          status: string
+          timestamp: string | null
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          id?: string
+          notification_id?: string | null
+          recipient_phone: string
+          status: string
+          timestamp?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          id?: string
+          notification_id?: string | null
+          recipient_phone?: string
+          status?: string
+          timestamp?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_delivery_status_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_log: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          message: string
+          package_id: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          message: string
+          package_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          message?: string
+          package_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_notification_log_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string | null
+          enable_arrival_notifications: boolean | null
+          id: string
+          updated_at: string | null
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          enable_arrival_notifications?: boolean | null
+          id?: string
+          updated_at?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          enable_arrival_notifications?: boolean | null
+          id?: string
+          updated_at?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      packages: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          status: string | null
+          tracking_number: string | null
+          trip_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          status?: string | null
+          tracking_number?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          status?: string | null
+          tracking_number?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_actions: {
+        Row: {
+          action_type: string
+          can_revert: boolean | null
+          created_at: string | null
+          description: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          reverted_at: string | null
+          reverted_by: string | null
+          table_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          can_revert?: boolean | null
+          created_at?: string | null
+          description: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          can_revert?: boolean | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_actions_reverted_by_fkey"
+            columns: ["reverted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_actions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

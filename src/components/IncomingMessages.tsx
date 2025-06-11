@@ -6,19 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface IncomingMessage {
-  id: string;
-  whatsapp_message_id: string;
-  from_phone: string;
-  customer_id: string | null;
-  message_type: string;
-  message_content: string | null;
-  message_timestamp: string;
-  customers?: {
-    name: string;
-  } | null;
-}
+import type { IncomingMessage } from '@/types/supabase-temp';
 
 export function IncomingMessages() {
   const { data: incomingMessages = [], isLoading } = useQuery({
@@ -47,7 +35,7 @@ export function IncomingMessages() {
         customer_id: msg.customer_id,
         message_type: msg.message_type,
         message_content: msg.message_content,
-        message_timestamp: msg.timestamp,
+        timestamp: msg.timestamp,
         customers: msg.customers
       }));
     },
@@ -126,8 +114,8 @@ export function IncomingMessages() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getMessageTypeColor(message.message_type)} variant="secondary">
-                      {message.message_type}
+                    <Badge className={getMessageTypeColor(message.message_type || 'text')} variant="secondary">
+                      {message.message_type || 'text'}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs">
@@ -136,7 +124,7 @@ export function IncomingMessages() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(message.message_timestamp), 'dd/MM/yyyy HH:mm')}
+                    {message.timestamp ? format(new Date(message.timestamp), 'dd/MM/yyyy HH:mm') : 'N/A'}
                   </TableCell>
                 </TableRow>
               ))}

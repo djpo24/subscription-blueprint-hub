@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,6 @@ import type { PackageInDispatch } from '@/types/dispatch';
 import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
 import { formatDateTime } from '@/utils/dateUtils';
 import { PhoneWithFlag } from '@/components/PhoneWithFlag';
-import { getCountryCodeFromPhone } from '@/utils/countryUtils';
 
 interface PackageInfoDialogProps {
   open: boolean;
@@ -33,25 +33,6 @@ interface PackageInfoDialogProps {
 
 export function PackageInfoDialog({ open, onOpenChange, package: pkg }: PackageInfoDialogProps) {
   if (!pkg) return null;
-
-  // Obtener el código de país del teléfono para la animación de la bandera
-  const countryCode = pkg.customers?.phone ? getCountryCodeFromPhone(pkg.customers.phone) : '';
-  const getFlagAnimationClass = (countryCode: string) => {
-    switch (countryCode) {
-      case '+57':
-        return 'flag-animation-colombia';
-      case '+599':
-        return 'flag-animation-curacao';
-      case '+52':
-        return 'flag-animation-mexico';
-      case '+1':
-        return 'flag-animation-usa';
-      case '+501':
-        return 'flag-animation-belize';
-      default:
-        return '';
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -116,205 +97,197 @@ export function PackageInfoDialog({ open, onOpenChange, package: pkg }: PackageI
     return formatAmountToCollectWithCurrency(amount, currency);
   };
 
-  const flagAnimationClass = getFlagAnimationClass(countryCode);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto relative ${flagAnimationClass}`}>
-        {/* Overlay para mejorar la legibilidad */}
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-lg"></div>
-        
-        {/* Contenido del dialog con z-index mayor */}
-        <div className="relative z-10">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-bold text-gray-900">Encomienda {pkg.tracking_number}</div>
-                <div className="text-sm text-gray-500 font-normal">Información completa del paquete</div>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Package className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">Encomienda {pkg.tracking_number}</div>
+              <div className="text-sm text-gray-500 font-normal">Información completa del paquete</div>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
 
-          <div className="space-y-6">
-            {/* Estado y información básica */}
-            <Card className="border-l-4 border-l-blue-500">
+        <div className="space-y-6">
+          {/* Estado y información básica */}
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between">
+                <span className="text-lg">Estado Actual</span>
+                <Badge className={`${getStatusColor(pkg.status)} flex items-center gap-2`}>
+                  {getStatusIcon(pkg.status)}
+                  {getStatusLabel(pkg.status)}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <Route className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Ruta</div>
+                    <div className="font-medium">{pkg.origin} → {pkg.destination}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Package className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Número de seguimiento</div>
+                    <div className="font-medium font-mono text-blue-600">{pkg.tracking_number}</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Información del cliente */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="h-5 w-5 text-green-600" />
+                Información del Cliente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Nombre</div>
+                    <div className="font-medium">{pkg.customers?.name || 'No especificado'}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Email</div>
+                    <div className="font-medium">{pkg.customers?.email || 'No especificado'}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Teléfono</div>
+                    <div className="font-medium">
+                      {pkg.customers?.phone ? (
+                        <PhoneWithFlag phone={pkg.customers.phone} />
+                      ) : (
+                        'No especificado'
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Descripción del paquete */}
+          {pkg.description && (
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="text-lg">Estado Actual</span>
-                  <Badge className={`${getStatusColor(pkg.status)} flex items-center gap-2`}>
-                    {getStatusIcon(pkg.status)}
-                    {getStatusLabel(pkg.status)}
-                  </Badge>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                  Descripción del Contenido
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 rounded-lg p-4 border">
+                  <p className="text-gray-700 leading-relaxed">{pkg.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Información financiera */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-orange-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Weight className="h-4 w-4 text-orange-600" />
+                  Peso
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-700">
+                  {pkg.weight ? `${pkg.weight} kg` : 'No especificado'}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  Flete
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-700">
+                  {formatCurrency(pkg.freight)}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  A Cobrar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-700">
+                  {formatAmountToCollectDisplay(pkg.amount_to_collect, pkg.currency)}
+                </div>
+                {pkg.currency && pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
+                  <div className="flex items-center gap-1 mt-2 text-sm text-gray-600">
+                    <Coins className="h-3 w-3" />
+                    Moneda: {pkg.currency}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Información de entrega (si está entregado) */}
+          {pkg.status === 'delivered' && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg text-green-800">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Información de Entrega
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <Route className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">Ruta</div>
-                      <div className="font-medium">{pkg.origin} → {pkg.destination}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Package className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">Número de seguimiento</div>
-                      <div className="font-medium font-mono text-blue-600">{pkg.tracking_number}</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Información del cliente */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <User className="h-5 w-5 text-green-600" />
-                  Información del Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">Nombre</div>
-                      <div className="font-medium">{pkg.customers?.name || 'No especificado'}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">Email</div>
-                      <div className="font-medium">{pkg.customers?.email || 'No especificado'}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">Teléfono</div>
-                      <div className="font-medium">
-                        {pkg.customers?.phone ? (
-                          <PhoneWithFlag phone={pkg.customers.phone} />
-                        ) : (
-                          'No especificado'
-                        )}
+                  {pkg.delivered_at && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="text-sm text-green-600">Fecha de entrega</div>
+                        <div className="font-medium text-green-800">
+                          {formatDateTime(pkg.delivered_at)}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Descripción del paquete */}
-            {pkg.description && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-purple-600" />
-                    Descripción del Contenido
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <p className="text-gray-700 leading-relaxed">{pkg.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Información financiera */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-orange-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Weight className="h-4 w-4 text-orange-600" />
-                    Peso
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-700">
-                    {pkg.weight ? `${pkg.weight} kg` : 'No especificado'}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-blue-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Truck className="h-4 w-4 text-blue-600" />
-                    Flete
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-700">
-                    {formatCurrency(pkg.freight)}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                    A Cobrar
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-700">
-                    {formatAmountToCollectDisplay(pkg.amount_to_collect, pkg.currency)}
-                  </div>
-                  {pkg.currency && pkg.amount_to_collect && pkg.amount_to_collect > 0 && (
-                    <div className="flex items-center gap-1 mt-2 text-sm text-gray-600">
-                      <Coins className="h-3 w-3" />
-                      Moneda: {pkg.currency}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Información de entrega (si está entregado) */}
-            {pkg.status === 'delivered' && (
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg text-green-800">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    Información de Entrega
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {pkg.delivered_at && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-green-600" />
-                        <div>
-                          <div className="text-sm text-green-600">Fecha de entrega</div>
-                          <div className="font-medium text-green-800">
-                            {formatDateTime(pkg.delivered_at)}
-                          </div>
-                        </div>
+                  {pkg.delivered_by && (
+                    <div className="flex items-center gap-3">
+                      <User className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="text-sm text-green-600">Entregado por</div>
+                        <div className="font-medium text-green-800">{pkg.delivered_by}</div>
                       </div>
-                    )}
-                    {pkg.delivered_by && (
-                      <div className="flex items-center gap-3">
-                        <User className="h-4 w-4 text-green-600" />
-                        <div>
-                          <div className="text-sm text-green-600">Entregado por</div>
-                          <div className="font-medium text-green-800">{pkg.delivered_by}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>

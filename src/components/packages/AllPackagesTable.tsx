@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +11,7 @@ import { PackageActionsDropdown } from '@/components/PackageActionsDropdown';
 import { PackageLabelDialog } from '@/components/PackageLabelDialog';
 import { EditPackageDialog } from '@/components/EditPackageDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatCurrency, type Currency } from '@/utils/currencyFormatter';
+import { formatCurrency, type Currency, parseCurrencyString } from '@/utils/currencyFormatter';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface PackageDialogData {
@@ -94,7 +93,7 @@ export function AllPackagesTable() {
       weight: pkg.weight,
       freight: pkg.freight,
       amount_to_collect: pkg.amount_to_collect,
-      currency: (pkg.currency as Currency) || 'COP',
+      currency: parseCurrencyString(pkg.currency),
       status: pkg.status || 'pending',
       origin: pkg.origin || '',
       destination: pkg.destination || '',
@@ -197,7 +196,7 @@ export function AllPackagesTable() {
                       <TableCell>
                         {pkg.amount_to_collect && pkg.amount_to_collect > 0 ? (
                           <span className="font-medium text-green-600">
-                            {formatCurrency(pkg.amount_to_collect, (pkg.currency as Currency) || 'COP')}
+                            {formatCurrency(pkg.amount_to_collect, parseCurrencyString(pkg.currency))}
                           </span>
                         ) : (
                           <span className="text-gray-400">$0</span>

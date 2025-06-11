@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -130,8 +129,8 @@ export function useMarkTripAsArrived() {
         // No lanzar error aquí, es secundario
       }
 
-      // PASO 7: 🆕 CREAR NOTIFICACIONES DE LLEGADA AUTOMÁTICAS
-      console.log('📱 [useMarkTripAsArrived] Creando notificaciones de llegada...');
+      // PASO 7: 🆕 CREAR NOTIFICACIONES DE LLEGADA PARA REVISIÓN (NO ENVIAR AUTOMÁTICAMENTE)
+      console.log('📱 [useMarkTripAsArrived] Creando notificaciones de llegada para revisión...');
       
       const arrivalNotifications = packagesInTransit
         .filter(pkg => pkg.customers && (pkg.customers.whatsapp_number || pkg.customers.phone))
@@ -140,7 +139,7 @@ export function useMarkTripAsArrived() {
           package_id: pkg.id,
           notification_type: 'package_arrival',
           message: `Su encomienda ${pkg.tracking_number} ha llegado a ${pkg.destination}`,
-          status: 'pending'
+          status: 'pending'  // Estado inicial: pendiente de preparación
         }));
 
       if (arrivalNotifications.length > 0) {
@@ -152,26 +151,13 @@ export function useMarkTripAsArrived() {
           console.error('❌ Error creando notificaciones de llegada:', notificationError);
           // No lanzar error, las notificaciones son secundarias
         } else {
-          console.log(`✅ [useMarkTripAsArrived] Creadas ${arrivalNotifications.length} notificaciones de llegada`);
+          console.log(`✅ [useMarkTripAsArrived] Creadas ${arrivalNotifications.length} notificaciones pendientes de preparación`);
         }
       }
 
-      // PASO 8: 🆕 INVOCAR FUNCIÓN DE PROCESAMIENTO DE NOTIFICACIONES
-      console.log('🔄 [useMarkTripAsArrived] Disparando procesamiento de notificaciones...');
-      
-      try {
-        const { error: processError } = await supabase.functions.invoke('process-arrival-notifications');
-        
-        if (processError) {
-          console.error('❌ Error invocando proceso de notificaciones:', processError);
-          // No lanzar error, es secundario
-        } else {
-          console.log('✅ [useMarkTripAsArrived] Proceso de notificaciones disparado exitosamente');
-        }
-      } catch (error) {
-        console.error('❌ Error disparando notificaciones:', error);
-        // No lanzar error, es secundario
-      }
+      // PASO 8: 🚫 NO INVOCAR FUNCIÓN DE PROCESAMIENTO AUTOMÁTICO
+      // Las notificaciones ahora requieren revisión manual antes del envío
+      console.log('📋 [useMarkTripAsArrived] Notificaciones creadas para revisión manual en la pestaña de notificaciones');
 
       // PASO 9: Verificar si el trip asociado debe actualizarse a "completed"
       const tripId = packagesInTransit[0]?.trip_id;
@@ -230,7 +216,7 @@ export function useMarkTripAsArrived() {
       
       toast({
         title: "Despacho marcado como llegado",
-        description: `${data.updatedPackages} paquetes actualizados a "En Destino" y ${data.notificationsCreated} notificaciones creadas`,
+        description: `${data.updatedPackages} paquetes actualizados a "En Destino" y ${data.notificationsCreated} notificaciones creadas para revisión`,
       });
     },
     onError: (error: any) => {

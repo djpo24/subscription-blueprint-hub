@@ -11,6 +11,11 @@ export function TripsWithFlightsView({ onAddPackage }: TripsWithFlightsViewProps
   const { data: trips = [], isLoading } = useTripsWithFlights();
   const { updateFlightStatus } = useFlightNotifications();
 
+  const handleUpdateFlightStatus = (params: { flightId: string; hasLanded: boolean }) => {
+    // Convert to the expected signature for flight notifications
+    updateFlightStatus(params.flightId, params.hasLanded ? 'landed' : 'delayed');
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-6 sm:py-8">
@@ -26,7 +31,7 @@ export function TripsWithFlightsView({ onAddPackage }: TripsWithFlightsViewProps
           key={trip.id}
           trip={trip}
           onAddPackage={onAddPackage}
-          onUpdateFlightStatus={updateFlightStatus}
+          onUpdateFlightStatus={handleUpdateFlightStatus}
         />
       ))}
     </div>

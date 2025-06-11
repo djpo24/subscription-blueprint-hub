@@ -133,7 +133,7 @@ export function AllPackagesTable() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{pkg.customers?.name || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{pkg.customers?.phone || pkg.customers?.email || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{pkg.customers?.email || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -197,23 +197,32 @@ export function AllPackagesTable() {
       {selectedPackage && (
         <>
           <PackageLabelDialog
-            package={selectedPackage}
+            package={{
+              ...selectedPackage,
+              currency: (selectedPackage.currency as Currency) || 'COP'
+            }}
             open={isLabelDialogOpen}
-            onClose={() => {
-              setIsLabelDialogOpen(false);
-              setSelectedPackageId(null);
+            onOpenChange={(open) => {
+              setIsLabelDialogOpen(open);
+              if (!open) setSelectedPackageId(null);
             }}
           />
           <PackageDialog
-            pkg={selectedPackage}
+            package={{
+              ...selectedPackage,
+              currency: (selectedPackage.currency as Currency) || 'COP'
+            }}
             open={isDetailsDialogOpen}
-            onClose={() => {
-              setIsDetailsDialogOpen(false);
-              setSelectedPackageId(null);
+            onOpenChange={(open) => {
+              setIsDetailsDialogOpen(open);
+              if (!open) setSelectedPackageId(null);
             }}
           />
           <EditPackageDialog
-            package={selectedPackage}
+            package={{
+              ...selectedPackage,
+              currency: (selectedPackage.currency as Currency) || 'COP'
+            }}
             open={isEditDialogOpen}
             onClose={() => {
               setIsEditDialogOpen(false);

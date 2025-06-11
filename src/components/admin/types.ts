@@ -2,6 +2,7 @@
 export interface UserActivity {
   id: string;
   created_at: string;
+  action_type: string;
   activity_type: string;
   description: string;
   user_name?: string;

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,8 +111,8 @@ export function GuestPackageTracking() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge className={getStatusColor(trackingResult.status)}>
-                    {getStatusText(trackingResult.status)}
+                  <Badge className={getStatusColor(trackingResult.status || 'pending')}>
+                    {getStatusText(trackingResult.status || 'pending')}
                   </Badge>
                 </div>
 
@@ -139,7 +140,7 @@ export function GuestPackageTracking() {
                   <Clock className="h-4 w-4 text-gray-600" />
                   <span className="text-sm font-medium text-gray-600">Actualizado:</span>
                   <span className="text-sm">
-                    {formatDistanceToNow(new Date(trackingResult.last_updated), {
+                    {formatDistanceToNow(new Date(trackingResult.updated_at || trackingResult.created_at || new Date()), {
                       addSuffix: true,
                       locale: es
                     })}

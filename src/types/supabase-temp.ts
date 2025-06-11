@@ -122,7 +122,7 @@ export interface UserProfile {
   last_name: string;
   phone: string;
   role: 'admin' | 'employee' | 'traveler';
-  is_active?: boolean;
+  is_active: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -169,13 +169,13 @@ export interface DispatchRelation {
   notes?: string;
   created_at?: string;
   updated_at?: string;
-  status?: string;
-  total_packages?: number;
-  total_weight?: number;
-  total_freight?: number;
-  total_amount_to_collect?: number;
-  pending_count?: number;
-  delivered_count?: number;
+  status: string;
+  total_packages: number;
+  total_weight: number;
+  total_freight: number;
+  total_amount_to_collect: number;
+  pending_count: number;
+  delivered_count: number;
 }
 
 export interface DispatchPackage {

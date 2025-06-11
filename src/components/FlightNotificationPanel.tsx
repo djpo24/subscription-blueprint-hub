@@ -24,6 +24,11 @@ export function FlightNotificationPanel() {
     isSendingTest
   } = useFlightNotifications();
 
+  const handleUpdateFlightStatus = (params: { flightId: string; hasLanded: boolean }) => {
+    // Convert to the expected signature for flight notifications
+    updateFlightStatus(params.flightId, params.hasLanded ? 'landed' : 'delayed');
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <FlightMonitoringCard />
@@ -57,7 +62,7 @@ export function FlightNotificationPanel() {
         isLoading={isLoading}
         isProcessing={isProcessing}
         onProcessNotifications={processNotifications}
-        onUpdateFlightStatus={updateFlightStatus}
+        onUpdateFlightStatus={handleUpdateFlightStatus}
       />
     </div>
   );

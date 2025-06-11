@@ -12,8 +12,8 @@ export const formatCurrency = (amount: number, currency: Currency = 'COP'): stri
     AWG: new Intl.NumberFormat('en-AW', {
       style: 'currency',
       currency: 'AWG',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0, // Cambiado a 0 decimales
+      maximumFractionDigits: 0, // Cambiado a 0 decimales
     }),
   };
 

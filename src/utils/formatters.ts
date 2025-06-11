@@ -24,5 +24,5 @@ export const formatFreight = (freight: number | null | undefined): string => {
 };
 
 export const formatAmountToCollect = (amount: number | null | undefined): string => {
-  return formatDecimal(amount, 2);
+  return formatDecimal(amount, 0); // Cambiado a 0 decimales
 };

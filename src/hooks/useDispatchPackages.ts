@@ -53,6 +53,7 @@ export function useDispatchPackages(dispatchId: string) {
             trip_id: pkg.trip_id,
             delivered_at: pkg.delivered_at,
             delivered_by: pkg.delivered_by,
+            customer_id: pkg.customer_id,
             customers: pkg.customers
           };
           

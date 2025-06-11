@@ -317,6 +317,7 @@ export type Database = {
           package_id: string | null
           sent_at: string | null
           status: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -328,6 +329,7 @@ export type Database = {
           package_id?: string | null
           sent_at?: string | null
           status?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -339,6 +341,7 @@ export type Database = {
           package_id?: string | null
           sent_at?: string | null
           status?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

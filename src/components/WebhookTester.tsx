@@ -1,36 +1,35 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { TestTube, Send, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+
 export function WebhookTester() {
   const [testType, setTestType] = useState('verification');
   const [isTesting, setIsTesting] = useState(false);
   const [testResults, setTestResults] = useState<any[]>([]);
-  const {
-    toast
-  } = useToast();
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook';
+  const { toast } = useToast();
+  
+  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v2';
 
-  // Test webhook verification with the correct token from Meta
   const testWebhookVerification = async () => {
     setIsTesting(true);
     try {
-      const verifyUrl = `${webhookUrl}?hub.mode=subscribe&hub.verify_token=1371636570719904&hub.challenge=1234567890`;
+      const verifyUrl = `${webhookUrl}?hub.mode=subscribe&hub.verify_token=ojitos_webhook_verify&hub.challenge=1234567890`;
       const response = await fetch(verifyUrl, {
         method: 'GET'
       });
       const result = await response.text();
+      
       if (response.ok && result === '1234567890') {
         setTestResults(prev => [...prev, {
           type: 'verification',
           status: 'success',
-          message: 'Verificación exitosa con token de Meta',
+          message: 'Verificación exitosa con token actualizado',
           details: {
             challenge: result,
             status: response.status
@@ -38,7 +37,7 @@ export function WebhookTester() {
         }]);
         toast({
           title: "✅ Verificación exitosa",
-          description: "El webhook responde correctamente a la verificación de Meta"
+          description: "El nuevo webhook responde correctamente a la verificación"
         });
       } else {
         throw new Error(`Verificación falló: ${response.status} - ${result}`);
@@ -60,7 +59,6 @@ export function WebhookTester() {
     }
   };
 
-  // Test message status webhook
   const testMessageStatusWebhook = async () => {
     setIsTesting(true);
     try {
@@ -85,6 +83,7 @@ export function WebhookTester() {
           }]
         }]
       };
+      
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -93,6 +92,7 @@ export function WebhookTester() {
         body: JSON.stringify(mockStatusPayload)
       });
       const result = await response.text();
+      
       if (response.ok) {
         setTestResults(prev => [...prev, {
           type: 'message_status',
@@ -127,7 +127,6 @@ export function WebhookTester() {
     }
   };
 
-  // Test incoming message webhook
   const testIncomingMessageWebhook = async () => {
     setIsTesting(true);
     try {
@@ -161,6 +160,7 @@ export function WebhookTester() {
           }]
         }]
       };
+      
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -169,6 +169,7 @@ export function WebhookTester() {
         body: JSON.stringify(mockMessagePayload)
       });
       const result = await response.text();
+      
       if (response.ok) {
         setTestResults(prev => [...prev, {
           type: 'incoming_message',
@@ -202,6 +203,7 @@ export function WebhookTester() {
       setIsTesting(false);
     }
   };
+
   const runTest = () => {
     switch (testType) {
       case 'verification':
@@ -215,6 +217,7 @@ export function WebhookTester() {
         break;
     }
   };
+
   const copyWebhookUrl = () => {
     navigator.clipboard.writeText(webhookUrl);
     toast({
@@ -222,8 +225,103 @@ export function WebhookTester() {
       description: "La URL del webhook se ha copiado al portapapeles"
     });
   };
+
   const clearResults = () => {
     setTestResults([]);
   };
-  return;
+
+  return (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TestTube className="h-5 w-5" />
+          Probador de Webhook
+        </CardTitle>
+        <CardDescription>
+          Prueba el funcionamiento del webhook actualizado de WhatsApp
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border">
+          <code className="flex-1 text-sm text-gray-700 break-all font-mono">
+            {webhookUrl}
+          </code>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={copyWebhookUrl}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="text-sm font-medium mb-2 block">Tipo de Prueba</label>
+            <Select value={testType} onValueChange={setTestType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="verification">Verificación del Webhook</SelectItem>
+                <SelectItem value="message_status">Estado de Mensaje</SelectItem>
+                <SelectItem value="incoming_message">Mensaje Entrante</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            onClick={runTest} 
+            disabled={isTesting}
+            className="px-6"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {isTesting ? 'Probando...' : 'Probar'}
+          </Button>
+        </div>
+
+        {testResults.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-medium">Resultados de las Pruebas</h4>
+              <Button variant="outline" size="sm" onClick={clearResults}>
+                Limpiar Resultados
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {testResults.map((result, index) => (
+                <Alert 
+                  key={index} 
+                  className={result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}
+                >
+                  {result.status === 'success' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <AlertDescription className={result.status === 'success' ? 'text-green-700' : 'text-red-700'}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <strong>{result.type}:</strong> {result.message}
+                      </div>
+                      <Badge variant={result.status === 'success' ? 'default' : 'destructive'}>
+                        {result.status === 'success' ? 'Éxito' : 'Error'}
+                      </Badge>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Nota:</strong> Estas pruebas verifican que el webhook esté funcionando correctamente. 
+            Si todas las pruebas pasan, el webhook está listo para recibir eventos de WhatsApp.
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
+  );
 }

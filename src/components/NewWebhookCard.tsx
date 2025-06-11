@@ -12,7 +12,7 @@ export function NewWebhookCard() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v3';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);

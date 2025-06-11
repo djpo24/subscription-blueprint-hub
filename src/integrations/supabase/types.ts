@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_secrets: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       customer_payments: {
         Row: {
           amount: number
@@ -666,12 +690,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_app_secret: {
+        Args: { secret_name: string }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
       is_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      update_app_secret: {
+        Args: { secret_name: string; secret_value: string }
         Returns: boolean
       }
     }

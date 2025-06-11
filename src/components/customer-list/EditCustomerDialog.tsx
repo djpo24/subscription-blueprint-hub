@@ -12,7 +12,6 @@ import { CustomerContactFields } from '@/components/CustomerContactFields';
 import { CustomerEmailField } from '@/components/CustomerEmailField';
 import { useCustomerValidation } from '@/hooks/useCustomerValidation';
 import { CustomerFormData } from '@/types/CustomerFormData';
-import { AlertCircle } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -133,7 +132,7 @@ export function EditCustomerDialog({
         .from('customers')
         .update({
           name: fullName,
-          email: formData.email,
+          email: formData.email.trim() || '', // Solo usar el email si se proporcionó, sino dejar en blanco
           phone: fullPhone,
           address: formData.address || null,
           id_number: formData.idNumber || null

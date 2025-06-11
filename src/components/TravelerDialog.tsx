@@ -134,7 +134,7 @@ export function TravelerDialog({ open, onOpenChange, onSuccess }: TravelerDialog
                 </SelectTrigger>
                 <SelectContent>
                   {availableUsers.map((user) => (
-                    <SelectItem key={user.user_id} value={user.user_id}>
+                    <SelectItem key={user.user_id} value={user.user_id || ''}>
                       {user.first_name} {user.last_name} - {user.email}
                     </SelectItem>
                   ))}

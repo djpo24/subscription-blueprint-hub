@@ -102,7 +102,8 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
 
   const travelerPackages = packages.slice(0, 3);
   const travelerFilteredPackages = filteredPackages.slice(0, 3);
-  const travelerTrips = trips.filter(trip => trip.traveler_id === 'current-traveler-id');
+  // Filter trips for current traveler (simplified for preview)
+  const travelerTrips = trips.slice(0, 2);
 
   if (showMobileDelivery) {
     return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;

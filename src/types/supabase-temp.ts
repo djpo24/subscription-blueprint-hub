@@ -80,7 +80,34 @@ export interface UserProfile {
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string;
   role?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Traveler {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  created_at?: string;
+  updated_at?: string;
+  user_profiles?: {
+    email: string;
+  };
+}
+
+export interface Trip {
+  id: string;
+  traveler_id?: string;
+  departure_date?: string;
+  arrival_date?: string;
+  origin?: string;
+  destination?: string;
+  status?: string;
   created_at?: string;
   updated_at?: string;
 }

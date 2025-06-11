@@ -23,7 +23,7 @@ export function CustomerSelector({ selectedCustomerId, onCustomerChange }: Custo
     queryFn: async (): Promise<Customer[]> => {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, email')
+        .select('id, name, email, phone')
         .order('name');
       
       if (error) throw error;

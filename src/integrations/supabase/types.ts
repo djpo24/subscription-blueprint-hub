@@ -232,6 +232,80 @@ export type Database = {
           },
         ]
       }
+      travelers: {
+        Row: {
+          created_at: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          arrival_date: string | null
+          created_at: string | null
+          departure_date: string | null
+          destination: string | null
+          id: string
+          origin: string | null
+          status: string | null
+          traveler_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          arrival_date?: string | null
+          created_at?: string | null
+          departure_date?: string | null
+          destination?: string | null
+          id?: string
+          origin?: string | null
+          status?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          arrival_date?: string | null
+          created_at?: string | null
+          departure_date?: string | null
+          destination?: string | null
+          id?: string
+          origin?: string | null
+          status?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "travelers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_actions: {
         Row: {
           action_type: string
@@ -298,7 +372,9 @@ export type Database = {
           email: string
           first_name: string
           id: string
+          is_active: boolean | null
           last_name: string
+          phone: string | null
           role: string | null
           updated_at: string | null
           user_id: string | null
@@ -308,7 +384,9 @@ export type Database = {
           email: string
           first_name: string
           id?: string
+          is_active?: boolean | null
           last_name: string
+          phone?: string | null
           role?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -318,7 +396,9 @@ export type Database = {
           email?: string
           first_name?: string
           id?: string
+          is_active?: boolean | null
           last_name?: string
+          phone?: string | null
           role?: string | null
           updated_at?: string | null
           user_id?: string | null

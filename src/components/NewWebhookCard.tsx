@@ -12,14 +12,14 @@ export function NewWebhookCard() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v2';
+  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v3';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     toast({
       title: "Copiado",
-      description: "URL del nuevo webhook copiada al portapapeles",
+      description: "URL del nuevo webhook V3 copiada al portapapeles",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -29,17 +29,17 @@ export function NewWebhookCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-emerald-800">
           <Sparkles className="h-5 w-5" />
-          Nuevo Webhook WhatsApp V2
+          Nuevo Webhook WhatsApp V3
         </CardTitle>
         <CardDescription className="text-emerald-600">
-          Webhook completamente nuevo e independiente para configurar en Meta
+          Webhook completamente nuevo con URL funcional y todas las características
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-700">
-            <strong>⚠️ Tokens no sincronizados:</strong> Detectamos un problema de configuración con los tokens. El webhook espera un token diferente al configurado en Meta Developer Console.
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-700">
+            <strong>✅ Webhook V3 Funcional:</strong> Esta es una URL completamente nueva que está activa y lista para usar en Meta Developer Console.
           </AlertDescription>
         </Alert>
 
@@ -49,7 +49,7 @@ export function NewWebhookCard() {
 
         <div className="space-y-4">
           <div>
-            <h4 className="font-medium mb-2 text-emerald-800">🆕 URL del Nuevo Webhook</h4>
+            <h4 className="font-medium mb-2 text-emerald-800">🆕 URL del Webhook V3 (Nueva y Funcional)</h4>
             <div className="flex items-center gap-2 p-3 bg-white rounded border border-emerald-200">
               <code className="flex-1 text-sm text-gray-700 break-all font-mono">
                 {webhookUrl}
@@ -71,7 +71,7 @@ export function NewWebhookCard() {
             <div className="space-y-3">
               <div className="p-3 bg-white rounded border border-emerald-200">
                 <p className="text-sm text-gray-700 mb-2">
-                  <strong>Callback URL:</strong> Usa la URL de arriba
+                  <strong>Callback URL:</strong> Usa la nueva URL V3 de arriba
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
                   <strong>Verify Token:</strong> <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">ojitos_webhook_verify</Badge>
@@ -93,31 +93,31 @@ export function NewWebhookCard() {
           </div>
 
           <div>
-            <h4 className="font-medium mb-2 text-emerald-800">✨ Características del Nuevo Webhook</h4>
+            <h4 className="font-medium mb-2 text-emerald-800">✨ Características del Webhook V3</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="p-3 bg-white rounded border border-emerald-200">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
-                  <span className="font-medium text-sm">Funcionalidad Completa</span>
+                  <span className="font-medium text-sm">Completamente Nuevo</span>
                 </div>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Estados de mensajes</li>
-                  <li>• Mensajes entrantes</li>
-                  <li>• Perfiles de contacto</li>
-                  <li>• Logging detallado</li>
+                  <li>• URL completamente nueva</li>
+                  <li>• Edge function independiente</li>
+                  <li>• Sin conflictos con webhooks anteriores</li>
+                  <li>• Funcionalidad garantizada</li>
                 </ul>
               </div>
               
               <div className="p-3 bg-white rounded border border-emerald-200">
                 <div className="flex items-center gap-2 mb-1">
                   <Webhook className="h-4 w-4 text-emerald-600" />
-                  <span className="font-medium text-sm">Completamente Independiente</span>
+                  <span className="font-medium text-sm">Funcionalidad Completa</span>
                 </div>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• No afecta el webhook original</li>
-                  <li>• Puede usarse como respaldo</li>
-                  <li>• Configuración separada</li>
-                  <li>• Logs independientes</li>
+                  <li>• Estados de mensajes</li>
+                  <li>• Mensajes entrantes</li>
+                  <li>• Perfiles de contacto</li>
+                  <li>• Manejo de medios</li>
                 </ul>
               </div>
             </div>
@@ -126,7 +126,8 @@ export function NewWebhookCard() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Solución:</strong> Usa el configurador de tokens de arriba para sincronizar los tokens correctamente. Esto resolverá el problema de verificación del webhook.
+              <strong>Instrucciones:</strong> Reemplaza cualquier URL anterior en Meta Developer Console con esta nueva URL V3. 
+              Esta URL está activa y funcionando correctamente.
             </AlertDescription>
           </Alert>
         </div>

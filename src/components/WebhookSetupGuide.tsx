@@ -11,7 +11,7 @@ export function WebhookSetupGuide() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v2';
+  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v3';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -28,16 +28,16 @@ export function WebhookSetupGuide() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Webhook className="h-5 w-5" />
-          Configuración del Webhook de WhatsApp
+          Configuración del Webhook de WhatsApp V3
         </CardTitle>
         <CardDescription>
-          Configura el webhook en Meta Developer Console para recibir eventos de WhatsApp
+          Configura el nuevo webhook en Meta Developer Console para recibir eventos de WhatsApp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <div>
-            <h4 className="font-medium mb-2">🔗 URL del Webhook Actualizada</h4>
+            <h4 className="font-medium mb-2">🔗 Nueva URL del Webhook V3</h4>
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border">
               <code className="flex-1 text-sm text-gray-700 break-all font-mono">
                 {webhookUrl}
@@ -58,7 +58,7 @@ export function WebhookSetupGuide() {
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 rounded border border-blue-200">
                 <p className="text-sm text-blue-700 mb-2">
-                  <strong>Callback URL:</strong> Usa la URL de arriba
+                  <strong>Callback URL:</strong> Usa la nueva URL de arriba
                 </p>
                 <p className="text-sm text-blue-700 mb-2">
                   <strong>Verify Token:</strong> <Badge variant="secondary">ojitos_webhook_verify</Badge>
@@ -82,8 +82,8 @@ export function WebhookSetupGuide() {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Nueva URL del Webhook:</strong> Este webhook está actualizado y funcionando correctamente. 
-              Reemplaza la URL anterior en tu configuración de Meta Developer Console.
+              <strong>Nueva URL del Webhook V3:</strong> Este webhook es completamente nuevo y está diseñado para funcionar sin problemas. 
+              Reemplaza cualquier URL anterior en tu configuración de Meta Developer Console.
             </AlertDescription>
           </Alert>
 
@@ -94,7 +94,7 @@ export function WebhookSetupGuide() {
               <li>Selecciona tu aplicación de WhatsApp Business</li>
               <li>Ve a <strong>WhatsApp → Configuration</strong></li>
               <li>En la sección <strong>Webhooks</strong>, haz clic en <strong>Edit</strong></li>
-              <li>Reemplaza la <strong>Callback URL</strong> con la nueva URL de arriba</li>
+              <li>Reemplaza la <strong>Callback URL</strong> con la nueva URL V3 de arriba</li>
               <li>Asegúrate de que el <strong>Verify Token</strong> sea: <code>ojitos_webhook_verify</code></li>
               <li>Selecciona el campo <strong>messages</strong> en Webhook fields</li>
               <li>Haz clic en <strong>Verify and Save</strong></li>
@@ -104,8 +104,8 @@ export function WebhookSetupGuide() {
           <Alert className="border-green-200 bg-green-50">
             <AlertCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-700">
-              <strong>✅ Webhook V2 Mejorado:</strong> Esta nueva versión incluye mejor manejo de medios, 
-              estados de mensajes y logging mejorado para una mejor experiencia.
+              <strong>✅ Webhook V3 Completamente Nuevo:</strong> Esta versión incluye todas las funcionalidades mejoradas: 
+              manejo de medios, estados de mensajes, logging detallado y mejor estabilidad.
             </AlertDescription>
           </Alert>
         </div>

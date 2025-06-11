@@ -14,7 +14,7 @@ export function WebhookTester() {
   const [testResults, setTestResults] = useState<any[]>([]);
   const { toast } = useToast();
   
-  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v2';
+  const webhookUrl = 'https://bnuahsuehizwwcejqilm.supabase.co/functions/v1/whatsapp-webhook-v3';
 
   const testWebhookVerification = async () => {
     setIsTesting(true);
@@ -29,7 +29,7 @@ export function WebhookTester() {
         setTestResults(prev => [...prev, {
           type: 'verification',
           status: 'success',
-          message: 'Verificación exitosa con token actualizado',
+          message: 'Verificación exitosa con webhook V3',
           details: {
             challenge: result,
             status: response.status
@@ -37,7 +37,7 @@ export function WebhookTester() {
         }]);
         toast({
           title: "✅ Verificación exitosa",
-          description: "El nuevo webhook responde correctamente a la verificación"
+          description: "El nuevo webhook V3 responde correctamente a la verificación"
         });
       } else {
         throw new Error(`Verificación falló: ${response.status} - ${result}`);
@@ -97,7 +97,7 @@ export function WebhookTester() {
         setTestResults(prev => [...prev, {
           type: 'message_status',
           status: 'success',
-          message: 'Estado de mensaje procesado correctamente',
+          message: 'Estado de mensaje procesado correctamente por webhook V3',
           details: {
             response: result,
             payload: mockStatusPayload
@@ -105,7 +105,7 @@ export function WebhookTester() {
         }]);
         toast({
           title: "✅ Test de estado exitoso",
-          description: "El webhook procesó el estado del mensaje correctamente"
+          description: "El webhook V3 procesó el estado del mensaje correctamente"
         });
       } else {
         throw new Error(`Test falló: ${response.status} - ${result}`);
@@ -151,7 +151,7 @@ export function WebhookTester() {
                 id: "test-incoming-msg-123",
                 timestamp: Math.floor(Date.now() / 1000).toString(),
                 text: {
-                  body: "Hola, este es un mensaje de prueba"
+                  body: "Hola, este es un mensaje de prueba para webhook V3"
                 },
                 type: "text"
               }]
@@ -174,7 +174,7 @@ export function WebhookTester() {
         setTestResults(prev => [...prev, {
           type: 'incoming_message',
           status: 'success',
-          message: 'Mensaje entrante procesado correctamente',
+          message: 'Mensaje entrante procesado correctamente por webhook V3',
           details: {
             response: result,
             payload: mockMessagePayload
@@ -182,7 +182,7 @@ export function WebhookTester() {
         }]);
         toast({
           title: "✅ Test de mensaje entrante exitoso",
-          description: "El webhook procesó el mensaje entrante correctamente"
+          description: "El webhook V3 procesó el mensaje entrante correctamente"
         });
       } else {
         throw new Error(`Test falló: ${response.status} - ${result}`);
@@ -222,7 +222,7 @@ export function WebhookTester() {
     navigator.clipboard.writeText(webhookUrl);
     toast({
       title: "URL copiada",
-      description: "La URL del webhook se ha copiado al portapapeles"
+      description: "La nueva URL del webhook V3 se ha copiado al portapapeles"
     });
   };
 
@@ -235,10 +235,10 @@ export function WebhookTester() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TestTube className="h-5 w-5" />
-          Probador de Webhook
+          Probador de Webhook V3
         </CardTitle>
         <CardDescription>
-          Prueba el funcionamiento del webhook actualizado de WhatsApp
+          Prueba el funcionamiento del nuevo webhook V3 de WhatsApp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -317,7 +317,7 @@ export function WebhookTester() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Nota:</strong> Estas pruebas verifican que el webhook esté funcionando correctamente. 
+            <strong>Nota:</strong> Estas pruebas verifican que el nuevo webhook V3 esté funcionando correctamente. 
             Si todas las pruebas pasan, el webhook está listo para recibir eventos de WhatsApp.
           </AlertDescription>
         </Alert>

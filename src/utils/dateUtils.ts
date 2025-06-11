@@ -1,44 +1,51 @@
 
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
-// Helper function to format date consistently avoiding timezone issues
-export const formatDateForQuery = (date: Date): string => {
-  // Use local date components to avoid timezone conversion
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+export function formatTripDate(dateString: string | null | undefined): string {
+  if (!dateString) {
+    return 'Fecha no disponible';
+  }
 
-// Format date safely avoiding timezone issues - consistent with TripSelector
-export const formatTripDate = (dateString: string) => {
   try {
-    // Parse the date string directly (assumes YYYY-MM-DD format from database)
-    const dateParts = dateString.split('-');
-    const year = parseInt(dateParts[0]);
-    const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
-    const day = parseInt(dateParts[2]);
+    // Handle different date formats
+    let date: Date;
     
-    const date = new Date(year, month, day);
+    if (dateString.includes('T')) {
+      // ISO format with time
+      date = parseISO(dateString);
+    } else {
+      // Date-only format (YYYY-MM-DD)
+      date = parseISO(dateString + 'T00:00:00');
+    }
+
+    if (!isValid(date)) {
+      console.warn('Invalid date format:', dateString);
+      return 'Fecha inválida';
+    }
+
     return format(date, 'dd/MM/yyyy');
   } catch (error) {
-    console.error('❌ [dateUtils] Error formatting date:', error);
-    return dateString;
+    console.error('Error formatting date:', dateString, error);
+    return 'Error en fecha';
   }
-};
+}
 
-// Format date for display in different formats
-export const formatDateDisplay = (dateString: string, formatPattern: string = 'dd/MM/yyyy') => {
-  try {
-    const dateParts = dateString.split('-');
-    const year = parseInt(dateParts[0]);
-    const month = parseInt(dateParts[1]) - 1;
-    const day = parseInt(dateParts[2]);
-    
-    const date = new Date(year, month, day);
-    return format(date, formatPattern);
-  } catch (error) {
-    console.error('❌ [dateUtils] Error formatting date:', error);
-    return dateString;
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) {
+    return 'Fecha no disponible';
   }
-};
+
+  try {
+    const date = parseISO(dateString);
+    
+    if (!isValid(date)) {
+      console.warn('Invalid datetime format:', dateString);
+      return 'Fecha inválida';
+    }
+
+    return format(date, 'dd/MM/yyyy HH:mm');
+  } catch (error) {
+    console.error('Error formatting datetime:', dateString, error);
+    return 'Error en fecha';
+  }
+}

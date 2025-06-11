@@ -20,6 +20,16 @@ export interface Package {
   customer_id?: string;
   trip_id?: string;
   status?: string;
+  description?: string;
+  origin?: string;
+  destination?: string;
+  weight?: number;
+  freight?: number;
+  amount_to_collect?: number;
+  currency?: string;
+  flight_number?: string;
+  delivered_at?: string;
+  delivered_by?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -105,9 +115,50 @@ export interface Trip {
   traveler_id?: string;
   departure_date?: string;
   arrival_date?: string;
+  trip_date?: string;
   origin?: string;
   destination?: string;
+  flight_number?: string;
   status?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface TrackingEvent {
+  id: string;
+  package_id: string;
+  event_type: string;
+  description: string;
+  location?: string;
+  created_at?: string;
+}
+
+export interface DispatchRelation {
+  id: string;
+  dispatch_date: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DispatchPackage {
+  id: string;
+  dispatch_id: string;
+  package_id: string;
+  created_at?: string;
+}
+
+export interface UserAction {
+  id: string;
+  user_id?: string;
+  action_type: string;
+  description: string;
+  table_name?: string;
+  record_id?: string;
+  old_values?: any;
+  new_values?: any;
+  can_revert?: boolean;
+  created_at?: string;
+  reverted_at?: string;
+  reverted_by?: string;
 }

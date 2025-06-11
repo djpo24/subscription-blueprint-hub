@@ -45,6 +45,66 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_packages: {
+        Row: {
+          created_at: string | null
+          dispatch_id: string | null
+          id: string
+          package_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dispatch_id?: string | null
+          id?: string
+          package_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dispatch_id?: string | null
+          id?: string
+          package_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_packages_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_relations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_relations: {
+        Row: {
+          created_at: string | null
+          dispatch_date: string
+          id: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dispatch_date: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dispatch_date?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       incoming_messages: {
         Row: {
           customer_id: string | null
@@ -196,31 +256,61 @@ export type Database = {
       }
       packages: {
         Row: {
+          amount_to_collect: number | null
           created_at: string | null
+          currency: string | null
           customer_id: string | null
+          delivered_at: string | null
+          delivered_by: string | null
+          description: string | null
+          destination: string | null
+          flight_number: string | null
+          freight: number | null
           id: string
+          origin: string | null
           status: string | null
           tracking_number: string | null
           trip_id: string | null
           updated_at: string | null
+          weight: number | null
         }
         Insert: {
+          amount_to_collect?: number | null
           created_at?: string | null
+          currency?: string | null
           customer_id?: string | null
+          delivered_at?: string | null
+          delivered_by?: string | null
+          description?: string | null
+          destination?: string | null
+          flight_number?: string | null
+          freight?: number | null
           id?: string
+          origin?: string | null
           status?: string | null
           tracking_number?: string | null
           trip_id?: string | null
           updated_at?: string | null
+          weight?: number | null
         }
         Update: {
+          amount_to_collect?: number | null
           created_at?: string | null
+          currency?: string | null
           customer_id?: string | null
+          delivered_at?: string | null
+          delivered_by?: string | null
+          description?: string | null
+          destination?: string | null
+          flight_number?: string | null
+          freight?: number | null
           id?: string
+          origin?: string | null
           status?: string | null
           tracking_number?: string | null
           trip_id?: string | null
           updated_at?: string | null
+          weight?: number | null
         }
         Relationships: [
           {
@@ -228,6 +318,41 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_events: {
+        Row: {
+          created_at: string | null
+          description: string
+          event_type: string
+          id: string
+          location: string | null
+          package_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          event_type: string
+          id?: string
+          location?: string | null
+          package_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          package_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
             referencedColumns: ["id"]
           },
         ]
@@ -268,10 +393,12 @@ export type Database = {
           created_at: string | null
           departure_date: string | null
           destination: string | null
+          flight_number: string | null
           id: string
           origin: string | null
           status: string | null
           traveler_id: string | null
+          trip_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -279,10 +406,12 @@ export type Database = {
           created_at?: string | null
           departure_date?: string | null
           destination?: string | null
+          flight_number?: string | null
           id?: string
           origin?: string | null
           status?: string | null
           traveler_id?: string | null
+          trip_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -290,10 +419,12 @@ export type Database = {
           created_at?: string | null
           departure_date?: string | null
           destination?: string | null
+          flight_number?: string | null
           id?: string
           origin?: string | null
           status?: string | null
           traveler_id?: string | null
+          trip_date?: string | null
           updated_at?: string | null
         }
         Relationships: [

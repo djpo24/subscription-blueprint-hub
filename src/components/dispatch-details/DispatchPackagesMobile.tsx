@@ -42,6 +42,11 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchP
     return `$${value.toLocaleString('es-CO')}`;
   };
 
+  // Función para determinar si se puede entregar el paquete
+  const canDeliverPackage = (pkg: PackageInDispatch) => {
+    return pkg.status === 'en_destino' && pkg.status !== 'delivered';
+  };
+
   if (packages.length === 0) {
     return (
       <div className="text-center py-12">
@@ -118,8 +123,8 @@ export function DispatchPackagesMobile({ packages, onDeliverPackage }: DispatchP
               </div>
             </div>
 
-            {/* Botón de acción */}
-            {pkg.status !== 'delivered' && (
+            {/* Botón de acción - Solo mostrar si el paquete está en destino y no entregado */}
+            {canDeliverPackage(pkg) && (
               <Button
                 size="sm"
                 variant="outline"

@@ -57,6 +57,11 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
     return formatAmountToCollectWithCurrency(amount, currency);
   };
 
+  // Función para determinar si se puede entregar el paquete
+  const canDeliverPackage = (pkg: PackageInDispatch) => {
+    return pkg.status === 'en_destino' && pkg.status !== 'delivered';
+  };
+
   const handleDeliverPackage = (pkg: PackageInDispatch) => {
     setSelectedPackage(pkg);
     setShowDeliveryDialog(true);
@@ -163,7 +168,8 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
                   </div>
                 </TableCell>
                 <TableCell>
-                  {pkg.status !== 'delivered' && (
+                  {/* Solo mostrar botón de entrega si el paquete está en destino y no entregado */}
+                  {canDeliverPackage(pkg) && (
                     <Button
                       size="sm"
                       variant="outline"

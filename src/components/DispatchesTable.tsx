@@ -49,6 +49,13 @@ export function DispatchesTable({ selectedDate, onViewDispatch }: DispatchesTabl
     return `$${value.toLocaleString('es-CO')}`;
   };
 
+  const formatWeight = (weight: number | null | undefined) => {
+    if (!weight) return '0';
+    // Convertir a número y eliminar decimales innecesarios
+    const numWeight = Number(weight);
+    return numWeight % 1 === 0 ? numWeight.toString() : numWeight.toFixed(1);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -114,7 +121,7 @@ export function DispatchesTable({ selectedDate, onViewDispatch }: DispatchesTabl
                             </div>
                             <div className="flex items-center gap-1">
                               <Weight className="h-3 w-3 text-purple-500" />
-                              <span>{dispatch.total_weight || 0} kg</span>
+                              <span>{formatWeight(dispatch.total_weight)} kg</span>
                             </div>
                           </div>
                         </div>
@@ -227,7 +234,7 @@ export function DispatchesTable({ selectedDate, onViewDispatch }: DispatchesTabl
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Weight className="h-4 w-4 text-purple-500" />
-                      <span>{dispatch.total_weight || 0} kg</span>
+                      <span>{formatWeight(dispatch.total_weight)} kg</span>
                     </div>
                   </TableCell>
                   <TableCell>

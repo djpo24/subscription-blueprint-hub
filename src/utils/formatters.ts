@@ -17,7 +17,11 @@ export const formatDecimal = (value: number | null | undefined, maxDecimals: num
 };
 
 export const formatWeight = (weight: number | null | undefined): string => {
-  return formatDecimal(weight, 2);
+  if (!weight) return '0';
+  // Convertir a número y eliminar decimales innecesarios
+  const numWeight = Number(weight);
+  // Si es un número entero, mostrarlo sin decimales; si no, mostrar máximo 1 decimal
+  return numWeight % 1 === 0 ? numWeight.toString() : numWeight.toFixed(1);
 };
 
 export const formatFreight = (freight: number | null | undefined): string => {

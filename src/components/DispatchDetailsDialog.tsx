@@ -74,7 +74,6 @@ export function DispatchDetailsDialog({
 
   // Obtener información del despacho
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
-  const firstPackage = packages[0];
   
   // Lógica simplificada para determinar cuándo se puede marcar en tránsito
   const canMarkAsInTransit = packages.some(pkg => 
@@ -93,11 +92,11 @@ export function DispatchDetailsDialog({
   };
 
   const handleMarkAsArrived = () => {
-    if (firstPackage?.trip_id) {
-      console.log('🏁 Marcando viaje como llegado:', firstPackage.trip_id);
-      markTripAsArrived(firstPackage.trip_id);
+    if (dispatchId) {
+      console.log('🏁 [DispatchDetailsDialog] Marcando despacho como llegado:', dispatchId);
+      markTripAsArrived(dispatchId);
     } else {
-      console.error('❌ No se puede marcar como llegado: no hay trip_id');
+      console.error('❌ No se puede marcar como llegado: falta dispatchId');
     }
   };
 

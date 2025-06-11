@@ -9,7 +9,7 @@ export function useTripActions() {
   return {
     markTripAsInTransit: markDispatchAsInTransit,
     isMarkingAsInTransit,
-    markTripAsArrived,
+    markTripAsArrived: (dispatchId: string) => markTripAsArrived(dispatchId),
     isMarkingAsArrived,
   };
 }

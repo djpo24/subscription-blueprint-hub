@@ -2,7 +2,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 
 export function useMarkTripAsArrived() {
   const { toast } = useToast();
@@ -30,7 +29,7 @@ export function useMarkTripAsArrived() {
 
       console.log('📋 [useMarkTripAsArrived] Despacho encontrado:', dispatch);
 
-      // PASO 2: Obtener SOLO los paquetes de este despacho específico
+      // PASO 2: Obtener SOLO los paquetes de este despacho específico CON información del cliente
       const { data: dispatchPackages, error: packagesError } = await supabase
         .from('dispatch_packages')
         .select(`
@@ -39,7 +38,17 @@ export function useMarkTripAsArrived() {
             id,
             tracking_number,
             status,
-            trip_id
+            trip_id,
+            customer_id,
+            destination,
+            amount_to_collect,
+            currency,
+            customers!customer_id (
+              id,
+              name,
+              phone,
+              whatsapp_number
+            )
           )
         `)
         .eq('dispatch_id', dispatchId);
@@ -121,8 +130,50 @@ export function useMarkTripAsArrived() {
         // No lanzar error aquí, es secundario
       }
 
-      // PASO 7: Verificar si el trip asociado debe actualizarse a "completed"
-      // Solo si TODOS los paquetes del trip están entregados o en destino
+      // PASO 7: 🆕 CREAR NOTIFICACIONES DE LLEGADA AUTOMÁTICAS
+      console.log('📱 [useMarkTripAsArrived] Creando notificaciones de llegada...');
+      
+      const arrivalNotifications = packagesInTransit
+        .filter(pkg => pkg.customers && (pkg.customers.whatsapp_number || pkg.customers.phone))
+        .map(pkg => ({
+          customer_id: pkg.customer_id,
+          package_id: pkg.id,
+          notification_type: 'package_arrival',
+          message: `Su encomienda ${pkg.tracking_number} ha llegado a ${pkg.destination}`,
+          status: 'pending'
+        }));
+
+      if (arrivalNotifications.length > 0) {
+        const { error: notificationError } = await supabase
+          .from('notification_log')
+          .insert(arrivalNotifications);
+
+        if (notificationError) {
+          console.error('❌ Error creando notificaciones de llegada:', notificationError);
+          // No lanzar error, las notificaciones son secundarias
+        } else {
+          console.log(`✅ [useMarkTripAsArrived] Creadas ${arrivalNotifications.length} notificaciones de llegada`);
+        }
+      }
+
+      // PASO 8: 🆕 INVOCAR FUNCIÓN DE PROCESAMIENTO DE NOTIFICACIONES
+      console.log('🔄 [useMarkTripAsArrived] Disparando procesamiento de notificaciones...');
+      
+      try {
+        const { error: processError } = await supabase.functions.invoke('process-arrival-notifications');
+        
+        if (processError) {
+          console.error('❌ Error invocando proceso de notificaciones:', processError);
+          // No lanzar error, es secundario
+        } else {
+          console.log('✅ [useMarkTripAsArrived] Proceso de notificaciones disparado exitosamente');
+        }
+      } catch (error) {
+        console.error('❌ Error disparando notificaciones:', error);
+        // No lanzar error, es secundario
+      }
+
+      // PASO 9: Verificar si el trip asociado debe actualizarse a "completed"
       const tripId = packagesInTransit[0]?.trip_id;
       if (tripId) {
         const { data: allTripPackages } = await supabase
@@ -154,7 +205,8 @@ export function useMarkTripAsArrived() {
       return { 
         updatedPackages: packagesInTransit.length, 
         dispatchId,
-        tripId 
+        tripId,
+        notificationsCreated: arrivalNotifications.length
       };
     },
     onSuccess: (data) => {
@@ -166,6 +218,8 @@ export function useMarkTripAsArrived() {
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-log'] });
       
       // Invalidar por ID específico
       queryClient.invalidateQueries({ queryKey: ['dispatch-packages', data.dispatchId] });
@@ -176,7 +230,7 @@ export function useMarkTripAsArrived() {
       
       toast({
         title: "Despacho marcado como llegado",
-        description: `${data.updatedPackages} paquetes actualizados a "En Destino"`,
+        description: `${data.updatedPackages} paquetes actualizados a "En Destino" y ${data.notificationsCreated} notificaciones creadas`,
       });
     },
     onError: (error: any) => {

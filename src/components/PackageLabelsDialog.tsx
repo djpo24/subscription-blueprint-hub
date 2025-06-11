@@ -1,10 +1,10 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
 import { MultipleLabelsDialog } from './MultipleLabelsDialog';
 import { PackageLabelsDialogHeader } from './package-labels-dialog/PackageLabelsDialogHeader';
 import { PackageLabelsDialogTabs } from './package-labels-dialog/PackageLabelsDialogTabs';
-import { PackageLabelsDialogActions } from './package-labels-dialog/PackageLabelsDialogActions';
 import {
   PackageLabelsDialogProps,
   PackageLabelsDialogState,
@@ -139,29 +139,24 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-          <PackageLabelsDialogHeader tripDate={tripDate} />
+          <PackageLabelsDialogHeader
+            selectedPackageIds={state.selectedPackageIds}
+            selectedPrintedPackageIds={state.selectedPrintedPackageIds}
+            onPrintSelected={handlePrintSelected}
+            onReprintSelected={handleReprintSelected}
+          />
 
-          {/* Mover los botones de acción arriba junto a las pestañas */}
-          <div className="flex items-center justify-between mb-4">
-            <PackageLabelsDialogTabs
-              pendingPackages={pendingPackages}
-              printedPackages={printedPackages}
-              selectedPackageIds={state.selectedPackageIds}
-              selectedPrintedPackageIds={state.selectedPrintedPackageIds}
-              onPackageToggle={handlePackageToggle}
-              onPrintedPackageToggle={handlePrintedPackageToggle}
-              onSelectAll={handleSelectAll}
-              onSelectAllPrinted={handleSelectAllPrinted}
-              onPrintSingleLabel={handlePrintSingleLabel}
-            />
-
-            <PackageLabelsDialogActions
-              selectedPackageIds={state.selectedPackageIds}
-              selectedPrintedPackageIds={state.selectedPrintedPackageIds}
-              onPrintSelected={handlePrintSelected}
-              onReprintSelected={handleReprintSelected}
-            />
-          </div>
+          <PackageLabelsDialogTabs
+            pendingPackages={pendingPackages}
+            printedPackages={printedPackages}
+            selectedPackageIds={state.selectedPackageIds}
+            selectedPrintedPackageIds={state.selectedPrintedPackageIds}
+            onPackageToggle={handlePackageToggle}
+            onPrintedPackageToggle={handlePrintedPackageToggle}
+            onSelectAll={handleSelectAll}
+            onSelectAllPrinted={handleSelectAllPrinted}
+            onPrintSingleLabel={handlePrintSingleLabel}
+          />
         </DialogContent>
       </Dialog>
 

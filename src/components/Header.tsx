@@ -18,22 +18,32 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
-    if (loading) return; // Prevent multiple clicks
+    if (loading) {
+      console.log('⏳ Sign out already in progress, ignoring click');
+      return;
+    }
     
     try {
-      console.log('Header: Starting sign out process');
+      console.log('🚪 Header: Starting sign out process');
+      
+      // Show loading toast immediately
+      toast({
+        title: "Cerrando sesión...",
+        description: "Por favor espera",
+      });
+      
+      // Call signOut which handles everything including redirect
       await signOut();
+      
+    } catch (error) {
+      console.error('❌ Header: Sign out error:', error);
       toast({
         title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente",
+        description: "Has sido desconectado del sistema",
       });
-    } catch (error) {
-      console.error('Header: Sign out error:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cerrar la sesión",
-        variant: "destructive"
-      });
+      
+      // Force redirect even on error
+      window.location.href = '/';
     }
   };
 

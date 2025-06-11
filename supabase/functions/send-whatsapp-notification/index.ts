@@ -131,33 +131,6 @@ serve(async (req) => {
       }
     }
 
-    // Función auxiliar para obtener dirección del destino
-    const getDestinationAddress = async (destination: string) => {
-      if (!destination) return 'nuestras oficinas'
-      
-      console.log(`🏢 Obteniendo dirección para destino: ${destination}`)
-      
-      const { data: destinationAddress, error } = await supabaseClient
-        .from('destination_addresses')
-        .select('address, city')
-        .or(`city.ilike.%${destination.toLowerCase()}%,city.ilike.%${destination}%`)
-        .limit(1)
-        .maybeSingle()
-      
-      if (error) {
-        console.error(`❌ Error obteniendo dirección para ${destination}:`, error)
-        return 'nuestras oficinas'
-      }
-      
-      if (destinationAddress) {
-        console.log(`✅ Dirección encontrada: ${destinationAddress.address}`)
-        return destinationAddress.address
-      }
-      
-      console.warn(`⚠️ No se encontró dirección para ${destination}`)
-      return 'nuestras oficinas'
-    }
-
     // Prepare WhatsApp message payload
     let whatsappPayload
 
@@ -177,23 +150,16 @@ serve(async (req) => {
 
       // Add parameters for specific templates
       if (autoSelectedTemplate === 'package_arrival_notification' && templateParameters) {
-        // Obtener dirección actualizada si no se proporcionó o es genérica
-        let address = templateParameters.address || 'nuestras oficinas'
-        
-        if (!templateParameters.address || templateParameters.address === 'nuestras oficinas') {
-          if (templateParameters.destination) {
-            address = await getDestinationAddress(templateParameters.destination)
-          }
-        }
-
-        // Validate and use parameters with safe defaults
+        // Usar DIRECTAMENTE la dirección que viene en templateParameters desde process-arrival-notifications
         const customerName = templateParameters.customerName || 'Cliente'
         const trackingNumber = templateParameters.trackingNumber || 'N/A'
         const destination = templateParameters.destination || 'destino'
+        const address = templateParameters.address || 'nuestras oficinas' // Usar la dirección que ya viene procesada
         const currency = templateParameters.currency || '$'
         const amount = templateParameters.amount || '0'
 
-        console.log(`📍 Usando dirección final en template: ${address}`)
+        console.log('📍 Usando dirección del templateParameters:', address)
+        console.log('📋 Template parameters recibidos:', templateParameters)
 
         templatePayload.template.components = [
           {
@@ -209,7 +175,7 @@ serve(async (req) => {
           }
         ]
 
-        console.log('✅ Package arrival template parameters configured with address:', address)
+        console.log('✅ Package arrival template configurado con dirección:', address)
       } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
         const customerName = templateParameters.customerName || 'Cliente'
         templatePayload.template.components = [

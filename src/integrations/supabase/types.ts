@@ -182,23 +182,47 @@ export type Database = {
       dispatch_relations: {
         Row: {
           created_at: string | null
+          created_by: string | null
+          delivered_count: number | null
           dispatch_date: string
           id: string
           notes: string | null
+          pending_count: number | null
+          status: string | null
+          total_amount_to_collect: number | null
+          total_freight: number | null
+          total_packages: number | null
+          total_weight: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
           dispatch_date: string
           id?: string
           notes?: string | null
+          pending_count?: number | null
+          status?: string | null
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number | null
+          total_weight?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
           dispatch_date?: string
           id?: string
           notes?: string | null
+          pending_count?: number | null
+          status?: string | null
+          total_amount_to_collect?: number | null
+          total_freight?: number | null
+          total_packages?: number | null
+          total_weight?: number | null
           updated_at?: string | null
         }
         Relationships: []

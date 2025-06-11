@@ -17,7 +17,7 @@ export function useUserActivities() {
         .from('user_actions')
         .select(`
           *,
-          user_profiles!fk_user_actions_user_profiles(first_name, last_name, email)
+          user_profiles!inner(first_name, last_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(50);

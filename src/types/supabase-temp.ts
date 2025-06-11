@@ -23,10 +23,10 @@ export interface Package {
   description?: string;
   origin?: string;
   destination?: string;
-  weight?: number;
-  freight?: number;
-  amount_to_collect?: number;
-  currency?: string;
+  weight?: number | null;
+  freight?: number | null;
+  amount_to_collect?: number | null;
+  currency?: 'COP' | 'AWG';
   flight_number?: string;
   delivered_at?: string;
   delivered_by?: string;
@@ -161,4 +161,12 @@ export interface UserAction {
   created_at?: string;
   reverted_at?: string;
   reverted_by?: string;
+}
+
+export interface DestinationAddress {
+  id: string;
+  city: string;
+  address: string;
+  created_at: string;
+  updated_at: string;
 }

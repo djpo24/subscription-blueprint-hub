@@ -1,120 +1,114 @@
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Undo2 } from 'lucide-react';
-import { UserActivity } from './types';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { UserActivity } from './types';
 
 interface RevertActionDialogProps {
-  activity: UserActivity | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRevertSuccess: () => void;
+  activity: UserActivity | null;
 }
 
-export function RevertActionDialog({ activity, open, onOpenChange, onRevertSuccess }: RevertActionDialogProps) {
-  const [isReverting, setIsReverting] = useState(false);
+export function RevertActionDialog({ open, onOpenChange, activity }: RevertActionDialogProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const handleRevert = async () => {
-    if (!activity || !user) return;
-
-    setIsReverting(true);
-    try {
-      console.log('Reverting action:', activity.id);
+  const revertMutation = useMutation({
+    mutationFn: async () => {
+      if (!activity) throw new Error('No activity selected');
 
       const { error } = await supabase.rpc('revert_user_action', {
-        p_action_id: activity.id,
-        p_reverted_by: user.id
+        action_id: activity.id
       });
 
-      if (error) {
-        console.error('Error reverting action:', error);
-        throw error;
-      }
-
+      if (error) throw error;
+    },
+    onSuccess: () => {
       toast({
         title: "Acción revertida",
         description: "La acción ha sido revertida exitosamente",
       });
-
-      onRevertSuccess();
+      queryClient.invalidateQueries({ queryKey: ['user-activities'] });
       onOpenChange(false);
-    } catch (error) {
+    },
+    onError: (error: any) => {
       console.error('Error reverting action:', error);
       toast({
         title: "Error",
-        description: "No se pudo revertir la acción. Inténtalo de nuevo.",
+        description: error.message || "No se pudo revertir la acción",
         variant: "destructive"
       });
-    } finally {
-      setIsReverting(false);
     }
+  });
+
+  const handleRevert = () => {
+    revertMutation.mutate();
   };
 
   if (!activity) return null;
 
-  const isRevertDisabled = !activity.can_revert || !!activity.reverted_at;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Undo2 className="h-5 w-5" />
-            Revertir Acción
-          </DialogTitle>
+          <DialogTitle>Revertir Acción</DialogTitle>
           <DialogDescription>
-            ¿Estás seguro que deseas revertir esta acción? Esta operación no se puede deshacer.
+            ¿Estás seguro de que quieres revertir esta acción? Esta operación intentará deshacer los cambios realizados.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-yellow-800">
-                  Detalles de la acción a revertir:
-                </p>
-                <div className="text-sm text-yellow-700 space-y-1">
-                  <p><strong>Usuario:</strong> {activity.user_name}</p>
-                  <p><strong>Tipo:</strong> {activity.activity_type}</p>
-                  <p><strong>Descripción:</strong> {activity.description}</p>
-                  <p><strong>Fecha:</strong> {new Date(activity.created_at).toLocaleString('es-ES')}</p>
-                </div>
-              </div>
+        
+        <div className="py-4 space-y-4">
+          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{activity.activity_type}</Badge>
+              <span className="text-sm text-gray-500">
+                {new Date(activity.created_at).toLocaleString()}
+              </span>
             </div>
+            <p><strong>Usuario:</strong> {activity.user_name}</p>
+            <p><strong>Descripción:</strong> {activity.description}</p>
+            {activity.table_name && (
+              <p><strong>Tabla:</strong> {activity.table_name}</p>
+            )}
           </div>
 
           {activity.old_values && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium mb-2">Valores anteriores:</p>
-              <pre className="text-xs text-gray-600 overflow-x-auto">
+            <div className="space-y-2">
+              <h4 className="font-medium">Valores anteriores:</h4>
+              <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-32">
                 {JSON.stringify(activity.old_values, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {activity.new_values && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Valores nuevos:</h4>
+              <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-32">
+                {JSON.stringify(activity.new_values, null, 2)}
               </pre>
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
+        <DialogFooter className="gap-3">
+          <Button 
+            type="button" 
+            variant="secondary" 
             onClick={() => onOpenChange(false)}
-            disabled={isReverting}
           >
             Cancelar
           </Button>
-          <Button
+          <Button 
+            variant="destructive"
             onClick={handleRevert}
-            disabled={isReverting || isRevertDisabled}
-            className="bg-red-600 hover:bg-red-700"
+            disabled={revertMutation.isPending || !activity.can_revert}
           >
-            {isReverting ? "Revirtiendo..." : "Revertir Acción"}
+            {revertMutation.isPending ? 'Revirtiendo...' : 'Revertir'}
           </Button>
         </DialogFooter>
       </DialogContent>

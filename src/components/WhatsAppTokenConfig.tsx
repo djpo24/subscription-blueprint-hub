@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -78,27 +79,108 @@ export function WhatsAppTokenConfig() {
     }
   };
 
-  const updateToken = async (tokenName: string, value: string) => {
+  const updateAccessToken = async () => {
+    if (!tokens.accessToken) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un token de acceso válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.functions.invoke('update-meta-token', {
-        body: { token: value }
+        body: { token: tokens.accessToken }
       });
 
       if (error) throw error;
 
       toast({
         title: "Token actualizado",
-        description: `${tokenName} ha sido actualizado correctamente`,
+        description: "Token de acceso ha sido actualizado correctamente",
       });
 
       // Validate the new token
       await validateTokens();
     } catch (error: any) {
-      console.error('Error updating token:', error);
+      console.error('Error updating access token:', error);
       toast({
         title: "Error",
-        description: `No se pudo actualizar ${tokenName}: ${error.message}`,
+        description: `No se pudo actualizar el token de acceso: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePhoneNumberId = async () => {
+    if (!tokens.phoneNumberId) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un Phone Number ID válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.rpc('update_app_secret', {
+        secret_name: 'META_PHONE_NUMBER_ID',
+        secret_value: tokens.phoneNumberId
+      });
+
+      if (error) throw error;
+
+      setTokenStatus(prev => ({ ...prev, phoneNumberId: 'valid' }));
+      toast({
+        title: "Phone Number ID actualizado",
+        description: "Phone Number ID ha sido actualizado correctamente",
+      });
+    } catch (error: any) {
+      console.error('Error updating phone number ID:', error);
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar el Phone Number ID: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateVerifyToken = async () => {
+    if (!tokens.verifyToken) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un token de verificación válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.rpc('update_app_secret', {
+        secret_name: 'META_VERIFY_TOKEN',
+        secret_value: tokens.verifyToken
+      });
+
+      if (error) throw error;
+
+      setTokenStatus(prev => ({ ...prev, verifyToken: 'valid' }));
+      toast({
+        title: "Token de verificación actualizado",
+        description: "Token de verificación ha sido actualizado correctamente",
+      });
+    } catch (error: any) {
+      console.error('Error updating verify token:', error);
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar el token de verificación: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -257,6 +339,14 @@ export function WhatsAppTokenConfig() {
                     {showTokens.accessToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                <Button 
+                  onClick={updateAccessToken}
+                  disabled={loading || !tokens.accessToken}
+                  className="w-full mt-2"
+                  size="sm"
+                >
+                  {loading ? 'Actualizando...' : 'Actualizar Token de Acceso'}
+                </Button>
               </div>
 
               <div>
@@ -277,6 +367,14 @@ export function WhatsAppTokenConfig() {
                     {showTokens.verifyToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                <Button 
+                  onClick={updateVerifyToken}
+                  disabled={loading || !tokens.verifyToken}
+                  className="w-full mt-2"
+                  size="sm"
+                >
+                  {loading ? 'Actualizando...' : 'Actualizar Token de Verificación'}
+                </Button>
               </div>
 
               <div>
@@ -297,15 +395,15 @@ export function WhatsAppTokenConfig() {
                     {showTokens.phoneNumberId ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                <Button 
+                  onClick={updatePhoneNumberId}
+                  disabled={loading || !tokens.phoneNumberId}
+                  className="w-full mt-2"
+                  size="sm"
+                >
+                  {loading ? 'Actualizando...' : 'Actualizar Phone Number ID'}
+                </Button>
               </div>
-
-              <Button 
-                onClick={() => updateToken('Token de Acceso', tokens.accessToken)}
-                disabled={loading || !tokens.accessToken}
-                className="w-full"
-              >
-                {loading ? 'Actualizando...' : 'Actualizar Token de Acceso'}
-              </Button>
             </div>
           </div>
         );

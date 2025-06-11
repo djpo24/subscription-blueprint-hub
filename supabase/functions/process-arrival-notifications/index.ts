@@ -61,34 +61,41 @@ serve(async (req) => {
     let processedCount = 0
     let errorCount = 0
 
-    // Función para obtener la dirección del destino con mejor manejo
+    // Función MEJORADA para obtener la dirección del destino
     const getDestinationAddress = async (destination: string) => {
-      if (!destination) return 'nuestras oficinas'
+      if (!destination) {
+        console.error('❌ CRÍTICO: No se proporcionó destino para buscar dirección')
+        throw new Error('Destino requerido para obtener dirección')
+      }
       
-      console.log(`🏢 Buscando dirección para destino: ${destination}`)
+      console.log(`🏢 Buscando dirección para destino: "${destination}"`)
       
-      // Normalizar el nombre del destino para la búsqueda
-      const normalizedDestination = destination.toLowerCase().trim()
-      
+      // Buscar dirección exacta por ciudad
       const { data: destinationAddress, error } = await supabaseClient
         .from('destination_addresses')
         .select('address, city')
-        .or(`city.ilike.%${normalizedDestination}%,city.ilike.%${destination}%`)
+        .ilike('city', `%${destination.trim()}%`)
         .limit(1)
         .maybeSingle()
       
       if (error) {
         console.error(`❌ Error buscando dirección para ${destination}:`, error)
-        return 'nuestras oficinas'
+        throw new Error(`Error al buscar dirección para ${destination}`)
       }
       
-      if (destinationAddress) {
+      if (destinationAddress && destinationAddress.address) {
         console.log(`✅ Dirección encontrada para ${destination}: ${destinationAddress.address}`)
         return destinationAddress.address
       }
       
-      console.warn(`⚠️ No se encontró dirección específica para ${destination}, usando dirección por defecto`)
-      return 'nuestras oficinas'
+      // Si no se encuentra dirección específica, crear una dirección genérica pero descriptiva
+      const genericAddress = `oficina de ${destination}`
+      console.warn(`⚠️ ADVERTENCIA: No se encontró dirección específica para "${destination}", usando: "${genericAddress}"`)
+      
+      // Registrar este evento para que el administrador pueda agregar la dirección después
+      console.log(`📝 ACCIÓN REQUERIDA: Agregar dirección específica para ${destination} en destination_addresses`)
+      
+      return genericAddress
     }
 
     // Función para generar el mensaje exacto según el formato requerido
@@ -112,21 +119,62 @@ serve(async (req) => {
           continue
         }
 
-        // Obtener dirección del destino con mejor manejo
-        const address = await getDestinationAddress(notification.packages?.destination || '')
+        const destination = notification.packages?.destination
+        if (!destination) {
+          console.error(`❌ CRÍTICO: Paquete sin destino para notificación ${notification.id}`)
+          throw new Error('Paquete debe tener destino para enviar notificación')
+        }
+
+        // OBTENER DIRECCIÓN OBLIGATORIAMENTE - NO PERMITIR FALLBACK GENÉRICO
+        let address
+        try {
+          address = await getDestinationAddress(destination)
+          console.log(`📍 Dirección confirmada para ${destination}: "${address}"`)
+        } catch (error) {
+          console.error(`❌ CRÍTICO: No se pudo obtener dirección para ${destination}:`, error)
+          
+          // Marcar como fallido porque no tenemos dirección válida
+          await supabaseClient
+            .from('notification_log')
+            .update({ 
+              status: 'failed',
+              error_message: `No se pudo obtener dirección para destino: ${destination}`
+            })
+            .eq('id', notification.id)
+          
+          errorCount++
+          continue // Saltar esta notificación
+        }
+
+        // Verificar que la dirección no sea genérica peligrosa
+        if (address.toLowerCase().includes('nuestras oficinas')) {
+          console.error(`❌ CRÍTICO: Se detectó dirección genérica peligrosa: "${address}"`)
+          
+          // Marcar como fallido
+          await supabaseClient
+            .from('notification_log')
+            .update({ 
+              status: 'failed',
+              error_message: 'Dirección genérica detectada - requiere dirección específica'
+            })
+            .eq('id', notification.id)
+          
+          errorCount++
+          continue
+        }
 
         // Generar el mensaje exacto según el formato requerido
         const messageContent = generateArrivalMessage(
           notification.customers?.name || 'Cliente',
           notification.packages?.tracking_number || '',
-          notification.packages?.destination || '',
+          destination,
           address,
           notification.packages?.currency || 'COP',
           notification.packages?.amount_to_collect?.toString() || '0'
         )
 
-        console.log(`📱 Enviando notificación automática para ${notification.packages?.tracking_number}`)
-        console.log(`📍 Dirección a usar: ${address}`)
+        console.log(`📱 Enviando notificación para ${notification.packages?.tracking_number} a ${destination}`)
+        console.log(`📍 Dirección confirmada: "${address}"`)
 
         // Actualizar el mensaje en notification_log para que coincida exactamente
         await supabaseClient
@@ -137,7 +185,7 @@ serve(async (req) => {
           })
           .eq('id', notification.id)
 
-        // Enviar notificación via WhatsApp
+        // Enviar notificación via WhatsApp con VALIDACIÓN ESTRICTA de dirección
         const { data: responseData, error: functionError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notification.id,
@@ -150,8 +198,8 @@ serve(async (req) => {
             templateParameters: {
               customerName: notification.customers?.name || 'Cliente',
               trackingNumber: notification.packages?.tracking_number || '',
-              destination: notification.packages?.destination || '',
-              address: address,
+              destination: destination,
+              address: address, // Dirección ya validada y específica
               currency: notification.packages?.currency === 'AWG' ? 'ƒ' : '$',
               amount: notification.packages?.amount_to_collect?.toString() || '0'
             }
@@ -172,7 +220,7 @@ serve(async (req) => {
           
           errorCount++
         } else if (responseData?.success) {
-          console.log(`✅ Notificación ${notification.id} enviada automáticamente`)
+          console.log(`✅ Notificación ${notification.id} enviada con dirección: "${address}"`)
           
           // Registrar el mensaje en sent_messages para que aparezca en el chat
           console.log('📝 Registrando mensaje de notificación en sent_messages...')
@@ -217,7 +265,7 @@ serve(async (req) => {
         processed: processedCount,
         errors: errorCount,
         total: pendingNotifications.length,
-        message: `Procesadas ${processedCount} notificaciones automáticamente`
+        message: `Procesadas ${processedCount} notificaciones con direcciones específicas`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

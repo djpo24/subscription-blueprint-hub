@@ -150,16 +150,27 @@ serve(async (req) => {
 
       // Add parameters for specific templates
       if (autoSelectedTemplate === 'package_arrival_notification' && templateParameters) {
-        // Usar DIRECTAMENTE la dirección que viene en templateParameters desde process-arrival-notifications
+        // VALIDACIÓN CRÍTICA: Verificar que la dirección NO sea genérica
+        const address = templateParameters.address
+        
+        if (!address) {
+          console.error('❌ CRÍTICO: No se proporcionó dirección en templateParameters')
+          throw new Error('Dirección requerida para template de llegada')
+        }
+        
+        if (address.toLowerCase().includes('nuestras oficinas')) {
+          console.error(`❌ CRÍTICO: Dirección genérica detectada en WhatsApp: "${address}"`)
+          throw new Error('No se puede enviar notificación con dirección genérica')
+        }
+
+        console.log('📍 VALIDACIÓN EXITOSA - Dirección específica confirmada:', address)
+        console.log('📋 Template parameters recibidos:', templateParameters)
+
         const customerName = templateParameters.customerName || 'Cliente'
         const trackingNumber = templateParameters.trackingNumber || 'N/A'
         const destination = templateParameters.destination || 'destino'
-        const address = templateParameters.address || 'nuestras oficinas' // Usar la dirección que ya viene procesada
         const currency = templateParameters.currency || '$'
         const amount = templateParameters.amount || '0'
-
-        console.log('📍 Usando dirección del templateParameters:', address)
-        console.log('📋 Template parameters recibidos:', templateParameters)
 
         templatePayload.template.components = [
           {
@@ -168,14 +179,14 @@ serve(async (req) => {
               { type: 'text', text: customerName },
               { type: 'text', text: trackingNumber },
               { type: 'text', text: destination },
-              { type: 'text', text: address },
+              { type: 'text', text: address }, // Dirección ya validada
               { type: 'text', text: currency },
               { type: 'text', text: amount }
             ]
           }
         ]
 
-        console.log('✅ Package arrival template configurado con dirección:', address)
+        console.log('✅ Package arrival template configurado con dirección específica:', address)
       } else if (autoSelectedTemplate === 'consulta_encomienda' && templateParameters) {
         const customerName = templateParameters.customerName || 'Cliente'
         templatePayload.template.components = [

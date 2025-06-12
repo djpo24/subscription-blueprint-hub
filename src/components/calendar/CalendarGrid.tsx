@@ -84,17 +84,16 @@ export function CalendarGrid({
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {calendarDays.map((day, index) => {
           const dayTrips = getTripsForDate(day);
-          const isCurrentMonth = isSameMonth(day, currentDate);
-          const isToday = isSameDay(day, new Date());
 
           return (
             <CalendarDay
               key={index}
               day={day}
+              currentDate={currentDate}
               trips={dayTrips}
-              isCurrentMonth={isCurrentMonth}
-              isToday={isToday}
-              onClick={() => handleDayClick(day)}
+              onAddPackage={onAddPackage}
+              onCreateTrip={onCreateTrip}
+              onViewPackagesByDate={onViewPackagesByDate}
             />
           );
         })}

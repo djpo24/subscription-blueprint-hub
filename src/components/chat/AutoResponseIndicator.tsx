@@ -4,22 +4,36 @@ import { Bot, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAutoResponseDetection } from '@/hooks/useAutoResponseDetection';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
 
 export function AutoResponseIndicator() {
   const { isActive } = useAutoResponseDetection();
   const { isAutoResponseEnabled } = useAdvancedBotToggle();
   const { toast } = useToast();
+  const [connectionStable, setConnectionStable] = useState(false);
+
+  // Considerar la conexión estable después de 3 segundos de estar conectado
+  useEffect(() => {
+    if (isActive) {
+      const timer = setTimeout(() => {
+        setConnectionStable(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setConnectionStable(false);
+    }
+  }, [isActive]);
 
   const handleIndicatorClick = () => {
-    if (isAutoResponseEnabled && isActive) {
+    if (isAutoResponseEnabled && isActive && connectionStable) {
       toast({
         title: "🤖 Sistema de Auto-respuesta",
         description: "El sistema está activo y monitoreando mensajes entrantes. Envía un mensaje de WhatsApp para probar.",
       });
-    } else if (isAutoResponseEnabled && !isActive) {
+    } else if (isAutoResponseEnabled && (!isActive || !connectionStable)) {
       toast({
-        title: "⚠️ Conectando al sistema",
-        description: "El bot está habilitado pero reconectándose. Espera unos segundos.",
+        title: "⚠️ Sistema iniciándose",
+        description: "El bot está habilitado y conectándose. Espera unos segundos.",
         variant: "destructive"
       });
     } else {
@@ -34,27 +48,28 @@ export function AutoResponseIndicator() {
     return null;
   }
 
-  if (!isActive) {
+  // Si está habilitado pero no conectado o la conexión no es estable
+  if (!isActive || !connectionStable) {
     return (
       <div className="flex items-center gap-2">
         <Badge 
-          variant="destructive" 
-          className="flex items-center gap-1 cursor-pointer"
+          variant="secondary" 
+          className="flex items-center gap-1 cursor-pointer animate-pulse"
           onClick={handleIndicatorClick}
         >
           <RefreshCw className="h-3 w-3 animate-spin" />
-          <AlertTriangle className="h-3 w-3" />
-          <span className="text-xs">Conectando...</span>
+          <span className="text-xs">Iniciando...</span>
         </Badge>
       </div>
     );
   }
 
+  // Conexión estable y activa
   return (
     <div className="flex items-center gap-2">
       <Badge 
         variant="default" 
-        className="flex items-center gap-1 animate-pulse cursor-pointer bg-green-600 hover:bg-green-700"
+        className="flex items-center gap-1 cursor-pointer bg-green-600 hover:bg-green-700"
         onClick={handleIndicatorClick}
       >
         <Bot className="h-3 w-3" />

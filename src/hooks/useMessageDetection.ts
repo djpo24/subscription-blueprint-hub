@@ -19,6 +19,48 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
   const processedMessages = useRef(new Set<string>());
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 2000; // 2 seconds
+
+  const cleanup = () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    if (channelRef.current) {
+      console.log('🔕 Removing message detection channel');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    
+    isConnectedRef.current = false;
+    reconnectAttemptsRef.current = 0;
+  };
+
+  const scheduleReconnect = () => {
+    if (!isEnabled || reconnectTimeoutRef.current) return;
+    
+    reconnectAttemptsRef.current++;
+    
+    if (reconnectAttemptsRef.current > maxReconnectAttempts) {
+      console.error('❌ Max reconnection attempts reached, stopping reconnection');
+      return;
+    }
+
+    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current - 1); // Exponential backoff
+    console.log(`🔄 Scheduling reconnection attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} in ${delay}ms`);
+    
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      if (isEnabled && !isConnectedRef.current) {
+        console.log('🔄 Attempting to reconnect message detection...');
+        cleanup();
+        channelRef.current = createChannel();
+      }
+    }, delay);
+  };
 
   const createChannel = () => {
     console.log('🔍 Creating new message detection channel...');
@@ -86,6 +128,7 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
         if (status === 'SUBSCRIBED') {
           console.log('✅ Message detection channel connected successfully');
           isConnectedRef.current = true;
+          reconnectAttemptsRef.current = 0; // Reset counter on successful connection
           
           // Clear any pending reconnection
           if (reconnectTimeoutRef.current) {
@@ -96,23 +139,9 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
           console.error('❌ Message detection channel error/timeout:', status);
           isConnectedRef.current = false;
           
-          // Attempt to reconnect after a delay
+          // Only attempt reconnection if still enabled and not already attempting
           if (isEnabled && !reconnectTimeoutRef.current) {
-            console.log('🔄 Scheduling reconnection in 5 seconds...');
-            reconnectTimeoutRef.current = setTimeout(() => {
-              console.log('🔄 Attempting to reconnect message detection...');
-              reconnectTimeoutRef.current = null;
-              
-              // Clean up current channel
-              if (channelRef.current) {
-                supabase.removeChannel(channelRef.current);
-              }
-              
-              // Create new channel
-              if (isEnabled) {
-                channelRef.current = createChannel();
-              }
-            }, 5000);
+            scheduleReconnect();
           }
         }
       });
@@ -123,19 +152,8 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
   useEffect(() => {
     console.log('🔍 Message detection effect triggered. Enabled:', isEnabled);
 
-    // Clear any pending reconnection
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // Cleanup previous channel
-    if (channelRef.current) {
-      console.log('🔕 Removing previous message detection channel');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isConnectedRef.current = false;
-    }
+    // Clear any pending operations
+    cleanup();
 
     if (!isEnabled) {
       console.log('🔍 Message detection disabled, skipping setup');
@@ -145,40 +163,18 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
     console.log('🔍 Setting up message detection for ALL messages...');
     channelRef.current = createChannel();
 
-    return () => {
-      console.log('🔕 Cleanup: Unsubscribing from message detection');
-      
-      // Clear reconnection timeout
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-      
-      // Remove channel
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      
-      isConnectedRef.current = false;
-    };
+    return cleanup;
   }, [isEnabled, onMessageDetected]);
 
-  // Health check effect - reconnect if disconnected for too long
+  // Simplified health check - only if disconnected for more than 30 seconds
   useEffect(() => {
     if (!isEnabled) return;
 
     const healthCheckInterval = setInterval(() => {
-      if (isEnabled && !isConnectedRef.current && !reconnectTimeoutRef.current) {
-        console.log('🏥 Health check: Channel disconnected, attempting reconnection...');
-        
-        // Clean up current channel
-        if (channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-        }
-        
-        // Create new channel
-        channelRef.current = createChannel();
+      // Only attempt reconnection if we've been disconnected for a while and no reconnection is in progress
+      if (isEnabled && !isConnectedRef.current && !reconnectTimeoutRef.current && reconnectAttemptsRef.current === 0) {
+        console.log('🏥 Health check: Channel disconnected, attempting initial reconnection...');
+        scheduleReconnect();
       }
     }, 30000); // Check every 30 seconds
 

@@ -2,14 +2,12 @@
 import { useEffect, useRef } from 'react';
 import { useAdvancedBotToggle } from './useAdvancedBotToggle';
 import { useAIWhatsAppResponse } from './useAIWhatsAppResponse';
-import { useChatMessages } from './useChatMessages';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useAutoResponseDetection() {
   const { isAutoResponseEnabled } = useAdvancedBotToggle();
   const { generateAIResponse } = useAIWhatsAppResponse();
-  const { handleSendMessage } = useChatMessages();
   const { toast } = useToast();
   const processedMessages = useRef(new Set<string>());
   const channelRef = useRef<any>(null);
@@ -82,12 +80,43 @@ export function useAutoResponseDetection() {
 
             console.log('✅ AI response generated successfully:', aiResponse.response?.substring(0, 100) + '...');
 
-            // Send the response automatically
-            await handleSendMessage(
-              newMessage.from_phone,
-              newMessage.customer_id,
-              aiResponse.response
-            );
+            // Send the response automatically using the notification system
+            const { data: notificationData, error: logError } = await supabase
+              .from('notification_log')
+              .insert({
+                package_id: null,
+                customer_id: newMessage.customer_id,
+                notification_type: 'auto_reply',
+                message: aiResponse.response,
+                status: 'pending'
+              })
+              .select()
+              .single();
+
+            if (logError) {
+              console.error('❌ Error creating notification log:', logError);
+              throw new Error('Error al crear registro de notificación automática');
+            }
+
+            // Send via WhatsApp using the notification function
+            const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
+              body: {
+                notificationId: notificationData.id,
+                phone: newMessage.from_phone,
+                message: aiResponse.response,
+                customerId: newMessage.customer_id
+              }
+            });
+
+            if (functionError) {
+              console.error('❌ WhatsApp function error:', functionError);
+              throw new Error('Error al enviar respuesta automática por WhatsApp');
+            }
+
+            if (responseData && responseData.error) {
+              console.error('❌ WhatsApp API error:', responseData.error);
+              throw new Error('Error de WhatsApp: ' + responseData.error);
+            }
 
             console.log('📤 Automatic response sent successfully');
 
@@ -103,17 +132,34 @@ export function useAutoResponseDetection() {
             try {
               const fallbackMessage = "¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto para ayudarte.";
               
-              await handleSendMessage(
-                newMessage.from_phone,
-                newMessage.customer_id,
-                fallbackMessage
-              );
+              const { data: notificationData, error: logError } = await supabase
+                .from('notification_log')
+                .insert({
+                  package_id: null,
+                  customer_id: newMessage.customer_id,
+                  notification_type: 'auto_reply_fallback',
+                  message: fallbackMessage,
+                  status: 'pending'
+                })
+                .select()
+                .single();
 
-              toast({
-                title: "🤖 Respuesta automática de emergencia",
-                description: "Se envió una respuesta básica debido a un error técnico",
-                variant: "default"
-              });
+              if (!logError) {
+                await supabase.functions.invoke('send-whatsapp-notification', {
+                  body: {
+                    notificationId: notificationData.id,
+                    phone: newMessage.from_phone,
+                    message: fallbackMessage,
+                    customerId: newMessage.customer_id
+                  }
+                });
+
+                toast({
+                  title: "🤖 Respuesta automática de emergencia",
+                  description: "Se envió una respuesta básica debido a un error técnico",
+                  variant: "default"
+                });
+              }
             } catch (fallbackError) {
               console.error('❌ Fallback response also failed:', fallbackError);
               toast({
@@ -143,7 +189,7 @@ export function useAutoResponseDetection() {
         channelRef.current = null;
       }
     };
-  }, [isAutoResponseEnabled, generateAIResponse, handleSendMessage, toast]);
+  }, [isAutoResponseEnabled, generateAIResponse, toast]);
 
   // Debug: Log current state
   useEffect(() => {

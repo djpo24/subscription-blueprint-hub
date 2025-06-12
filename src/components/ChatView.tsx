@@ -8,6 +8,7 @@ import { AdvancedBotToggleButton } from './chat/AdvancedBotToggleButton';
 import { AutoResponseIndicator } from './chat/AutoResponseIndicator';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
+import { useAutoResponseDetection } from '@/hooks/useAutoResponseDetection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ChatMessage } from '@/types/chatMessage';
 
@@ -16,6 +17,9 @@ export function ChatView() {
   const { chatList, conversationsByPhone, isLoading } = useChatData();
   const { handleSendMessage, isManualSending } = useChatMessages();
   const isMobile = useIsMobile();
+  
+  // Asegurar que el sistema de auto-respuesta esté activo
+  useAutoResponseDetection();
 
   // Marcar como visitado cuando se accede a la vista de chat
   useEffect(() => {

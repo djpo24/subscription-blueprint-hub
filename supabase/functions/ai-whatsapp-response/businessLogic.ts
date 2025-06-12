@@ -1,3 +1,4 @@
+
 import { CustomerInfo } from './types.ts';
 
 export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isValid: boolean; message?: string } {
@@ -40,13 +41,13 @@ export function generateBusinessIntelligentResponse(customerInfo: CustomerInfo):
   return insights.length > 0 ? insights.join('. ') : null;
 }
 
-// Función para detectar solicitudes de entrega a domicilio
+// Nueva función para detectar solicitudes de entrega a domicilio
 export function isHomeDeliveryRequest(message: string): boolean {
   const deliveryKeywords = [
     'traer', 'llevar', 'entrega', 'domicilio', 'casa', 'enviar',
     'me la puedes traer', 'me lo puedes traer', 'pueden traer',
     'entrega a domicilio', 'llevar a casa', 'envío a casa',
-    'delivery', 'entreguen', 'trae', 'lleve', 'envío a domicilio'
+    'delivery', 'entreguen', 'trae', 'lleve'
   ];
 
   const normalizedMessage = message.toLowerCase();
@@ -54,7 +55,7 @@ export function isHomeDeliveryRequest(message: string): boolean {
   return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Función simplificada para respuesta de entrega a domicilio
+// Nueva función para generar respuesta de entrega a domicilio
 export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
   // Solo procesar si es una solicitud de entrega
   if (!isHomeDeliveryRequest(customerMessage)) {
@@ -63,12 +64,62 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, custome
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
 
-  // Respuesta directa sin ofrecer servicios - solo dirigir a Darwin
+  // Si el cliente no está registrado o no tiene encomiendas
+  if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
+    return `Hola ${customerName} 👋
+
+Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro sistema.
+
+Un momento por favor, estoy transfiriendo tu consulta a nuestra coordinadora Josefa quien verificará tu información y te ayudará con la entrega.
+
+Josefa te responderá en breve para coordinar los detalles de la entrega 📦🚚`;
+  }
+
+  // Si tiene encomiendas, verificar el estado
+  const deliverablePackages = customerInfo.pendingDeliveryPackages.filter(pkg => 
+    pkg.status === 'en_destino' || pkg.status === 'delivered'
+  );
+
+  const pendingPaymentPackages = customerInfo.pendingPaymentPackages;
+
+  if (deliverablePackages.length > 0 || pendingPaymentPackages.length > 0) {
+    let response = `¡Hola ${customerName}! 📦
+
+Veo que tienes encomienda${(deliverablePackages.length + pendingPaymentPackages.length) > 1 ? 's' : ''} en nuestro sistema:`;
+
+    if (deliverablePackages.length > 0) {
+      response += `\n\n✅ **Disponible${deliverablePackages.length > 1 ? 's' : ''} para entrega:**`;
+      deliverablePackages.forEach(pkg => {
+        response += `\n• ${pkg.tracking_number} - ${pkg.description || 'Encomienda'}`;
+      });
+    }
+
+    if (pendingPaymentPackages.length > 0) {
+      response += `\n\n💰 **Entregada${pendingPaymentPackages.length > 1 ? 's' : ''}, pendiente${pendingPaymentPackages.length > 1 ? 's' : ''} de pago:**`;
+      pendingPaymentPackages.forEach(pkg => {
+        response += `\n• ${pkg.tracking_number} - Pendiente: ${pkg.pendingAmount} ${pkg.currency}`;
+      });
+    }
+
+    response += `\n\n🚚 **Para coordinar la entrega a domicilio:**
+Un momento por favor, estoy transfiriendo tu solicitud a nuestra coordinadora Josefa quien coordinará todos los detalles contigo.
+
+Josefa te contactará en breve para confirmar:
+📍 Dirección de entrega
+⏰ Horario disponible
+💰 Detalles de pago (si aplica)
+
+¡Gracias por tu paciencia! 😊`;
+
+    return response;
+  }
+
+  // Si tiene encomiendas pero no están listas para entrega
   return `Hola ${customerName} 👋
 
-Para solicitudes de entrega a domicilio, por favor contacta directamente a nuestro coordinador Darwin al +573127271746.
+Veo que tienes ${customerInfo.packagesCount} encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema, pero aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega.
 
-Él podrá ayudarte con todos los detalles de este servicio.
+Un momento por favor, estoy transfiriendo tu consulta a nuestra coordinadora Josefa quien verificará el estado actual de tus encomiendas y te informará sobre las opciones de entrega.
 
-¡Gracias! 😊`;
+Josefa te responderá pronto con los detalles actualizados 📦`;
 }

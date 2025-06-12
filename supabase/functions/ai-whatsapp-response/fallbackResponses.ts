@@ -21,7 +21,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
 
 ✅ Ya entregada${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''}, pendiente pago únicamente.
 
-Para procesar el pago o información específica, contacta a nuestro coordinador Darwin al +573127271746.`;
+Para procesar el pago o información específica, contacta a nuestra coordinadora Josefa al +59996964306.`;
     } 
     
     if (customerInfo.pendingDeliveryPackages.length > 0) {
@@ -60,7 +60,7 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pen
 ¿En qué puedo ayudarte hoy?`;
   }
   
-  // Respuesta para clientes nuevos o sin información específica - SIN OFRECER SERVICIOS DE ENTREGA
+  // Respuesta para clientes nuevos o sin información específica - MÁS NATURAL
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
   return `¡Hola ${customerName}! 👋
@@ -75,10 +75,10 @@ Soy SARA, tu asistente virtual de Envíos Ojito. Estoy aquí para ayudarte con:
 
 ¿En qué puedo ayudarte específicamente?
 
-Para servicios especiales como entrega a domicilio, contacta directamente a nuestro coordinador Darwin al +573127271746. 😊`;
+Para servicios que requieren coordinación personal como reservas de espacio o procesos especiales, puedes contactar directamente a nuestra coordinadora Josefa al +59996964306. 😊`;
 }
 
-// Función para generar respuestas más contextuales - SIN OFRECER SERVICIOS DE ENTREGA
+// Nueva función para generar respuestas más contextuales
 export function generateContextualResponse(customerInfo: CustomerInfo, questionContext: string): string {
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
@@ -90,7 +90,7 @@ Para consultar los próximos viajes programados, puedo ayudarte con la informaci
 
 ¿A qué destino específico necesitas viajar o enviar?
 
-Si necesitas hacer una reserva específica, te recomiendo contactar a nuestro coordinador Darwin al +573127271746 para confirmar disponibilidad y apartar tu espacio.`;
+Si necesitas hacer una reserva específica, te recomiendo contactar a nuestra coordinadora Josefa al +59996964306 para confirmar disponibilidad y apartar tu espacio.`;
   }
   
   if (questionContext.toLowerCase().includes('tarifa') || questionContext.toLowerCase().includes('precio') || questionContext.toLowerCase().includes('costo')) {
@@ -100,7 +100,7 @@ Puedo ayudarte con información sobre tarifas de envío.
 
 ¿A qué destino necesitas enviar tu encomienda? Con esa información puedo darte las tarifas actuales.
 
-Para cotizaciones específicas según peso o características especiales, nuestro coordinador Darwin al +573127271746 puede ayudarte con más detalles.`;
+Para cotizaciones específicas según peso o características especiales, nuestra coordinadora Josefa al +59996964306 puede ayudarte con más detalles.`;
   }
   
   // Respuesta general más natural

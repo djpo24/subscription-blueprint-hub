@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -110,7 +111,7 @@ serve(async (req) => {
       console.log(`✅ Found ${upcomingTrips.length} upcoming trips for context`);
     }
 
-    // 🔒 Get conversation history ONLY for this specific customer
+    // 🔒 Get conversation history ONLY for this specific customer - increased limit
     const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
     console.log('💬 Retrieved secure conversation history:', recentMessages?.length || 0, 'messages for this customer only');
 
@@ -309,25 +310,25 @@ Si tiene el número de tracking de su encomienda personal, compártelo para acel
 
 async function getSecureConversationHistory(supabase: any, customerPhone: string, customerId?: string) {
   try {
-    // 🔒 ONLY get messages for this specific customer phone number
+    // 🔒 ONLY get messages for this specific customer phone number - increased limit
     const { data: incomingMessages, error: incomingError } = await supabase
       .from('incoming_messages')
       .select('message_content, timestamp')
       .eq('from_phone', customerPhone) // Strict filter by phone
       .order('timestamp', { ascending: false })
-      .limit(10);
+      .limit(50); // Increased limit to 50
 
     if (incomingError) {
       console.error('Error fetching incoming messages for this customer:', incomingError);
     }
 
-    // 🔒 ONLY get sent messages for this specific customer phone number
+    // 🔒 ONLY get sent messages for this specific customer phone number - increased limit
     const { data: sentMessages, error: sentError } = await supabase
       .from('sent_messages')
       .select('message, sent_at')
       .eq('phone', customerPhone) // Strict filter by phone
       .order('sent_at', { ascending: false })
-      .limit(10);
+      .limit(50); // Increased limit to 50
 
     if (sentError) {
       console.error('Error fetching sent messages for this customer:', sentError);
@@ -364,10 +365,10 @@ async function getSecureConversationHistory(supabase: any, customerPhone: string
       });
     }
 
-    // Sort by timestamp (most recent first) and return last 8 messages for THIS customer only
+    // Sort by timestamp (most recent first) and return last 20 messages for THIS customer only
     const customerMessages = allMessages
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 8)
+      .slice(0, 20) // Increased from 8 to 20 messages
       .reverse(); // Reverse to get chronological order for context
 
     console.log(`🔐 Retrieved ${customerMessages.length} secure messages for customer phone: ${customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`);

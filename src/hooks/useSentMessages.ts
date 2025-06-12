@@ -26,7 +26,7 @@ export function useSentMessages() {
         .from('sent_messages')
         .select('*')
         .order('sent_at', { ascending: false })
-        .limit(500);
+        .limit(1000); // Increased limit to 1000
       
       if (error) {
         console.error('Error fetching sent messages:', error);

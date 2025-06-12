@@ -32,7 +32,7 @@ export function useChatData(): ChatData {
       console.log('🔍 Fetching chat data with auto-responses...');
       
       try {
-        // Fetch incoming messages
+        // Fetch incoming messages - increased limit to 1000
         const { data: incomingData, error: incomingError } = await supabase
           .from('incoming_messages')
           .select(`
@@ -43,14 +43,14 @@ export function useChatData(): ChatData {
             )
           `)
           .order('timestamp', { ascending: false })
-          .limit(100);
+          .limit(1000);
 
         if (incomingError) {
           console.error('❌ Error fetching incoming messages:', incomingError);
           throw incomingError;
         }
 
-        // Fetch sent messages (including auto-responses)
+        // Fetch sent messages (including auto-responses) - increased limit to 1000
         const { data: sentData, error: sentError } = await supabase
           .from('sent_messages')
           .select(`
@@ -61,14 +61,14 @@ export function useChatData(): ChatData {
             )
           `)
           .order('sent_at', { ascending: false })
-          .limit(100);
+          .limit(1000);
 
         if (sentError) {
           console.error('❌ Error fetching sent messages:', sentError);
           throw sentError;
         }
 
-        // Fetch notification log for template messages
+        // Fetch notification log for template messages - increased limit to 1000
         const { data: notificationData, error: notificationError } = await supabase
           .from('notification_log')
           .select(`
@@ -81,7 +81,7 @@ export function useChatData(): ChatData {
           .in('notification_type', ['consulta_encomienda', 'package_arrival_notification', 'customer_service_followup'])
           .eq('status', 'sent')
           .order('sent_at', { ascending: false })
-          .limit(100);
+          .limit(1000);
 
         if (notificationError) {
           console.error('❌ Error fetching notifications:', notificationError);

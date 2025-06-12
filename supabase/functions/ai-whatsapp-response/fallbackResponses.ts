@@ -60,7 +60,7 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pen
 ¿En qué puedo ayudarte hoy?`;
   }
   
-  // Respuesta para clientes nuevos o sin información específica - MÁS NATURAL
+  // Respuesta para clientes nuevos o sin información específica - SIN OFRECER SERVICIOS DE ENTREGA
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
   return `¡Hola ${customerName}! 👋
@@ -75,10 +75,10 @@ Soy SARA, tu asistente virtual de Envíos Ojito. Estoy aquí para ayudarte con:
 
 ¿En qué puedo ayudarte específicamente?
 
-Para servicios que requieren coordinación personal como reservas de espacio o procesos especiales, puedes contactar directamente a nuestra coordinadora Josefa al +59996964306. 😊`;
+Para servicios especiales como entrega a domicilio, contacta directamente a nuestra coordinadora Josefa al +59996964306. 😊`;
 }
 
-// Nueva función para generar respuestas más contextuales
+// Función para generar respuestas más contextuales - SIN OFRECER SERVICIOS DE ENTREGA
 export function generateContextualResponse(customerInfo: CustomerInfo, questionContext: string): string {
   const customerName = customerInfo.customerFirstName || 'Cliente';
   

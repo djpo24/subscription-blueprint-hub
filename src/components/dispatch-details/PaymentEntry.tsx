@@ -33,8 +33,21 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
     const newValue = e.target.value;
     console.log('💰 [PaymentEntry] Amount input changed from:', payment.amount, 'to:', newValue);
     console.log('💰 [PaymentEntry] Calling onUpdate with:', { index, field: 'amount', value: newValue });
-    onUpdate(index, 'amount', newValue);
+    
+    // Prevenir comportamiento por defecto del evento
+    e.preventDefault();
+    
+    // Llamar a onUpdate y verificar que se ejecute
+    try {
+      onUpdate(index, 'amount', newValue);
+      console.log('💰 [PaymentEntry] onUpdate called successfully');
+    } catch (error) {
+      console.error('💰 [PaymentEntry] Error calling onUpdate:', error);
+    }
   };
+
+  // También agregar logging cuando el componente se re-renderiza
+  console.log('🔄 [PaymentEntry] Component re-rendered with payment amount:', payment.amount);
 
   return (
     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
@@ -87,19 +100,17 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
         <label className="text-xs font-medium text-gray-700 mb-1 block">Monto</label>
         <div className="flex gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0"
             value={payment.amount}
             onChange={handleAmountChange}
             onFocus={() => console.log('💰 [PaymentEntry] Amount field focused')}
             onBlur={() => console.log('💰 [PaymentEntry] Amount field blurred')}
+            onInput={(e) => console.log('💰 [PaymentEntry] onInput event:', (e.target as HTMLInputElement).value)}
             placeholder="0.00"
             className="flex-1 h-14 text-xl font-semibold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             style={{ fontSize: '20px' }}
-            disabled={false}
-            readOnly={false}
+            autoComplete="off"
           />
           {canRemove && (
             <Button

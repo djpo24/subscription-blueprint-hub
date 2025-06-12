@@ -43,16 +43,30 @@ export function usePaymentManagement(packageCurrency?: string) {
   };
 
   const updatePayment = (index: number, field: keyof PaymentEntryData, value: string, packageAmount?: number) => {
-    console.log('💳 [usePaymentManagement] Updating payment:', { index, field, value, packageAmount });
+    console.log('💳 [usePaymentManagement] Updating payment - ENTRY POINT');
+    console.log('💳 [usePaymentManagement] Parameters:', { index, field, value, packageAmount });
+    console.log('💳 [usePaymentManagement] Current payments state:', payments);
     console.log('💳 [usePaymentManagement] Package currency context:', packageCurrency);
     
-    setPayments(prev => 
-      prev.map((payment, i) => 
-        i === index 
-          ? updatePaymentEntry(payment, field, value, [], packageAmount)
-          : payment
-      )
-    );
+    setPayments(prev => {
+      console.log('💳 [usePaymentManagement] Previous payments in setState:', prev);
+      
+      const newPayments = prev.map((payment, i) => {
+        if (i === index) {
+          console.log('💳 [usePaymentManagement] Updating payment at index', i);
+          console.log('💳 [usePaymentManagement] Current payment before update:', payment);
+          
+          const updatedPayment = updatePaymentEntry(payment, field, value, [], packageAmount);
+          
+          console.log('💳 [usePaymentManagement] Updated payment after updatePaymentEntry:', updatedPayment);
+          return updatedPayment;
+        }
+        return payment;
+      });
+      
+      console.log('💳 [usePaymentManagement] New payments array:', newPayments);
+      return newPayments;
+    });
   };
 
   const removePayment = (index: number) => {

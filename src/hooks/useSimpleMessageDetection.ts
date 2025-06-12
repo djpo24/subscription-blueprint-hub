@@ -55,7 +55,8 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
           console.log('📨 Nuevo mensaje detectado:', {
             id: newMessage.id,
             phone: newMessage.from_phone,
-            customerId: newMessage.customer_id || 'NO_REGISTRADO'
+            customerId: newMessage.customer_id || 'NO_REGISTRADO',
+            content: newMessage.message_content?.substring(0, 50) + '...'
           });
 
           // Verificar si ya fue procesado
@@ -67,6 +68,12 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
           // Validar datos mínimos
           if (!newMessage.from_phone || !newMessage.message_content) {
             console.log('⚠️ Mensaje incompleto, omitiendo');
+            return;
+          }
+
+          // Solo procesar mensajes de clientes (no nuestros mensajes salientes)
+          if (newMessage.is_from_customer === false) {
+            console.log('📤 Mensaje saliente, omitiendo auto-respuesta');
             return;
           }
 
@@ -82,7 +89,9 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
             setProcessedCount(processedMessages.current.size);
           }
 
-          // Procesar mensaje
+          // Activar auto-respuesta inmediatamente
+          console.log('🚀 Activando auto-respuesta automática para:', newMessage.from_phone);
+          
           onMessageDetected({
             id: newMessage.id,
             from_phone: newMessage.from_phone,
@@ -96,7 +105,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
         console.log('📡 Estado del canal:', status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Canal conectado exitosamente');
+          console.log('✅ Canal de auto-respuesta conectado exitosamente');
           setIsConnected(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           console.log('❌ Error en canal:', status);
@@ -105,7 +114,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
           // Reconectar automáticamente
           if (isEnabled && !reconnectTimeoutRef.current) {
             reconnectTimeoutRef.current = setTimeout(() => {
-              console.log('🔄 Reintentando conexión...');
+              console.log('🔄 Reintentando conexión de auto-respuesta...');
               cleanup();
               channelRef.current = createChannel();
               reconnectTimeoutRef.current = null;
@@ -119,12 +128,12 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
 
   useEffect(() => {
     if (!isEnabled) {
-      console.log('🚫 Detección de mensajes deshabilitada');
+      console.log('🚫 Auto-respuesta deshabilitada');
       cleanup();
       return;
     }
 
-    console.log('🎯 Iniciando detección de mensajes...');
+    console.log('🎯 Iniciando sistema de auto-respuesta automática...');
     channelRef.current = createChannel();
 
     return cleanup;

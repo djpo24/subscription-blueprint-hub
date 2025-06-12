@@ -7,16 +7,23 @@ export function useStableAutoResponseSystem() {
   const { isAutoResponseEnabled } = useAdvancedBotToggle();
   const { processAutoResponse } = useReliableAutoResponse();
 
-  // Sistema simplificado de detección y respuesta
+  // Sistema de auto-respuesta automática - responde inmediatamente a mensajes entrantes
   const { isConnected, processedCount } = useSimpleMessageDetection({
     isEnabled: isAutoResponseEnabled,
-    onMessageDetected: processAutoResponse
+    onMessageDetected: async (message) => {
+      if (isAutoResponseEnabled) {
+        console.log('🚀 ACTIVANDO AUTO-RESPUESTA AUTOMÁTICA:', message.from_phone);
+        // Procesar inmediatamente sin esperar
+        processAutoResponse(message);
+      }
+    }
   });
 
-  console.log('🎛️ Estado del sistema de auto-respuesta:', {
+  console.log('🎛️ Estado del sistema de auto-respuesta automática:', {
     enabled: isAutoResponseEnabled,
     connected: isConnected,
-    processed: processedCount
+    processed: processedCount,
+    mode: 'AUTOMÁTICO'
   });
 
   return {

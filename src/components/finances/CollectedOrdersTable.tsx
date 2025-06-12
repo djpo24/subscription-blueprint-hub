@@ -1,4 +1,3 @@
-
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,13 +29,30 @@ export function CollectedOrdersTable() {
   };
 
   const getPaymentMethodBadge = (method: string) => {
+    console.log('🔧 [CollectedOrdersTable] Processing payment method:', method, 'Type:', typeof method);
+    
+    // Normalizar el método - convertir a string y limpiar
+    const normalizedMethod = String(method || '').toLowerCase().trim();
+    
     const methodMap: { [key: string]: { label: string; variant: any } } = {
       'efectivo': { label: 'Efectivo', variant: 'default' },
       'transferencia': { label: 'Transferencia', variant: 'secondary' },
       'tarjeta': { label: 'Tarjeta', variant: 'outline' },
+      'otro': { label: 'Otro', variant: 'outline' },
+      // Agregar mapeos adicionales para posibles variaciones
+      '1': { label: 'Efectivo', variant: 'default' },
+      '2': { label: 'Transferencia', variant: 'secondary' },
+      '3': { label: 'Tarjeta', variant: 'outline' },
+      '4': { label: 'Otro', variant: 'outline' },
     };
     
-    const methodInfo = methodMap[method] || { label: method, variant: 'outline' };
+    const methodInfo = methodMap[normalizedMethod] || { 
+      label: normalizedMethod || 'Método desconocido', 
+      variant: 'outline' 
+    };
+    
+    console.log('🔧 [CollectedOrdersTable] Method mapping result:', methodInfo);
+    
     return <Badge variant={methodInfo.variant}>{methodInfo.label}</Badge>;
   };
 

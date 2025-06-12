@@ -21,9 +21,17 @@ interface CalendarViewProps {
   onAddPackage: (tripId: string) => void;
   onCreateTrip: (date: Date) => void;
   onViewPackagesByDate?: (date: Date) => void;
+  previewRole?: 'admin' | 'employee' | 'traveler';
 }
 
-export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip, onViewPackagesByDate }: CalendarViewProps) {
+export function CalendarView({ 
+  trips, 
+  isLoading, 
+  onAddPackage, 
+  onCreateTrip, 
+  onViewPackagesByDate,
+  previewRole 
+}: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   console.log('CalendarView received trips:', trips);
@@ -78,6 +86,7 @@ export function CalendarView({ trips, isLoading, onAddPackage, onCreateTrip, onV
           onAddPackage={onAddPackage}
           onCreateTrip={onCreateTrip}
           onViewPackagesByDate={onViewPackagesByDate}
+          previewRole={previewRole}
         />
       </CardContent>
     </Card>

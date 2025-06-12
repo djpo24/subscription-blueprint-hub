@@ -45,6 +45,7 @@ export function TripsTab({
             onAddPackage={onAddPackage}
             onCreateTrip={onCreateTrip}
             onViewPackagesByDate={onViewPackagesByDate}
+            previewRole={previewRole}
           />
           <TripsWithFlightsView 
             onAddPackage={onAddPackage}

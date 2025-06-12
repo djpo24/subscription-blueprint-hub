@@ -8,16 +8,28 @@ export function useCustomerPackageStatus(customerPhone: string) {
     queryKey: ['customer-package-status', customerPhone],
     queryFn: async (): Promise<PackageIndicator | null> => {
       try {
-        // Primero buscar el cliente por teléfono
+        // Normalizar el número de teléfono para búsqueda más flexible
+        if (!customerPhone || customerPhone.trim() === '') {
+          console.log('🔍 [useCustomerPackageStatus] No phone provided');
+          return null;
+        }
+
+        const normalizedPhone = customerPhone.replace(/[\s\-\(\)\+]/g, '');
+        console.log('🔍 [useCustomerPackageStatus] Searching for phone:', customerPhone, 'normalized:', normalizedPhone);
+
+        // Buscar el cliente por múltiples campos de teléfono
         const { data: customer } = await supabase
           .from('customers')
-          .select('id')
-          .eq('phone', customerPhone)
+          .select('id, name, phone, whatsapp_number')
+          .or(`phone.eq.${customerPhone},whatsapp_number.eq.${customerPhone},phone.eq.${normalizedPhone},whatsapp_number.eq.${normalizedPhone}`)
           .maybeSingle();
 
         if (!customer) {
+          console.log('🔍 [useCustomerPackageStatus] Customer not found for phone:', customerPhone);
           return null;
         }
+
+        console.log('🔍 [useCustomerPackageStatus] Customer found:', customer.name, customer.id);
 
         // Obtener los paquetes del cliente
         const { data: packages } = await supabase
@@ -26,6 +38,7 @@ export function useCustomerPackageStatus(customerPhone: string) {
           .eq('customer_id', customer.id);
 
         if (!packages || packages.length === 0) {
+          console.log('🔍 [useCustomerPackageStatus] No packages found for customer:', customer.id);
           return null;
         }
 
@@ -36,8 +49,7 @@ export function useCustomerPackageStatus(customerPhone: string) {
           .select('package_id, amount')
           .in('package_id', packageIds);
 
-        console.log('🔍 [useCustomerPackageStatus] Customer packages:', packages.length);
-        console.log('🔍 [useCustomerPackageStatus] Customer payments:', payments?.length || 0);
+        console.log('🔍 [useCustomerPackageStatus] Customer:', customer.name, 'packages:', packages.length, 'payments:', payments?.length || 0);
 
         // Determinar el estado más crítico basado en la lógica de negocio
         const statuses: PackageStatus[] = [];
@@ -78,6 +90,7 @@ export function useCustomerPackageStatus(customerPhone: string) {
         }
 
         if (statuses.length === 0) {
+          console.log('🔍 [useCustomerPackageStatus] No valid statuses found for customer:', customer.name);
           return null;
         }
 
@@ -88,14 +101,15 @@ export function useCustomerPackageStatus(customerPhone: string) {
           return currentPriority < prevPriority ? current : prev;
         });
 
-        console.log('📊 [useCustomerPackageStatus] Final status for customer:', mostCriticalStatus);
+        console.log('📊 [useCustomerPackageStatus] Final status for customer:', customer.name, '→', mostCriticalStatus);
         return PACKAGE_STATUS_CONFIG[mostCriticalStatus];
       } catch (error) {
-        console.error('Error fetching customer package status:', error);
+        console.error('❌ [useCustomerPackageStatus] Error fetching customer package status:', error);
         return null;
       }
     },
-    enabled: !!customerPhone,
+    enabled: !!customerPhone && customerPhone.trim() !== '',
     staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 1, // Solo reintentar una vez en caso de error
   });
 }

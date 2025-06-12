@@ -19,7 +19,9 @@ export function CustomerAvatar({
   size = 'md',
   showStatusIndicator = true
 }: CustomerAvatarProps) {
-  const { data: packageIndicator } = useCustomerPackageStatus(customerPhone || '');
+  // Solo hacer la consulta si tenemos un teléfono válido y queremos mostrar el indicador
+  const shouldFetchStatus = showStatusIndicator && customerPhone && customerPhone.trim() !== '';
+  const { data: packageIndicator } = useCustomerPackageStatus(shouldFetchStatus ? customerPhone : '');
   
   const getInitials = (name: string) => {
     return name
@@ -41,6 +43,13 @@ export function CustomerAvatar({
     md: 20,
     lg: 24
   };
+
+  console.log('🎭 [CustomerAvatar] Rendering for:', customerName, {
+    phone: customerPhone,
+    shouldFetchStatus,
+    hasIndicator: !!packageIndicator,
+    showStatusIndicator
+  });
 
   return (
     <div className="relative">

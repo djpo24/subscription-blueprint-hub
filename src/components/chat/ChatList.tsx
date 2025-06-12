@@ -52,7 +52,7 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
               const displayName = chat.customerName || 'Cliente';
               const messageTime = chat.lastMessageTime || chat.timestamp || '';
               
-              console.log('Rendering chat item:', {
+              console.log('📋 [ChatList] Rendering chat item:', {
                 phone: chat.phone,
                 customerName: chat.customerName,
                 displayName,

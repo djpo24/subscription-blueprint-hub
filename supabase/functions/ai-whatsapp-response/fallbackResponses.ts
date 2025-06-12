@@ -3,7 +3,7 @@ import { CustomerInfo } from './types.ts';
 import { formatCurrencyWithSymbol } from './utils.ts';
 
 export function generateFallbackResponse(customerInfo: CustomerInfo): string {
-  console.log(`🤖 [RESPUESTA AUTOMÁTICA] Cliente: ${customerInfo.customerFound ? customerInfo.customerFirstName : 'Nuevo cliente'}`);
+  console.log(`🤖 [RESPUESTA DE EMERGENCIA] Cliente: ${customerInfo.customerFound ? customerInfo.customerFirstName : 'Nuevo cliente'}`);
   
   // Si encontramos al cliente con información específica
   if (customerInfo.customerFound && customerInfo.packagesCount > 0) {
@@ -48,7 +48,7 @@ ${statusMessage}
 
 ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pendingDeliveryPackages.length - 1} encomienda${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 's' : ''} adicional${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 'es' : ''}.` : ''}
 
-Para coordinaciones específicas, contacta a Josefa al +59996964306.`;
+¿Necesitas información adicional sobre alguna de tus encomiendas?`;
     }
     
     return `¡Hola ${customerInfo.customerFirstName}! ✅
@@ -57,29 +57,52 @@ Para coordinaciones específicas, contacta a Josefa al +59996964306.`;
 • Total encomiendas: ${customerInfo.packagesCount}
 • Todo al día - sin pendientes
 
-Para nuevas consultas o servicios, contacta a nuestra coordinadora Josefa al +59996964306.`;
+¿En qué puedo ayudarte hoy?`;
   }
   
-  // Respuesta para clientes nuevos o sin información específica - CON CONTACTO DIRECTO
+  // Respuesta para clientes nuevos o sin información específica - MÁS NATURAL
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
   return `¡Hola ${customerName}! 👋
 
-Soy SARA, tu asistente virtual de Envíos Ojito. Puedo ayudarte con:
+Soy SARA, tu asistente virtual de Envíos Ojito. Estoy aquí para ayudarte con:
 
-📦 **Consultas de encomiendas existentes**
-📋 **Estados de cuenta**
-🚚 **Información general de viajes**
+📦 **Consultas de encomiendas**
+📋 **Estados de cuenta**  
+🚚 **Información de viajes**
 📍 **Direcciones de oficinas**
+💰 **Tarifas de envío**
 
-Para servicios específicos como:
-• Reservas de espacio
-• Cotizaciones personalizadas  
-• Programación de envíos
-• Coordinaciones especiales
+¿En qué puedo ayudarte específicamente?
 
-📞 **Contacta directamente a nuestra coordinadora Josefa:**
-**+59996964306**
+Para servicios que requieren coordinación personal como reservas de espacio o procesos especiales, puedes contactar directamente a nuestra coordinadora Josefa al +59996964306. 😊`;
+}
 
-Ella podrá ayudarte con todos los detalles y procesos específicos que necesites. 😊`;
+// Nueva función para generar respuestas más contextuales
+export function generateContextualResponse(customerInfo: CustomerInfo, questionContext: string): string {
+  const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  // Analizar el contexto de la pregunta para dar una respuesta más específica
+  if (questionContext.toLowerCase().includes('viaje') || questionContext.toLowerCase().includes('próximo')) {
+    return `¡Hola ${customerName}! 
+
+Para consultar los próximos viajes programados, puedo ayudarte con la información que tengo disponible. 
+
+¿A qué destino específico necesitas viajar o enviar?
+
+Si necesitas hacer una reserva específica, te recomiendo contactar a nuestra coordinadora Josefa al +59996964306 para confirmar disponibilidad y apartar tu espacio.`;
+  }
+  
+  if (questionContext.toLowerCase().includes('tarifa') || questionContext.toLowerCase().includes('precio') || questionContext.toLowerCase().includes('costo')) {
+    return `¡Hola ${customerName}! 
+
+Puedo ayudarte con información sobre tarifas de envío. 
+
+¿A qué destino necesitas enviar tu encomienda? Con esa información puedo darte las tarifas actuales.
+
+Para cotizaciones específicas según peso o características especiales, nuestra coordinadora Josefa al +59996964306 puede ayudarte con más detalles.`;
+  }
+  
+  // Respuesta general más natural
+  return generateFallbackResponse(customerInfo);
 }

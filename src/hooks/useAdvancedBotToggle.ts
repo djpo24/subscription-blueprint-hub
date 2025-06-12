@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Event emitter para sincronizar estados globalmente
 class AdvancedBotToggleEventEmitter {
@@ -26,6 +27,7 @@ export interface BotStates {
 
 export function useAdvancedBotToggle() {
   const [botStates, setBotStates] = useState<BotStates>(() => {
+    // Inicializar desde localStorage como fallback
     const savedAutoResponse = localStorage.getItem('bot-auto-response-enabled');
     const savedManualResponse = localStorage.getItem('bot-manual-response-enabled');
     
@@ -34,6 +36,43 @@ export function useAdvancedBotToggle() {
       isManualResponseEnabled: savedManualResponse !== null ? JSON.parse(savedManualResponse) : true
     };
   });
+
+  // Cargar configuración desde la base de datos al inicializar
+  useEffect(() => {
+    const loadBotSettings = async () => {
+      try {
+        console.log('🔍 Loading bot settings from database...');
+        
+        const { data: autoResponseEnabled, error: autoError } = await supabase
+          .rpc('get_bot_setting', { setting_name: 'auto_response_enabled' });
+        
+        const { data: manualResponseEnabled, error: manualError } = await supabase
+          .rpc('get_bot_setting', { setting_name: 'manual_response_enabled' });
+
+        if (autoError || manualError) {
+          console.error('Error loading bot settings:', { autoError, manualError });
+          return;
+        }
+
+        const newStates = {
+          isAutoResponseEnabled: autoResponseEnabled ?? false,
+          isManualResponseEnabled: manualResponseEnabled ?? true
+        };
+
+        console.log('✅ Bot settings loaded:', newStates);
+        setBotStates(newStates);
+        
+        // Sincronizar con localStorage
+        localStorage.setItem('bot-auto-response-enabled', JSON.stringify(newStates.isAutoResponseEnabled));
+        localStorage.setItem('bot-manual-response-enabled', JSON.stringify(newStates.isManualResponseEnabled));
+        
+      } catch (error) {
+        console.error('Error loading bot settings:', error);
+      }
+    };
+
+    loadBotSettings();
+  }, []);
 
   useEffect(() => {
     // Suscribirse a cambios globales
@@ -44,18 +83,58 @@ export function useAdvancedBotToggle() {
     return unsubscribe;
   }, []);
 
-  const toggleAutoResponse = (enabled: boolean) => {
-    const newStates = { ...botStates, isAutoResponseEnabled: enabled };
-    localStorage.setItem('bot-auto-response-enabled', JSON.stringify(enabled));
-    setBotStates(newStates);
-    advancedBotToggleEmitter.emit(newStates);
+  const toggleAutoResponse = async (enabled: boolean) => {
+    try {
+      console.log('🔄 Updating auto-response setting to:', enabled);
+      
+      const { data: success, error } = await supabase
+        .rpc('update_bot_setting', { 
+          setting_name: 'auto_response_enabled', 
+          new_value: enabled 
+        });
+
+      if (error || !success) {
+        console.error('Error updating auto-response setting:', error);
+        throw new Error('Failed to update setting');
+      }
+
+      const newStates = { ...botStates, isAutoResponseEnabled: enabled };
+      localStorage.setItem('bot-auto-response-enabled', JSON.stringify(enabled));
+      setBotStates(newStates);
+      advancedBotToggleEmitter.emit(newStates);
+      
+      console.log('✅ Auto-response setting updated successfully');
+    } catch (error) {
+      console.error('Error toggling auto-response:', error);
+      throw error;
+    }
   };
 
-  const toggleManualResponse = (enabled: boolean) => {
-    const newStates = { ...botStates, isManualResponseEnabled: enabled };
-    localStorage.setItem('bot-manual-response-enabled', JSON.stringify(enabled));
-    setBotStates(newStates);
-    advancedBotToggleEmitter.emit(newStates);
+  const toggleManualResponse = async (enabled: boolean) => {
+    try {
+      console.log('🔄 Updating manual-response setting to:', enabled);
+      
+      const { data: success, error } = await supabase
+        .rpc('update_bot_setting', { 
+          setting_name: 'manual_response_enabled', 
+          new_value: enabled 
+        });
+
+      if (error || !success) {
+        console.error('Error updating manual-response setting:', error);
+        throw new Error('Failed to update setting');
+      }
+
+      const newStates = { ...botStates, isManualResponseEnabled: enabled };
+      localStorage.setItem('bot-manual-response-enabled', JSON.stringify(enabled));
+      setBotStates(newStates);
+      advancedBotToggleEmitter.emit(newStates);
+      
+      console.log('✅ Manual-response setting updated successfully');
+    } catch (error) {
+      console.error('Error toggling manual-response:', error);
+      throw error;
+    }
   };
 
   return {

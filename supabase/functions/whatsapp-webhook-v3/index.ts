@@ -1,511 +1,269 @@
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const mode = url.searchParams.get('hub.mode');
+    const token = url.searchParams.get('hub.verify_token');
+    const challenge = url.searchParams.get('hub.challenge');
+    
+    const expectedToken = Deno.env.get('META_WHATSAPP_VERIFY_TOKEN');
+    
+    if (mode === 'subscribe' && token === expectedToken) {
+      console.log('Webhook verified V3');
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    } else {
+      console.log('Webhook verification failed V3');
+      return new Response('Verification failed', { status: 403 });
+    }
   }
 
-  try {
-    console.log('🔄 Webhook V3 request received:', {
-      method: req.method,
-      url: req.url,
-      headers: Object.fromEntries(req.headers.entries())
-    })
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json();
+      console.log(`🔄 Webhook V3 request received:`, {
+        method: req.method,
+        url: req.url,
+        headers: Object.fromEntries(req.headers.entries())
+      });
+      console.log(`📨 Webhook V3 received POST:`, JSON.stringify(body, null, 2));
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-    // Get verify token from app secrets
-    const { data: verifyTokenData } = await supabaseClient.rpc('get_app_secret', { 
-      secret_name: 'META_WHATSAPP_VERIFY_TOKEN' 
-    })
-    const verifyToken = verifyTokenData || 'ojitos_webhook_verify'
-
-    if (req.method === 'GET') {
-      // Webhook verification - Meta requires this
-      const url = new URL(req.url)
-      const mode = url.searchParams.get('hub.mode')
-      const token = url.searchParams.get('hub.verify_token')
-      const challenge = url.searchParams.get('hub.challenge')
-
-      console.log('🔍 Webhook V3 verification attempt:', { 
-        mode, 
-        token, 
-        challenge,
-        expectedToken: verifyToken,
-        tokenMatch: token === verifyToken
-      })
-
-      if (mode === 'subscribe' && token === verifyToken) {
-        console.log('✅ Webhook V3 verified successfully')
-        return new Response(challenge, { 
-          status: 200,
-          headers: { 
-            'Content-Type': 'text/plain',
-            ...corsHeaders
-          }
-        })
-      } else {
-        console.log('❌ Webhook V3 verification failed - token mismatch')
-        console.log(`Expected: ${verifyToken}, Received: ${token}`)
-        return new Response('Forbidden', { 
-          status: 403,
-          headers: corsHeaders
-        })
-      }
-    }
-
-    if (req.method === 'POST') {
-      // Handle webhook events
-      const body = await req.json()
-      console.log('📨 Webhook V3 received POST:', JSON.stringify(body, null, 2))
-
-      // Process webhook entries
-      if (body.entry && Array.isArray(body.entry)) {
+      if (body.object === 'whatsapp_business_account') {
         for (const entry of body.entry) {
-          if (entry.changes) {
-            for (const change of entry.changes) {
-              if (change.field === 'messages') {
-                await processMessagesChange(change.value, supabaseClient)
+          for (const change of entry.changes) {
+            if (change.field === 'messages') {
+              console.log(`Processing messages change V3:`, JSON.stringify(change.value, null, 2));
+
+              // Procesar actualizaciones de estado de mensajes
+              if (change.value.statuses) {
+                for (const status of change.value.statuses) {
+                  console.log(`Message status update V3:`, {
+                    id: status.id,
+                    status: status.status,
+                    timestamp: status.timestamp,
+                    recipient_id: status.recipient_id
+                  });
+
+                  // Registrar estado de entrega
+                  try {
+                    const { error: deliveryError } = await supabase
+                      .from('message_delivery_status')
+                      .upsert({
+                        whatsapp_message_id: status.id,
+                        phone_number: status.recipient_id,
+                        status: status.status,
+                        timestamp: new Date(parseInt(status.timestamp) * 1000).toISOString(),
+                        raw_data: status
+                      }, {
+                        onConflict: 'whatsapp_message_id'
+                      });
+
+                    if (deliveryError) {
+                      console.error(`Error logging delivery status V3:`, deliveryError);
+                    } else {
+                      console.log(`Delivery status logged for notification V3:`, status.id);
+                    }
+                  } catch (error) {
+                    console.error(`Error processing delivery status V3:`, error);
+                  }
+                }
+              }
+
+              // Procesar mensajes entrantes
+              if (change.value.messages) {
+                for (const message of change.value.messages) {
+                  // Extraer información del mensaje
+                  let messageContent = '';
+                  let messageType = 'text';
+                  let mediaUrl = null;
+
+                  if (message.text) {
+                    messageContent = message.text.body;
+                    messageType = 'text';
+                  } else if (message.image) {
+                    messageType = 'image';
+                    mediaUrl = message.image.id;
+                    messageContent = message.image.caption || 'Imagen recibida';
+                  } else if (message.document) {
+                    messageType = 'document';
+                    mediaUrl = message.document.id;
+                    messageContent = message.document.filename || 'Documento recibido';
+                  } else if (message.audio) {
+                    messageType = 'audio';
+                    mediaUrl = message.audio.id;
+                    messageContent = 'Audio recibido';
+                  } else if (message.video) {
+                    messageType = 'video';
+                    mediaUrl = message.video.id;
+                    messageContent = message.video.caption || 'Video recibido';
+                  }
+
+                  const fromPhone = message.from;
+                  const timestamp = new Date(parseInt(message.timestamp) * 1000).toISOString();
+
+                  console.log(`Incoming message V3:`, {
+                    id: message.id,
+                    from: fromPhone,
+                    timestamp: message.timestamp,
+                    type: messageType,
+                    text: messageContent,
+                    image: message.image,
+                    document: message.document,
+                    audio: message.audio,
+                    video: message.video
+                  });
+
+                  // Buscar customer_id por teléfono
+                  const { data: customerData } = await supabase
+                    .from('customers')
+                    .select('id')
+                    .eq('phone', fromPhone)
+                    .single();
+
+                  const customerId = customerData?.id || null;
+
+                  // Guardar mensaje entrante
+                  const messageData = {
+                    whatsapp_message_id: message.id,
+                    from_phone: fromPhone,
+                    customer_id: customerId,
+                    message_type: messageType,
+                    message_content: messageContent,
+                    media_url: mediaUrl,
+                    timestamp: timestamp,
+                    raw_data: message
+                  };
+
+                  console.log(`Storing message with data V3:`, messageData);
+
+                  const { error: messageError } = await supabase
+                    .from('incoming_messages')
+                    .insert(messageData);
+
+                  if (messageError) {
+                    console.error(`Error storing incoming message V3:`, messageError);
+                  } else {
+                    console.log(`Incoming message stored successfully with media URL and raw data V3:`, mediaUrl);
+                  }
+
+                  // ✅ VERIFICAR CONFIGURACIÓN DEL BOT ANTES DE RESPONDER
+                  console.log(`🔍 Verificando configuración del bot...`);
+                  
+                  const { data: autoResponseSetting } = await supabase
+                    .rpc('get_bot_setting', { setting_name: 'auto_response_enabled' });
+
+                  console.log(`⚙️ Auto-response setting:`, autoResponseSetting);
+
+                  if (!autoResponseSetting) {
+                    console.log(`🚫 Auto-response is DISABLED - skipping automatic response`);
+                    continue; // Saltar al siguiente mensaje sin generar respuesta
+                  }
+
+                  // Solo procesar texto para respuestas automáticas
+                  if (messageType === 'text') {
+                    console.log(`📱 Received text message V3: ${messageContent}`);
+                    
+                    console.log(`🤖 Auto-response is enabled, generating response...`);
+                    
+                    // Generar respuesta automática usando IA
+                    try {
+                      const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('ai-whatsapp-response', {
+                        body: {
+                          message: messageContent,
+                          customerPhone: fromPhone,
+                          customerId: customerId
+                        }
+                      });
+
+                      if (aiError) {
+                        console.error(`❌ Error generating AI response V3:`, aiError);
+                        continue;
+                      }
+
+                      const aiResponse = aiResponseData?.response || 'Lo siento, no puedo procesar tu mensaje en este momento.';
+                      console.log(`✅ AI response generated V3: ${aiResponse}`);
+
+                      // Enviar respuesta automática
+                      const { error: sendError } = await supabase.functions.invoke('send-whatsapp-notification', {
+                        body: {
+                          phone: fromPhone,
+                          message: aiResponse,
+                          customerId: customerId
+                        }
+                      });
+
+                      if (sendError) {
+                        console.error(`❌ Error sending auto-response V3:`, sendError);
+                      } else {
+                        console.log(`🎉 Auto-response sent successfully V3`);
+                        
+                        // Guardar respuesta enviada en sent_messages para el chat
+                        console.log(`💾 Storing auto-response in sent_messages for chat display...`);
+                        const { error: storeError } = await supabase
+                          .from('sent_messages')
+                          .insert({
+                            customer_id: customerId,
+                            phone: fromPhone,
+                            message: aiResponse,
+                            status: 'sent'
+                          });
+
+                        if (storeError) {
+                          console.error(`❌ Error storing auto-response in chat V3:`, storeError);
+                        } else {
+                          console.log(`✅ Auto-response stored in chat successfully V3`);
+                        }
+                      }
+                    } catch (aiProcessError) {
+                      console.error(`❌ Error in AI processing V3:`, aiProcessError);
+                    }
+                  }
+                }
+              }
+
+              // Procesar información de contactos
+              if (change.value.contacts) {
+                for (const contact of change.value.contacts) {
+                  console.log(`Processing contact info V3:`, contact);
+
+                  const contactName = contact.profile?.name || '';
+                  const waId = contact.wa_id;
+                  
+                  // Obtener URL de imagen de perfil si está disponible
+                  let profileImageUrl = null;
+                  
+                  const contactData = {
+                    wa_id: waId,
+                    profileImageUrl: profileImageUrl,
+                    contactName: contactName
+                  };
+
+                  console.log(`Contact profile data V3:`, contactData);
+
+                  // Aquí podrías guardar o actualizar información de contacto si es necesario
+                }
               }
             }
           }
         }
       }
 
-      return new Response('OK', { 
-        status: 200,
-        headers: corsHeaders
-      })
-    }
+      return new Response('OK', { status: 200 });
 
-    return new Response('Method not allowed', { 
-      status: 405,
-      headers: corsHeaders
-    })
-
-  } catch (error) {
-    console.error('❌ Error in webhook V3:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    )
-  }
-})
-
-async function processMessagesChange(value: any, supabaseClient: any) {
-  console.log('Processing messages change V3:', JSON.stringify(value, null, 2))
-
-  // Handle message status updates
-  if (value.statuses && Array.isArray(value.statuses)) {
-    for (const status of value.statuses) {
-      await handleMessageStatus(status, supabaseClient)
+    } catch (error) {
+      console.error(`❌ Error processing webhook V3:`, error);
+      return new Response('Error', { status: 500 });
     }
   }
 
-  // Handle incoming messages (replies from customers)
-  if (value.messages && Array.isArray(value.messages)) {
-    for (const message of value.messages) {
-      await handleIncomingMessage(message, supabaseClient)
-    }
-  }
-
-  // Handle contacts info - extract profile images
-  if (value.contacts && Array.isArray(value.contacts)) {
-    for (const contact of value.contacts) {
-      await handleContactInfo(contact, supabaseClient)
-    }
-  }
-}
-
-async function handleContactInfo(contact: any, supabaseClient: any) {
-  const { wa_id, profile } = contact
-  
-  console.log('Processing contact info V3:', contact)
-
-  if (!wa_id) return
-
-  // Extract profile image URL if available
-  const profileImageUrl = profile?.profile_url || null
-  const contactName = profile?.name || null
-
-  console.log('Contact profile data V3:', {
-    wa_id,
-    profileImageUrl,
-    contactName
-  })
-
-  // Try to find existing customer by WhatsApp number with more flexible matching
-  const { data: existingCustomers, error: findError } = await supabaseClient
-    .from('customers')
-    .select('*')
-    .or(`phone.ilike.%${wa_id}%,whatsapp_number.ilike.%${wa_id}%`)
-
-  if (findError) {
-    console.error('Error finding customer V3:', findError)
-    return
-  }
-
-  // Find the best match for the phone number
-  let bestMatch = null
-  if (existingCustomers && existingCustomers.length > 0) {
-    bestMatch = existingCustomers.find(customer => {
-      const customerPhone = (customer.whatsapp_number || customer.phone || '').replace(/[\s\-\(\)+]/g, '')
-      const waIdClean = wa_id.replace(/[\s\-\(\)+]/g, '')
-      return customerPhone === waIdClean || customerPhone.endsWith(waIdClean) || waIdClean.endsWith(customerPhone)
-    }) || existingCustomers[0]
-  }
-
-  if (bestMatch) {
-    // Update existing customer with profile image
-    const updateData: any = {}
-    
-    // Always update profile image if provided, even if it's different
-    if (profileImageUrl) {
-      updateData.profile_image_url = profileImageUrl
-      console.log('Updating profile image URL for existing customer V3:', profileImageUrl)
-    }
-    
-    // Update WhatsApp number if not set
-    if (!bestMatch.whatsapp_number && wa_id) {
-      updateData.whatsapp_number = wa_id
-    }
-    
-    // Only update name if customer doesn't have one or WhatsApp provides a different one
-    if (contactName && (!bestMatch.name || bestMatch.name === 'Cliente' || bestMatch.name === '.')) {
-      updateData.name = contactName
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      const { error: updateError } = await supabaseClient
-        .from('customers')
-        .update(updateData)
-        .eq('id', bestMatch.id)
-
-      if (updateError) {
-        console.error('Error updating customer profile V3:', updateError)
-      } else {
-        console.log('Customer profile updated successfully V3:', updateData)
-      }
-    }
-  } else {
-    // Create new customer if they don't exist
-    const newCustomerData = {
-      name: contactName || 'Cliente WhatsApp',
-      phone: wa_id,
-      whatsapp_number: wa_id,
-      email: `${wa_id}@whatsapp.placeholder`,
-      profile_image_url: profileImageUrl
-    }
-
-    console.log('Creating new customer with profile V3:', newCustomerData)
-
-    const { error: createError } = await supabaseClient
-      .from('customers')
-      .insert(newCustomerData)
-
-    if (createError) {
-      console.error('Error creating customer from contact V3:', createError)
-    } else {
-      console.log('New customer created from WhatsApp contact with profile image V3')
-    }
-  }
-}
-
-async function handleMessageStatus(status: any, supabaseClient: any) {
-  const { id, status: messageStatus, timestamp, recipient_id } = status
-  
-  console.log('Message status update V3:', {
-    id,
-    status: messageStatus,
-    timestamp,
-    recipient_id
-  })
-
-  // Try to find the notification log entry by checking recent notifications
-  // to the same phone number around the time this message was sent
-  const { data: notifications, error } = await supabaseClient
-    .from('notification_log')
-    .select(`
-      *,
-      customers (
-        phone,
-        whatsapp_number
-      )
-    `)
-    .eq('status', 'sent')
-    .order('sent_at', { ascending: false })
-    .limit(50)
-
-  if (error) {
-    console.error('Error fetching notifications V3:', error)
-    return
-  }
-
-  // Find matching notification by phone number
-  const matchingNotification = notifications?.find(notification => {
-    const phone = notification.customers?.whatsapp_number || notification.customers?.phone
-    if (!phone) return false
-    
-    const cleanPhone = phone.replace(/[\s\-\(\)+]/g, '')
-    const cleanRecipient = recipient_id.replace(/[\s\-\(\)+]/g, '')
-    
-    return cleanPhone.includes(cleanRecipient) || cleanRecipient.includes(cleanPhone)
-  })
-
-  if (matchingNotification) {
-    // Create a delivery status log
-    await supabaseClient
-      .from('message_delivery_status')
-      .insert({
-        notification_id: matchingNotification.id,
-        whatsapp_message_id: id,
-        status: messageStatus,
-        timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-        recipient_phone: recipient_id
-      })
-
-    console.log('Delivery status logged for notification V3:', matchingNotification.id)
-  } else {
-    console.log('No matching notification found for message status V3')
-  }
-}
-
-async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Promise<string | null> {
-  try {
-    console.log('Downloading WhatsApp media V3:', mediaId)
-    
-    // First, get the media URL
-    const mediaResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-    
-    if (!mediaResponse.ok) {
-      console.error('Error getting media URL V3:', await mediaResponse.text())
-      return null
-    }
-    
-    const mediaData = await mediaResponse.json()
-    const mediaUrl = mediaData.url
-    
-    console.log('Media URL obtained from WhatsApp V3:', mediaUrl)
-    
-    // Return the URL directly - this is a temporary URL provided by WhatsApp
-    // In production, you would want to download the file and store it permanently
-    return mediaUrl
-    
-  } catch (error) {
-    console.error('Error downloading WhatsApp media V3:', error)
-    return null
-  }
-}
-
-async function checkAutoResponseSettings() {
-  // Check if auto responses are enabled (localStorage values)
-  // Since we're in an edge function, we'll assume auto-responses are enabled by default
-  // In a real implementation, you might store this in the database
-  return {
-    isAutoResponseEnabled: true, // Default to enabled
-    isManualResponseEnabled: true
-  }
-}
-
-async function handleIncomingMessage(message: any, supabaseClient: any) {
-  const { id, from, timestamp, type, text, image, document, audio, video } = message
-  
-  console.log('Incoming message V3:', {
-    id,
-    from,
-    timestamp,
-    type,
-    text: text?.body,
-    image: image?.id,
-    document: document?.id,
-    audio: audio?.id,
-    video: video?.id
-  })
-
-  // Get access token from app secrets
-  const { data: accessTokenData } = await supabaseClient.rpc('get_app_secret', { 
-    secret_name: 'META_WHATSAPP_TOKEN' 
-  })
-
-  // Try to find customer by phone number with more flexible matching
-  const { data: existingCustomers, error: customerError } = await supabaseClient
-    .from('customers')
-    .select('*')
-    .or(`phone.ilike.%${from}%,whatsapp_number.ilike.%${from}%`)
-
-  if (customerError && customerError.code !== 'PGRST116') {
-    console.error('Error finding customer V3:', customerError)
-    return
-  }
-
-  // Find the best match for the phone number
-  let customer = null
-  if (existingCustomers && existingCustomers.length > 0) {
-    customer = existingCustomers.find(c => {
-      const customerPhone = (c.whatsapp_number || c.phone || '').replace(/[\s\-\(\)+]/g, '')
-      const fromClean = from.replace(/[\s\-\(\)+]/g, '')
-      return customerPhone === fromClean || customerPhone.endsWith(fromClean) || fromClean.endsWith(customerPhone)
-    }) || existingCustomers[0]
-  }
-
-  // Prepare message content and media URL
-  let messageContent = ''
-  let mediaUrl = null
-  let mediaType = type
-
-  // Handle different message types
-  switch (type) {
-    case 'text':
-      messageContent = text?.body || ''
-      break
-    
-    case 'image':
-      messageContent = image?.caption || ''
-      if (image?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(image.id, accessTokenData)
-        console.log('Image media URL processed V3:', mediaUrl)
-      } else {
-        console.error('No access token found for image download V3')
-      }
-      break
-    
-    case 'document':
-      messageContent = document?.caption || `📄 Documento: ${document?.filename || 'archivo'}`
-      if (document?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(document.id, accessTokenData)
-      }
-      break
-    
-    case 'audio':
-      messageContent = '🎵 Mensaje de voz'
-      if (audio?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(audio.id, accessTokenData)
-      }
-      break
-    
-    case 'video':
-      messageContent = video?.caption || '🎥 Video'
-      if (video?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData)
-      }
-      break
-    
-    default:
-      messageContent = `Mensaje no soportado: ${type}`
-      console.log('Unsupported message type V3:', type, message)
-  }
-
-  // Store the incoming message with raw_data for debugging
-  const messageData = {
-    whatsapp_message_id: id,
-    from_phone: from,
-    customer_id: customer?.id || null,
-    message_type: mediaType,
-    message_content: messageContent,
-    media_url: mediaUrl,
-    timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-    raw_data: message // Store complete webhook payload for debugging
-  }
-
-  console.log('Storing message with data V3:', messageData)
-
-  const { error: insertError } = await supabaseClient
-    .from('incoming_messages')
-    .insert(messageData)
-
-  if (insertError) {
-    console.error('Error storing incoming message V3:', insertError)
-    return
-  } else {
-    console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
-  }
-
-  // 🤖 AUTO RESPONSE LOGIC - Only for text messages
-  if (type === 'text' && text?.body) {
-    console.log('📱 Received text message V3:', text.body)
-    
-    // Check if auto-responses are enabled
-    const autoSettings = await checkAutoResponseSettings()
-    
-    if (autoSettings.isAutoResponseEnabled) {
-      console.log('🤖 Auto-response is enabled, generating response...')
-      
-      try {
-        // Generate AI response
-        const { data: aiResponse, error: aiError } = await supabaseClient.functions.invoke('ai-whatsapp-response', {
-          body: {
-            message: text.body,
-            customerPhone: from,
-            customerId: customer?.id || null
-          }
-        })
-
-        if (aiError) {
-          console.error('❌ Error generating AI response V3:', aiError)
-          return
-        }
-
-        if (aiResponse?.response) {
-          console.log('✅ AI response generated V3:', aiResponse.response.substring(0, 100) + '...')
-          
-          // Send the AI response back via WhatsApp
-          const { data: sendData, error: sendError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
-            body: {
-              phone: from,
-              message: aiResponse.response,
-              customerId: customer?.id || null,
-              isAutoResponse: true
-            }
-          })
-
-          if (sendError) {
-            console.error('❌ Error sending auto-response V3:', sendError)
-          } else {
-            console.log('🎉 Auto-response sent successfully V3')
-            
-            // 📝 STORE AUTO-RESPONSE IN CHAT - This is the key addition
-            console.log('💾 Storing auto-response in sent_messages for chat display...')
-            
-            const { error: storeChatError } = await supabaseClient
-              .from('sent_messages')
-              .insert({
-                customer_id: customer?.id || null,
-                phone: from,
-                message: aiResponse.response,
-                status: 'sent',
-                whatsapp_message_id: sendData?.whatsapp_message_id || null
-              })
-
-            if (storeChatError) {
-              console.error('❌ Error storing auto-response in chat V3:', storeChatError)
-            } else {
-              console.log('✅ Auto-response stored in chat successfully V3')
-            }
-          }
-        }
-      } catch (autoResponseError) {
-        console.error('❌ Error in auto-response process V3:', autoResponseError)
-      }
-    } else {
-      console.log('🔕 Auto-response is disabled, skipping automatic reply')
-    }
-  }
-}
+  return new Response('Method not allowed', { status: 405 });
+});

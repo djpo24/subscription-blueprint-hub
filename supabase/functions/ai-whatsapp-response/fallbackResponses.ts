@@ -9,15 +9,19 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
     if (customerInfo.packagesCount === 0) {
       return `¡Hola${customerInfo.customerFirstName ? ' ' + customerInfo.customerFirstName : ''}! 😊
 
-He revisado su cuenta personal en nuestro sistema y actualmente no encuentro encomiendas registradas.
+He revisado minuciosamente su cuenta personal en nuestro sistema y actualmente no encuentro encomiendas registradas a su nombre.
 
 🔍 Esto puede significar que:
+- Sus encomiendas pueden estar registradas con un número de teléfono diferente
+- Podrían estar bajo un nombre ligeramente diferente
 - Aún no ha registrado encomiendas con nosotros
-- Sus encomiendas pueden estar registradas con un número diferente
 
-¿Tiene algún número de tracking que pueda compartirme para buscar específicamente? 📦
+📋 Para ayudarle mejor, ¿podría proporcionarme:
+- Su nombre completo como aparece en la encomienda
+- Número de tracking si lo tiene
+- Cualquier número adicional donde pudiera estar registrado
 
-¡Estoy aquí para ayudarle! 🌟`;
+¡Estoy aquí para encontrar su información! 🌟`;
     }
     
     if (customerInfo.pendingPaymentPackages.length > 0) {
@@ -29,29 +33,37 @@ He revisado su cuenta personal en nuestro sistema y actualmente no encuentro enc
       
       return `¡Hola${customerInfo.customerFirstName ? ' ' + customerInfo.customerFirstName : ''}! 😊
 
-Revisé su cuenta personal en nuestro sistema y confirmo que tiene un saldo pendiente de:
+He encontrado su cuenta y confirmo que tiene un saldo pendiente de:
 
 💰 ${formatCurrencyWithSymbol(totalPendingThisCurrency, currency)}
 
-Este saldo corresponde a su encomienda registrada en su cuenta personal.
+Este saldo corresponde a ${customerInfo.pendingPaymentPackages.length} encomienda${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''} entregada${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''} registrada${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''} en su cuenta personal.
 
-¿Necesita que confirme algún detalle específico de su cuenta? ¡Aquí estoy para ayudarle! 🌟`;
+¿Necesita detalles específicos de alguna encomienda o información para realizar el pago? ¡Aquí estoy para ayudarle! 🌟`;
     } else if (customerInfo.pendingDeliveryPackages.length > 0) {
       const firstPackage = customerInfo.pendingDeliveryPackages[0];
       return `¡Hola${customerInfo.customerFirstName ? ' ' + customerInfo.customerFirstName : ''}! 📦
 
-Según su cuenta en nuestro sistema, tiene ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} registrada${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''}:
+Encontré su cuenta en nuestro sistema. Tiene ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en proceso:
 
-🚚 Su tracking: ${firstPackage.tracking_number}
+🚚 Tracking principal: ${firstPackage.tracking_number}
 📍 Estado actual: ${firstPackage.status}
+📍 Ruta: ${firstPackage.origin} → ${firstPackage.destination}
 
-¿Hay algo específico que necesite confirmar sobre su encomienda? 😊`;
+${customerInfo.pendingDeliveryPackages.length > 1 ? `Y ${customerInfo.pendingDeliveryPackages.length - 1} encomienda${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 's' : ''} adicional${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 'es' : ''}.` : ''}
+
+¿Necesita información específica sobre alguna de sus encomiendas? 😊`;
     } else {
       return `¡Hola${customerInfo.customerFirstName ? ' ' + customerInfo.customerFirstName : ''}! 😊
 
-Según su cuenta en nuestro sistema, tiene todas sus encomiendas al día.
+He revisado su cuenta completa en nuestro sistema:
 
-¿En qué más puedo ayudarle con su cuenta hoy? 🌟`;
+✅ Total de encomiendas históricas: ${customerInfo.packagesCount}
+✅ Estado actual: Todas sus encomiendas están al día
+
+No tiene encomiendas pendientes de entrega ni pagos pendientes en este momento.
+
+¿En qué más puedo ayudarle hoy? 🌟`;
     }
   } else {
     return `¡Hola! 😊
@@ -61,8 +73,9 @@ No logro localizar una cuenta asociada a este número en nuestro sistema de enco
 🔒 Por políticas de seguridad, solo puedo proporcionar información de cuentas verificadas.
 
 Para ayudarle mejor, ¿podría compartirme:
-- Su número de tracking personal
-- El nombre con el que registró su encomienda
+- Su nombre completo
+- Número de tracking de su encomienda
+- Cualquier número adicional donde pueda estar registrado
 
 Un miembro de nuestro equipo también le contactará pronto para verificar su información personal. 📞
 

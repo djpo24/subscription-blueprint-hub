@@ -114,7 +114,7 @@ export async function getCustomerInfo(
   // Solo si el cliente está autenticado, obtener su información personal
   if (actualCustomerId && customerInfo.customerFound) {
     console.log(`📊 [CustomerService] Obteniendo datos específicos para cliente: ${actualCustomerId}`);
-    const packageData = await getCustomerPackageDataSecure(supabase, actualCustomerId, customerPhone);
+    const packageData = await getCustomerPackageDataOptimized(supabase, actualCustomerId, customerPhone);
     customerInfo = { ...customerInfo, ...packageData };
     console.log(`📊 [CustomerService] Datos obtenidos - Encomiendas: ${packageData.packagesCount}, Pendientes entrega: ${packageData.pendingDeliveryPackages.length}, Pendientes pago: ${packageData.pendingPaymentPackages.length}`);
   }
@@ -122,10 +122,10 @@ export async function getCustomerInfo(
   return { customerInfo, actualCustomerId };
 }
 
-async function getCustomerPackageDataSecure(supabase: any, customerId: string, verificationPhone: string) {
-  console.log(`🔍 [PackageData] Iniciando obtención de datos para cliente: ${customerId}`);
+async function getCustomerPackageDataOptimized(supabase: any, customerId: string, verificationPhone: string) {
+  console.log(`🔍 [PackageData] Iniciando obtención optimizada de datos para cliente: ${customerId}`);
   
-  // 🔒 DOBLE VERIFICACIÓN: Antes de obtener datos sensibles, verificar nuevamente
+  // 🔒 VERIFICACIÓN: Confirmar que el cliente existe
   const { data: customerVerification } = await supabase
     .from('customers')
     .select('phone, whatsapp_number, name')
@@ -147,27 +147,7 @@ async function getCustomerPackageDataSecure(supabase: any, customerId: string, v
 
   console.log(`🔍 [PackageData] Cliente verificado: ${customerVerification.name}`);
 
-  const cleanVerificationPhone = verificationPhone.replace(/[\s\-\(\)\+]/g, '');
-  const cleanCustomerPhone = (customerVerification.phone || '').replace(/[\s\-\(\)\+]/g, '');
-  const cleanCustomerWhatsApp = (customerVerification.whatsapp_number || '').replace(/[\s\-\(\)\+]/g, '');
-
-  if (cleanCustomerPhone !== cleanVerificationPhone && cleanCustomerWhatsApp !== cleanVerificationPhone &&
-      !cleanCustomerPhone.endsWith(cleanVerificationPhone) && !cleanVerificationPhone.endsWith(cleanCustomerPhone)) {
-    console.error(`🚨 [PackageData] VIOLACIÓN DE SEGURIDAD: Intento de acceso a datos del cliente ${customerId} desde teléfono no autorizado ${verificationPhone}`);
-    return {
-      packagesCount: 0,
-      packages: [],
-      pendingDeliveryPackages: [],
-      pendingPaymentPackages: [],
-      totalPending: 0,
-      totalFreight: {},
-      currencyBreakdown: {}
-    };
-  }
-
-  console.log(`✅ [PackageData] Verificación de seguridad pasada para cliente: ${customerVerification.name}`);
-
-  // 📦 Obtener SOLO las encomiendas de este cliente específico
+  // 📦 Obtener TODAS las encomiendas de este cliente específico
   const { data: packages, error: packagesError } = await supabase
     .from('packages')
     .select(`
@@ -275,7 +255,7 @@ async function getCustomerPackageDataSecure(supabase: any, customerId: string, v
 
   const totalPending = Object.values(currencyBreakdown).reduce((sum, amount) => sum + amount, 0);
 
-  console.log(`✅ [PackageData] Datos de encomiendas procesados de forma segura para cliente ${customerId}:`, {
+  console.log(`✅ [PackageData] Datos de encomiendas procesados de forma optimizada para cliente ${customerId}:`, {
     total: packages.length,
     pendingDelivery: pendingDeliveryPackages.length,
     pendingPayment: pendingPaymentPackages.length,

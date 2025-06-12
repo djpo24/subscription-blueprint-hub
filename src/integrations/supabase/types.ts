@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_escalations: {
+        Row: {
+          admin_response: string | null
+          answered_at: string | null
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          original_question: string
+          status: string
+        }
+        Insert: {
+          admin_response?: string | null
+          answered_at?: string | null
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          original_question: string
+          status?: string
+        }
+        Update: {
+          admin_response?: string | null
+          answered_at?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          original_question?: string
+          status?: string
+        }
+        Relationships: []
+      }
       ai_chat_interactions: {
         Row: {
           ai_response: string

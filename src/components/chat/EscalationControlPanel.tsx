@@ -29,31 +29,8 @@ export function EscalationControlPanel() {
   const { data: userRole, isLoading: roleLoading } = useCurrentUserRole();
   const [adminPhone, setAdminPhone] = useState('');
 
-  // Verificar permisos con loading state
-  if (roleLoading) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-gray-500">
-            Verificando permisos...
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (userRole?.role !== 'admin') {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-gray-500">
-            No tienes permisos para acceder a este panel
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // Move ALL hooks to the top, before any conditional logic
+  
   // Obtener configuración actual del administrador
   const { data: adminConfig, isLoading: configLoading } = useQuery({
     queryKey: ['admin-escalation-config'],
@@ -96,13 +73,6 @@ export function EscalationControlPanel() {
     },
     enabled: userRole?.role === 'admin'
   });
-
-  // Actualizar estado local cuando se carga la configuración
-  useEffect(() => {
-    if (adminConfig) {
-      setAdminPhone(adminConfig);
-    }
-  }, [adminConfig]);
 
   // Mutación para actualizar número de administrador
   const updateAdminPhoneMutation = useMutation({
@@ -158,6 +128,40 @@ export function EscalationControlPanel() {
       });
     }
   });
+
+  // Actualizar estado local cuando se carga la configuración
+  useEffect(() => {
+    if (adminConfig) {
+      setAdminPhone(adminConfig);
+    }
+  }, [adminConfig]);
+
+  // NOW we can do conditional rendering after all hooks are called
+  
+  // Verificar permisos con loading state
+  if (roleLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-gray-500">
+            Verificando permisos...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (userRole?.role !== 'admin') {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-gray-500">
+            No tienes permisos para acceder a este panel
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleUpdateAdminPhone = () => {
     if (!adminPhone.trim()) {

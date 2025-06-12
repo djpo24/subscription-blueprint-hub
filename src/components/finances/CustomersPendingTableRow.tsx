@@ -1,8 +1,7 @@
 
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { DollarSign, Phone, Calendar, Package, MapPin } from 'lucide-react';
+import { Phone, Calendar, Package, MapPin } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -95,16 +94,6 @@ export function CustomersPendingTableRow({
         <div className="font-medium text-red-600">
           {formatCurrency(customer.pending_amount || 0, customer.currency as 'COP' | 'AWG' || 'COP')}
         </div>
-      </TableCell>
-      <TableCell className="text-center">
-        <Button
-          size="sm"
-          onClick={() => onRecordPayment(customer)}
-          className="gap-1"
-        >
-          <DollarSign className="h-3 w-3" />
-          Registrar Pago
-        </Button>
       </TableCell>
     </TableRow>
   );

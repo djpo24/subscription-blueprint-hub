@@ -3,9 +3,9 @@ import { CustomerInfo } from './types.ts';
 import { formatCurrencyWithSymbol } from './utils.ts';
 
 export function generateFallbackResponse(customerInfo: CustomerInfo): string {
-  console.log(`🔄 [FALLBACK RADICAL] Cliente encontrado: ${customerInfo.customerFound}, encomiendas: ${customerInfo.packagesCount}`);
+  console.log(`🤖 [RESPUESTA AUTOMÁTICA] Cliente: ${customerInfo.customerFound ? customerInfo.customerFirstName : 'Nuevo cliente'}`);
   
-  // RESPUESTA RADICAL: Solo dar información si es específica y verificable
+  // Si encontramos al cliente con información específica
   if (customerInfo.customerFound && customerInfo.packagesCount > 0) {
     
     if (customerInfo.pendingPaymentPackages.length > 0) {
@@ -60,8 +60,20 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pen
 ¿En qué puedo ayudarte hoy?`;
   }
   
-  // ESCALACIÓN AUTOMÁTICA para clientes no encontrados
-  console.log('🚨 CLIENTE NO ENCONTRADO - DEBE ESCALAR AUTOMÁTICAMENTE');
+  // Respuesta para clientes nuevos o sin información específica
+  const customerName = customerInfo.customerFirstName || 'Cliente';
   
-  return `ESCALATE_IMMEDIATELY`;
+  return `¡Hola ${customerName}! 👋
+
+Soy SARA, tu asistente virtual de Envíos Ojito. Estoy aquí para ayudarte con:
+
+📦 **Consultas de encomiendas**
+💰 **Estados de cuenta**
+🚚 **Información de viajes y entregas**
+📋 **Tarifas y servicios**
+📍 **Direcciones de oficinas**
+
+¿En qué puedo asistirte hoy?
+
+💡 *Puedes preguntarme por el número de tracking de tu encomienda, saldos pendientes, próximos viajes, o cualquier otra consulta.*`;
 }

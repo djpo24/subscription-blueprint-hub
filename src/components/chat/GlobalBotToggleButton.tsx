@@ -1,22 +1,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot, BotOff } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useGlobalBotToggle } from '@/hooks/useGlobalBotToggle';
 
 export function GlobalBotToggleButton() {
-  const {
-    isBotEnabled,
-    toggleBot
-  } = useGlobalBotToggle();
   const { toast } = useToast();
 
   const handleToggle = () => {
     toast({
-      title: "🚫 Sistema de escalación desactivado",
-      description: "El bot permanece siempre activo. No hay escalaciones automáticas.",
-      variant: "destructive"
+      title: "🤖 Bot siempre activo",
+      description: "El bot responde a TODOS los mensajes. Sistema de escalación completamente desactivado.",
+      variant: "default"
     });
   };
 
@@ -26,15 +21,14 @@ export function GlobalBotToggleButton() {
         variant="default" 
         size="sm" 
         onClick={handleToggle} 
-        className="flex items-center gap-2"
-        disabled
+        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
       >
         <Bot className="h-4 w-4" />
-        Bot ON (Sin escalación)
+        Bot SIEMPRE Activo
       </Button>
       
-      <Badge variant="destructive" className="text-xs">
-        Escalación desactivada
+      <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+        Sin escalación
       </Badge>
     </div>
   );

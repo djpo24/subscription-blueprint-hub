@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -125,7 +126,7 @@ async function processMessagesChange(value: any, supabaseClient: any) {
     }
   }
 
-  // Handle contacts info - extract profile images
+  // Handle contacts info - SOLO ACTUALIZAR CLIENTES EXISTENTES
   if (value.contacts && Array.isArray(value.contacts)) {
     for (const contact of value.contacts) {
       await handleContactInfo(contact, supabaseClient)
@@ -150,7 +151,7 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     contactName
   })
 
-  // Try to find existing customer by WhatsApp number with more flexible matching
+  // 🔒 BUSCAR SOLO CLIENTES EXISTENTES - NO CREAR NUEVOS
   const { data: existingCustomers, error: findError } = await supabaseClient
     .from('customers')
     .select('*')
@@ -171,7 +172,10 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     }) || existingCustomers[0]
   }
 
+  // 🚫 SOLO ACTUALIZAR CLIENTES EXISTENTES - NUNCA CREAR NUEVOS
   if (bestMatch) {
+    console.log('📋 Actualizando cliente existente V3:', bestMatch.name)
+    
     // Update existing customer with profile image
     const updateData: any = {}
     
@@ -204,26 +208,9 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
       }
     }
   } else {
-    // Create new customer if they don't exist
-    const newCustomerData = {
-      name: contactName || 'Cliente WhatsApp',
-      phone: wa_id,
-      whatsapp_number: wa_id,
-      email: `${wa_id}@whatsapp.placeholder`,
-      profile_image_url: profileImageUrl
-    }
-
-    console.log('Creating new customer with profile V3:', newCustomerData)
-
-    const { error: createError } = await supabaseClient
-      .from('customers')
-      .insert(newCustomerData)
-
-    if (createError) {
-      console.error('Error creating customer from contact V3:', createError)
-    } else {
-      console.log('New customer created from WhatsApp contact with profile image V3')
-    }
+    // 🚫 NUNCA CREAR NUEVOS CLIENTES AUTOMÁTICAMENTE
+    console.log('⚠️ Número no registrado en la plataforma V3:', wa_id)
+    console.log('🚫 No se creará cliente automáticamente - política de seguridad')
   }
 }
 
@@ -468,7 +455,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     secret_name: 'META_WHATSAPP_TOKEN' 
   })
 
-  // Try to find customer by phone number with more flexible matching
+  // 🔒 BUSCAR SOLO CLIENTES EXISTENTES - NO CREAR NUEVOS
   const { data: existingCustomers, error: customerError } = await supabaseClient
     .from('customers')
     .select('*')
@@ -488,6 +475,33 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       return customerPhone === fromClean || customerPhone.endsWith(fromClean) || fromClean.endsWith(customerPhone)
     }) || existingCustomers[0]
   }
+
+  // 🚫 SI NO HAY CLIENTE REGISTRADO, NO PROCESAR EL MENSAJE
+  if (!customer) {
+    console.log('⚠️ Mensaje de número no registrado V3:', from)
+    console.log('🚫 No se procesará el mensaje - cliente no registrado en la plataforma')
+    
+    // Almacenar el mensaje sin customer_id para fines de auditoría
+    const messageData = {
+      whatsapp_message_id: id,
+      from_phone: from,
+      customer_id: null, // Explícitamente null para números no registrados
+      message_type: type,
+      message_content: text?.body || `Mensaje no soportado: ${type}`,
+      media_url: null,
+      timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
+      raw_data: message
+    }
+
+    await supabaseClient
+      .from('incoming_messages')
+      .insert(messageData)
+
+    console.log('📝 Mensaje almacenado para auditoría pero no se generará respuesta automática')
+    return // NO PROCESAR MÁS
+  }
+
+  console.log('✅ Cliente registrado encontrado V3:', customer.name)
 
   // Prepare message content and media URL
   let messageContent = ''
@@ -540,7 +554,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
   const messageData = {
     whatsapp_message_id: id,
     from_phone: from,
-    customer_id: customer?.id || null,
+    customer_id: customer.id, // Solo para clientes registrados
     message_type: mediaType,
     message_content: messageContent,
     media_url: mediaUrl,
@@ -561,9 +575,9 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
   }
 
-  // 🤖 AUTO RESPONSE LOGIC - Only for text messages from NON-ADMIN users
+  // 🤖 AUTO RESPONSE LOGIC - Only for text messages from registered customers
   if (type === 'text' && text?.body) {
-    console.log('📱 Received text message from customer V3:', text.body)
+    console.log('📱 Received text message from registered customer V3:', text.body)
     
     // Check if auto-responses are enabled
     const autoSettings = await checkAutoResponseSettings()
@@ -577,7 +591,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
           body: {
             message: text.body,
             customerPhone: from,
-            customerId: customer?.id || null
+            customerId: customer.id
           }
         })
 
@@ -594,7 +608,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
             body: {
               phone: from,
               message: aiResponse.response,
-              customerId: customer?.id || null,
+              customerId: customer.id,
               isAutoResponse: true
             }
           })
@@ -610,7 +624,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
             const { error: storeChatError } = await supabaseClient
               .from('sent_messages')
               .insert({
-                customer_id: customer?.id || null,
+                customer_id: customer.id,
                 phone: from,
                 message: aiResponse.response,
                 status: 'sent',

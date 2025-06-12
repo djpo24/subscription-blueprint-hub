@@ -22,14 +22,14 @@ export async function getCustomerInfo(
 
   let actualCustomerId = customerId;
 
-  console.log(`🔍 [CustomerService] Iniciando búsqueda de cliente con teléfono: ${customerPhone}`);
+  console.log(`🔍 [CustomerService] Iniciando búsqueda SEGURA de cliente con teléfono: ${customerPhone}`);
 
-  // 🔒 SEGURIDAD: Solo buscar por el número de teléfono específico del que envía el mensaje
+  // 🔒 SEGURIDAD: Solo buscar clientes registrados - NO CREAR NUEVOS
   if (!actualCustomerId) {
     const cleanPhone = customerPhone.replace(/[\s\-\(\)\+]/g, '');
     console.log(`🔍 [CustomerService] Teléfono limpiado: ${cleanPhone}`);
     
-    // Búsqueda MUY específica - solo el cliente exacto que envía el mensaje
+    // 🚫 BÚSQUEDA ESTRICTA - SOLO CLIENTES EXISTENTES
     const { data: customers, error: customerError } = await supabase
       .from('customers')
       .select('id, name, email, phone, whatsapp_number')
@@ -72,12 +72,12 @@ export async function getCustomerInfo(
         actualCustomerId = bestMatch.id;
         customerInfo.customerFound = true;
         customerInfo.customerFirstName = getFirstName(bestMatch.name);
-        console.log(`🔐 [CustomerService] Cliente identificado de forma segura: ${bestMatch.name} (ID: ${actualCustomerId})`);
+        console.log(`🔐 [CustomerService] Cliente registrado identificado: ${bestMatch.name} (ID: ${actualCustomerId})`);
       } else {
-        console.log(`⚠️ [CustomerService] No se encontró coincidencia para: ${cleanPhone}`);
+        console.log(`⚠️ [CustomerService] No se encontró coincidencia registrada para: ${cleanPhone}`);
       }
     } else {
-      console.log(`📞 [CustomerService] No se encontró cliente con teléfono: ${cleanPhone}`);
+      console.log(`📞 [CustomerService] No se encontró cliente registrado con teléfono: ${cleanPhone}`);
     }
   } else {
     // Si ya tenemos ID, verificar que corresponde al teléfono que envía el mensaje
@@ -111,19 +111,23 @@ export async function getCustomerInfo(
     }
   }
 
-  // Solo si el cliente está autenticado, obtener su información personal
-  if (actualCustomerId && customerInfo.customerFound) {
-    console.log(`📊 [CustomerService] Obteniendo datos específicos para cliente: ${actualCustomerId}`);
-    const packageData = await getCustomerPackageDataOptimized(supabase, actualCustomerId, customerPhone);
-    customerInfo = { ...customerInfo, ...packageData };
-    console.log(`📊 [CustomerService] Datos obtenidos - Encomiendas: ${packageData.packagesCount}, Pendientes entrega: ${packageData.pendingDeliveryPackages.length}, Pendientes pago: ${packageData.pendingPaymentPackages.length}`);
+  // 🚫 SI NO HAY CLIENTE REGISTRADO, NO PROPORCIONAR INFORMACIÓN
+  if (!actualCustomerId || !customerInfo.customerFound) {
+    console.log(`🚫 [CustomerService] Cliente no registrado - no se proporcionará información personal`);
+    return { customerInfo, actualCustomerId: null };
   }
+
+  // Solo si el cliente está registrado y autenticado, obtener su información personal
+  console.log(`📊 [CustomerService] Obteniendo datos específicos para cliente registrado: ${actualCustomerId}`);
+  const packageData = await getCustomerPackageDataOptimized(supabase, actualCustomerId, customerPhone);
+  customerInfo = { ...customerInfo, ...packageData };
+  console.log(`📊 [CustomerService] Datos obtenidos - Encomiendas: ${packageData.packagesCount}, Pendientes entrega: ${packageData.pendingDeliveryPackages.length}, Pendientes pago: ${packageData.pendingPaymentPackages.length}`);
 
   return { customerInfo, actualCustomerId };
 }
 
 async function getCustomerPackageDataOptimized(supabase: any, customerId: string, verificationPhone: string) {
-  console.log(`🔍 [PackageData] Iniciando obtención optimizada de datos para cliente: ${customerId}`);
+  console.log(`🔍 [PackageData] Iniciando obtención SEGURA de datos para cliente: ${customerId}`);
   
   // 🔒 VERIFICACIÓN: Confirmar que el cliente existe
   const { data: customerVerification } = await supabase
@@ -145,9 +149,9 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
     };
   }
 
-  console.log(`🔍 [PackageData] Cliente verificado: ${customerVerification.name}`);
+  console.log(`🔍 [PackageData] Cliente registrado verificado: ${customerVerification.name}`);
 
-  // 📦 Obtener TODAS las encomiendas de este cliente específico
+  // 📦 Obtener TODAS las encomiendas de este cliente específico registrado
   const { data: packages, error: packagesError } = await supabase
     .from('packages')
     .select(`
@@ -167,7 +171,7 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
     .order('created_at', { ascending: false });
 
   if (packagesError) {
-    console.error('❌ [PackageData] Error obteniendo encomiendas del cliente:', packagesError);
+    console.error('❌ [PackageData] Error obteniendo encomiendas del cliente registrado:', packagesError);
     return {
       packagesCount: 0,
       packages: [],
@@ -180,7 +184,7 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
   }
 
   if (!packages || packages.length === 0) {
-    console.log(`📭 [PackageData] No se encontraron encomiendas para el cliente: ${customerId}`);
+    console.log(`📭 [PackageData] No se encontraron encomiendas para el cliente registrado: ${customerId}`);
     return {
       packagesCount: 0,
       packages: [],
@@ -192,7 +196,7 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
     };
   }
 
-  console.log(`📦 [PackageData] Encontradas ${packages.length} encomiendas para el cliente autenticado`);
+  console.log(`📦 [PackageData] Encontradas ${packages.length} encomiendas para el cliente registrado`);
 
   // Calcular flete total por moneda
   const freightByCurrency = packages.reduce((acc, p) => {
@@ -223,7 +227,7 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
   let currencyBreakdown = {} as Record<string, number>;
 
   if (deliveredPackages.length > 0) {
-    // 💳 Obtener pagos SOLO de este cliente específico
+    // 💳 Obtener pagos SOLO de este cliente específico registrado
     const packageIds = deliveredPackages.map(p => p.id);
     const { data: payments } = await supabase
       .from('customer_payments')
@@ -255,7 +259,7 @@ async function getCustomerPackageDataOptimized(supabase: any, customerId: string
 
   const totalPending = Object.values(currencyBreakdown).reduce((sum, amount) => sum + amount, 0);
 
-  console.log(`✅ [PackageData] Datos de encomiendas procesados de forma optimizada para cliente ${customerId}:`, {
+  console.log(`✅ [PackageData] Datos de encomiendas procesados de forma SEGURA para cliente registrado ${customerId}:`, {
     total: packages.length,
     pendingDelivery: pendingDeliveryPackages.length,
     pendingPayment: pendingPaymentPackages.length,

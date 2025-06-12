@@ -6,7 +6,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { GlobalBotToggleButton } from './GlobalBotToggleButton';
+import { AdvancedBotToggleButton } from './AdvancedBotToggleButton';
 import type { ChatMessage } from '@/types/chatMessage';
 
 interface ChatDialogProps {
@@ -126,7 +126,7 @@ export function ChatDialog({
               <MessageSquare className="h-5 w-5" />
               Chat con {displayName}
             </DialogTitle>
-            <GlobalBotToggleButton />
+            <AdvancedBotToggleButton />
           </div>
         </DialogHeader>
 

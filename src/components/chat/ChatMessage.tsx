@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
-import { useGlobalBotToggle } from '@/hooks/useGlobalBotToggle';
+import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
@@ -29,7 +29,7 @@ export function ChatMessage({
   customerPhone,
   customerId
 }: ChatMessageProps) {
-  const { isBotEnabled } = useGlobalBotToggle();
+  const { isManualResponseEnabled } = useAdvancedBotToggle();
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
@@ -101,8 +101,8 @@ export function ChatMessage({
             </CardContent>
           </Card>
 
-          {/* Botón de respuesta IA solo para mensajes del cliente y si el bot está habilitado */}
-          {isFromCustomer && isBotEnabled && (
+          {/* Botón de respuesta IA solo para mensajes del cliente y si la generación manual está habilitada */}
+          {isFromCustomer && isManualResponseEnabled && (
             <div className="mt-2 flex justify-start">
               <AIResponseButton
                 customerPhone={customerPhone}
@@ -113,11 +113,11 @@ export function ChatMessage({
             </div>
           )}
 
-          {/* Mensaje cuando el bot está deshabilitado */}
-          {isFromCustomer && !isBotEnabled && (
+          {/* Mensaje cuando la generación manual está deshabilitada */}
+          {isFromCustomer && !isManualResponseEnabled && (
             <div className="mt-2 flex justify-start">
               <Badge variant="secondary" className="text-xs">
-                Bot desactivado - Respuesta manual requerida
+                Generación manual desactivada
               </Badge>
             </div>
           )}

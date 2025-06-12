@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
-import { GlobalBotToggleButton } from './chat/GlobalBotToggleButton';
+import { AdvancedBotToggleButton } from './chat/AdvancedBotToggleButton';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,7 +81,7 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
-  // Header global con el botón del bot
+  // Header global con el control avanzado del bot
   const ChatHeader = () => (
     <Card className="mb-4">
       <CardHeader className="pb-3">
@@ -90,7 +90,9 @@ export function ChatView() {
             <MessageSquare className="h-5 w-5" />
             Sistema de Chat WhatsApp
           </CardTitle>
-          <GlobalBotToggleButton />
+          <div className="flex items-center gap-3">
+            <AdvancedBotToggleButton />
+          </div>
         </div>
       </CardHeader>
     </Card>
@@ -119,7 +121,7 @@ export function ChatView() {
                 {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
               </h2>
               <div className="ml-auto">
-                <GlobalBotToggleButton />
+                <AdvancedBotToggleButton />
               </div>
             </div>
             

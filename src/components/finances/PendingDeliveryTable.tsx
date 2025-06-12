@@ -1,19 +1,61 @@
 
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Phone, Package, Calendar, MapPin, AlertCircle, RefreshCw, Weight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Truck, Phone, Package, Calendar, MapPin, AlertCircle, RefreshCw, Weight } from 'lucide-react';
 import { usePendingDelivery } from '@/hooks/usePendingDelivery';
 import { formatCurrency } from '@/utils/currencyFormatter';
+import { DeliverPackageDialog } from '@/components/dispatch-details/DeliverPackageDialog';
+import type { PackageInDispatch } from '@/types/dispatch';
 
 export function PendingDeliveryTable() {
   const { data: pendingPackages, isLoading, error, refetch } = usePendingDelivery();
+  const [selectedPackage, setSelectedPackage] = useState<PackageInDispatch | null>(null);
+  const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
 
   const handleRetry = () => {
     console.log('🔄 Reintentando cargar paquetes pendientes de entrega...');
+    refetch();
+  };
+
+  const handleDeliverPackage = (pkg: any) => {
+    console.log('📦 [PendingDeliveryTable] Abriendo dialog de entrega para paquete:', pkg);
+    
+    // Convertir el paquete del formato de pending delivery al formato de dispatch
+    const packageForDelivery: PackageInDispatch = {
+      id: pkg.package_id,
+      tracking_number: pkg.tracking_number,
+      origin: pkg.origin,
+      destination: pkg.destination,
+      status: pkg.status,
+      description: pkg.description,
+      weight: pkg.weight,
+      freight: pkg.freight,
+      amount_to_collect: pkg.amount_to_collect,
+      currency: pkg.currency,
+      trip_id: null,
+      delivered_at: null,
+      delivered_by: null,
+      customers: {
+        name: pkg.customer_name,
+        email: '',
+        phone: pkg.customer_phone
+      }
+    };
+    
+    setSelectedPackage(packageForDelivery);
+    setDeliveryDialogOpen(true);
+  };
+
+  const handleDeliveryComplete = () => {
+    console.log('✅ [PendingDeliveryTable] Entrega completada, cerrando dialog...');
+    setDeliveryDialogOpen(false);
+    setSelectedPackage(null);
+    // Refrescar la lista después de la entrega
     refetch();
   };
 
@@ -54,6 +96,10 @@ export function PendingDeliveryTable() {
     } catch {
       return 0;
     }
+  };
+
+  const canDeliverPackage = (status: string) => {
+    return status === 'en_destino' || status === 'en_transito';
   };
 
   if (isLoading) {
@@ -108,124 +154,147 @@ export function PendingDeliveryTable() {
   const totalToCollect = pendingPackages?.reduce((sum, pkg) => sum + (pkg.amount_to_collect || 0), 0) || 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Pendientes de Entrega
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Pendientes de Entrega
+              {pendingPackages && pendingPackages.length > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-800">
+                  {pendingPackages.length}
+                </Badge>
+              )}
+            </CardTitle>
             {pendingPackages && pendingPackages.length > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-800">
-                {pendingPackages.length}
-              </Badge>
+              <div className="text-sm text-gray-600">
+                Total a cobrar: <span className="font-medium text-orange-600">
+                  {formatCurrency(totalToCollect, 'COP')}
+                </span>
+              </div>
             )}
-          </CardTitle>
-          {pendingPackages && pendingPackages.length > 0 && (
-            <div className="text-sm text-gray-600">
-              Total a cobrar: <span className="font-medium text-orange-600">
-                {formatCurrency(totalToCollect, 'COP')}
-              </span>
-            </div>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Paquetes en tránsito o en destino pendientes de entrega
-        </p>
-      </CardHeader>
-      <CardContent>
-        {!pendingPackages || pendingPackages.length === 0 ? (
-          <div className="text-center py-8">
-            <Truck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No hay paquetes pendientes de entrega</p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Paquete</TableHead>
-                  <TableHead>Ruta</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Peso</TableHead>
-                  <TableHead className="text-right">A Cobrar</TableHead>
-                  <TableHead>Días en Tránsito</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingPackages.map((pkg, index) => {
-                  const daysInTransit = getDaysInTransit(pkg.created_at);
-                  
-                  return (
-                    <TableRow 
-                      key={`${pkg.package_id}-${index}`}
-                      className="hover:bg-gray-50"
-                    >
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{pkg.customer_name}</div>
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Phone className="h-3 w-3" />
-                            {pkg.customer_phone}
+          <p className="text-sm text-muted-foreground">
+            Paquetes en tránsito o en destino pendientes de entrega
+          </p>
+        </CardHeader>
+        <CardContent>
+          {!pendingPackages || pendingPackages.length === 0 ? (
+            <div className="text-center py-8">
+              <Truck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No hay paquetes pendientes de entrega</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Paquete</TableHead>
+                    <TableHead>Ruta</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Peso</TableHead>
+                    <TableHead className="text-right">A Cobrar</TableHead>
+                    <TableHead>Días en Tránsito</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingPackages.map((pkg, index) => {
+                    const daysInTransit = getDaysInTransit(pkg.created_at);
+                    
+                    return (
+                      <TableRow 
+                        key={`${pkg.package_id}-${index}`}
+                        className="hover:bg-gray-50"
+                      >
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{pkg.customer_name}</div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Phone className="h-3 w-3" />
+                              {pkg.customer_phone}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Package className="h-3 w-3 text-gray-500" />
+                              <span className="text-sm font-mono">
+                                {pkg.tracking_number}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 line-clamp-1">
+                              {pkg.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-sm">
+                              <MapPin className="h-3 w-3 text-gray-500" />
+                              <span>{pkg.origin} → {pkg.destination}</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(pkg.status)}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1">
-                            <Package className="h-3 w-3 text-gray-500" />
-                            <span className="text-sm font-mono">
-                              {pkg.tracking_number}
+                            <Weight className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm">
+                              {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">
-                            {pkg.description}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="font-medium text-orange-600">
+                            {formatCurrency(pkg.amount_to_collect || 0, pkg.currency as 'COP' | 'AWG' || 'COP')}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm">
-                            <MapPin className="h-3 w-3 text-gray-500" />
-                            <span>{pkg.origin} → {pkg.destination}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-gray-500" />
+                            <Badge 
+                              variant={daysInTransit >= 7 ? 'destructive' : daysInTransit >= 3 ? 'secondary' : 'outline'}
+                              className="text-xs"
+                            >
+                              {daysInTransit} días
+                            </Badge>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(pkg.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Weight className="h-3 w-3 text-gray-500" />
-                          <span className="text-sm">
-                            {pkg.weight ? `${pkg.weight} kg` : 'N/A'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="font-medium text-orange-600">
-                          {formatCurrency(pkg.amount_to_collect || 0, pkg.currency as 'COP' | 'AWG' || 'COP')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-gray-500" />
-                          <Badge 
-                            variant={daysInTransit >= 7 ? 'destructive' : daysInTransit >= 3 ? 'secondary' : 'outline'}
-                            className="text-xs"
-                          >
-                            {daysInTransit} días
-                          </Badge>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                        </TableCell>
+                        <TableCell>
+                          {canDeliverPackage(pkg.status) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeliverPackage(pkg)}
+                              className="flex items-center gap-1"
+                            >
+                              <Truck className="h-3 w-3" />
+                              Entregar
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog de entrega - usando el mismo componente que la entrega móvil */}
+      <DeliverPackageDialog
+        open={deliveryDialogOpen}
+        onOpenChange={setDeliveryDialogOpen}
+        package={selectedPackage}
+      />
+    </>
   );
 }

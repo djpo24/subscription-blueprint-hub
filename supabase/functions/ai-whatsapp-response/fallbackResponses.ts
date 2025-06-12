@@ -42,13 +42,46 @@ Este saldo corresponde a ${customerInfo.pendingPaymentPackages.length} encomiend
 ¿Necesita detalles específicos de alguna encomienda o información para realizar el pago? ¡Aquí estoy para ayudarle! 🌟`;
     } else if (customerInfo.pendingDeliveryPackages.length > 0) {
       const firstPackage = customerInfo.pendingDeliveryPackages[0];
+      
+      // Interpretar el estado de manera inteligente
+      let statusMessage = '';
+      let availabilityMessage = '';
+      
+      if (firstPackage.status === 'en_destino') {
+        statusMessage = 'llegó al destino y está disponible para retiro';
+        availabilityMessage = '✅ ¡Puede pasar a recogerla cuando guste!';
+      } else if (firstPackage.status === 'delivered') {
+        statusMessage = 'fue entregada';
+        availabilityMessage = '✅ Su encomienda ya fue entregada.';
+      } else if (firstPackage.status === 'transito') {
+        statusMessage = 'está en tránsito hacia destino';
+        availabilityMessage = '⏳ Le notificaremos cuando llegue.';
+      } else if (firstPackage.status === 'despachado') {
+        statusMessage = 'fue despachada hacia destino';
+        availabilityMessage = '🚚 Está en camino, pronto llegará.';
+      } else if (firstPackage.status === 'procesado') {
+        statusMessage = 'está procesada y lista para envío';
+        availabilityMessage = '📋 Será despachada pronto.';
+      } else if (firstPackage.status === 'bodega') {
+        statusMessage = 'está en bodega';
+        availabilityMessage = '📦 Será procesada pronto.';
+      } else if (firstPackage.status === 'recibido') {
+        statusMessage = 'fue recibida en origen';
+        availabilityMessage = '📥 Será procesada pronto.';
+      } else {
+        statusMessage = `está en estado: ${firstPackage.status}`;
+        availabilityMessage = '📞 Contáctenos para más detalles.';
+      }
+      
       return `¡Hola${customerInfo.customerFirstName ? ' ' + customerInfo.customerFirstName : ''}! 📦
 
 Encontré su cuenta en nuestro sistema. Tiene ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en proceso:
 
 🚚 Tracking principal: ${firstPackage.tracking_number}
-📍 Estado actual: ${firstPackage.status}
+📍 Estado actual: ${statusMessage}
 📍 Ruta: ${firstPackage.origin} → ${firstPackage.destination}
+
+${availabilityMessage}
 
 ${customerInfo.pendingDeliveryPackages.length > 1 ? `Y ${customerInfo.pendingDeliveryPackages.length - 1} encomienda${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 's' : ''} adicional${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 'es' : ''}.` : ''}
 

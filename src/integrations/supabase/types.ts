@@ -413,6 +413,158 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          created_by: string | null
+          failed_count: number
+          id: string
+          sent_at: string
+          success_count: number
+          total_messages_sent: number
+          trip_end_date: string
+          trip_start_date: string
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          sent_at?: string
+          success_count?: number
+          total_messages_sent?: number
+          trip_end_date: string
+          trip_start_date: string
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          sent_at?: string
+          success_count?: number
+          total_messages_sent?: number
+          trip_end_date?: string
+          trip_start_date?: string
+        }
+        Relationships: []
+      }
+      marketing_contacts: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          is_active: boolean
+          last_message_sent_at: string | null
+          notes: string | null
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          is_active?: boolean
+          last_message_sent_at?: string | null
+          notes?: string | null
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          is_active?: boolean
+          last_message_sent_at?: string | null
+          notes?: string | null
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_message_log: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          error_message: string | null
+          id: string
+          message_content: string
+          sent_at: string | null
+          status: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          error_message?: string | null
+          id?: string
+          message_content: string
+          sent_at?: string | null
+          status?: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          sent_at?: string | null
+          status?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_message_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_settings: {
+        Row: {
+          auto_send_enabled: boolean
+          created_at: string
+          id: string
+          last_campaign_sent_at: string | null
+          message_frequency_days: number
+          message_template: string
+          trip_window_days: number
+          updated_at: string
+        }
+        Insert: {
+          auto_send_enabled?: boolean
+          created_at?: string
+          id?: string
+          last_campaign_sent_at?: string | null
+          message_frequency_days?: number
+          message_template?: string
+          trip_window_days?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_send_enabled?: boolean
+          created_at?: string
+          id?: string
+          last_campaign_sent_at?: string | null
+          message_frequency_days?: number
+          message_template?: string
+          trip_window_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_delivery_status: {
         Row: {
           id: string
@@ -888,6 +1040,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      generate_marketing_message: {
+        Args: {
+          customer_name_param: string
+          template_param: string
+          start_date: string
+          end_date: string
+        }
+        Returns: string
+      }
       get_app_secret: {
         Args: { secret_name: string }
         Returns: string
@@ -895,6 +1056,17 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_trips_for_marketing_period: {
+        Args: { start_date: string; end_date: string }
+        Returns: {
+          trip_id: string
+          trip_date: string
+          origin: string
+          destination: string
+          flight_number: string
+          status: string
+        }[]
       }
       is_admin: {
         Args: Record<PropertyKey, never>

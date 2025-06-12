@@ -161,8 +161,11 @@ export function useChatData(): ChatData {
             const foundCustomer = findCustomerByPhone(msg.from_phone);
             if (foundCustomer) {
               customerData = {
+                id: foundCustomer.id,
                 name: foundCustomer.name,
-                profile_image_url: foundCustomer.profile_image_url
+                profile_image_url: foundCustomer.profile_image_url,
+                phone: foundCustomer.phone,
+                whatsapp_number: foundCustomer.whatsapp_number
               };
               customerId = foundCustomer.id;
               console.log(`🔗 Linked message from ${msg.from_phone} to customer ${foundCustomer.name}`);
@@ -192,8 +195,11 @@ export function useChatData(): ChatData {
             const foundCustomer = findCustomerByPhone(msg.phone);
             if (foundCustomer) {
               customerData = {
+                id: foundCustomer.id,
                 name: foundCustomer.name,
-                profile_image_url: foundCustomer.profile_image_url
+                profile_image_url: foundCustomer.profile_image_url,
+                phone: foundCustomer.phone,
+                whatsapp_number: foundCustomer.whatsapp_number
               };
               customerId = foundCustomer.id;
               console.log(`🔗 Linked sent message to ${msg.phone} with customer ${foundCustomer.name}`);
@@ -222,8 +228,11 @@ export function useChatData(): ChatData {
           if (notification.customers) {
             fromPhone = notification.customers.whatsapp_number || notification.customers.phone || '';
             customerData = {
+              id: notification.customers.id,
               name: notification.customers.name,
-              profile_image_url: notification.customers.profile_image_url
+              profile_image_url: notification.customers.profile_image_url,
+              phone: notification.customers.phone,
+              whatsapp_number: notification.customers.whatsapp_number
             };
           }
 

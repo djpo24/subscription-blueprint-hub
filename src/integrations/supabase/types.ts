@@ -9,6 +9,148 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_chat_interactions: {
+        Row: {
+          ai_response: string
+          context_info: Json | null
+          created_at: string
+          customer_id: string | null
+          customer_phone: string
+          id: string
+          response_time_ms: number | null
+          updated_at: string
+          user_message: string
+          was_fallback: boolean | null
+        }
+        Insert: {
+          ai_response: string
+          context_info?: Json | null
+          created_at?: string
+          customer_id?: string | null
+          customer_phone: string
+          id?: string
+          response_time_ms?: number | null
+          updated_at?: string
+          user_message: string
+          was_fallback?: boolean | null
+        }
+        Update: {
+          ai_response?: string
+          context_info?: Json | null
+          created_at?: string
+          customer_id?: string | null
+          customer_phone?: string
+          id?: string
+          response_time_ms?: number | null
+          updated_at?: string
+          user_message?: string
+          was_fallback?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_improvement_patterns: {
+        Row: {
+          example_interactions: string[] | null
+          id: string
+          identified_at: string
+          pattern_description: string
+          pattern_type: string
+          priority_score: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          suggested_improvement: string | null
+        }
+        Insert: {
+          example_interactions?: string[] | null
+          id?: string
+          identified_at?: string
+          pattern_description: string
+          pattern_type: string
+          priority_score?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_improvement?: string | null
+        }
+        Update: {
+          example_interactions?: string[] | null
+          id?: string
+          identified_at?: string
+          pattern_description?: string
+          pattern_type?: string
+          priority_score?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_improvement?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_improvement_patterns_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ai_response_feedback: {
+        Row: {
+          agent_notes: string | null
+          created_at: string
+          created_by: string | null
+          feedback_details: Json | null
+          feedback_source: string
+          feedback_type: string
+          id: string
+          interaction_id: string | null
+        }
+        Insert: {
+          agent_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          feedback_details?: Json | null
+          feedback_source: string
+          feedback_type: string
+          id?: string
+          interaction_id?: string | null
+        }
+        Update: {
+          agent_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          feedback_details?: Json | null
+          feedback_source?: string
+          feedback_type?: string
+          id?: string
+          interaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_response_feedback_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ai_response_feedback_interaction_id_fkey"
+            columns: ["interaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_interactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_secrets: {
         Row: {
           created_at: string | null

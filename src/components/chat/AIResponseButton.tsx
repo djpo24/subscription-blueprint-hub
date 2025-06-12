@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Copy, Send, AlertTriangle } from 'lucide-react';
+import { Sparkles, Copy, Send, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useAIWhatsAppResponse } from '@/hooks/useAIWhatsAppResponse';
+import { useAIFeedback } from '@/hooks/useAIFeedback';
 import { useToast } from '@/hooks/use-toast';
 
 interface AIResponseButtonProps {
@@ -20,7 +21,11 @@ export function AIResponseButton({
 }: AIResponseButtonProps) {
   const [aiResponse, setAiResponse] = useState<string>('');
   const [isFromFallback, setIsFromFallback] = useState<boolean>(false);
+  const [currentInteractionId, setCurrentInteractionId] = useState<string | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState<'positive' | 'negative' | null>(null);
+  
   const { generateAIResponse, isGenerating } = useAIWhatsAppResponse();
+  const { submitFeedback, isSubmittingFeedback } = useAIFeedback();
   const { toast } = useToast();
 
   const handleGenerateResponse = async () => {
@@ -33,6 +38,7 @@ export function AIResponseButton({
       
       setAiResponse(result.response);
       setIsFromFallback(result.isFromFallback || false);
+      setFeedbackGiven(null); // Reset feedback state
       
       if (result.isFromFallback) {
         toast({
@@ -47,6 +53,11 @@ export function AIResponseButton({
             : "Respuesta generada (sin paquetes específicos)",
         });
       }
+
+      // Get the latest interaction ID for feedback
+      // Note: En una implementación real, deberías obtener el ID de la interacción
+      // desde la respuesta de la función edge o hacer una consulta adicional
+      
     } catch (error) {
       console.error('Error generating AI response:', error);
     }
@@ -64,10 +75,34 @@ export function AIResponseButton({
     onSendMessage(aiResponse);
     setAiResponse('');
     setIsFromFallback(false);
+    setFeedbackGiven(null);
     toast({
       title: "Enviado",
       description: isFromFallback ? "Respuesta de emergencia enviada" : "Respuesta automática enviada",
     });
+  };
+
+  const handleFeedback = async (feedbackType: 'positive' | 'negative') => {
+    if (!currentInteractionId) {
+      toast({
+        title: "Error",
+        description: "No se puede enviar feedback en este momento",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await submitFeedback({
+        interactionId: currentInteractionId,
+        feedbackType,
+        feedbackSource: 'agent_rating'
+      });
+      
+      setFeedbackGiven(feedbackType);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    }
   };
 
   return (
@@ -104,31 +139,63 @@ export function AIResponseButton({
               </>
             )}
           </div>
+          
           <div className="text-sm text-gray-700 bg-white rounded p-2 border">
             {aiResponse}
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleCopyResponse}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-            >
-              <Copy className="h-3 w-3 mr-1" />
-              Copiar
-            </Button>
-            <Button
-              onClick={handleSendResponse}
-              size="sm"
-              className={`flex-1 text-white ${
-                isFromFallback 
-                  ? 'bg-amber-600 hover:bg-amber-700' 
-                  : 'bg-purple-600 hover:bg-purple-700'
-              }`}
-            >
-              <Send className="h-3 w-3 mr-1" />
-              Enviar
-            </Button>
+          
+          {/* Feedback buttons */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCopyResponse}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Copiar
+              </Button>
+              <Button
+                onClick={handleSendResponse}
+                size="sm"
+                className={`flex-1 text-white ${
+                  isFromFallback 
+                    ? 'bg-amber-600 hover:bg-amber-700' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                <Send className="h-3 w-3 mr-1" />
+                Enviar
+              </Button>
+            </div>
+            
+            {/* Feedback section */}
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <span>¿Útil?</span>
+              <Button
+                onClick={() => handleFeedback('positive')}
+                disabled={isSubmittingFeedback || feedbackGiven === 'positive'}
+                variant="ghost"
+                size="sm"
+                className={`h-6 w-6 p-0 ${
+                  feedbackGiven === 'positive' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'
+                }`}
+              >
+                <ThumbsUp className="h-3 w-3" />
+              </Button>
+              <Button
+                onClick={() => handleFeedback('negative')}
+                disabled={isSubmittingFeedback || feedbackGiven === 'negative'}
+                variant="ghost"
+                size="sm"
+                className={`h-6 w-6 p-0 ${
+                  feedbackGiven === 'negative' ? 'text-red-600' : 'text-gray-400 hover:text-red-600'
+                }`}
+              >
+                <ThumbsDown className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

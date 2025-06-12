@@ -13,6 +13,7 @@ interface AIResponseResult {
   response: string;
   hasPackageInfo: boolean;
   isFromFallback?: boolean;
+  interactionId?: string; // Para futuras implementaciones de feedback
 }
 
 export function useAIWhatsAppResponse() {
@@ -59,7 +60,7 @@ export function useAIWhatsAppResponse() {
       return {
         response: data.response,
         hasPackageInfo: data.hasPackageInfo || false,
-        isFromFallback: false
+        isFromFallback: data.isFromFallback || false
       };
     },
     onError: (error: any) => {

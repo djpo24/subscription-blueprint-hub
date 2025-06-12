@@ -20,6 +20,7 @@ serve(async (req) => {
     const { message, customerPhone, customerId } = await req.json();
     
     console.log('🤖 AI Response Request:', { message, customerPhone, customerId });
+    const startTime = Date.now();
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -35,6 +36,11 @@ serve(async (req) => {
     // Get customer information and packages
     let customerContext = '';
     let packageInfo = '';
+    let contextInfo: any = {
+      customerFound: false,
+      packagesCount: 0,
+      packages: []
+    };
 
     if (customerId) {
       // Get customer info
@@ -46,6 +52,8 @@ serve(async (req) => {
 
       if (customer) {
         customerContext = `Cliente: ${customer.name} (${customer.email})`;
+        contextInfo.customerFound = true;
+        contextInfo.customerName = customer.name;
       }
 
       // Get customer's packages
@@ -70,6 +78,9 @@ serve(async (req) => {
         packageInfo = packages.map(pkg => 
           `- Paquete ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})`
         ).join('\n');
+        
+        contextInfo.packagesCount = packages.length;
+        contextInfo.packages = packages;
       }
     } else {
       // Try to find customer by phone
@@ -83,6 +94,8 @@ serve(async (req) => {
       if (customers && customers.length > 0) {
         const customer = customers[0];
         customerContext = `Cliente: ${customer.name} (${customer.email})`;
+        contextInfo.customerFound = true;
+        contextInfo.customerName = customer.name;
 
         // Get packages for found customer
         const { data: packages } = await supabase
@@ -106,6 +119,9 @@ serve(async (req) => {
           packageInfo = packages.map(pkg => 
             `- Paquete ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})`
           ).join('\n');
+          
+          contextInfo.packagesCount = packages.length;
+          contextInfo.packages = packages;
         }
       }
     }
@@ -197,11 +213,14 @@ TONO: Amigable, profesional, servicial`;
 
     // Try to get AI response
     let aiResponse: string;
+    let wasFallback = false;
+    
     try {
       aiResponse = await callOpenAI();
       console.log('✅ AI Response generated successfully');
     } catch (error) {
       console.error('❌ OpenAI Error:', error.message);
+      wasFallback = true;
       
       // Provide specific fallback responses based on error type
       if (error.message.includes('RATE_LIMIT_EXCEEDED')) {
@@ -234,9 +253,36 @@ Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que
       }
     }
 
+    // Calculate response time
+    const responseTime = Date.now() - startTime;
+
+    // Store the interaction in the database for learning purposes
+    try {
+      const { error: insertError } = await supabase
+        .from('ai_chat_interactions')
+        .insert({
+          customer_id: customerId || null,
+          customer_phone: customerPhone,
+          user_message: message,
+          ai_response: aiResponse,
+          context_info: contextInfo,
+          response_time_ms: responseTime,
+          was_fallback: wasFallback
+        });
+
+      if (insertError) {
+        console.error('❌ Error storing interaction:', insertError);
+      } else {
+        console.log('✅ Interaction stored for learning');
+      }
+    } catch (storeError) {
+      console.error('❌ Error storing interaction:', storeError);
+    }
+
     return new Response(JSON.stringify({ 
       response: aiResponse,
-      hasPackageInfo: packageInfo.length > 0 
+      hasPackageInfo: packageInfo.length > 0,
+      isFromFallback: wasFallback
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -249,7 +295,8 @@ Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que
     
     return new Response(JSON.stringify({ 
       error: error.message,
-      response: fallbackResponse
+      response: fallbackResponse,
+      isFromFallback: true
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

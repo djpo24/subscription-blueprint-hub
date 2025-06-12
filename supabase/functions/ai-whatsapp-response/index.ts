@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getCustomerInfo } from './customerService.ts';
-import { buildSystemPrompt } from './promptBuilder.ts';
+import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts';
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse } from './businessLogic.ts';
@@ -24,7 +24,7 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🤖 AI Response Request (Enhanced):', { message, customerPhone, customerId });
+    console.log('🤖 AI Response Request (Enhanced with Context):', { message, customerPhone, customerId });
     const startTime = Date.now();
 
     // Initialize Supabase client
@@ -45,6 +45,10 @@ serve(async (req) => {
       customerId
     );
 
+    // Get recent conversation history for context
+    const recentMessages = await getRecentConversationHistory(supabase, customerPhone, actualCustomerId);
+    console.log('💬 Retrieved conversation history:', recentMessages?.length || 0, 'messages');
+
     // Validate business logic (packages timing)
     const validationResult = validatePackageDeliveryTiming(customerInfo);
     console.log('🔍 Business validation:', validationResult);
@@ -52,15 +56,16 @@ serve(async (req) => {
     // Build learning context for adaptive responses
     const learningContext = buildLearningContext(customerInfo);
 
-    // Create enhanced system prompt with learning
+    // Create enhanced system prompt with conversation context
     const basePrompt = buildSystemPrompt(customerInfo);
-    const enhancedPrompt = enhancePromptWithLearning(basePrompt, learningContext);
+    const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
+    const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
     // Add business intelligence insights
     const businessInsight = generateBusinessIntelligentResponse(customerInfo);
     const contextualMessage = businessInsight ? `${message}\n\nContexto adicional: ${businessInsight}` : message;
 
-    // Try to get AI response with enhanced prompt
+    // Try to get AI response with enhanced prompt and context
     let aiResponse: string;
     let wasFallback = false;
     let interactionId: string | null = null;
@@ -73,7 +78,7 @@ serve(async (req) => {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
       }
       
-      console.log('✅ Enhanced AI Response generated successfully');
+      console.log('✅ Enhanced AI Response with context generated successfully');
     } catch (error) {
       console.error('❌ OpenAI Error:', error.message);
       wasFallback = true;
@@ -95,7 +100,8 @@ serve(async (req) => {
           context_info: {
             ...customerInfo,
             businessValidation: validationResult,
-            learningContext: learningContext
+            learningContext: learningContext,
+            conversationHistory: recentMessages?.slice(-3) // Store last 3 messages for analysis
           },
           response_time_ms: responseTime,
           was_fallback: wasFallback
@@ -106,7 +112,7 @@ serve(async (req) => {
       if (insertError) {
         console.error('❌ Error storing interaction:', insertError);
       } else {
-        console.log('✅ Enhanced interaction stored for learning');
+        console.log('✅ Enhanced interaction with context stored for learning');
         interactionId = interactionData.id;
         
         // Update learning model asynchronously
@@ -136,9 +142,10 @@ serve(async (req) => {
       interactionId: interactionId
     };
 
-    console.log('🎯 Enhanced response delivered:', {
+    console.log('🎯 Enhanced response with conversation context delivered:', {
       hasBusinessValidation: !validationResult.isValid,
       hasLearningContext: true,
+      hasConversationContext: recentMessages?.length > 0,
       responseTime: responseTime + 'ms'
     });
 
@@ -170,3 +177,72 @@ Si tienes el número de tracking de tu encomienda, compártelo para acelerar la 
     });
   }
 });
+
+async function getRecentConversationHistory(supabase: any, customerPhone: string, customerId?: string) {
+  try {
+    // Get recent incoming messages (from customer)
+    const { data: incomingMessages, error: incomingError } = await supabase
+      .from('incoming_messages')
+      .select('message_content, timestamp')
+      .eq('from_phone', customerPhone)
+      .order('timestamp', { ascending: false })
+      .limit(10);
+
+    if (incomingError) {
+      console.error('Error fetching incoming messages for context:', incomingError);
+    }
+
+    // Get recent sent messages (from SARA)
+    const { data: sentMessages, error: sentError } = await supabase
+      .from('sent_messages')
+      .select('message, sent_at')
+      .eq('phone', customerPhone)
+      .order('sent_at', { ascending: false })
+      .limit(10);
+
+    if (sentError) {
+      console.error('Error fetching sent messages for context:', sentError);
+    }
+
+    // Combine and sort by timestamp
+    const allMessages: Array<{
+      message: string;
+      isFromCustomer: boolean;
+      timestamp: string;
+    }> = [];
+
+    if (incomingMessages) {
+      incomingMessages.forEach(msg => {
+        if (msg.message_content) {
+          allMessages.push({
+            message: msg.message_content,
+            isFromCustomer: true,
+            timestamp: msg.timestamp
+          });
+        }
+      });
+    }
+
+    if (sentMessages) {
+      sentMessages.forEach(msg => {
+        if (msg.message) {
+          allMessages.push({
+            message: msg.message,
+            isFromCustomer: false,
+            timestamp: msg.sent_at
+          });
+        }
+      });
+    }
+
+    // Sort by timestamp (most recent first) and return last 8 messages
+    return allMessages
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 8)
+      .reverse(); // Reverse to get chronological order for context
+
+  } catch (error) {
+    console.error('Error building conversation context:', error);
+    return [];
+  }
+}

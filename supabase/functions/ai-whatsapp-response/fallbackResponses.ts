@@ -11,7 +11,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
       // Calculate total pending for this currency - ONLY REAL DATA
       const totalPendingThisCurrency = customerInfo.currencyBreakdown[currency] || firstPackage.pendingAmount;
       
-      return `¡Hola ${customerInfo.customerFirstName}! 😊
+      return `¡Hola! 😊
 
 Revisé tu cuenta en nuestro sistema y confirmo que tienes un saldo pendiente de:
 
@@ -22,7 +22,7 @@ Este saldo corresponde a tu encomienda registrada en nuestro sistema.
 ¿Necesitas que confirme algún detalle específico? ¡Aquí estoy para ayudarte! 🌟`;
     } else if (customerInfo.pendingDeliveryPackages.length > 0) {
       const firstPackage = customerInfo.pendingDeliveryPackages[0];
-      return `¡Hola ${customerInfo.customerFirstName}! 📦
+      return `¡Hola! 📦
 
 Según nuestro sistema, tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} registrada${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''}:
 
@@ -31,7 +31,7 @@ Según nuestro sistema, tienes ${customerInfo.pendingDeliveryPackages.length} en
 
 ¿Hay algo específico que necesites confirmar? 😊`;
     } else {
-      return `¡Hola ${customerInfo.customerFirstName}! 😊
+      return `¡Hola! 😊
 
 Según nuestro sistema, tienes todas tus encomiendas al día.
 

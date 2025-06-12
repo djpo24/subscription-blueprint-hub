@@ -48,21 +48,29 @@ export function usePaymentManagement(packageCurrency?: string) {
     console.log('💳 [usePaymentManagement] Current payments state:', payments);
     console.log('💳 [usePaymentManagement] Package currency context:', packageCurrency);
     
+    // Direct state update without using the utility function to avoid any potential issues
     setPayments(prev => {
       console.log('💳 [usePaymentManagement] Previous payments in setState:', prev);
       
-      const newPayments = prev.map((payment, i) => {
-        if (i === index) {
-          console.log('💳 [usePaymentManagement] Updating payment at index', i);
-          console.log('💳 [usePaymentManagement] Current payment before update:', payment);
-          
-          const updatedPayment = updatePaymentEntry(payment, field, value, [], packageAmount);
-          
-          console.log('💳 [usePaymentManagement] Updated payment after updatePaymentEntry:', updatedPayment);
-          return updatedPayment;
+      const newPayments = [...prev]; // Create a new array
+      
+      if (newPayments[index]) {
+        // Direct update of the specific field
+        newPayments[index] = {
+          ...newPayments[index],
+          [field]: value
+        };
+        
+        // Only update type if we're changing amount and have a package amount
+        if (field === 'amount' && packageAmount !== undefined && value !== '') {
+          const numericAmount = parseFloat(value);
+          if (!isNaN(numericAmount)) {
+            newPayments[index].type = numericAmount >= packageAmount ? 'full' : 'partial';
+          }
         }
-        return payment;
-      });
+        
+        console.log('💳 [usePaymentManagement] Updated payment at index', index, ':', newPayments[index]);
+      }
       
       console.log('💳 [usePaymentManagement] New payments array:', newPayments);
       return newPayments;

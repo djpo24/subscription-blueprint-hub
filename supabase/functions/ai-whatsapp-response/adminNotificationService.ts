@@ -18,7 +18,11 @@ export async function notifyAdminOfEscalation(
 
 ⚠️ SARA no pudo proporcionar información específica.
 
-🔄 Responde a este mensaje y será enviado automáticamente al cliente.
+📱 RESPONDE DIRECTAMENTE A ESTE MENSAJE y será enviado automáticamente al cliente.
+
+⚡ Tu respuesta NO generará respuestas automáticas adicionales.
+
+🔄 Responde solo UNA VEZ por escalación.
 
 ⏰ Respuesta requerida lo antes posible.
 

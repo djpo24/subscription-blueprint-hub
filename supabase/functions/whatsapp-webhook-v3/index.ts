@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -6,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Número del administrador Didier Pedroza
+const ADMIN_PHONE = '573014940399';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -315,6 +317,92 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Prom
   }
 }
 
+async function isFromAdmin(phoneNumber: string): Promise<boolean> {
+  const cleanPhone = phoneNumber.replace(/[\s\-\(\)+]/g, '')
+  const cleanAdminPhone = ADMIN_PHONE.replace(/[\s\-\(\)+]/g, '')
+  
+  return cleanPhone === cleanAdminPhone || 
+         cleanPhone.endsWith(cleanAdminPhone) || 
+         cleanAdminPhone.endsWith(cleanPhone)
+}
+
+async function handleAdminResponse(message: any, supabaseClient: any): Promise<boolean> {
+  const { text, from } = message
+  
+  if (!text?.body) {
+    console.log('📋 Admin message without text content, skipping escalation processing')
+    return false
+  }
+  
+  console.log('🔧 Processing admin response:', text.body.substring(0, 100) + '...')
+  
+  // Buscar escalación pendiente más reciente
+  const { data: pendingEscalation, error: escalationError } = await supabaseClient
+    .from('admin_escalations')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+  
+  if (escalationError && escalationError.code !== 'PGRST116') {
+    console.error('❌ Error finding pending escalation:', escalationError)
+    return false
+  }
+  
+  if (!pendingEscalation) {
+    console.log('📋 No pending escalations found, treating as general admin message')
+    return false
+  }
+  
+  console.log('✅ Found pending escalation:', pendingEscalation.id)
+  
+  // Marcar escalación como respondida
+  const { error: updateError } = await supabaseClient
+    .from('admin_escalations')
+    .update({
+      admin_response: text.body,
+      status: 'answered',
+      answered_at: new Date().toISOString()
+    })
+    .eq('id', pendingEscalation.id)
+  
+  if (updateError) {
+    console.error('❌ Error updating escalation:', updateError)
+    return false
+  }
+  
+  console.log('✅ Escalation marked as answered')
+  
+  // Enviar respuesta del admin al cliente original
+  const { data: sendData, error: sendError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
+    body: {
+      phone: pendingEscalation.customer_phone,
+      message: text.body,
+      isAdminResponse: true
+    }
+  })
+  
+  if (sendError) {
+    console.error('❌ Error sending admin response to customer:', sendError)
+  } else {
+    console.log('✅ Admin response sent to customer successfully')
+    
+    // Almacenar la respuesta del admin en sent_messages para el historial
+    await supabaseClient
+      .from('sent_messages')
+      .insert({
+        customer_id: null,
+        phone: pendingEscalation.customer_phone,
+        message: text.body,
+        status: 'sent',
+        whatsapp_message_id: sendData?.whatsapp_message_id || null
+      })
+  }
+  
+  return true
+}
+
 async function checkAutoResponseSettings() {
   // Check if auto responses are enabled (localStorage values)
   // Since we're in an edge function, we'll assume auto-responses are enabled by default
@@ -339,6 +427,41 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     audio: audio?.id,
     video: video?.id
   })
+
+  // 🔧 VERIFICAR SI ES MENSAJE DEL ADMINISTRADOR
+  const isAdmin = await isFromAdmin(from)
+  
+  if (isAdmin) {
+    console.log('👨‍💼 Mensaje del administrador detectado, procesando escalación...')
+    
+    // Almacenar mensaje del admin en incoming_messages
+    const adminMessageData = {
+      whatsapp_message_id: id,
+      from_phone: from,
+      customer_id: null, // No customer ID for admin
+      message_type: type,
+      message_content: text?.body || 'Mensaje del administrador',
+      media_url: null,
+      timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
+      raw_data: message
+    }
+
+    await supabaseClient
+      .from('incoming_messages')
+      .insert(adminMessageData)
+
+    // Manejar respuesta del admin a escalación
+    const wasEscalationResponse = await handleAdminResponse(message, supabaseClient)
+    
+    if (wasEscalationResponse) {
+      console.log('✅ Admin escalation response processed successfully')
+    } else {
+      console.log('📋 Admin message processed but not linked to escalation')
+    }
+    
+    // NO GENERAR RESPUESTA AUTOMÁTICA PARA EL ADMINISTRADOR
+    return
+  }
 
   // Get access token from app secrets
   const { data: accessTokenData } = await supabaseClient.rpc('get_app_secret', { 
@@ -438,9 +561,9 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
   }
 
-  // 🤖 AUTO RESPONSE LOGIC - Only for text messages
+  // 🤖 AUTO RESPONSE LOGIC - Only for text messages from NON-ADMIN users
   if (type === 'text' && text?.body) {
-    console.log('📱 Received text message V3:', text.body)
+    console.log('📱 Received text message from customer V3:', text.body)
     
     // Check if auto-responses are enabled
     const autoSettings = await checkAutoResponseSettings()

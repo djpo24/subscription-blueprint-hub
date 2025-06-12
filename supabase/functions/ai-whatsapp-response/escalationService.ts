@@ -148,13 +148,15 @@ export function generateEscalationMessage(customerName: string, originalQuestion
   return `🚨 ESCALACIÓN AUTOMÁTICA - CLIENTE REQUIERE ATENCIÓN
 
 👤 Cliente: ${customerName}
-❓ Pregunta: ${originalQuestion}
+❓ Pregunta: "${originalQuestion}"
 
 ⚠️ SARA no pudo proporcionar información específica verificable.
 
-📱 Para responder: Envía tu mensaje y será retransmitido automáticamente al cliente.
+📱 Responde directamente a este mensaje y será enviado automáticamente al cliente.
 
-⏰ Responde lo antes posible para mantener la calidad del servicio.`;
+⏰ Tu respuesta se procesará inmediatamente sin generar respuestas automáticas adicionales.
+
+🔄 Solo responde UNA VEZ por escalación para evitar confusiones.`;
 }
 
 export function generateCustomerNotificationMessage(customerName: string): string {

@@ -132,7 +132,7 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
           customersCount={customersCount}
           onNewPackage={handleNewPackage}
           onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-          onViewNotifications={() => {}} // Deshabilitado para empleados
+          onViewNotifications={() => {}} 
           onMobileDelivery={handleMobileDelivery}
           packages={employeePackages}
           filteredPackages={employeeFilteredPackages}

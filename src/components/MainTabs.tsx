@@ -31,10 +31,56 @@ import {
 interface MainTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  unreadCount?: number;
+  previewRole?: 'admin' | 'employee' | 'traveler';
+  packageStats?: any;
+  customersCount?: number;
+  onNewPackage?: () => void;
+  onNewTrip?: () => void;
+  onViewNotifications?: () => void;
+  onMobileDelivery?: () => void;
+  packages?: any[];
+  filteredPackages?: any[];
+  isLoading?: boolean;
+  onUpdate?: (id: string, updates: any) => void;
+  disableChat?: boolean;
+  viewingPackagesByDate?: Date | null;
+  trips?: any[];
+  tripsLoading?: boolean;
+  onAddPackage?: (tripId: string) => void;
+  onCreateTrip?: (date: Date) => void;
+  onViewPackagesByDate?: (date: Date) => void;
+  onBack?: () => void;
+  selectedDate?: Date;
 }
 
-export function MainTabs({ activeTab, onTabChange }: MainTabsProps) {
-  const { effectiveRole } = useCurrentUserRoleWithPreview();
+export function MainTabs({ 
+  activeTab, 
+  onTabChange, 
+  unreadCount = 0,
+  previewRole,
+  packageStats,
+  customersCount,
+  onNewPackage,
+  onNewTrip,
+  onViewNotifications,
+  onMobileDelivery,
+  packages = [],
+  filteredPackages = [],
+  isLoading = false,
+  onUpdate,
+  disableChat = false,
+  viewingPackagesByDate,
+  trips = [],
+  tripsLoading = false,
+  onAddPackage,
+  onCreateTrip,
+  onViewPackagesByDate,
+  onBack,
+  selectedDate
+}: MainTabsProps) {
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
+  const effectiveRole = userRole?.role || 'employee';
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
@@ -104,12 +150,32 @@ export function MainTabs({ activeTab, onTabChange }: MainTabsProps) {
         )}
       </TabsList>
 
-      <DashboardTab />
+      <DashboardTab
+        packageStats={packageStats}
+        customersCount={customersCount}
+        onNewPackage={onNewPackage}
+        onNewTrip={onNewTrip}
+        onViewNotifications={onViewNotifications}
+        onMobileDelivery={onMobileDelivery}
+        packages={packages}
+        filteredPackages={filteredPackages}
+        isLoading={isLoading}
+        onUpdate={onUpdate}
+        onTabChange={onTabChange}
+      />
       <CustomersTab />
       <FinancesTab />
       <DispatchesTab />
       <ChatTab />
-      <TripsTab />
+      <TripsTab 
+        viewingPackagesByDate={viewingPackagesByDate}
+        trips={trips}
+        tripsLoading={tripsLoading}
+        onAddPackage={onAddPackage}
+        onCreateTrip={onCreateTrip}
+        onViewPackagesByDate={onViewPackagesByDate}
+        onBack={onBack}
+      />
       <MarketingTab />
       <NotificationsTab />
       <SettingsTab />

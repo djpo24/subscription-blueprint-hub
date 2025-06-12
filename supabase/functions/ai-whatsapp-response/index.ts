@@ -153,6 +153,15 @@ serve(async (req) => {
 
     let systemPrompt = `Eres SARA, asistente virtual de Ojitos Express. Responde como una persona real, amigable y profesional. NUNCA menciones que eres un bot o IA.
 
+REGLAS DE FORMATO OBLIGATORIAS:
+1. Siempre saluda por el nombre del cliente
+2. Usa emojis moderadamente para ser más amigable 
+3. Estructura la información en líneas separadas para claridad
+4. Mantén respuestas CONCISAS y DIRECTAS
+5. Cuando menciones montos, úsalos en líneas separadas para destacar
+6. Si hay descripción de productos, inclúyela entre paréntesis
+7. Termina siempre con una oferta de ayuda adicional
+
 INFORMACIÓN DEL CLIENTE:`;
 
     if (customerInfo.customerFound) {
@@ -203,20 +212,42 @@ TOTAL PENDIENTE DE PAGO: ${formatCurrency(customerInfo.totalPending)}`;
 
     systemPrompt += `
 
-INSTRUCCIONES DE RESPUESTA:
-1. Responde de manera natural y conversacional, como una persona real
-2. Si preguntan por costos, estados o información específica, proporciona los datos exactos de arriba
-3. Si preguntan "cuánto es", "cuánto debo", "saldo", etc., indica claramente los montos pendientes
-4. Si no hay información específica, ofrece ayuda para obtener el número de tracking
-5. Si hay múltiples encomiendas, menciona las más relevantes (pendientes)
-6. Usa emojis moderadamente para ser más amigable
-7. Mantén respuestas concisas pero completas
-8. Si el cliente no está en el sistema, sé amable y ofrece ayuda para localizarlo
+EJEMPLOS DE RESPUESTAS BIEN ESTRUCTURADAS:
 
-EJEMPLOS DE RESPUESTAS NATURALES:
-- "Hola [Nombre]! Vi que tienes una encomienda pendiente..."
-- "¡Por supuesto! Te cuento sobre tu encomienda..."
-- "¡Hola! Revisé tu información y..."
+Para pagos pendientes:
+"¡Hola [Nombre]! 😊
+
+Claro que sí, puedes pasar cuando gustes. El valor total a pagar es de:
+
+💰 ${formatCurrency(customerInfo.totalPending || 0)}
+
+Por tu encomienda de ([descripción de productos])
+
+¿Necesitas más información? ¡Con gusto te ayudo! 🌟"
+
+Para consultas de estado:
+"¡Hola [Nombre]! 📦
+
+Tu encomienda está:
+🚚 [Estado actual]
+📍 [Ubicación]
+
+¿Hay algo más en lo que pueda ayudarte?"
+
+Para información general:
+"¡Hola [Nombre]! 😊
+
+[Información específica solicitada]
+
+¿Necesitas ayuda con algo más? ¡Estoy aquí para ti! 💫"
+
+INSTRUCCIONES ESPECÍFICAS:
+- SIEMPRE usa el formato estructurado con líneas separadas
+- NUNCA escribas párrafos largos
+- Destaca montos importantes en líneas separadas
+- Incluye descripciones de productos entre paréntesis cuando sea relevante
+- Usa emojis apropiados pero sin exceso
+- Termina siempre ofreciendo ayuda adicional
 
 NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
 
@@ -235,7 +266,7 @@ NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
             ],
-            max_tokens: 300,
+            max_tokens: 250,
             temperature: 0.7,
           }),
         });
@@ -291,32 +322,39 @@ NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
       // Provide intelligent fallback responses based on customer data
       if (customerInfo.customerFound) {
         if (customerInfo.pendingPaymentPackages.length > 0) {
-          aiResponse = `¡Hola ${customerInfo.customerName}! 🌟 Revisé tu información y tienes un saldo pendiente de ${formatCurrency(customerInfo.totalPending)} por ${customerInfo.pendingPaymentPackages.length} encomienda${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''}.
+          const firstPackage = customerInfo.pendingPaymentPackages[0];
+          aiResponse = `¡Hola ${customerInfo.customerName}! 😊
 
-${customerInfo.pendingPaymentPackages.map(pkg => 
-  `📦 ${pkg.tracking_number}: ${formatCurrency(pkg.pendingAmount)} pendiente`
-).join('\n')}
+Claro que sí, puedes pasar cuando gustes. El valor total a pagar es de:
 
-¿Te gustaría que te ayude con el proceso de pago? 💰`;
+💰 ${formatCurrency(customerInfo.totalPending)}
+
+Por tu encomienda de (${firstPackage.description || 'productos varios'})
+
+¿Necesitas más información? ¡Con gusto te ayudo! 🌟`;
         } else if (customerInfo.pendingDeliveryPackages.length > 0) {
-          aiResponse = `¡Hola ${customerInfo.customerName}! 📦 Vi que tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en camino:
+          aiResponse = `¡Hola ${customerInfo.customerName}! 📦
 
-${customerInfo.pendingDeliveryPackages.map(pkg => 
-  `🚚 ${pkg.tracking_number}: ${pkg.status}`
-).join('\n')}
+Tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en camino:
 
-Un agente te contactará pronto con más detalles. ¿Hay algo específico que necesites saber? 😊`;
+🚚 ${customerInfo.pendingDeliveryPackages[0].tracking_number}: ${customerInfo.pendingDeliveryPackages[0].status}
+
+¿Hay algo específico que necesites saber? 😊`;
         } else {
-          aiResponse = `¡Hola ${customerInfo.customerName}! 😊 Revisé tu información y tienes todas tus encomiendas al día. ¡Excelente!
+          aiResponse = `¡Hola ${customerInfo.customerName}! 😊
+
+¡Excelente! Tienes todas tus encomiendas al día.
 
 ¿En qué más puedo ayudarte hoy? 🌟`;
         }
       } else {
-        aiResponse = `¡Hola! 😊 Para ayudarte mejor, necesito localizar tu información en nuestro sistema.
+        aiResponse = `¡Hola! 😊
 
-¿Podrías compartirme tu número de tracking o el nombre completo con el que registraste tus encomiendas?
+Para ayudarte mejor, necesito localizar tu información.
 
-Un agente también te contactará pronto para asistirte. 📞`;
+¿Podrías compartirme tu número de tracking o el nombre con el que registraste tus encomiendas?
+
+¡Un agente también te contactará pronto! 📞`;
       }
     }
 
@@ -364,8 +402,14 @@ Un agente también te contactará pronto para asistirte. 📞`;
   } catch (error) {
     console.error('❌ Error in ai-whatsapp-response:', error);
     
-    // Enhanced fallback response
-    const fallbackResponse = "¡Hola! Estoy teniendo problemas técnicos en este momento, pero un agente de Ojitos Express te contactará pronto para ayudarte. 🙏\n\nSi tienes el número de tracking de tu encomienda, compártelo y nuestro agente podrá ayudarte cuando esté disponible. 📦";
+    // Enhanced fallback response with better structure
+    const fallbackResponse = `¡Hola! 😊
+
+Estoy teniendo problemas técnicos en este momento.
+
+🙏 Un agente de Ojitos Express te contactará pronto
+
+Si tienes el número de tracking de tu encomienda, compártelo para acelerar la ayuda. 📦`;
     
     return new Response(JSON.stringify({ 
       error: error.message,

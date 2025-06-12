@@ -1,3 +1,4 @@
+
 import { CustomerInfo } from './types.ts';
 
 // Detectar consultas sobre dónde enviar paquetes
@@ -54,13 +55,14 @@ export function isNextTripInquiry(message: string): boolean {
   return tripKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// NUEVA FUNCIÓN: Analizar consulta completa con múltiples preguntas
+// FUNCIÓN MEJORADA: Analizar consulta completa con múltiples preguntas
 export function analyzeCompleteInquiry(message: string): {
   hasShippingQuestion: boolean;
   hasDeadlineQuestion: boolean;
   hasTripDateQuestion: boolean;
   destination: string | null;
   isMultipleQuestionInquiry: boolean;
+  questionCount: number;
 } {
   const normalizedMessage = message.toLowerCase();
   
@@ -69,22 +71,27 @@ export function analyzeCompleteInquiry(message: string): {
   const hasTripDateQuestion = isNextTripInquiry(message);
   const destination = extractDestinationFromMessage(message);
   
-  // Es consulta múltiple si tiene más de un tipo de pregunta
+  // Contar preguntas específicas detectadas
   const questionCount = [hasShippingQuestion, hasDeadlineQuestion, hasTripDateQuestion].filter(Boolean).length;
-  const isMultipleQuestionInquiry = questionCount > 1;
   
-  console.log(`🔍 [AnalysisResult] Preguntas detectadas: Envío=${hasShippingQuestion}, Plazo=${hasDeadlineQuestion}, FechaViaje=${hasTripDateQuestion}, Destino=${destination}, Múltiple=${isMultipleQuestionInquiry}`);
+  // Es consulta múltiple si tiene más de un tipo de pregunta O si el mensaje es muy largo con múltiples interrogantes
+  const hasMultipleQuestionMarkers = (message.match(/\?/g) || []).length > 1;
+  const isLongMessage = message.length > 80;
+  const isMultipleQuestionInquiry = questionCount > 1 || (hasMultipleQuestionMarkers && isLongMessage);
+  
+  console.log(`🔍 [AnalysisResult] Preguntas detectadas: Envío=${hasShippingQuestion}, Plazo=${hasDeadlineQuestion}, FechaViaje=${hasTripDateQuestion}, Destino=${destination}, Múltiple=${isMultipleQuestionInquiry}, Count=${questionCount}`);
   
   return {
     hasShippingQuestion,
     hasDeadlineQuestion,
     hasTripDateQuestion,
     destination,
-    isMultipleQuestionInquiry
+    isMultipleQuestionInquiry,
+    questionCount
   };
 }
 
-// NUEVA FUNCIÓN: Generar respuesta integrada para consultas múltiples
+// FUNCIÓN MEJORADA: Generar respuesta integrada SOLO para consultas verdaderamente múltiples
 export function generateIntegratedPackageResponse(
   customerInfo: CustomerInfo,
   customerMessage: string,
@@ -94,8 +101,8 @@ export function generateIntegratedPackageResponse(
   
   const analysis = analyzeCompleteInquiry(customerMessage);
   
-  // Solo procesar si es una consulta de envío con múltiples preguntas
-  if (!analysis.isMultipleQuestionInquiry || !analysis.hasShippingQuestion) {
+  // SOLO procesar si es una consulta verdaderamente múltiple (más de 2 tipos de preguntas)
+  if (!analysis.isMultipleQuestionInquiry || analysis.questionCount < 2) {
     return null;
   }
   
@@ -106,13 +113,13 @@ export function generateIntegratedPackageResponse(
   if (!analysis.destination) {
     return `¡Hola ${customerName}! 👋📦
 
-Para ayudarte con todas tus preguntas sobre el envío, necesito conocer:
+Para responderte todas tus preguntas sobre el envío, necesito conocer:
 
 🎯 **¿Hacia qué destino quieres enviar tu encomienda?**
 • 🇨🇼 **Curazao**
 • 🇨🇴 **Barranquilla, Colombia**
 
-Una vez me indiques el destino, te proporcionaré toda la información que necesitas: dónde entregar tu paquete, cuándo es el próximo viaje y hasta cuándo tienes tiempo para entregarlo. 📋
+Una vez me indiques el destino, te proporcionaré toda la información que necesitas. 📋
 
 ✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
@@ -235,7 +242,7 @@ ${originAddress || 'Dirección no disponible en el sistema'}
   return response;
 }
 
-// Generar respuesta para consultas sobre plazos de entrega
+// FUNCIÓN MEJORADA: Generar respuesta para consultas sobre plazos de entrega CON FECHAS EXACTAS
 export function generatePackageDeliveryDeadlineResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -258,18 +265,13 @@ export function generatePackageDeliveryDeadlineResponse(
 
 📅 **Estado actual:** No hay viajes programados en los próximos días
 
-📋 **Para programar tu envío:**
-
 📞 **Contacta a nuestro coordinador:**
 🧑‍💼 **Darwin Pedroza**  
 📱 **+573127271746**
 
-**🎯 Darwin te ayudará con:**
-• 📅 Programar próximos viajes
-• ⏰ Confirmar fechas y horarios  
-• 📦 Reservar espacio para tu paquete
+Darwin te ayudará con las fechas disponibles para programar tu envío.
 
-✈️ **Envío de paquete** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
   // Obtener el próximo viaje
@@ -280,16 +282,23 @@ export function generatePackageDeliveryDeadlineResponse(
   const deadlineDate = new Date(tripDate);
   deadlineDate.setDate(deadlineDate.getDate() - 1);
   
-  // Formatear la fecha límite en español
-  const options: Intl.DateTimeFormatOptions = {
+  // Formatear la fecha límite en español con día de la semana
+  const deadlineOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',
     day: 'numeric',
-    month: 'long'
+    month: 'long',
+    year: 'numeric'
   };
-  const formattedDeadline = deadlineDate.toLocaleDateString('es-ES', options);
+  const formattedDeadline = deadlineDate.toLocaleDateString('es-ES', deadlineOptions);
   
   // Formatear fecha del viaje
-  const formattedTripDate = tripDate.toLocaleDateString('es-ES', options);
+  const tripOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  };
+  const formattedTripDate = tripDate.toLocaleDateString('es-ES', tripOptions);
   
   // Capitalizar primera letra del día de la semana
   const capitalizedDeadline = formattedDeadline.charAt(0).toUpperCase() + formattedDeadline.slice(1);
@@ -299,14 +308,14 @@ export function generatePackageDeliveryDeadlineResponse(
 
 ⚠️ **PLAZO DE ENTREGA DE PAQUETES**
 
-🚨 **Tienes hasta las 6:00 PM del ${capitalizedDeadline} para que recibamos tu paquete.**
+🚨 **Fecha límite exacta:** ${capitalizedDeadline} a las 6:00 PM
 
-**Después de este horario no aseguramos que pueda viajar en este viaje programado para el ${capitalizedTripDate}.**
+**Después de esta fecha y hora no aseguramos que pueda viajar en el próximo viaje programado.**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✈️ **PRÓXIMO VIAJE PROGRAMADO:**
-📅 **Fecha:** ${capitalizedTripDate}
+✈️ **PRÓXIMO VIAJE:**
+📅 **${capitalizedTripDate}**
 🛫 **Ruta:** ${nextTrip.origin} → ${nextTrip.destination}
 ${nextTrip.flight_number ? `✈️ **Vuelo:** ${nextTrip.flight_number}` : ''}
 
@@ -316,15 +325,7 @@ ${nextTrip.flight_number ? `✈️ **Vuelo:** ${nextTrip.flight_number}` : ''}
 🧑‍💼 **Darwin Pedroza**  
 📱 **+573127271746**
 
-**🎯 Para confirmar:**
-• ✅ Reserva de espacio en el vuelo
-• 📅 Fechas disponibles  
-• 💰 Tarifas y pagos
-• 📋 Seguimiento del envío
-
-¡No esperes hasta el último momento! ⏰
-
-✈️ **Envío de paquete** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }
 
 // Detectar destino mencionado en el mensaje - MEJORADA PARA MEJOR DETECCIÓN
@@ -365,7 +366,7 @@ export function isDestinationResponse(message: string): boolean {
   return directResponses.some(response => normalizedMessage === response || normalizedMessage.includes(response));
 }
 
-// Generar respuesta para consultas de envío de paquetes - MEJORADA CON MEJOR CONTEXTO
+// FUNCIÓN COMPLETAMENTE REESCRITA: Generar respuesta CONVERSACIONAL para consultas de envío
 export function generatePackageShippingResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -390,101 +391,47 @@ export function generatePackageShippingResponse(
   if (isDestinationResponse(customerMessage) && extractedDestination) {
     const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
     
-    return `📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}** 🇨🇼
+    return `📍 **Perfecto, ${customerName}!**
 
-📍 **Dirección para entregar tu paquete:**
-${originAddress || 'Dirección no disponible en el sistema'}
+Para enviar hacia **${extractedDestination.toUpperCase()}**, debes entregar tu paquete en:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+**${originAddress || 'Dirección no disponible en el sistema'}**
 
-📞 **RESERVAR ESPACIO EN EL PRÓXIMO VUELO** ✈️
+📞 **Siguiente paso:** Contacta a **Darwin Pedroza** al **+573127271746** para reservar espacio en el próximo vuelo.
 
-**👤 Contacta a nuestro coordinador:**
-🧑‍💼 **Darwin Pedroza**  
-📱 **+573127271746**
+¿Necesitas saber algo más sobre el proceso de envío?
 
-**🎯 Darwin te ayudará con:**
-• ✅ Reserva de espacio
-• 📅 Fechas disponibles  
-• 💰 Tarifas y pagos
-• 📋 Seguimiento del envío
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 **PROCESO DE ENVÍO:**
-
-**1️⃣** Lleva tu paquete a la dirección indicada 📍
-**2️⃣** Nuestro equipo lo recibirá y procesará 👥  
-**3️⃣** Será transportado hacia ${extractedDestination} ✈️
-**4️⃣** Te notificaremos cuando llegue a destino 📢
-
-⏰ **PLAZO DE ENTREGA:**
-🚨 **Hasta las 6:00 PM del día anterior al viaje programado**
-
-¡Estamos listos para ayudarte con tu envío! ✈️💼
-
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito**`;
   }
   
-  // Si no se especifica destino en consulta inicial, preguntar
+  // NUEVA LÓGICA: Si no se especifica destino, hacer pregunta conversacional simple
   if (!extractedDestination && isPackageShippingInquiry(customerMessage)) {
-    return `¡Hola ${customerName}! 👋✈️
+    return `¡Hola ${customerName}! 👋
 
-📦 **ENVÍO DE ENCOMIENDAS**
+🎯 **¿Hacia qué destino quieres enviar tu paquete?**
 
-Para ayudarte con el envío, necesito conocer:
-
-🎯 **¿Hacia qué destino quieres enviar tu encomienda?**
-
-**🌎 Destinos disponibles:**
 • 🇨🇼 **Curazao**
-• 🇨🇴 **Barranquilla, Colombia**
+• 🇨🇴 **Barranquilla**
 
-Una vez me indiques el destino, te proporcionaré toda la información necesaria para el envío. 📋
+Una vez me digas el destino, te indico dónde debes llevarlo.
 
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito**`;
   }
 
-  // Si se especifica destino en la consulta inicial
+  // Si se especifica destino en la consulta inicial, dar solo la dirección
   if (extractedDestination) {
     const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
     
-    return `¡Hola ${customerName}! 👋✈️
+    return `📍 **Para enviar hacia ${extractedDestination.toUpperCase()}:**
 
-📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
+Lleva tu paquete a:
+**${originAddress || 'Dirección no disponible en el sistema'}**
 
-📍 **Dirección para entregar tu paquete:**
-${originAddress || 'Dirección no disponible en el sistema'}
+📞 **Reserva espacio:** Contacta a **Darwin Pedroza** al **+573127271746**
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+¿Necesitas saber algo más?
 
-📞 **RESERVAR ESPACIO EN EL PRÓXIMO VUELO** ✈️
-
-**👤 Contacta a nuestro coordinador:**
-🧑‍💼 **Darwin Pedroza**  
-📱 **+573127271746**
-
-**🎯 Darwin te ayudará con:**
-• ✅ Reserva de espacio
-• 📅 Fechas disponibles  
-• 💰 Tarifas y pagos
-• 📋 Seguimiento del envío
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 **PROCESO DE ENVÍO:**
-
-**1️⃣** Lleva tu paquete a la dirección indicada 📍
-**2️⃣** Nuestro equipo lo recibirá y procesará 👥  
-**3️⃣** Será transportado hacia ${extractedDestination} ✈️
-**4️⃣** Te notificaremos cuando llegue a destino 📢
-
-⏰ **PLAZO DE ENTREGA:**
-🚨 **Hasta las 6:00 PM del día anterior al viaje programado**
-
-¡Estamos listos para ayudarte con tu envío! ✈️💼
-
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito**`;
   }
 
   return null;

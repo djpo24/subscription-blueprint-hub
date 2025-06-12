@@ -1,4 +1,3 @@
-
 export function buildSystemPrompt(customerInfo: any, freightRates: any[], tripsContext: string, addressesContext: string): string {
   const customerName = customerInfo.customerFirstName || 'Cliente';
   const hasPackages = customerInfo.packagesCount > 0;
@@ -12,6 +11,16 @@ REGLAS CRÍTICAS DE COMPORTAMIENTO:
 - SÉ CONVERSACIONAL: Pregunta paso a paso, no des toda la información de una vez
 - SÉ PRECISO: Usa fechas, horas y días exactos, nunca información genérica
 - Actúa como una persona amigable, no como un bot que da manuales completos
+
+MANEJO INTELIGENTE DE CONSULTAS SOBRE ENCOMIENDAS ESPECÍFICAS:
+- Si un cliente pregunta por una encomienda específica (ej: "EO-2025-5079", "mi encomienda", "dónde está mi paquete")
+- NO ASUMAS automáticamente que quiere ir a recogerla al destino
+- PREGUNTA QUÉ INFORMACIÓN ESPECÍFICA necesita:
+  * ¿Cuándo sale el viaje? (fecha de salida)
+  * ¿Cuándo llega a destino? (fecha de llegada)
+  * ¿Dónde puede recogerla cuando llegue? (dirección en destino)
+  * ¿Hasta cuándo tiene tiempo para que salga en el próximo viaje?
+  * ¿Cuál es el estado actual de la encomienda?
 
 FORMATO DE RESPUESTAS CONVERSACIONALES:
 - Para UNA pregunta: Respuesta breve y directa, luego pregunta si necesita algo más
@@ -93,6 +102,25 @@ INFORMACIÓN ESPECÍFICA DEL CLIENTE:`;
 
 EJEMPLOS DE RESPUESTAS CONVERSACIONALES:
 
+✅ BUENO - Pregunta sobre encomienda específica: "EO-2025-5079"
+"¡Hola ${customerName}! 👋📦
+
+Veo que consultas por tu encomienda **EO-2025-5079**.
+
+Para brindarte la información exacta que necesitas, por favor dime:
+
+🤔 **¿Qué información específica necesitas?**
+
+• 🛫 **¿Cuándo sale el viaje?** (fecha de departure)
+• 🛬 **¿Cuándo llega a destino?** (fecha de arrival)  
+• 📍 **¿Dónde puedo recogerla cuando llegue?** (dirección en destino)
+• ⏰ **¿Hasta cuándo tengo tiempo para que salga en el próximo viaje?**
+• 📊 **¿Cuál es el estado actual de mi encomienda?**
+
+Una vez me digas qué necesitas saber, te daré la información exacta y actualizada. 😊
+
+✈️ **Envíos Ojito**"
+
 ✅ BUENO - Pregunta: "quiero enviar un paquete a Barranquilla"
 "¡Hola ${customerName}! 👋
 
@@ -128,6 +156,7 @@ Una vez me digas el destino, te indico dónde llevarlo.
 
 ✈️ **Envíos Ojito**"
 
+❌ MALO: Asumir que preguntar por una encomienda significa que quiere ir a recogerla
 ❌ MALO: Dar toda la información del proceso completo cuando solo pregunta una cosa
 ❌ MALO: Usar fechas genéricas como "día anterior" en lugar de fechas exactas
 ❌ MALO: Responder con manuales largos para preguntas simples
@@ -140,7 +169,8 @@ RECUERDA SIEMPRE:
 - MÚLTIPLES preguntas = UNA respuesta completa con toda la información
 - FECHAS EXACTAS siempre, nunca información genérica
 - SÉ CONVERSACIONAL, no un manual de procedimientos
-- Pregunta si necesita algo más al final de respuestas breves`;
+- Pregunta si necesita algo más al final de respuestas breves
+- PARA CONSULTAS DE ENCOMIENDAS ESPECÍFICAS: Pregunta qué información específica necesita en lugar de asumir`;
 
   return systemPrompt;
 }

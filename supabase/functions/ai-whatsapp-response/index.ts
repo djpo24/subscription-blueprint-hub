@@ -6,7 +6,7 @@ import { getCustomerInfo } from './customerService.ts';
 import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts';
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
-import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse } from './businessLogic.ts';
+import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse } from './businessLogic.ts';
 import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
@@ -64,7 +64,67 @@ serve(async (req) => {
     // Get upcoming trips for all inquiries
     const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
 
-    // 🎯 NUEVA PRIORIDAD MÁXIMA: Detectar consultas integradas con múltiples preguntas
+    // 🎯 NUEVA PRIORIDAD MÁXIMA: Detectar consultas sobre encomiendas específicas que necesitan clarificación
+    const packageClarificationResponse = generatePackageOriginClarificationResponse(customerInfo, message);
+    if (packageClarificationResponse) {
+      console.log('❓ CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Solicitando clarificación');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      let clarificationInteractionId: string | null = null;
+      try {
+        const { data: clarificationInteractionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: packageClarificationResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isPackageClarificationRequest: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && clarificationInteractionData) {
+          clarificationInteractionId = clarificationInteractionData.id;
+          await updateLearningModel(supabase, clarificationInteractionId, customerPhone, message, packageClarificationResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: packageClarificationResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: clarificationInteractionId,
+        wasEscalated: false
+      };
+
+      console.log('❓ RESPUESTA DE CLARIFICACIÓN ENVIADA - Bot pidiendo información específica');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 🎯 SEGUNDA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
     const integratedResponse = generateIntegratedPackageResponse(customerInfo, message, allUpcomingTrips, destinationAddresses);
     if (integratedResponse) {
       console.log('🎯 CONSULTA MÚLTIPLE INTEGRADA detectada - Proporcionando respuesta completa');
@@ -124,7 +184,7 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 SEGUNDA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
+    // 🚨 TERCERA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
       console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
@@ -184,7 +244,7 @@ serve(async (req) => {
       });
     }
 
-    // 📦 TERCERA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
+    // 📦 CUARTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
@@ -244,7 +304,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 CUARTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 QUINTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');

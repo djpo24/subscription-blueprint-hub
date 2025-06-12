@@ -2,157 +2,118 @@
 import { CustomerInfo } from './types.ts';
 
 export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isValid: boolean; message?: string } {
-  // Validar si hay encomiendas pendientes de entrega con timing crítico
-  const criticalPackages = customerInfo.pendingDeliveryPackages.filter(pkg => {
-    const isAtDestination = pkg.status === 'en_destino';
-    return isAtDestination;
-  });
-
-  if (criticalPackages.length > 0) {
-    return {
-      isValid: false,
-      message: `🚨 **URGENTE:** Tienes ${criticalPackages.length} encomienda${criticalPackages.length > 1 ? 's' : ''} disponible${criticalPackages.length > 1 ? 's' : ''} para retiro inmediato. 📦🏆`
-    };
+  if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
+    return { isValid: true };
   }
+
+  const now = new Date();
+  const hoursSinceLastUpdate = 24; // Ejemplo: validar si ha pasado mucho tiempo
 
   return { isValid: true };
 }
 
 export function generateBusinessIntelligentResponse(customerInfo: CustomerInfo): string | null {
-  if (!customerInfo.customerFound) {
+  if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
     return null;
   }
 
-  // Generar insights específicos del cliente
-  const insights: string[] = [];
-
+  // Si tiene encomiendas pendientes de pago, mencionar esto como contexto adicional
   if (customerInfo.pendingPaymentPackages.length > 0) {
-    const totalPending = Object.values(customerInfo.currencyBreakdown).reduce((sum, amount) => sum + amount, 0);
-    insights.push(`💰 Cliente con saldo pendiente: ${totalPending} (${customerInfo.pendingPaymentPackages.length} encomiendas) 📋`);
+    const totalPending = customerInfo.totalPending;
+    return `El cliente tiene ${customerInfo.pendingPaymentPackages.length} encomienda(s) con saldo pendiente por un total de ${totalPending}. Incluir esta información si es relevante para la consulta.`;
   }
 
-  if (customerInfo.pendingDeliveryPackages.length > 0) {
-    const atDestination = customerInfo.pendingDeliveryPackages.filter(pkg => pkg.status === 'en_destino').length;
-    if (atDestination > 0) {
-      insights.push(`🏆 ${atDestination} encomienda(s) disponible(s) para retiro 📦`);
-    }
-  }
-
-  return insights.length > 0 ? insights.join('. ') : null;
+  return null;
 }
 
-// Nueva función para detectar solicitudes de entrega a domicilio
-export function isHomeDeliveryRequest(message: string): boolean {
-  const deliveryKeywords = [
-    'traer', 'llevar', 'entrega', 'domicilio', 'casa', 'enviar',
-    'me la puedes traer', 'me lo puedes traer', 'pueden traer',
-    'entrega a domicilio', 'llevar a casa', 'envío a casa',
-    'delivery', 'entreguen', 'trae', 'lleve'
+export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, message: string): string | null {
+  const homeDeliveryKeywords = [
+    'traer', 'llevar', 'entrega', 'domicilio', 'me la puedes traer',
+    'me la pueden traer', 'pueden llevar', 'entrega a domicilio',
+    'llevarla a', 'traerla a', 'entregar en', 'delivery'
   ];
 
   const normalizedMessage = message.toLowerCase();
-  
-  return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
-}
+  const isHomeDelivery = homeDeliveryKeywords.some(keyword => 
+    normalizedMessage.includes(keyword)
+  );
 
-// Nueva función para generar respuesta de entrega a domicilio - CON EMOJIS CORREGIDOS
-export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
-  // Solo procesar si es una solicitud de entrega
-  if (!isHomeDeliveryRequest(customerMessage)) {
+  if (!isHomeDelivery) {
     return null;
   }
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  return `¡Hola ${customerName}! 👋🚚
 
-  // Si el cliente no está registrado o no tiene encomiendas
-  if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
-    return `¡Hola ${customerName}! 👋✈️
+**ENTREGA A DOMICILIO COORDINADA**
 
-🏠 **ENTREGA A DOMICILIO**
+Para coordinar la entrega de tu encomienda a domicilio, te voy a transferir con **Josefa**, nuestra coordinadora de entregas.
 
-Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro sistema. 🔍
+📞 **Josefa te contactará para:**
+• 📍 Confirmar tu dirección de entrega
+• ⏰ Coordinar horario conveniente
+• 💰 Confirmar costos de entrega a domicilio
+• 📦 Detalles específicos de tu encomienda
 
-🤝 **TRANSFERENCIA A COORDINADORA**
+**Josefa te contactará en los próximos minutos** para organizar todo el proceso de entrega.
 
-Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
-• ✅ Verificará tu información  
-• ✈️ Te ayudará con la entrega
-• 📋 Coordinará todos los detalles
+🏠 **Envíos Ojito** - ¡Tu encomienda hasta la puerta de tu casa!`;
+}
 
-**👤 Josefa te responderá en breve** 📦✈️
+// NUEVA FUNCIÓN: Detectar consultas sobre encomiendas específicas en origen
+export function detectPackageStatusInquiry(message: string): boolean {
+  const packageInquiryPatterns = [
+    /\b(EO-\d{4}-\d+)\b/i, // Formato de tracking number
+    /encomienda.*está/i,
+    /paquete.*está/i,
+    /mi encomienda/i,
+    /mi paquete/i,
+    /estado.*encomienda/i,
+    /estado.*paquete/i,
+    /dónde.*encomienda/i,
+    /dónde.*paquete/i,
+    /cuándo.*encomienda/i,
+    /cuándo.*paquete/i
+  ];
 
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  return packageInquiryPatterns.some(pattern => pattern.test(message));
+}
+
+// NUEVA FUNCIÓN: Generar respuesta de clarificación para encomiendas en origen
+export function generatePackageOriginClarificationResponse(
+  customerInfo: CustomerInfo, 
+  message: string,
+  packageDetails?: any
+): string | null {
+  
+  if (!detectPackageStatusInquiry(message)) {
+    return null;
   }
 
-  // Si tiene encomiendas, verificar el estado
-  const deliverablePackages = customerInfo.pendingDeliveryPackages.filter(pkg => 
-    pkg.status === 'en_destino' || pkg.status === 'delivered'
-  );
-
-  const pendingPaymentPackages = customerInfo.pendingPaymentPackages;
-
-  if (deliverablePackages.length > 0 || pendingPaymentPackages.length > 0) {
-    let response = `¡Hola ${customerName}! 👋✈️
-
-🏠 **SOLICITUD DE ENTREGA A DOMICILIO**
-
-📋 **TUS ENCOMIENDAS:**`;
-
-    if (deliverablePackages.length > 0) {
-      response += `\n\n✅ **Disponible${deliverablePackages.length > 1 ? 's' : ''} para entrega:** 🏆`;
-      deliverablePackages.forEach(pkg => {
-        response += `\n• 📦 **${pkg.tracking_number}** - ${pkg.description || 'Encomienda'}`;
-      });
-    }
-
-    if (pendingPaymentPackages.length > 0) {
-      response += `\n\n💰 **Entregada${pendingPaymentPackages.length > 1 ? 's' : ''}, pendiente${pendingPaymentPackages.length > 1 ? 's' : ''} de pago:**`;
-      pendingPaymentPackages.forEach(pkg => {
-        // Usar el formato correcto para mostrar pendientes
-        const formattedAmount = pkg.currency === 'AWG' 
-          ? `ƒ${pkg.pendingAmount} florines`
-          : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
-        
-        response += `\n• 💵 **${pkg.tracking_number}** - Pendiente: **${formattedAmount}**`;
-      });
-    }
-
-    response += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤝 **COORDINACIÓN DE ENTREGA**
-
-Estoy transfiriendo tu solicitud a nuestra coordinadora **Josefa** quien coordinará:
-
-📍 **Dirección de entrega**
-⏰ **Horario disponible**  
-💰 **Detalles de pago** (si aplica)
-
-**👤 Josefa te contactará en breve** para confirmar todos los detalles.
-
-¡Gracias por tu paciencia! 😊
-
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
-
-    return response;
+  const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  // Extraer número de tracking si está presente
+  const trackingMatch = message.match(/\b(EO-\d{4}-\d+)\b/i);
+  const trackingNumber = trackingMatch ? trackingMatch[1] : null;
+  
+  let response = `¡Hola ${customerName}! 👋📦\n\n`;
+  
+  if (trackingNumber) {
+    response += `Veo que consultas por tu encomienda **${trackingNumber}**.\n\n`;
+  } else {
+    response += `Veo que consultas por tu encomienda.\n\n`;
   }
+  
+  response += `Para brindarte la información exacta que necesitas, por favor dime:\n\n`;
+  response += `🤔 **¿Qué información específica necesitas?**\n\n`;
+  response += `• 🛫 **¿Cuándo sale el viaje?** (fecha de departure)\n`;
+  response += `• 🛬 **¿Cuándo llega a destino?** (fecha de arrival)\n`;
+  response += `• 📍 **¿Dónde puedo recogerla cuando llegue?** (dirección en destino)\n`;
+  response += `• ⏰ **¿Hasta cuándo tengo tiempo para que salga en el próximo viaje?**\n`;
+  response += `• 📊 **¿Cuál es el estado actual de mi encomienda?**\n\n`;
+  response += `Una vez me digas qué necesitas saber, te daré la información exacta y actualizada. 😊\n\n`;
+  response += `✈️ **Envíos Ojito** - Información precisa cuando la necesitas`;
 
-  // Si tiene encomiendas pero no están listas para entrega
-  return `¡Hola ${customerName}! 👋✈️
-
-🏠 **ENTREGA A DOMICILIO**
-
-📦 **ESTADO DE TUS ENCOMIENDAS:**
-• Tienes **${customerInfo.packagesCount}** encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema 📋
-• Aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega ⏳
-
-🤝 **VERIFICACIÓN DE ESTADO**
-
-Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
-• 🔍 Verificará el estado actual de tus encomiendas
-• 📋 Te informará sobre las opciones de entrega
-• 📢 Te mantendrá actualizado sobre el progreso
-
-**👤 Josefa te responderá pronto** con los detalles actualizados 📦
-
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  return response;
 }

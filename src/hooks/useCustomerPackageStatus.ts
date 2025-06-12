@@ -64,7 +64,8 @@ export function useCustomerPackageStatus(customerPhone: string) {
             status: pkg.status,
             amountToCollect: pkg.amount_to_collect,
             totalPaid,
-            pendingAmount
+            pendingAmount,
+            deliveredAt: pkg.delivered_at
           });
 
           if (pkg.status === 'delivered') {
@@ -73,7 +74,21 @@ export function useCustomerPackageStatus(customerPhone: string) {
               statuses.push('delivered_pending_payment');
             } else {
               // Entregado y pagado completamente (o sin monto a cobrar)
-              statuses.push('delivered');
+              // Verificar si han pasado más de 2 días desde la entrega
+              if (pkg.delivered_at) {
+                const deliveredDate = new Date(pkg.delivered_at);
+                const now = new Date();
+                const daysDifference = (now.getTime() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24);
+                
+                // Solo mostrar el indicador verde si han pasado menos de 2 días
+                if (daysDifference < 2) {
+                  statuses.push('delivered');
+                }
+                // Si han pasado más de 2 días, no agregamos ningún estado (no se mostrará indicador)
+              } else {
+                // Si no hay fecha de entrega, mostrar como entregado
+                statuses.push('delivered');
+              }
             }
           } else if (pkg.status === 'en_destino' || pkg.status === 'pending') {
             if (pkg.amount_to_collect > 0) {

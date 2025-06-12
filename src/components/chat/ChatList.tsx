@@ -6,6 +6,8 @@ import { UserCheck, UserX, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
+import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
+import { PackageStatusIndicator } from './components/PackageStatusIndicator';
 
 interface ChatItem {
   phone: string;
@@ -60,70 +62,101 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
               });
               
               return (
-                <div
+                <ChatListItem
                   key={chat.phone}
-                  onClick={() => onChatSelect(chat.phone)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                    selectedPhone === chat.phone
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'hover:bg-gray-50 border-transparent'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <CustomerAvatar 
-                        customerName={displayName}
-                        profileImageUrl={chat.profileImageUrl}
-                        customerPhone={chat.phone}
-                        size="md"
-                        showStatusIndicator={true}
-                      />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium truncate">
-                            {displayName}
-                          </h4>
-                          <Badge 
-                            variant={chat.isRegistered ? "default" : "secondary"} 
-                            className="text-xs"
-                          >
-                            {chat.isRegistered ? (
-                              <UserCheck className="h-3 w-3" />
-                            ) : (
-                              <UserX className="h-3 w-3" />
-                            )}
-                          </Badge>
-                        </div>
-                        {chat.unreadCount > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {chat.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-gray-600 mb-1">{chat.phone}</p>
-                      
-                      <div className="flex justify-between items-end">
-                        <p className="text-sm text-gray-500 truncate flex-1 mr-2">
-                          {chat.lastMessage}
-                        </p>
-                        {messageTime && (
-                          <span className="text-xs text-gray-400 flex-shrink-0">
-                            {format(new Date(messageTime), 'HH:mm', { locale: es })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  chat={chat}
+                  displayName={displayName}
+                  messageTime={messageTime}
+                  selectedPhone={selectedPhone}
+                  onChatSelect={onChatSelect}
+                />
               );
             })}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
+  );
+}
+
+interface ChatListItemProps {
+  chat: ChatItem;
+  displayName: string;
+  messageTime: string;
+  selectedPhone: string | null;
+  onChatSelect: (phone: string) => void;
+}
+
+function ChatListItem({ chat, displayName, messageTime, selectedPhone, onChatSelect }: ChatListItemProps) {
+  const { data: packageIndicator } = useCustomerPackageStatus(chat.phone);
+
+  return (
+    <div
+      onClick={() => onChatSelect(chat.phone)}
+      className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+        selectedPhone === chat.phone
+          ? 'bg-blue-50 border-blue-200'
+          : 'hover:bg-gray-50 border-transparent'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          <CustomerAvatar 
+            customerName={displayName}
+            profileImageUrl={chat.profileImageUrl}
+            customerPhone={chat.phone}
+            size="md"
+            showStatusIndicator={false}
+          />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-medium truncate">
+                  {displayName}
+                </h4>
+                {/* Indicador de estado de paquetes al lado del nombre */}
+                {packageIndicator && (
+                  <PackageStatusIndicator 
+                    packageIndicator={packageIndicator}
+                    size="sm"
+                  />
+                )}
+              </div>
+              <Badge 
+                variant={chat.isRegistered ? "default" : "secondary"} 
+                className="text-xs"
+              >
+                {chat.isRegistered ? (
+                  <UserCheck className="h-3 w-3" />
+                ) : (
+                  <UserX className="h-3 w-3" />
+                )}
+              </Badge>
+            </div>
+            {chat.unreadCount > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {chat.unreadCount}
+              </Badge>
+            )}
+          </div>
+          
+          <p className="text-xs text-gray-600 mb-1">{chat.phone}</p>
+          
+          <div className="flex justify-between items-end">
+            <p className="text-sm text-gray-500 truncate flex-1 mr-2">
+              {chat.lastMessage}
+            </p>
+            {messageTime && (
+              <span className="text-xs text-gray-400 flex-shrink-0">
+                {format(new Date(messageTime), 'HH:mm', { locale: es })}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

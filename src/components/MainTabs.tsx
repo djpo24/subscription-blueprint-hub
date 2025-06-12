@@ -86,12 +86,15 @@ export function MainTabs({
   }
 
   const isAdmin = userRole.role === 'admin';
-  const isAdminOrEmployee = userRole.role === 'admin' || userRole.role === 'employee';
+  // Updated: Employees and travelers can now access all main features
+  const isAdminOrEmployee = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
   // Updated: Travelers can now access dispatches and notifications
   const canAccessDispatches = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
   const canAccessNotifications = userRole.role === 'admin' || userRole.role === 'traveler';
   // Updated: Chat is now available for admin, employee and traveler
   const canAccessChat = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
+  // Updated: Finances is now available for admin, employee and traveler
+  const canAccessFinances = userRole.role === 'admin' || userRole.role === 'employee' || userRole.role === 'traveler';
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -118,11 +121,12 @@ export function MainTabs({
           <TabsTrigger value="dispatches">Despachos</TabsTrigger>
         )}
         
+        {canAccessFinances && (
+          <TabsTrigger value="finances">Finanzas</TabsTrigger>
+        )}
+        
         {isAdminOrEmployee && (
-          <>
-            <TabsTrigger value="finances">Finanzas</TabsTrigger>
-            <TabsTrigger value="customers">Clientes</TabsTrigger>
-          </>
+          <TabsTrigger value="customers">Clientes</TabsTrigger>
         )}
         
         {canAccessChat && !disableChat && (
@@ -196,10 +200,6 @@ export function MainTabs({
             />
           </TabsContent>
 
-          <TabsContent value="finances">
-            <FinancesTab />
-          </TabsContent>
-
           <TabsContent value="customers">
             <CustomersTab />
           </TabsContent>
@@ -209,6 +209,12 @@ export function MainTabs({
       {canAccessDispatches && (
         <TabsContent value="dispatches">
           <DispatchesTab />
+        </TabsContent>
+      )}
+
+      {canAccessFinances && (
+        <TabsContent value="finances">
+          <FinancesTab />
         </TabsContent>
       )}
 

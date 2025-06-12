@@ -1,61 +1,87 @@
 
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { usePaymentEntries } from '@/hooks/usePaymentEntries';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { useCustomerPackages } from '@/hooks/useCustomerPackages';
+import { usePaymentManagement } from '@/hooks/usePaymentManagement';
 import { PaymentSubmissionService } from '@/services/paymentSubmissionService';
+import { toast } from '@/hooks/use-toast';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
 
 export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, isOpen: boolean) {
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  // Get customer packages and mock package
+  const { user } = useAuth();
+  
   const { customerPackages, mockPackage } = useCustomerPackages(customer, isOpen);
-
-  // Get payment entries management
+  
+  // Use the package currency if available, otherwise default to COP
+  const packageCurrency = customerPackages[0]?.currency || mockPackage?.currency || 'COP';
+  
   const {
     payments,
-    handlePaymentUpdate,
     addPayment,
+    updatePayment,
     removePayment,
-    getCurrencySymbol
-  } = usePaymentEntries({
-    isOpen,
-    packageCurrency: mockPackage?.currency,
-    customerTotalAmount: customer?.total_pending_amount
-  });
+    resetPayments,
+    getCurrencySymbol,
+    getValidPayments
+  } = usePaymentManagement(packageCurrency);
 
-  console.log('💰 Mock package currency:', mockPackage?.currency);
+  // Reset form when dialog opens/closes or customer changes
+  useEffect(() => {
+    if (isOpen && customer) {
+      resetPayments();
+      setNotes('');
+    }
+  }, [isOpen, customer?.id, resetPayments]);
 
-  const handleSubmit = async (onPaymentRecorded: () => void, onClose: () => void) => {
-    if (!customer) return;
+  const handlePaymentUpdate = (index: number, field: string, value: string) => {
+    updatePayment(index, field as any, value, customer?.total_pending_amount || 0);
+  };
+
+  const handleSubmit = async (onSuccess: () => void, onClose: () => void) => {
+    if (!customer || !user?.id) {
+      console.error('❌ No customer or user available');
+      return;
+    }
 
     setIsLoading(true);
-
+    
     try {
+      const validPayments = getValidPayments();
+      
+      if (validPayments.length === 0) {
+        toast({
+          title: "Error",
+          description: "Por favor ingresa al menos un pago válido",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('💳 Submitting payments with user ID:', user.id);
+      
       const result = await PaymentSubmissionService.submitPayment({
         customer,
-        payments,
-        notes
+        payments: validPayments,
+        notes,
+        currentUserId: user.id // Pass the current user UUID
       });
 
-      const currencySymbol = getCurrencySymbol(result.currency);
-      
       toast({
-        title: 'Pago registrado',
-        description: `Se registró un pago total por ${currencySymbol}${result.totalPaid.toLocaleString('es-CO')} ${result.currency} para ${customer.customer_name}`,
+        title: "¡Pago registrado!",
+        description: `Se registró un pago de ${result.currency} ${result.totalPaid.toLocaleString('es-CO')} exitosamente.`,
       });
 
-      onPaymentRecorded();
+      onSuccess();
       onClose();
+      
     } catch (error) {
-      console.error('Error recording payment:', error);
+      console.error('Error submitting payment:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'No se pudo registrar el pago',
-        variant: 'destructive',
+        title: "Error al registrar pago",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

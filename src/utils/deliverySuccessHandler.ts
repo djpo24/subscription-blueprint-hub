@@ -12,6 +12,9 @@ export class DeliverySuccessHandler {
     queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
     queryClient.invalidateQueries({ queryKey: ['debt-data'] });
     queryClient.invalidateQueries({ queryKey: ['collection-packages'] });
+    queryClient.invalidateQueries({ queryKey: ['finances-data'] });
+    queryClient.invalidateQueries({ queryKey: ['collected-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['customers-pending-collection'] });
     
     // Mostrar toast de éxito
     toast({

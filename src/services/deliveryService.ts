@@ -62,7 +62,7 @@ export class DeliveryService {
                 amount: payment.amount,
                 payment_method: payment.method_id,
                 currency: payment.currency,
-                created_by: deliveredBy,
+                created_by: deliveredBy, // Ahora es UUID, no email
                 payment_date: new Date().toISOString()
               });
 

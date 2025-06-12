@@ -7,20 +7,27 @@ interface SubmitPaymentParams {
   customer: RecordPaymentCustomer;
   payments: PaymentEntryData[];
   notes: string;
+  currentUserId?: string; // Add current user ID parameter
 }
 
 export class PaymentSubmissionService {
-  static async submitPayment({ customer, payments, notes }: SubmitPaymentParams) {
+  static async submitPayment({ customer, payments, notes, currentUserId }: SubmitPaymentParams) {
     console.log('🚀 [PaymentSubmissionService] Starting payment submission:', {
       customerId: customer.id,
       paymentsCount: payments.length,
-      totalAmount: payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+      totalAmount: payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
+      currentUserId
     });
 
     // Validate that there's at least one valid payment
     const validPayments = payments.filter(p => p.methodId && p.amount && parseFloat(p.amount) > 0);
     if (validPayments.length === 0) {
       throw new Error('Por favor ingresa al menos un pago válido');
+    }
+
+    // Validate current user ID
+    if (!currentUserId) {
+      throw new Error('No se puede identificar al usuario actual');
     }
 
     // Get the customer ID from the package
@@ -45,7 +52,7 @@ export class PaymentSubmissionService {
           payment_method: payment.methodId,
           currency: payment.currency,
           notes: notes || null,
-          created_by: 'Usuario actual' // TODO: Replace with actual user
+          created_by: currentUserId // Use UUID instead of string
         });
 
       if (error) {

@@ -37,6 +37,7 @@ export function AIResponseButton({
       setAiResponse(result.response);
       setIsFromFallback(result.isFromFallback || false);
       setCustomerInfo(result.customerInfo || null);
+      setCurrentInteractionId(result.interactionId || null);
       setFeedbackGiven(null);
       setShowResponse(true);
       
@@ -44,7 +45,7 @@ export function AIResponseButton({
       onResponseGenerated(result);
       
     } catch (error) {
-      console.error('Error generating AI response:', error);
+      console.error('Error generating enhanced AI response:', error);
     }
   };
 
@@ -52,7 +53,7 @@ export function AIResponseButton({
     navigator.clipboard.writeText(aiResponse);
     toast({
       title: "Copiado",
-      description: "Respuesta copiada al portapapeles",
+      description: "Respuesta de SARA copiada al portapapeles",
     });
   };
 
@@ -66,13 +67,13 @@ export function AIResponseButton({
     setFeedbackGiven(null);
     
     const description = customerInfo?.found 
-      ? `Respuesta personalizada enviada a ${customerInfo.name}`
+      ? `Respuesta personalizada de SARA enviada a ${customerInfo.name}`
       : isFromFallback 
-        ? "Respuesta de emergencia enviada" 
-        : "Respuesta automática enviada";
+        ? "Respuesta de emergencia humanizada enviada" 
+        : "Respuesta inteligente de SARA enviada";
         
     toast({
-      title: "Enviado",
+      title: "Enviado por SARA",
       description,
     });
   };
@@ -103,6 +104,11 @@ export function AIResponseButton({
       });
       
       setFeedbackGiven(feedbackType);
+      
+      toast({
+        title: feedbackType === 'positive' ? "¡Feedback positivo enviado!" : "Feedback registrado",
+        description: "Esto ayuda a SARA a mejorar sus respuestas",
+      });
     } catch (error) {
       console.error('Error submitting feedback:', error);
     }
@@ -127,7 +133,7 @@ export function AIResponseButton({
         className="flex items-center gap-2 w-full bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
       >
         <Sparkles className="h-4 w-4" />
-        {isGenerating ? 'Analizando cliente y generando respuesta...' : 'Generar respuesta inteligente'}
+        {isGenerating ? 'SARA está analizando y generando respuesta...' : 'Generar respuesta con SARA (IA humanizada)'}
       </Button>
 
       {showResponse && aiResponse && (

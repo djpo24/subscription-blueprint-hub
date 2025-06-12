@@ -30,7 +30,7 @@ export function useAIWhatsAppResponse() {
 
   const generateResponseMutation = useMutation({
     mutationFn: async ({ message, customerPhone, customerId }: AIResponseRequest): Promise<AIResponseResult> => {
-      console.log('🤖 Generating AI response for:', { message, customerPhone, customerId });
+      console.log('🤖 Generating enhanced AI response for:', { message, customerPhone, customerId });
       
       const { data, error } = await supabase.functions.invoke('ai-whatsapp-response', {
         body: {
@@ -52,30 +52,31 @@ export function useAIWhatsAppResponse() {
         if (data.error.includes('RATE_LIMIT') || data.error.includes('Too Many Requests')) {
           toast({
             title: "Sistema ocupado",
-            description: "El sistema automático está experimentando alta demanda. Se ha generado una respuesta personalizada.",
+            description: "El sistema automático está experimentando alta demanda. SARA ha generado una respuesta personalizada.",
             variant: "default"
           });
         }
         
         // Return the fallback response instead of throwing
         return {
-          response: data.response || "Un agente te contactará pronto para ayudarte.",
+          response: data.response || "Un miembro de nuestro equipo te contactará pronto para ayudarte.",
           hasPackageInfo: data.hasPackageInfo || false,
           isFromFallback: true,
           customerInfo: data.customerInfo
         };
       }
 
-      console.log('✅ AI response generated:', {
+      console.log('✅ Enhanced AI response generated:', {
         hasPackageInfo: data.hasPackageInfo,
         isFromFallback: data.isFromFallback,
-        customerFound: data.customerInfo?.found
+        customerFound: data.customerInfo?.found,
+        hasLearningContext: !!data.interactionId
       });
       
-      // Show success message with customer info if available
+      // Show success message with enhanced context
       if (data.customerInfo?.found) {
         const { customerInfo } = data;
-        let statusMessage = `Respuesta generada para ${customerInfo.name}`;
+        let statusMessage = `Respuesta personalizada generada para ${customerInfo.name}`;
         
         if (customerInfo.pendingAmount > 0) {
           statusMessage += ` - Saldo pendiente: $${customerInfo.pendingAmount.toLocaleString()}`;
@@ -86,15 +87,15 @@ export function useAIWhatsAppResponse() {
         }
         
         toast({
-          title: "🤖 Respuesta personalizada generada",
+          title: "🤖 SARA responde con inteligencia mejorada",
           description: statusMessage,
         });
       } else {
         toast({
-          title: "🤖 Respuesta generada",
+          title: "🤖 SARA responde naturalmente",
           description: data.isFromFallback 
-            ? "Respuesta de emergencia generada" 
-            : "Respuesta automática generada",
+            ? "Respuesta de emergencia generada con toque humano" 
+            : "Respuesta automática con aprendizaje continuo",
         });
       }
 
@@ -102,14 +103,15 @@ export function useAIWhatsAppResponse() {
         response: data.response,
         hasPackageInfo: data.hasPackageInfo || false,
         isFromFallback: data.isFromFallback || false,
-        customerInfo: data.customerInfo
+        customerInfo: data.customerInfo,
+        interactionId: data.interactionId
       };
     },
     onError: (error: any) => {
-      console.error('❌ Error in AI response generation:', error);
+      console.error('❌ Error in enhanced AI response generation:', error);
       toast({
-        title: "Error en respuesta automática",
-        description: "Se ha generado una respuesta de emergencia. Un agente te contactará pronto.",
+        title: "Error en respuesta de SARA",
+        description: "Se ha generado una respuesta de emergencia. Nuestro equipo te contactará pronto.",
         variant: "destructive"
       });
     }

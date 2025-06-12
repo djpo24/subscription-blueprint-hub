@@ -147,9 +147,9 @@ serve(async (req) => {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
       }
 
-      // 🚨 Verificar si la respuesta debe ser escalada al administrador
-      if (shouldEscalateToAdmin(message, aiResponse)) {
-        console.log('🚨 Escalating question to administrator');
+      // 🚨 Verificar si la respuesta debe ser escalada al administrador (CRITERIOS MÁS ESTRICTOS)
+      if (shouldEscalateToAdmin(message, aiResponse, customerInfo)) {
+        console.log('🚨 Escalating question to administrator - AI cannot provide specific information');
         
         const customerName = customerInfo.customerFirstName || 'Cliente';
         const escalationId = await createEscalationRequest(
@@ -172,7 +172,7 @@ serve(async (req) => {
             // Enviar mensaje de notificación al cliente
             aiResponse = generateCustomerNotificationMessage(customerName);
             wasEscalated = true;
-            console.log('✅ Question escalated successfully');
+            console.log('✅ Question escalated successfully - AI lacked specific information');
           } else {
             console.log('❌ Failed to notify admin, using original AI response');
           }

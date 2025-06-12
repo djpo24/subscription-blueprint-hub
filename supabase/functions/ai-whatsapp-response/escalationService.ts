@@ -83,57 +83,91 @@ export async function checkForAdminResponse(
   }
 }
 
-export function shouldEscalateToAdmin(message: string, aiResponse: string): boolean {
-  // Detectar señales de que el bot no puede responder adecuadamente
-  const escalationSignals = [
-    'no encuentro información',
-    'no tengo información específica',
-    'no puedo acceder',
-    'contáctenos para más detalles',
-    'un miembro de nuestro equipo',
+export function shouldEscalateToAdmin(message: string, aiResponse: string, customerInfo: any): boolean {
+  console.log('🤔 Evaluating escalation criteria for message:', message.substring(0, 50));
+  
+  // Detectar si la IA está dando respuestas vagas o no informativas
+  const vagueResponseIndicators = [
+    'no encuentro información específica',
+    'no tengo información detallada',
+    'no puedo acceder a esa información',
+    'contacte a nuestro equipo',
+    'un miembro de nuestro equipo le contactará',
     'no está en mi base de conocimientos',
-    'no está configurada en el sistema',
-    'no veo información sobre',
-    'podría proporcionarme el número de tracking'
+    'no tengo acceso a esa información',
+    'para más detalles contacte',
+    'necesitaría más información',
+    'no puedo proporcionar esa información específica',
+    'le recomiendo contactar',
+    'deberá contactar directamente'
   ];
 
-  const responseContainsEscalationSignal = escalationSignals.some(signal => 
-    aiResponse.toLowerCase().includes(signal.toLowerCase())
+  const hasVagueResponse = vagueResponseIndicators.some(indicator => 
+    aiResponse.toLowerCase().includes(indicator.toLowerCase())
   );
 
-  // También verificar si es una pregunta específica que requiere intervención humana
-  const complexQuestionPatterns = [
+  // Detectar preguntas específicas que requieren información que el bot no tiene
+  const specificQuestionPatterns = [
     /dónde está mi .+/i,
     /cuándo llega mi .+/i,
     /por qué no ha llegado/i,
-    /necesito hablar con/i,
-    /quiero una queja/i,
-    /problema con/i,
-    /reclamo/i
+    /cuándo van a entregar/i,
+    /dónde puedo recoger/i,
+    /quién puede ayudarme/i,
+    /necesito hablar con alguien/i,
+    /quiero hacer una queja/i,
+    /tengo un problema con/i,
+    /mi paquete está dañado/i,
+    /no recibí mi encomienda/i,
+    /el tracking no funciona/i
   ];
 
-  const isComplexQuestion = complexQuestionPatterns.some(pattern => 
+  const isSpecificQuestion = specificQuestionPatterns.some(pattern => 
     pattern.test(message)
   );
 
-  return responseContainsEscalationSignal || isComplexQuestion;
+  // Detectar si el cliente no tiene paquetes y está preguntando sobre envíos específicos
+  const hasNoPackageInfo = !customerInfo.customerFound || customerInfo.packagesCount === 0;
+  
+  const askingAboutSpecificPackage = /\b(paquete|encomienda|envío|bicicleta|caja|sobre)\b/i.test(message) 
+    && /(dónde|cuándo|cómo|por qué)/i.test(message);
+
+  // Criterios más estrictos para escalación
+  const shouldEscalate = (
+    hasVagueResponse || 
+    (isSpecificQuestion && hasNoPackageInfo) ||
+    (askingAboutSpecificPackage && hasNoPackageInfo)
+  );
+
+  console.log('📋 Escalation evaluation:', {
+    hasVagueResponse,
+    isSpecificQuestion,
+    hasNoPackageInfo,
+    askingAboutSpecificPackage,
+    shouldEscalate,
+    customerPackages: customerInfo.packagesCount,
+    customerFound: customerInfo.customerFound
+  });
+
+  return shouldEscalate;
 }
 
 export function generateEscalationMessage(customerName: string, originalQuestion: string): string {
   return `🚨 PREGUNTA ESCALADA DE CLIENTE
 
 👤 Cliente: ${customerName}
+📞 Teléfono: Se ocultó por privacidad
 ❓ Pregunta: ${originalQuestion}
 
-📞 Esta pregunta fue escalada automáticamente porque el bot no pudo proporcionar una respuesta adecuada.
+Esta pregunta fue escalada automáticamente porque el bot no tiene la información específica que el cliente necesita.
 
-Responde a este mensaje para enviar tu respuesta directamente al cliente.`;
+Para responder, simplemente envía tu mensaje y será retransmitido automáticamente al cliente.`;
 }
 
 export function generateCustomerNotificationMessage(customerName: string): string {
   return `Hola${customerName ? ' ' + customerName : ''} 😊
 
-He trasladado tu consulta a un miembro especializado de nuestro equipo de Envíos Ojito para brindarte una respuesta más precisa.
+No tengo la información específica que necesitas en este momento. He trasladado tu consulta a un especialista de nuestro equipo de Envíos Ojito para brindarte una respuesta precisa.
 
 📞 Te responderán muy pronto con la información exacta que necesitas.
 

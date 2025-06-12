@@ -1,8 +1,8 @@
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface DetectedMessage {
+export interface DetectedMessage {
   id: string;
   from_phone: string;
   customer_id: string | null;
@@ -10,7 +10,7 @@ interface DetectedMessage {
   timestamp: string;
 }
 
-interface MessageDetectionProps {
+export interface MessageDetectionProps {
   isEnabled: boolean;
   onMessageDetected: (message: DetectedMessage) => void;
 }
@@ -18,7 +18,8 @@ interface MessageDetectionProps {
 export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: MessageDetectionProps) {
   const channelRef = useRef<any>(null);
   const processedMessages = useRef(new Set<string>());
-  const isConnectedRef = useRef(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const cleanup = useCallback(() => {
@@ -33,7 +34,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
       channelRef.current = null;
     }
     
-    isConnectedRef.current = false;
+    setIsConnected(false);
   }, []);
 
   const createChannel = useCallback(() => {
@@ -71,12 +72,14 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
 
           // Marcar como procesado
           processedMessages.current.add(newMessage.id);
+          setProcessedCount(processedMessages.current.size);
 
           // Limpiar cache si es muy grande
           if (processedMessages.current.size > 50) {
             const entries = Array.from(processedMessages.current);
             processedMessages.current.clear();
             entries.slice(-25).forEach(id => processedMessages.current.add(id));
+            setProcessedCount(processedMessages.current.size);
           }
 
           // Procesar mensaje
@@ -94,10 +97,10 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
         
         if (status === 'SUBSCRIBED') {
           console.log('✅ Canal conectado exitosamente');
-          isConnectedRef.current = true;
+          setIsConnected(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           console.log('❌ Error en canal:', status);
-          isConnectedRef.current = false;
+          setIsConnected(false);
           
           // Reconectar automáticamente
           if (isEnabled && !reconnectTimeoutRef.current) {
@@ -128,7 +131,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
   }, [isEnabled, createChannel, cleanup]);
 
   return {
-    isConnected: isConnectedRef.current,
-    processedCount: processedMessages.current.size
+    isConnected,
+    processedCount
   };
 }

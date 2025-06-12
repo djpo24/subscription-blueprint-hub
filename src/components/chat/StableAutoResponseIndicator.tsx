@@ -1,6 +1,6 @@
 
 import { Badge } from '@/components/ui/badge';
-import { Bot, Zap, AlertTriangle, RefreshCw, CheckCircle } from 'lucide-react';
+import { Bot, RefreshCw, CheckCircle } from 'lucide-react';
 import { useStableAutoResponseSystem } from '@/hooks/useStableAutoResponseSystem';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import { useToast } from '@/hooks/use-toast';

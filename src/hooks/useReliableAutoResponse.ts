@@ -22,22 +22,16 @@ export function useReliableAutoResponse() {
     });
 
     try {
-      // Paso 1: Generar respuesta IA con timeout
+      // Paso 1: Generar respuesta IA
       console.log('🧠 Generando respuesta IA...');
       
-      const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), 15000); // 15 segundos timeout
-
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-whatsapp-response', {
         body: {
           message: message.message_content,
           customerPhone: message.from_phone,
           customerId: message.customer_id
-        },
-        signal: aiController.signal
+        }
       });
-
-      clearTimeout(aiTimeout);
 
       if (aiError) {
         throw new Error(`Error IA: ${aiError.message}`);
@@ -71,23 +65,17 @@ export function useReliableAutoResponse() {
 
       console.log('✅ Log creado:', notificationData.id);
 
-      // Paso 3: Enviar por WhatsApp con timeout
+      // Paso 3: Enviar por WhatsApp
       console.log('📤 Enviando por WhatsApp...');
       
-      const whatsappController = new AbortController();
-      const whatsappTimeout = setTimeout(() => whatsappController.abort(), 20000); // 20 segundos timeout
-
       const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
           phone: message.from_phone,
           message: responseText,
           customerId: message.customer_id
-        },
-        signal: whatsappController.signal
+        }
       });
-
-      clearTimeout(whatsappTimeout);
 
       if (whatsappError) {
         throw new Error(`Error WhatsApp: ${whatsappError.message}`);

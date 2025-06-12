@@ -1,12 +1,12 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChatConversation } from './ChatConversation';
-import { AdvancedBotToggleButton } from './AdvancedBotToggleButton';
-import { AutoResponseIndicator } from './AutoResponseIndicator';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { AdvancedBotToggleButton } from './AdvancedBotToggleButton';
 import type { ChatMessage } from '@/types/chatMessage';
 
 interface ChatDialogProps {
@@ -126,10 +126,7 @@ export function ChatDialog({
               <MessageSquare className="h-5 w-5" />
               Chat con {displayName}
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <AutoResponseIndicator />
-              <AdvancedBotToggleButton />
-            </div>
+            <AdvancedBotToggleButton />
           </div>
         </DialogHeader>
 

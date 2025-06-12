@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -5,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
 import { AdvancedBotToggleButton } from './chat/AdvancedBotToggleButton';
-import { AutoResponseIndicator } from './chat/AutoResponseIndicator';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
-import { useAutoResponseDetection } from '@/hooks/useAutoResponseDetection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ChatMessage } from '@/types/chatMessage';
 
@@ -17,9 +16,6 @@ export function ChatView() {
   const { chatList, conversationsByPhone, isLoading } = useChatData();
   const { handleSendMessage, isManualSending } = useChatMessages();
   const isMobile = useIsMobile();
-  
-  // Asegurar que el sistema de auto-respuesta esté activo
-  useAutoResponseDetection();
 
   // Marcar como visitado cuando se accede a la vista de chat
   useEffect(() => {
@@ -85,7 +81,7 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
-  // Header global con el control avanzado del bot y indicador de auto-respuesta
+  // Header global con el control avanzado del bot
   const ChatHeader = () => (
     <Card className="mb-4">
       <CardHeader className="pb-3">
@@ -95,7 +91,6 @@ export function ChatView() {
             Sistema de Chat WhatsApp
           </CardTitle>
           <div className="flex items-center gap-3">
-            <AutoResponseIndicator />
             <AdvancedBotToggleButton />
           </div>
         </div>
@@ -125,8 +120,7 @@ export function ChatView() {
               <h2 className="text-lg font-semibold">
                 {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
               </h2>
-              <div className="ml-auto flex items-center gap-2">
-                <AutoResponseIndicator />
+              <div className="ml-auto">
                 <AdvancedBotToggleButton />
               </div>
             </div>

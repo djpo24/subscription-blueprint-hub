@@ -32,11 +32,11 @@ export async function getUpcomingTripsByDestination(
     .in('status', ['scheduled', 'pending'])
     .order('trip_date', { ascending: true });
   
-  // Filtrar por destino si se especifica
+  // Filtrar por destino si se especifica - LÓGICA MEJORADA
   if (destination) {
-    // Búsqueda flexible que incluye variaciones del destino
     const destinationNormalized = destination.toLowerCase().trim();
     
+    // Buscar viajes QUE VAYAN HACIA el destino solicitado
     if (destinationNormalized.includes('curacao') || destinationNormalized.includes('curazao')) {
       query = query.ilike('destination', '%curazao%');
     } else if (destinationNormalized.includes('barranquilla') || destinationNormalized.includes('colombia')) {
@@ -53,7 +53,7 @@ export async function getUpcomingTripsByDestination(
     return [];
   }
   
-  console.log(`✅ [TripSchedule] Encontrados ${trips?.length || 0} envíos próximos`);
+  console.log(`✅ [TripSchedule] Encontrados ${trips?.length || 0} envíos próximos hacia ${destination || 'todos los destinos'}`);
   return trips || [];
 }
 
@@ -83,7 +83,8 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
     });
     
     tripsText += `${index + 1}. 📅 ${formattedDate}\n`;
-    tripsText += `   📦 Ruta de envío: ${trip.origin} → ${trip.destination}\n`;
+    tripsText += `   📦 Destino del envío: ${trip.destination}\n`;
+    tripsText += `   🚢 Salida desde: ${trip.origin}\n`;
     
     if (trip.flight_number) {
       tripsText += `   ✈️ Vuelo: ${trip.flight_number}\n`;
@@ -93,13 +94,31 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
   });
 
   tripsText += `
-INSTRUCCIONES PARA CONSULTAS DE FECHAS DE ENVÍO DE ENCOMIENDAS:
-- Si el cliente pregunta por fechas de envío sin especificar destino, pregunta: "¿Hacia dónde quieres llevar la encomienda?"
-- Los destinos disponibles para envío de encomiendas son: Barranquilla y Curazao
-- Proporciona las fechas exactas de los envíos programados
-- Explica que pueden reservar espacio para su encomienda contactándonos con anticipación
-- Si no hay envíos en las fechas solicitadas, sugiere fechas alternativas cercanas
-- SIEMPRE aclara que son fechas de ENVÍO DE ENCOMIENDAS, no viajes de personas`;
+INSTRUCCIONES INTELIGENTES PARA RESPUESTAS DE FECHAS DE ENVÍO:
+
+ANÁLISIS PREVIO OBLIGATORIO:
+- ANTES de responder, analizar si el destino solicitado coincide con el destino de los viajes encontrados
+- VERIFICAR que la ruta mostrada sea coherente con lo solicitado por el cliente
+- NUNCA mostrar rutas contradictorias (ejemplo: cliente pide envío a Curazao, no mostrar "Curazao → Barranquilla")
+
+FORMATO DE RESPUESTA INTELIGENTE:
+- Si el cliente pregunta por envíos hacia Curazao: mostrar SOLO viajes con destino Curazao
+- Si el cliente pregunta por envíos hacia Barranquilla: mostrar SOLO viajes con destino Barranquilla
+- SIEMPRE verificar coherencia entre pregunta del cliente y respuesta
+
+REGLAS DE COMUNICACIÓN:
+- NO mencionar que no somos agencia de viajes (el cliente ya lo sabe)
+- NO hacer recordatorios innecesarios sobre el tipo de empresa
+- Responder de forma directa y clara
+- Mantener coherencia entre la pregunta y la respuesta
+
+EJEMPLO CORRECTO:
+Cliente: "¿Cuándo hay envío hacia Curazao?"
+Respuesta: "El próximo envío hacia Curazao es el viernes 13 de junio. ¿Quieres reservar espacio para tu encomienda?"
+
+EJEMPLO INCORRECTO:
+Cliente: "¿Cuándo hay envío hacia Curazao?"  
+Respuesta: "Envío hacia Curazao: Ruta Curazao → Barranquilla" (CONTRADICTORIO)`;
 
   return tripsText;
 }
@@ -111,7 +130,8 @@ export function shouldQueryTrips(message: string): { shouldQuery: boolean; desti
   const tripKeywords = [
     'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
     'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
-    'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'llevar', 'encomienda'
+    'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'llevar', 'encomienda',
+    'viaje', 'viajes'
   ];
   
   const hasKeyword = tripKeywords.some(keyword => messageLower.includes(keyword));
@@ -120,12 +140,17 @@ export function shouldQueryTrips(message: string): { shouldQuery: boolean; desti
     return { shouldQuery: false };
   }
   
-  // Detectar destino mencionado
+  // Detectar destino mencionado con lógica mejorada
   let destination: string | undefined;
   
-  if (messageLower.includes('curacao') || messageLower.includes('curazao')) {
+  // Detectar intención hacia Curazao
+  if (messageLower.includes('curacao') || messageLower.includes('curazao') || 
+      messageLower.includes('hacia curazao') || messageLower.includes('para curazao')) {
     destination = 'Curazao';
-  } else if (messageLower.includes('barranquilla') || messageLower.includes('colombia')) {
+  } 
+  // Detectar intención hacia Barranquilla
+  else if (messageLower.includes('barranquilla') || messageLower.includes('colombia') ||
+           messageLower.includes('hacia barranquilla') || messageLower.includes('para barranquilla')) {
     destination = 'Barranquilla';
   }
   

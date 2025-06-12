@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -69,8 +70,9 @@ serve(async (req) => {
       const responseTime = Date.now() - startTime;
 
       // Store interaction
+      let packageShippingInteractionId: string | null = null;
       try {
-        const { data: interactionData, error: insertError } = await supabase
+        const { data: packageShippingInteractionData, error: insertError } = await supabase
           .from('ai_chat_interactions')
           .insert({
             customer_id: actualCustomerId || null,
@@ -90,8 +92,9 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (!insertError && interactionData) {
-          await updateLearningModel(supabase, interactionData.id, customerPhone, message, packageShippingResponse);
+        if (!insertError && packageShippingInteractionData) {
+          packageShippingInteractionId = packageShippingInteractionData.id;
+          await updateLearningModel(supabase, packageShippingInteractionId, customerPhone, message, packageShippingResponse);
         }
       } catch (storeError) {
         console.error('❌ Error storing interaction:', storeError);
@@ -108,7 +111,7 @@ serve(async (req) => {
           pendingPackages: customerInfo.pendingPaymentPackages.length,
           transitPackages: customerInfo.pendingDeliveryPackages.length
         },
-        interactionId: interactionData?.id || null,
+        interactionId: packageShippingInteractionId,
         wasEscalated: false
       };
 
@@ -127,8 +130,9 @@ serve(async (req) => {
       const responseTime = Date.now() - startTime;
 
       // Store interaction
+      let homeDeliveryInteractionId: string | null = null;
       try {
-        const { data: interactionData, error: insertError } = await supabase
+        const { data: homeDeliveryInteractionData, error: insertError } = await supabase
           .from('ai_chat_interactions')
           .insert({
             customer_id: actualCustomerId || null,
@@ -148,8 +152,9 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (!insertError && interactionData) {
-          await updateLearningModel(supabase, interactionData.id, customerPhone, message, homeDeliveryResponse);
+        if (!insertError && homeDeliveryInteractionData) {
+          homeDeliveryInteractionId = homeDeliveryInteractionData.id;
+          await updateLearningModel(supabase, homeDeliveryInteractionId, customerPhone, message, homeDeliveryResponse);
         }
       } catch (storeError) {
         console.error('❌ Error storing interaction:', storeError);
@@ -166,7 +171,7 @@ serve(async (req) => {
           pendingPackages: customerInfo.pendingPaymentPackages.length,
           transitPackages: customerInfo.pendingDeliveryPackages.length
         },
-        interactionId: interactionData?.id || null,
+        interactionId: homeDeliveryInteractionId,
         wasEscalated: false
       };
 

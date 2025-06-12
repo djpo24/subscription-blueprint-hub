@@ -1,4 +1,5 @@
 
+
 import { CustomerInfo } from './types.ts';
 
 // Detectar consultas sobre dónde enviar paquetes
@@ -12,7 +13,10 @@ export function isPackageShippingInquiry(message: string): boolean {
     'envío de encomienda', 'envio de encomienda',
     'donde reciben', 'donde reciben paquetes', 'donde reciben encomiendas',
     'dirección para enviar', 'direccion para enviar',
-    'dirección de envío', 'direccion de envio'
+    'dirección de envío', 'direccion de envio',
+    'quiero enviar', 'necesito enviar', 'debo enviar',
+    'que debo hacer', 'qué debo hacer', 'como envio', 'cómo envío',
+    'como enviar', 'cómo enviar', 'proceso de envío', 'proceso de envio'
   ];
 
   const normalizedMessage = message.toLowerCase();
@@ -143,3 +147,4 @@ function findOriginAddressForDestination(destination: string, addresses: any[]):
   
   return null;
 }
+

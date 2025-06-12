@@ -9,6 +9,7 @@ import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse } from './businessLogic.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
+import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -26,7 +27,7 @@ serve(async (req) => {
     
     console.log('🔒 AI Response Request (Secure & Customer-Specific):', { 
       message: message?.substring(0, 50) + '...', 
-      customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), // Parcialmente ocultar teléfono en logs
+      customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
       customerId: customerId || 'not_provided'
     });
     const startTime = Date.now();
@@ -60,6 +61,18 @@ serve(async (req) => {
     const freightRates = await getActiveFreightRates(supabase);
     console.log('🚚 Retrieved freight rates:', freightRates.length, 'active rates');
 
+    // 🗓️ Check if customer is asking about trip schedules
+    const tripQuery = shouldQueryTrips(message);
+    let upcomingTrips: any[] = [];
+    let tripsContext = '';
+    
+    if (tripQuery.shouldQuery) {
+      console.log('🗓️ Customer asking about trip schedules, querying upcoming trips...');
+      upcomingTrips = await getUpcomingTripsByDestination(supabase, tripQuery.destination);
+      tripsContext = formatTripsForPrompt(upcomingTrips, tripQuery.destination);
+      console.log(`✅ Found ${upcomingTrips.length} upcoming trips for context`);
+    }
+
     // 🔒 Get conversation history ONLY for this specific customer
     const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
     console.log('💬 Retrieved secure conversation history:', recentMessages?.length || 0, 'messages for this customer only');
@@ -71,8 +84,8 @@ serve(async (req) => {
     // Build learning context for adaptive responses - customer-specific
     const learningContext = buildLearningContext(customerInfo);
 
-    // Create enhanced system prompt with conversation context and freight rates - all customer-specific
-    const basePrompt = buildSystemPrompt(customerInfo, freightRates);
+    // Create enhanced system prompt with conversation context, freight rates, and trips context
+    const basePrompt = buildSystemPrompt(customerInfo, freightRates, tripsContext);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
@@ -118,11 +131,14 @@ serve(async (req) => {
             businessValidation: validationResult,
             learningContext: learningContext,
             freightRatesAvailable: freightRates.length > 0,
+            tripsQueried: tripQuery.shouldQuery,
+            tripsFound: upcomingTrips.length,
+            requestedDestination: tripQuery.destination,
             conversationHistory: recentMessages?.slice(-3).map(msg => ({
-              message: msg.message?.substring(0, 100), // Limitar longitud para privacidad
+              message: msg.message?.substring(0, 100),
               isFromCustomer: msg.isFromCustomer,
               timestamp: msg.timestamp
-            })) // Store only last 3 messages with limited content
+            }))
           },
           response_time_ms: responseTime,
           was_fallback: wasFallback
@@ -160,7 +176,12 @@ serve(async (req) => {
         pendingPackages: customerInfo.pendingPaymentPackages.length,
         transitPackages: customerInfo.pendingDeliveryPackages.length
       },
-      interactionId: interactionId
+      interactionId: interactionId,
+      tripsInfo: tripQuery.shouldQuery ? {
+        destination: tripQuery.destination,
+        tripsFound: upcomingTrips.length,
+        nextTripDate: upcomingTrips.length > 0 ? upcomingTrips[0].trip_date : null
+      } : undefined
     };
 
     console.log('🎯 Secure customer-specific response delivered:', {
@@ -169,6 +190,8 @@ serve(async (req) => {
       hasLearningContext: true,
       hasConversationContext: recentMessages?.length > 0,
       hasFreightRates: freightRates.length > 0,
+      hasTripsContext: tripQuery.shouldQuery,
+      tripsFound: upcomingTrips.length,
       responseTime: responseTime + 'ms',
       dataPrivacyCompliant: true
     });

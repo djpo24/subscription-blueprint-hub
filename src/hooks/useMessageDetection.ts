@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface DetectedMessage {
   id: string;
   from_phone: string;
-  customer_id: string;
+  customer_id: string | null; // Cambiado para permitir null
   message_content: string;
   timestamp: string;
 }
@@ -34,7 +34,7 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
       return;
     }
 
-    console.log('🔍 Setting up message detection...');
+    console.log('🔍 Setting up message detection for ALL messages...');
 
     // Create new channel for message detection
     const channel = supabase
@@ -48,10 +48,10 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
         },
         (payload) => {
           const newMessage = payload.new as any;
-          console.log('📨 New message detected:', {
+          console.log('📨 New message detected (all customers):', {
             id: newMessage.id,
             from: newMessage.from_phone,
-            customerId: newMessage.customer_id,
+            customerId: newMessage.customer_id || 'UNREGISTERED',
             preview: newMessage.message_content?.substring(0, 50) + '...'
           });
 
@@ -61,20 +61,20 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
             return;
           }
 
-          // Skip if not from customer
-          if (!newMessage.from_phone || !newMessage.customer_id) {
-            console.log('⏭️ Message not from registered customer, skipping');
+          // Skip if no phone number (invalid message)
+          if (!newMessage.from_phone) {
+            console.log('⏭️ Message without phone number, skipping');
             return;
           }
 
           // Mark as processed immediately
           processedMessages.current.add(newMessage.id);
 
-          // Trigger callback
+          // Trigger callback for ALL messages (registered and unregistered)
           onMessageDetected({
             id: newMessage.id,
             from_phone: newMessage.from_phone,
-            customer_id: newMessage.customer_id,
+            customer_id: newMessage.customer_id || null, // Permitir null para clientes no registrados
             message_content: newMessage.message_content || '',
             timestamp: newMessage.timestamp
           });
@@ -83,7 +83,7 @@ export function useMessageDetection({ isEnabled, onMessageDetected }: MessageDet
       .subscribe((status) => {
         console.log('🔍 Message detection channel status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Message detection channel subscribed successfully');
+          console.log('✅ Message detection channel subscribed successfully (ALL CUSTOMERS)');
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Message detection channel error');
         }

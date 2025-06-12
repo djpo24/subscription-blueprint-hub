@@ -7,7 +7,7 @@ import { useWhatsAppSender } from './useWhatsAppSender';
 interface DetectedMessage {
   id: string;
   from_phone: string;
-  customer_id: string;
+  customer_id: string | null; // Permitir null para clientes no registrados
   message_content: string;
   timestamp: string;
 }
@@ -18,15 +18,20 @@ export function useAutoResponseEngine() {
   const { sendWhatsAppMessage } = useWhatsAppSender();
 
   const handleAutoResponse = useCallback(async (message: DetectedMessage) => {
-    console.log('🎯 Starting auto-response engine for message:', message.id);
+    console.log('🎯 Starting auto-response engine for message:', {
+      id: message.id,
+      phone: message.from_phone,
+      customerId: message.customer_id || 'UNREGISTERED',
+      isRegistered: !!message.customer_id
+    });
 
     try {
-      // Step 1: Generate AI response
+      // Step 1: Generate AI response (works for both registered and unregistered)
       console.log('🤖 Step 1: Generating AI response...');
       const aiResponse = await processAIResponse({
         message: message.message_content,
         customerPhone: message.from_phone,
-        customerId: message.customer_id
+        customerId: message.customer_id || 'unregistered' // Pasar string para clientes no registrados
       });
 
       // Step 2: Send via WhatsApp
@@ -34,16 +39,17 @@ export function useAutoResponseEngine() {
       const sendSuccess = await sendWhatsAppMessage({
         phone: message.from_phone,
         message: aiResponse,
-        customerId: message.customer_id,
-        notificationType: 'auto_reply'
+        customerId: message.customer_id, // Puede ser null
+        notificationType: message.customer_id ? 'auto_reply' : 'auto_reply_unregistered'
       });
 
       if (sendSuccess) {
         console.log('🎉 Auto-response completed successfully');
         
+        const customerType = message.customer_id ? 'cliente registrado' : 'cliente no registrado';
         toast({
           title: "🤖 Respuesta automática enviada",
-          description: `SARA respondió automáticamente a ${message.from_phone}`,
+          description: `SARA respondió automáticamente a ${message.from_phone} (${customerType})`,
         });
       } else {
         throw new Error('Failed to send WhatsApp message');
@@ -60,14 +66,15 @@ export function useAutoResponseEngine() {
         const fallbackSuccess = await sendWhatsAppMessage({
           phone: message.from_phone,
           message: emergencyResponse,
-          customerId: message.customer_id,
-          notificationType: 'auto_reply_fallback'
+          customerId: message.customer_id, // Puede ser null
+          notificationType: message.customer_id ? 'auto_reply_fallback' : 'auto_reply_fallback_unregistered'
         });
 
         if (fallbackSuccess) {
+          const customerType = message.customer_id ? 'cliente registrado' : 'cliente no registrado';
           toast({
             title: "🤖 Respuesta de emergencia enviada",
-            description: "Se envió una respuesta básica debido a un error técnico",
+            description: `Se envió una respuesta básica a ${customerType} debido a un error técnico`,
           });
         } else {
           throw new Error('Emergency fallback also failed');
@@ -78,7 +85,7 @@ export function useAutoResponseEngine() {
         
         toast({
           title: "❌ Error en respuesta automática",
-          description: "No se pudo enviar respuesta automática",
+          description: `No se pudo enviar respuesta automática a ${message.from_phone}`,
           variant: "destructive"
         });
       }

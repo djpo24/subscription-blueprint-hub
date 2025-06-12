@@ -6,14 +6,18 @@ import { useToast } from './use-toast';
 interface AIResponseRequest {
   message: string;
   customerPhone: string;
-  customerId: string;
+  customerId: string | null; // Permitir null para clientes no registrados
 }
 
 export function useAIResponseProcessor() {
   const { toast } = useToast();
 
   const processAIResponse = useCallback(async ({ message, customerPhone, customerId }: AIResponseRequest): Promise<string> => {
-    console.log('🤖 Processing AI response request:', { customerPhone, customerId });
+    console.log('🤖 Processing AI response request:', { 
+      customerPhone, 
+      customerId: customerId || 'UNREGISTERED',
+      isRegistered: !!customerId 
+    });
 
     try {
       // Direct call to AI function
@@ -22,7 +26,7 @@ export function useAIResponseProcessor() {
         body: {
           message,
           customerPhone,
-          customerId
+          customerId: customerId || null // Pasar null explícitamente para clientes no registrados
         }
       });
 
@@ -41,15 +45,18 @@ export function useAIResponseProcessor() {
         throw new Error('No AI response received');
       }
 
-      console.log('✅ AI response generated:', aiResponse.substring(0, 100) + '...');
+      console.log('✅ AI response generated for', customerId ? 'registered customer' : 'unregistered customer', ':', aiResponse.substring(0, 100) + '...');
       return aiResponse;
 
     } catch (error) {
       console.error('❌ Error processing AI response:', error);
       
-      // Return fallback response
-      const fallbackResponse = `¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto para ayudarte.`;
-      console.log('🔄 Using fallback response');
+      // Return fallback response based on customer type
+      const fallbackResponse = customerId 
+        ? `¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto para ayudarte.`
+        : `¡Hola! 😊 Somos Envíos Ojito. Gracias por contactarnos. Un miembro de nuestro equipo te contactará pronto para ayudarte con tus envíos.`;
+      
+      console.log('🔄 Using fallback response for', customerId ? 'registered' : 'unregistered', 'customer');
       
       return fallbackResponse;
     }

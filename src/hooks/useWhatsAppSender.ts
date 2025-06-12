@@ -6,7 +6,7 @@ import { useToast } from './use-toast';
 interface WhatsAppSendRequest {
   phone: string;
   message: string;
-  customerId: string;
+  customerId: string | null; // Permitir null para clientes no registrados
   notificationType?: string;
 }
 
@@ -19,7 +19,12 @@ export function useWhatsAppSender() {
     customerId, 
     notificationType = 'auto_reply' 
   }: WhatsAppSendRequest): Promise<boolean> => {
-    console.log('📤 Sending WhatsApp message to:', phone);
+    console.log('📤 Sending WhatsApp message to:', {
+      phone,
+      customerId: customerId || 'UNREGISTERED',
+      isRegistered: !!customerId,
+      notificationType
+    });
 
     try {
       // Create notification log entry
@@ -28,7 +33,7 @@ export function useWhatsAppSender() {
         .from('notification_log')
         .insert({
           package_id: null,
-          customer_id: customerId,
+          customer_id: customerId, // Puede ser null para clientes no registrados
           notification_type: notificationType,
           message: message,
           status: 'pending'
@@ -50,7 +55,7 @@ export function useWhatsAppSender() {
           notificationId: notificationData.id,
           phone: phone,
           message: message,
-          customerId: customerId
+          customerId: customerId // Puede ser null
         }
       });
 
@@ -64,7 +69,7 @@ export function useWhatsAppSender() {
         throw new Error(`WhatsApp API error: ${responseData.error}`);
       }
 
-      console.log('✅ WhatsApp message sent successfully');
+      console.log('✅ WhatsApp message sent successfully to', customerId ? 'registered customer' : 'unregistered customer');
       return true;
 
     } catch (error) {

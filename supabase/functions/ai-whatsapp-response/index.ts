@@ -33,57 +33,22 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Get customer information and packages
-    let customerContext = '';
-    let packageInfo = '';
-    let contextInfo: any = {
+    // Get comprehensive customer information
+    let customerInfo: any = {
       customerFound: false,
+      customerName: '',
       packagesCount: 0,
-      packages: []
+      packages: [],
+      pendingDeliveryPackages: [],
+      pendingPaymentPackages: [],
+      totalPending: 0,
+      totalFreight: 0
     };
 
-    if (customerId) {
-      // Get customer info
-      const { data: customer } = await supabase
-        .from('customers')
-        .select('name, email, phone')
-        .eq('id', customerId)
-        .single();
+    let actualCustomerId = customerId;
 
-      if (customer) {
-        customerContext = `Cliente: ${customer.name} (${customer.email})`;
-        contextInfo.customerFound = true;
-        contextInfo.customerName = customer.name;
-      }
-
-      // Get customer's packages
-      const { data: packages } = await supabase
-        .from('packages')
-        .select(`
-          tracking_number,
-          status,
-          destination,
-          origin,
-          description,
-          created_at,
-          delivered_at,
-          amount_to_collect,
-          currency
-        `)
-        .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (packages && packages.length > 0) {
-        packageInfo = packages.map(pkg => 
-          `- Paquete ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})`
-        ).join('\n');
-        
-        contextInfo.packagesCount = packages.length;
-        contextInfo.packages = packages;
-      }
-    } else {
-      // Try to find customer by phone
+    // If no customerId provided, try to find customer by phone
+    if (!actualCustomerId) {
       const cleanPhone = customerPhone.replace(/[\s\-\(\)\+]/g, '');
       const { data: customers } = await supabase
         .from('customers')
@@ -92,67 +57,168 @@ serve(async (req) => {
         .limit(1);
 
       if (customers && customers.length > 0) {
-        const customer = customers[0];
-        customerContext = `Cliente: ${customer.name} (${customer.email})`;
-        contextInfo.customerFound = true;
-        contextInfo.customerName = customer.name;
+        actualCustomerId = customers[0].id;
+        customerInfo.customerFound = true;
+        customerInfo.customerName = customers[0].name;
+      }
+    } else {
+      // Get customer info by ID
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('name, email, phone')
+        .eq('id', actualCustomerId)
+        .single();
 
-        // Get packages for found customer
-        const { data: packages } = await supabase
-          .from('packages')
-          .select(`
-            tracking_number,
-            status,
-            destination,
-            origin,
-            description,
-            created_at,
-            delivered_at,
-            amount_to_collect,
-            currency
-          `)
-          .eq('customer_id', customer.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
+      if (customer) {
+        customerInfo.customerFound = true;
+        customerInfo.customerName = customer.name;
+      }
+    }
 
-        if (packages && packages.length > 0) {
-          packageInfo = packages.map(pkg => 
-            `- Paquete ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})`
-          ).join('\n');
-          
-          contextInfo.packagesCount = packages.length;
-          contextInfo.packages = packages;
+    // If customer found, get comprehensive package and payment information
+    if (actualCustomerId && customerInfo.customerFound) {
+      // Get all customer packages
+      const { data: packages } = await supabase
+        .from('packages')
+        .select(`
+          id,
+          tracking_number,
+          status,
+          destination,
+          origin,
+          description,
+          created_at,
+          delivered_at,
+          amount_to_collect,
+          freight,
+          currency
+        `)
+        .eq('customer_id', actualCustomerId)
+        .order('created_at', { ascending: false });
+
+      if (packages && packages.length > 0) {
+        customerInfo.packagesCount = packages.length;
+        customerInfo.packages = packages;
+
+        // Calculate total freight
+        customerInfo.totalFreight = packages.reduce((sum, p) => sum + (p.freight || 0), 0);
+
+        // Find pending delivery packages (not delivered yet)
+        customerInfo.pendingDeliveryPackages = packages.filter(p => 
+          p.status !== 'delivered' && p.status !== 'cancelled'
+        );
+
+        // Find packages that are delivered but have pending payments
+        const deliveredPackages = packages.filter(p => 
+          (p.status === 'delivered' || p.status === 'en_destino') && 
+          p.amount_to_collect && 
+          p.amount_to_collect > 0
+        );
+
+        if (deliveredPackages.length > 0) {
+          // Get payments for these packages
+          const { data: payments } = await supabase
+            .from('customer_payments')
+            .select('*')
+            .in('package_id', deliveredPackages.map(p => p.id));
+
+          // Calculate pending amounts
+          customerInfo.pendingPaymentPackages = deliveredPackages.map(pkg => {
+            const packagePayments = payments?.filter(p => p.package_id === pkg.id) || [];
+            const totalPaid = packagePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const pendingAmount = (pkg.amount_to_collect || 0) - totalPaid;
+            
+            return {
+              ...pkg,
+              totalPaid,
+              pendingAmount
+            };
+          }).filter(p => p.pendingAmount > 0);
+
+          customerInfo.totalPending = customerInfo.pendingPaymentPackages.reduce(
+            (sum, p) => sum + p.pendingAmount, 0
+          );
         }
       }
     }
 
-    // Prepare context for AI
-    const systemPrompt = `Eres un asistente de atención al cliente para una empresa de envíos llamada "Ojitos Express". 
+    // Create a more detailed system prompt based on customer information
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    };
 
-INFORMACIÓN DEL CONTEXTO:
-${customerContext}
+    let systemPrompt = `Eres SARA, asistente virtual de Ojitos Express. Responde como una persona real, amigable y profesional. NUNCA menciones que eres un bot o IA.
 
-PAQUETES DEL CLIENTE:
-${packageInfo || 'No se encontraron paquetes para este cliente.'}
+INFORMACIÓN DEL CLIENTE:`;
 
-ESTADOS DE PAQUETES:
-- "pending": Pendiente de procesamiento
-- "recibido": Recibido en origen
-- "procesado": Procesado y listo para envío
-- "en_transito": En tránsito
-- "en_destino": Llegó al destino
-- "entregado": Entregado al cliente
+    if (customerInfo.customerFound) {
+      systemPrompt += `
+- Cliente: ${customerInfo.customerName}
+- Total de encomiendas: ${customerInfo.packagesCount}
+- Flete total histórico: ${formatCurrency(customerInfo.totalFreight)}`;
 
-INSTRUCCIONES:
-1. Responde de manera amigable y profesional en español
-2. Si el cliente pregunta por el estado de un paquete, proporciona información específica
-3. Si no tienes información del cliente o paquetes, ofrece ayuda para obtener el número de tracking
-4. Mantén las respuestas concisas pero informativas
-5. Si el cliente tiene paquetes entregados, pregunta si todo llegó en buen estado
-6. Para paquetes en tránsito, tranquiliza al cliente sobre el progreso
-7. Siempre termina preguntando si necesita algo más
+      if (customerInfo.pendingDeliveryPackages.length > 0) {
+        systemPrompt += `
 
-TONO: Amigable, profesional, servicial`;
+ENCOMIENDAS PENDIENTES DE ENTREGA (${customerInfo.pendingDeliveryPackages.length}):`;
+        customerInfo.pendingDeliveryPackages.forEach(pkg => {
+          systemPrompt += `
+- ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})
+  Descripción: ${pkg.description || 'Sin descripción'}
+  Flete: ${formatCurrency(pkg.freight || 0)}`;
+        });
+      }
+
+      if (customerInfo.pendingPaymentPackages.length > 0) {
+        systemPrompt += `
+
+ENCOMIENDAS CON PAGOS PENDIENTES (${customerInfo.pendingPaymentPackages.length}):`;
+        customerInfo.pendingPaymentPackages.forEach(pkg => {
+          systemPrompt += `
+- ${pkg.tracking_number}: ${pkg.status}
+  Descripción: ${pkg.description || 'Sin descripción'}
+  Total a cobrar: ${formatCurrency(pkg.amount_to_collect || 0)}
+  Ya pagado: ${formatCurrency(pkg.totalPaid || 0)}
+  PENDIENTE: ${formatCurrency(pkg.pendingAmount)}`;
+        });
+        systemPrompt += `
+
+TOTAL PENDIENTE DE PAGO: ${formatCurrency(customerInfo.totalPending)}`;
+      }
+
+      if (customerInfo.pendingDeliveryPackages.length === 0 && customerInfo.pendingPaymentPackages.length === 0) {
+        systemPrompt += `
+
+✅ ¡Excelente! No tienes encomiendas pendientes de entrega ni pagos pendientes.`;
+      }
+    } else {
+      systemPrompt += `
+- Cliente no identificado en el sistema
+- No se encontraron encomiendas asociadas a este número`;
+    }
+
+    systemPrompt += `
+
+INSTRUCCIONES DE RESPUESTA:
+1. Responde de manera natural y conversacional, como una persona real
+2. Si preguntan por costos, estados o información específica, proporciona los datos exactos de arriba
+3. Si preguntan "cuánto es", "cuánto debo", "saldo", etc., indica claramente los montos pendientes
+4. Si no hay información específica, ofrece ayuda para obtener el número de tracking
+5. Si hay múltiples encomiendas, menciona las más relevantes (pendientes)
+6. Usa emojis moderadamente para ser más amigable
+7. Mantén respuestas concisas pero completas
+8. Si el cliente no está en el sistema, sé amable y ofrece ayuda para localizarlo
+
+EJEMPLOS DE RESPUESTAS NATURALES:
+- "Hola [Nombre]! Vi que tienes una encomienda pendiente..."
+- "¡Por supuesto! Te cuento sobre tu encomienda..."
+- "¡Hola! Revisé tu información y..."
+
+NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
 
     // Function to call OpenAI with retry logic
     const callOpenAI = async (retryCount = 0): Promise<string> => {
@@ -164,7 +230,7 @@ TONO: Amigable, profesional, servicial`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4.1-2025-04-14',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
@@ -222,34 +288,35 @@ TONO: Amigable, profesional, servicial`;
       console.error('❌ OpenAI Error:', error.message);
       wasFallback = true;
       
-      // Provide specific fallback responses based on error type
-      if (error.message.includes('RATE_LIMIT_EXCEEDED')) {
-        aiResponse = `Hola! Gracias por contactarnos. En este momento nuestro sistema automático está experimentando alta demanda. Un agente de Ojitos Express te contactará pronto para ayudarte con tu consulta. 
+      // Provide intelligent fallback responses based on customer data
+      if (customerInfo.customerFound) {
+        if (customerInfo.pendingPaymentPackages.length > 0) {
+          aiResponse = `¡Hola ${customerInfo.customerName}! 🌟 Revisé tu información y tienes un saldo pendiente de ${formatCurrency(customerInfo.totalPending)} por ${customerInfo.pendingPaymentPackages.length} encomienda${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''}.
 
-Si tienes el número de tracking de tu paquete, puedes compartirlo para que podamos revisar el estado cuando nuestro agente esté disponible. 
+${customerInfo.pendingPaymentPackages.map(pkg => 
+  `📦 ${pkg.tracking_number}: ${formatCurrency(pkg.pendingAmount)} pendiente`
+).join('\n')}
 
-¡Gracias por tu paciencia! 🙏`;
-      } else if (error.message.includes('INVALID_API_KEY')) {
-        aiResponse = `Hola! Gracias por contactarnos. Nuestro sistema automático necesita configuración. Un agente de Ojitos Express te contactará pronto para ayudarte. 
+¿Te gustaría que te ayude con el proceso de pago? 💰`;
+        } else if (customerInfo.pendingDeliveryPackages.length > 0) {
+          aiResponse = `¡Hola ${customerInfo.customerName}! 📦 Vi que tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en camino:
 
-¿En qué podemos ayudarte hoy? 😊`;
-      } else {
-        // Generic fallback with package info if available
-        if (packageInfo) {
-          aiResponse = `Hola! Gracias por contactarnos. Veo que tienes los siguientes paquetes:
+${customerInfo.pendingDeliveryPackages.map(pkg => 
+  `🚚 ${pkg.tracking_number}: ${pkg.status}`
+).join('\n')}
 
-${packageInfo}
-
-Un agente de Ojitos Express te contactará pronto para ayudarte con cualquier consulta adicional. 
-
-¿Hay algo específico sobre alguno de estos paquetes que te gustaría saber? 📦`;
+Un agente te contactará pronto con más detalles. ¿Hay algo específico que necesites saber? 😊`;
         } else {
-          aiResponse = `Hola! Gracias por contactarnos. Un agente de Ojitos Express te contactará pronto para ayudarte. 
+          aiResponse = `¡Hola ${customerInfo.customerName}! 😊 Revisé tu información y tienes todas tus encomiendas al día. ¡Excelente!
 
-Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que podamos ayudarte mejor. 
-
-¡Estamos aquí para ayudarte! 😊`;
+¿En qué más puedo ayudarte hoy? 🌟`;
         }
+      } else {
+        aiResponse = `¡Hola! 😊 Para ayudarte mejor, necesito localizar tu información en nuestro sistema.
+
+¿Podrías compartirme tu número de tracking o el nombre completo con el que registraste tus encomiendas?
+
+Un agente también te contactará pronto para asistirte. 📞`;
       }
     }
 
@@ -261,11 +328,11 @@ Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que
       const { error: insertError } = await supabase
         .from('ai_chat_interactions')
         .insert({
-          customer_id: customerId || null,
+          customer_id: actualCustomerId || null,
           customer_phone: customerPhone,
           user_message: message,
           ai_response: aiResponse,
-          context_info: contextInfo,
+          context_info: customerInfo,
           response_time_ms: responseTime,
           was_fallback: wasFallback
         });
@@ -281,8 +348,15 @@ Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que
 
     return new Response(JSON.stringify({ 
       response: aiResponse,
-      hasPackageInfo: packageInfo.length > 0,
-      isFromFallback: wasFallback
+      hasPackageInfo: customerInfo.packagesCount > 0,
+      isFromFallback: wasFallback,
+      customerInfo: {
+        found: customerInfo.customerFound,
+        name: customerInfo.customerName,
+        pendingAmount: customerInfo.totalPending,
+        pendingPackages: customerInfo.pendingPaymentPackages.length,
+        transitPackages: customerInfo.pendingDeliveryPackages.length
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -291,7 +365,7 @@ Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que
     console.error('❌ Error in ai-whatsapp-response:', error);
     
     // Enhanced fallback response
-    const fallbackResponse = "Disculpa, estoy teniendo problemas técnicos en este momento. Un agente de Ojitos Express te contactará pronto para ayudarte. 🙏\n\nSi tienes el número de tracking de tu paquete, compártelo y nuestro agente podrá ayudarte cuando esté disponible.";
+    const fallbackResponse = "¡Hola! Estoy teniendo problemas técnicos en este momento, pero un agente de Ojitos Express te contactará pronto para ayudarte. 🙏\n\nSi tienes el número de tracking de tu encomienda, compártelo y nuestro agente podrá ayudarte cuando esté disponible. 📦";
     
     return new Response(JSON.stringify({ 
       error: error.message,

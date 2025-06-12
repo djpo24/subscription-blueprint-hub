@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Copy, Send, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Sparkles, Copy, Send, AlertTriangle, ThumbsUp, ThumbsDown, User, Package } from 'lucide-react';
 import { useAIWhatsAppResponse } from '@/hooks/useAIWhatsAppResponse';
 import { useAIFeedback } from '@/hooks/useAIFeedback';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ export function AIResponseButton({
 }: AIResponseButtonProps) {
   const [aiResponse, setAiResponse] = useState<string>('');
   const [isFromFallback, setIsFromFallback] = useState<boolean>(false);
+  const [customerInfo, setCustomerInfo] = useState<any>(null);
   const [currentInteractionId, setCurrentInteractionId] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<'positive' | 'negative' | null>(null);
   
@@ -38,25 +39,8 @@ export function AIResponseButton({
       
       setAiResponse(result.response);
       setIsFromFallback(result.isFromFallback || false);
+      setCustomerInfo(result.customerInfo || null);
       setFeedbackGiven(null); // Reset feedback state
-      
-      if (result.isFromFallback) {
-        toast({
-          title: "⚠️ Respuesta de emergencia",
-          description: "Sistema ocupado - se generó respuesta de fallback",
-        });
-      } else {
-        toast({
-          title: "🤖 Respuesta generada",
-          description: result.hasPackageInfo 
-            ? "Respuesta generada con información de paquetes" 
-            : "Respuesta generada (sin paquetes específicos)",
-        });
-      }
-
-      // Get the latest interaction ID for feedback
-      // Note: En una implementación real, deberías obtener el ID de la interacción
-      // desde la respuesta de la función edge o hacer una consulta adicional
       
     } catch (error) {
       console.error('Error generating AI response:', error);
@@ -75,10 +59,18 @@ export function AIResponseButton({
     onSendMessage(aiResponse);
     setAiResponse('');
     setIsFromFallback(false);
+    setCustomerInfo(null);
     setFeedbackGiven(null);
+    
+    const description = customerInfo?.found 
+      ? `Respuesta personalizada enviada a ${customerInfo.name}`
+      : isFromFallback 
+        ? "Respuesta de emergencia enviada" 
+        : "Respuesta automática enviada";
+        
     toast({
       title: "Enviado",
-      description: isFromFallback ? "Respuesta de emergencia enviada" : "Respuesta automática enviada",
+      description,
     });
   };
 
@@ -105,6 +97,14 @@ export function AIResponseButton({
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <div className="space-y-3">
       <Button
@@ -115,36 +115,75 @@ export function AIResponseButton({
         className="flex items-center gap-2 w-full bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
       >
         <Sparkles className="h-4 w-4" />
-        {isGenerating ? 'Generando respuesta...' : 'Generar respuesta con IA'}
+        {isGenerating ? 'Analizando cliente y generando respuesta...' : 'Generar respuesta inteligente'}
       </Button>
 
       {aiResponse && (
         <div className={`border rounded-lg p-3 space-y-3 ${
           isFromFallback 
             ? 'bg-amber-50 border-amber-200' 
-            : 'bg-purple-50 border-purple-200'
+            : customerInfo?.found
+              ? 'bg-green-50 border-green-200'
+              : 'bg-purple-50 border-purple-200'
         }`}>
+          {/* Header with customer info */}
           <div className={`text-sm font-medium flex items-center gap-2 ${
-            isFromFallback ? 'text-amber-800' : 'text-purple-800'
+            isFromFallback 
+              ? 'text-amber-800' 
+              : customerInfo?.found
+                ? 'text-green-800'
+                : 'text-purple-800'
           }`}>
             {isFromFallback ? (
               <>
                 <AlertTriangle className="h-4 w-4" />
-                ⚠️ Respuesta de emergencia (Sistema ocupado):
+                ⚠️ Respuesta de emergencia (Sistema ocupado)
+              </>
+            ) : customerInfo?.found ? (
+              <>
+                <User className="h-4 w-4" />
+                🎯 Respuesta personalizada para {customerInfo.name}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                🤖 Respuesta sugerida por IA:
+                🤖 Respuesta automática
               </>
             )}
           </div>
+
+          {/* Customer summary if found */}
+          {customerInfo?.found && (
+            <div className="text-xs bg-white rounded p-2 border space-y-1">
+              <div className="flex items-center gap-2 font-medium">
+                <Package className="h-3 w-3" />
+                Resumen del cliente:
+              </div>
+              {customerInfo.pendingAmount > 0 && (
+                <div className="text-red-600">
+                  💰 Saldo pendiente: {formatCurrency(customerInfo.pendingAmount)} 
+                  ({customerInfo.pendingPackages} encomienda{customerInfo.pendingPackages !== 1 ? 's' : ''})
+                </div>
+              )}
+              {customerInfo.transitPackages > 0 && (
+                <div className="text-blue-600">
+                  🚚 En tránsito: {customerInfo.transitPackages} encomienda{customerInfo.transitPackages !== 1 ? 's' : ''}
+                </div>
+              )}
+              {customerInfo.pendingAmount === 0 && customerInfo.transitPackages === 0 && (
+                <div className="text-green-600">
+                  ✅ Todo al día - sin pendientes
+                </div>
+              )}
+            </div>
+          )}
           
-          <div className="text-sm text-gray-700 bg-white rounded p-2 border">
+          {/* AI Response */}
+          <div className="text-sm text-gray-700 bg-white rounded p-3 border">
             {aiResponse}
           </div>
           
-          {/* Feedback buttons */}
+          {/* Action buttons */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <Button
@@ -162,7 +201,9 @@ export function AIResponseButton({
                 className={`flex-1 text-white ${
                   isFromFallback 
                     ? 'bg-amber-600 hover:bg-amber-700' 
-                    : 'bg-purple-600 hover:bg-purple-700'
+                    : customerInfo?.found
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-purple-600 hover:bg-purple-700'
                 }`}
               >
                 <Send className="h-3 w-3 mr-1" />

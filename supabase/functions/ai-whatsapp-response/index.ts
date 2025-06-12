@@ -124,10 +124,10 @@ serve(async (req) => {
       });
     }
 
-    // 📦 SEGUNDA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes
+    // 📦 SEGUNDA PRIORIDAD MEJORADA: Detectar consultas sobre dónde enviar paquetes Y respuestas de destino
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
-      console.log('📦 CONSULTA DE ENVÍO detectada - Proporcionando información de direcciones');
+      console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
       
       const responseTime = Date.now() - startTime;
 
@@ -146,6 +146,7 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isPackageShippingInquiry: true,
+              destinationExtracted: extractDestinationFromMessage(message),
               botAlwaysResponds: true
             },
             response_time_ms: responseTime,
@@ -177,7 +178,7 @@ serve(async (req) => {
         wasEscalated: false
       };
 
-      console.log('📦 RESPUESTA DE ENVÍO ENVIADA - Información completa proporcionada');
+      console.log('📦 RESPUESTA DE ENVÍO ENVIADA - Información contextual proporcionada');
       
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

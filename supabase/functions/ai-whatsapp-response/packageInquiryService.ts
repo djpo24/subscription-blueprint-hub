@@ -1,6 +1,4 @@
 
-
-
 import { CustomerInfo } from './types.ts';
 
 // Detectar consultas sobre dónde enviar paquetes
@@ -132,28 +130,45 @@ ${nextTrip.flight_number ? `✈️ **Vuelo:** ${nextTrip.flight_number}` : ''}
 ✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }
 
-// Detectar destino mencionado en el mensaje
+// Detectar destino mencionado en el mensaje - MEJORADA PARA MEJOR DETECCIÓN
 export function extractDestinationFromMessage(message: string): string | null {
   const normalizedMessage = message.toLowerCase();
   
-  // Detectar menciones de Curazao
+  // Detectar menciones específicas de Curazao
   if (normalizedMessage.includes('curazao') || normalizedMessage.includes('curacao') || 
       normalizedMessage.includes('curaçao') || normalizedMessage.includes('hacia curazao') ||
-      normalizedMessage.includes('para curazao') || normalizedMessage.includes('a curazao')) {
+      normalizedMessage.includes('para curazao') || normalizedMessage.includes('a curazao') ||
+      normalizedMessage.includes('en curazao') || normalizedMessage.includes('destino curazao')) {
     return 'Curazao';
   }
   
-  // Detectar menciones de Barranquilla/Colombia
+  // Detectar menciones específicas de Barranquilla/Colombia
   if (normalizedMessage.includes('barranquilla') || normalizedMessage.includes('colombia') ||
       normalizedMessage.includes('hacia barranquilla') || normalizedMessage.includes('para barranquilla') ||
-      normalizedMessage.includes('a barranquilla') || normalizedMessage.includes('a colombia')) {
+      normalizedMessage.includes('a barranquilla') || normalizedMessage.includes('a colombia') ||
+      normalizedMessage.includes('en barranquilla') || normalizedMessage.includes('destino barranquilla')) {
     return 'Barranquilla';
   }
   
   return null;
 }
 
-// Generar respuesta para consultas de envío de paquetes - CON EMOJIS CORREGIDOS
+// FUNCIÓN MEJORADA: Detectar si es una respuesta a pregunta previa sobre destino
+export function isDestinationResponse(message: string): boolean {
+  const normalizedMessage = message.toLowerCase().trim();
+  
+  // Respuestas directas comunes
+  const directResponses = [
+    'curazao', 'curacao', 'curaçao',
+    'barranquilla', 'colombia',
+    'hacia curazao', 'para curazao', 'a curazao',
+    'hacia barranquilla', 'para barranquilla', 'a barranquilla'
+  ];
+  
+  return directResponses.some(response => normalizedMessage === response || normalizedMessage.includes(response));
+}
+
+// Generar respuesta para consultas de envío de paquetes - MEJORADA CON MEJOR CONTEXTO
 export function generatePackageShippingResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -161,15 +176,55 @@ export function generatePackageShippingResponse(
 ): string | null {
   
   // Solo procesar si es una consulta de envío
-  if (!isPackageShippingInquiry(customerMessage)) {
+  if (!isPackageShippingInquiry(customerMessage) && !isDestinationResponse(customerMessage)) {
     return null;
   }
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
   const extractedDestination = extractDestinationFromMessage(customerMessage);
   
-  // Si no se especifica destino, preguntar CON EMOJIS Y ESTRUCTURA CLARA
-  if (!extractedDestination) {
+  // Si detectamos una respuesta de destino específica, procesar inmediatamente
+  if (isDestinationResponse(customerMessage) && extractedDestination) {
+    const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
+    
+    return `📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}** 🇨🇼
+
+📍 **Dirección para entregar tu paquete:**
+${originAddress || 'Dirección no disponible en el sistema'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 **RESERVAR ESPACIO EN EL PRÓXIMO VUELO** ✈️
+
+**👤 Contacta a nuestro coordinador:**
+🧑‍💼 **Darwin Pedroza**  
+📱 **+573127271746**
+
+**🎯 Darwin te ayudará con:**
+• ✅ Reserva de espacio
+• 📅 Fechas disponibles  
+• 💰 Tarifas y pagos
+• 📋 Seguimiento del envío
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 **PROCESO DE ENVÍO:**
+
+**1️⃣** Lleva tu paquete a la dirección indicada 📍
+**2️⃣** Nuestro equipo lo recibirá y procesará 👥  
+**3️⃣** Será transportado hacia ${extractedDestination} ✈️
+**4️⃣** Te notificaremos cuando llegue a destino 📢
+
+⏰ **PLAZO DE ENTREGA:**
+🚨 **Hasta las 6:00 PM del día anterior al viaje programado**
+
+¡Estamos listos para ayudarte con tu envío! ✈️💼
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  }
+  
+  // Si no se especifica destino en consulta inicial, preguntar
+  if (!extractedDestination && isPackageShippingInquiry(customerMessage)) {
     return `¡Hola ${customerName}! 👋✈️
 
 📦 **ENVÍO DE ENCOMIENDAS**
@@ -187,10 +242,11 @@ Una vez me indiques el destino, te proporcionaré toda la información necesaria
 ✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
-  // Buscar la dirección de origen correspondiente
-  const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
-  
-  let response = `¡Hola ${customerName}! 👋✈️
+  // Si se especifica destino en la consulta inicial
+  if (extractedDestination) {
+    const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
+    
+    return `¡Hola ${customerName}! 👋✈️
 
 📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
 
@@ -220,27 +276,36 @@ ${originAddress || 'Dirección no disponible en el sistema'}
 **3️⃣** Será transportado hacia ${extractedDestination} ✈️
 **4️⃣** Te notificaremos cuando llegue a destino 📢
 
+⏰ **PLAZO DE ENTREGA:**
+🚨 **Hasta las 6:00 PM del día anterior al viaje programado**
+
 ¡Estamos listos para ayudarte con tu envío! ✈️💼
 
 ✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  }
 
-  return response;
+  return null;
 }
 
-// Encontrar dirección de origen basada en el destino
+// FUNCIÓN CORREGIDA: Encontrar dirección de origen basada en el destino
 function findOriginAddressForDestination(destination: string, addresses: any[]): string | null {
   if (!addresses || addresses.length === 0) {
     return null;
   }
 
-  // Lógica: si envía hacia Curazao, debe entregar en Barranquilla (origen)
+  console.log(`🔍 Buscando dirección de origen para destino: ${destination}`);
+  console.log(`📍 Direcciones disponibles:`, addresses.map(addr => `${addr.city}: ${addr.address}`));
+
+  // LÓGICA CORREGIDA: Si envía hacia Curazao, debe entregar en Barranquilla (origen)
   // Si envía hacia Barranquilla, debe entregar en Curazao (origen)
   
   if (destination === 'Curazao') {
     // Buscar dirección de Barranquilla (origen para envíos a Curazao)
     const barranquillaAddress = addresses.find(addr => 
-      addr.city.toLowerCase().includes('barranquilla')
+      addr.city.toLowerCase().includes('barranquilla') || 
+      addr.city.toLowerCase().includes('colombia')
     );
+    console.log(`🇨🇴 Dirección de Barranquilla encontrada:`, barranquillaAddress);
     return barranquillaAddress ? barranquillaAddress.address : null;
   }
   
@@ -248,11 +313,12 @@ function findOriginAddressForDestination(destination: string, addresses: any[]):
     // Buscar dirección de Curazao (origen para envíos a Barranquilla)
     const curazaoAddress = addresses.find(addr => 
       addr.city.toLowerCase().includes('curazao') || 
-      addr.city.toLowerCase().includes('curacao')
+      addr.city.toLowerCase().includes('curacao') || 
+      addr.city.toLowerCase().includes('curaçao')
     );
+    console.log(`🇨🇼 Dirección de Curazao encontrada:`, curazaoAddress);
     return curazaoAddress ? curazaoAddress.address : null;
   }
   
   return null;
 }
-

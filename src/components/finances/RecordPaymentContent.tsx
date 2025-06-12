@@ -1,7 +1,6 @@
-
 import { MobilePackageInfo } from '@/components/mobile/MobilePackageInfo';
-import { PaymentFormFields } from './PaymentFormFields';
-import { PaymentSummaryCard } from './PaymentSummaryCard';
+import { MobilePaymentSection } from '@/components/mobile/MobilePaymentSection';
+import { MobileDeliveryFormFields } from '@/components/mobile/MobileDeliveryFormFields';
 import { RecordPaymentActions } from './RecordPaymentActions';
 import type { PaymentEntryData } from '@/types/payment';
 
@@ -70,23 +69,23 @@ export function RecordPaymentContent({
       {/* Package Info - usando el componente móvil IDÉNTICO */}
       <MobilePackageInfo package={mockPackage} />
 
-      {/* Payment Form Fields - usando la MISMA lógica del formulario móvil */}
-      <PaymentFormFields
-        mockPackage={mockPackage}
+      {/* Payment Section - usando la MISMA lógica del formulario móvil */}
+      <MobilePaymentSection
+        package={mockPackage}
         payments={payments}
-        notes={notes}
         onAddPayment={onAddPayment}
         onUpdatePayment={onUpdatePayment}
         onRemovePayment={onRemovePayment}
-        onNotesChange={onNotesChange}
         getCurrencySymbol={getCurrencySymbol}
       />
 
-      {/* Payment Summary Warning - MISMA lógica de validación */}
-      <PaymentSummaryCard
-        remainingAmount={remainingAmount}
-        currency={packageCurrency}
-        currencySymbol={currencySymbol}
+      {/* Delivery Form Fields - Solo notas, omitiendo "entregado por" */}
+      <MobileDeliveryFormFields
+        deliveredBy=""
+        setDeliveredBy={() => {}}
+        notes={notes}
+        setNotes={onNotesChange}
+        hideDeliveredBy={true}
       />
 
       {/* Action Buttons - usando hasValidPayments como en el formulario móvil */}

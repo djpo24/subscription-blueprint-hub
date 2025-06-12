@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomerPackages } from '@/hooks/useCustomerPackages';
 import { usePaymentManagement } from '@/hooks/usePaymentManagement';
+import { useCustomerData } from '@/hooks/useCustomerData';
 import { PaymentSubmissionService } from '@/services/paymentSubmissionService';
 import { toast } from '@/hooks/use-toast';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
@@ -14,6 +15,9 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
   const { user } = useAuth();
   
   const { customerPackages, mockPackage } = useCustomerPackages(customer, isOpen);
+  
+  // Get customer data to ensure we have complete customer information
+  const { customer: customerData } = useCustomerData(customer?.id || '');
   
   // Use the package currency if available, otherwise default to COP
   const packageCurrency = customerPackages[0]?.currency || mockPackage?.currency || 'COP';
@@ -27,6 +31,19 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     getCurrencySymbol,
     getValidPayments
   } = usePaymentManagement(packageCurrency);
+
+  // Enhanced mock package with complete customer data
+  const enhancedMockPackage = mockPackage && customerData ? {
+    ...mockPackage,
+    customers: {
+      name: customerData.name,
+      email: customerData.email || '',
+      phone: customerData.phone || customerData.whatsapp_number || ''
+    }
+  } : mockPackage;
+
+  console.log('🔧 [useRecordPaymentDialog] Customer data:', customerData);
+  console.log('🔧 [useRecordPaymentDialog] Enhanced mock package:', enhancedMockPackage);
 
   // Reset form when dialog opens/closes or customer changes
   useEffect(() => {
@@ -102,7 +119,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     setNotes,
     isLoading,
     payments,
-    mockPackage,
+    mockPackage: enhancedMockPackage,
     handlePaymentUpdate,
     addPayment,
     removePayment,

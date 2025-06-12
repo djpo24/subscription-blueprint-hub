@@ -86,17 +86,19 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
     }
   };
 
-  // Función mejorada para obtener el nombre del cliente
+  // Función para obtener el nombre del cliente - CORREGIDA
   const getCustomerName = () => {
     const customerName = pkg.customers?.name;
     console.log('🔍 [MobilePackageInfo] Getting customer name:', customerName);
     
-    if (!customerName || customerName.trim() === '') {
-      console.log('⚠️ [MobilePackageInfo] No customer name found, returning fallback');
-      return 'Sin nombre asignado';
+    // Verificar si el nombre existe y no está vacío
+    if (customerName && customerName.trim() !== '') {
+      console.log('✅ [MobilePackageInfo] Customer name found:', customerName.trim());
+      return customerName.trim();
     }
     
-    return customerName.trim();
+    console.log('⚠️ [MobilePackageInfo] No valid customer name found, returning fallback');
+    return 'Sin nombre asignado';
   };
 
   const handleToggleAllPackages = () => {
@@ -173,7 +175,7 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
                   <span className="text-gray-700">{pkg.destination}</span>
                 </div>
 
-                {/* Customer Name - LÍNEA CORREGIDA */}
+                {/* Customer Name */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-gray-500" />

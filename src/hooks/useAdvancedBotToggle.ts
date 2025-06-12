@@ -43,18 +43,12 @@ export function useAdvancedBotToggle() {
       try {
         console.log('🔍 Loading bot settings from database...');
         
-        // Use direct table queries for better TypeScript support
-        const { data: autoResponseData, error: autoError } = await supabase
-          .from('bot_settings')
-          .select('setting_value')
-          .eq('setting_name', 'auto_response_enabled')
-          .maybeSingle();
+        // Use RPC functions from the migration with proper typing
+        const { data: autoResponseEnabled, error: autoError } = await supabase
+          .rpc('get_bot_setting', { setting_name: 'auto_response_enabled' }) as { data: boolean | null, error: any };
         
-        const { data: manualResponseData, error: manualError } = await supabase
-          .from('bot_settings')
-          .select('setting_value')
-          .eq('setting_name', 'manual_response_enabled')
-          .maybeSingle();
+        const { data: manualResponseEnabled, error: manualError } = await supabase
+          .rpc('get_bot_setting', { setting_name: 'manual_response_enabled' }) as { data: boolean | null, error: any };
 
         if (autoError || manualError) {
           console.error('Error loading bot settings:', { autoError, manualError });
@@ -62,8 +56,8 @@ export function useAdvancedBotToggle() {
         }
 
         const newStates: BotStates = {
-          isAutoResponseEnabled: autoResponseData?.setting_value ?? false,
-          isManualResponseEnabled: manualResponseData?.setting_value ?? true
+          isAutoResponseEnabled: autoResponseEnabled ?? false,
+          isManualResponseEnabled: manualResponseEnabled ?? true
         };
 
         console.log('✅ Bot settings loaded:', newStates);
@@ -94,18 +88,14 @@ export function useAdvancedBotToggle() {
     try {
       console.log('🔄 Updating auto-response setting to:', enabled);
       
-      // Use direct table update with upsert for better reliability
-      const { error } = await supabase
-        .from('bot_settings')
-        .upsert({
-          setting_name: 'auto_response_enabled',
-          setting_value: enabled,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'setting_name'
-        });
+      // Use RPC function from the migration with proper typing
+      const { data: success, error } = await supabase
+        .rpc('update_bot_setting', { 
+          setting_name: 'auto_response_enabled', 
+          new_value: enabled 
+        }) as { data: boolean | null, error: any };
 
-      if (error) {
+      if (error || !success) {
         console.error('Error updating auto-response setting:', error);
         throw new Error('Failed to update setting');
       }
@@ -126,18 +116,14 @@ export function useAdvancedBotToggle() {
     try {
       console.log('🔄 Updating manual-response setting to:', enabled);
       
-      // Use direct table update with upsert for better reliability
-      const { error } = await supabase
-        .from('bot_settings')
-        .upsert({
-          setting_name: 'manual_response_enabled',
-          setting_value: enabled,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'setting_name'
-        });
+      // Use RPC function from the migration with proper typing
+      const { data: success, error } = await supabase
+        .rpc('update_bot_setting', { 
+          setting_name: 'manual_response_enabled', 
+          new_value: enabled 
+        }) as { data: boolean | null, error: any };
 
-      if (error) {
+      if (error || !success) {
         console.error('Error updating manual-response setting:', error);
         throw new Error('Failed to update setting');
       }

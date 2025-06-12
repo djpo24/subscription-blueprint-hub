@@ -2,120 +2,92 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Minus } from 'lucide-react';
-import { formatNumber, parseFormattedNumber } from '@/utils/numberFormatter';
-import type { PaymentEntryData } from '@/types/payment';
+import { X } from 'lucide-react';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+
+interface PaymentEntryData {
+  methodId: string;
+  amount: string;
+  currency: string;
+  type: 'full' | 'partial';
+}
 
 interface PaymentEntryProps {
   payment: PaymentEntryData;
   index: number;
-  onUpdate: (index: number, field: string, value: string) => void;
+  onUpdate: (index: number, field: keyof PaymentEntryData, value: string) => void;
   onRemove: (index: number) => void;
   canRemove: boolean;
 }
 
-// Fixed payment methods for delivery form
-const DELIVERY_PAYMENT_METHODS = [
-  { id: 'efectivo', name: 'Efectivo' },
-  { id: 'transferencia', name: 'Transferencia' }
-];
-
 export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    console.log('📝 Input amount change:', rawValue);
-    
-    // Allow only numbers and format with periods
-    const formattedValue = formatNumber(rawValue);
-    const numericValue = parseFormattedNumber(formattedValue);
-    
-    // Update with the raw numeric value (without periods)
-    onUpdate(index, 'amount', numericValue);
-  };
-
-  const getDisplayAmount = () => {
-    if (!payment.amount) return '';
-    return formatNumber(payment.amount);
-  };
-
-  const getCurrencySymbol = (currency: string) => {
-    const symbols = {
-      'AWG': 'ƒ',
-      'USD': '$',
-      'COP': '$'
-    };
-    return symbols[currency as keyof typeof symbols] || '$';
-  };
-
-  const currencySymbol = getCurrencySymbol(payment.currency);
+  const { data: paymentMethods = [] } = usePaymentMethods();
 
   return (
-    <div className="grid grid-cols-4 gap-2 items-end">
-      {/* Currency Selection */}
-      <div>
-        <Select
-          value={payment.currency}
-          onValueChange={(value) => onUpdate(index, 'currency', value)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {['AWG', 'COP'].map((currency) => (
-              <SelectItem key={currency} value={currency}>
-                {currency}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Payment Method Selection - Fixed options */}
-      <div>
-        <Select
-          value={payment.methodId || 'efectivo'}
-          onValueChange={(value) => onUpdate(index, 'methodId', value)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Seleccionar método" />
-          </SelectTrigger>
-          <SelectContent>
-            {DELIVERY_PAYMENT_METHODS.map((method) => (
-              <SelectItem key={method.id} value={method.id}>
-                {method.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Amount Input */}
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
-          {currencySymbol}
-        </span>
-        <Input
-          type="text"
-          value={getDisplayAmount()}
-          onChange={handleAmountChange}
-          className="pl-8 h-10"
-          placeholder="0"
-        />
-      </div>
-
-      {/* Remove Button */}
-      <div className="flex justify-center">
-        {canRemove && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onRemove(index)}
-            className="h-10 w-10 p-0"
+    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+      {/* Primera fila: Divisa y Método de pago */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-gray-700 mb-1 block">Divisa</label>
+          <Select 
+            value={payment.currency} 
+            onValueChange={(value) => onUpdate(index, 'currency', value)}
           >
-            <Minus className="h-4 w-4" />
-          </Button>
-        )}
+            <SelectTrigger className="h-10 text-sm">
+              <SelectValue placeholder="Divisa" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-white border shadow-lg">
+              <SelectItem value="COP">COP (Peso)</SelectItem>
+              <SelectItem value="AWG">AWG (Florín)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <label className="text-xs font-medium text-gray-700 mb-1 block">Método</label>
+          <Select 
+            value={payment.methodId} 
+            onValueChange={(value) => onUpdate(index, 'methodId', value)}
+          >
+            <SelectTrigger className="h-10 text-sm">
+              <SelectValue placeholder="Método" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-white border shadow-lg">
+              {paymentMethods.map((method) => (
+                <SelectItem key={method.id} value={method.id}>
+                  {method.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Segunda fila: Monto (ocupa toda la fila) */}
+      <div>
+        <label className="text-xs font-medium text-gray-700 mb-1 block">Monto</label>
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={payment.amount}
+            onChange={(e) => onUpdate(index, 'amount', e.target.value)}
+            placeholder="0.00"
+            className="flex-1 h-14 text-xl font-semibold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            style={{ fontSize: '20px' }}
+          />
+          {canRemove && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onRemove(index)}
+              className="h-14 px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

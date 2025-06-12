@@ -49,7 +49,7 @@ export function MobilePaymentSection({
           Cobro Requerido
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="mb-3">
           <p className="text-sm text-green-700">
             <strong>Total a cobrar:</strong> {currencySymbol}{pkg.amount_to_collect?.toLocaleString('es-CO')} {packageCurrency}
@@ -67,7 +67,7 @@ export function MobilePaymentSection({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-green-800">Registrar pago</Label>
+          <Label className="text-green-800 text-sm font-medium">Registrar pago</Label>
 
           {payments.length > 0 && (
             <PaymentEntry

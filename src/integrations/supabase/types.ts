@@ -760,6 +760,51 @@ export type Database = {
           },
         ]
       }
+      route_freight_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          destination: string
+          effective_from: string
+          effective_until: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          origin: string
+          price_per_kilo: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          destination: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          origin: string
+          price_per_kilo: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          destination?: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          origin?: string
+          price_per_kilo?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sent_messages: {
         Row: {
           created_at: string | null
@@ -1049,9 +1094,31 @@ export type Database = {
         }
         Returns: string
       }
+      generate_marketing_message_with_rates: {
+        Args: {
+          customer_name_param: string
+          template_param: string
+          start_date: string
+          end_date: string
+        }
+        Returns: string
+      }
       get_app_secret: {
         Args: { secret_name: string }
         Returns: string
+      }
+      get_current_freight_rate: {
+        Args: {
+          origin_param: string
+          destination_param: string
+          reference_date?: string
+        }
+        Returns: {
+          rate_id: string
+          price_per_kilo: number
+          currency: string
+          notes: string
+        }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>

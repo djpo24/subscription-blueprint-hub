@@ -133,9 +133,9 @@ serve(async (req) => {
       try {
         console.log(`📱 Sending message to ${contact.customer_name} (${contact.phone_number})`);
 
-        // Generar mensaje usando la función de la base de datos
+        // Generar mensaje usando la nueva función que incluye precios
         const { data: messageContent, error: messageError } = await supabaseClient
-          .rpc('generate_marketing_message', {
+          .rpc('generate_marketing_message_with_rates', {
             customer_name_param: contact.customer_name,
             template_param: settings.message_template,
             start_date: today.toISOString().split('T')[0],
@@ -170,13 +170,13 @@ serve(async (req) => {
         // Enviar mensaje por WhatsApp
         const { data: whatsappResponse, error: whatsappError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
           body: {
-            notificationId: messageLog.id, // Usar el ID del log como notificationId
+            notificationId: messageLog.id,
             phone: contact.phone_number,
             message: messageContent,
             useTemplate: true,
             templateName: 'customer_service_followup',
             templateLanguage: 'es_CO',
-            customerId: null // Marketing messages don't have associated customer IDs
+            customerId: null
           }
         });
 

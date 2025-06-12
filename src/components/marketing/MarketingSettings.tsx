@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Save, TestTube, Copy } from 'lucide-react';
 
 const EXAMPLE_TEMPLATES = [
   {
-    name: "Plantilla Completa - Ambas Rutas",
+    name: "Plantilla Completa - Con Precios",
     template: `¡Hola {customer_name}! 🚀
 
 📦 *PRÓXIMOS ENVÍOS PROGRAMADOS*
@@ -95,9 +94,13 @@ export function MarketingSettings() {
     const testMessage = formData.messageTemplate
       .replace('{customer_name}', 'María González')
       .replace('{trip_details}', `📅 15/06/2024 - Envío Barranquilla → Curazao (Vuelo: CM201)
-📅 18/06/2024 - Envío Curazao → Barranquilla (Vuelo: CM202)  
+💰 Flete: $15,000 pesos/kg
+
+📅 18/06/2024 - Envío Curazao → Barranquilla (Vuelo: CM202)
+💰 Flete: ƒ25 florines/kg
+
 📅 22/06/2024 - Envío Barranquilla → Curazao (Vuelo: CM203)
-📅 25/06/2024 - Envío Curazao → Barranquilla (Vuelo: CM204)`);
+💰 Flete: $15,000 pesos/kg`);
     
     toast({
       title: "Vista previa del mensaje",
@@ -159,8 +162,10 @@ export function MarketingSettings() {
                 {example.template
                   .replace('{customer_name}', 'María González')
                   .replace('{trip_details}', `📅 15/06/2024 - Envío Barranquilla → Curazao (Vuelo: CM201)
+💰 Flete: $15,000 pesos/kg
+
 📅 18/06/2024 - Envío Curazao → Barranquilla (Vuelo: CM202)
-📅 22/06/2024 - Envío Barranquilla → Curazao (Vuelo: CM203)`)}
+💰 Flete: ƒ25 florines/kg`)}
               </div>
             </div>
           ))}
@@ -252,10 +257,10 @@ export function MarketingSettings() {
                 <p className="mb-2">Variables disponibles:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li><code>{'{customer_name}'}</code> - Nombre del cliente</li>
-                  <li><code>{'{trip_details}'}</code> - Lista de envíos programados con rutas específicas</li>
+                  <li><code>{'{trip_details}'}</code> - Lista de envíos programados con rutas específicas y precios por kg</li>
                 </ul>
                 <p className="mt-2 text-xs text-amber-600">
-                  💡 Los envíos se mostrarán automáticamente por ruta: Barranquilla → Curazao y Curazao → Barranquilla
+                  💡 Los envíos se mostrarán automáticamente por ruta con precios actualizados: Barranquilla → Curazao y Curazao → Barranquilla
                 </p>
               </div>
             </div>

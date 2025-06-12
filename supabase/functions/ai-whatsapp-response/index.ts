@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -8,7 +7,7 @@ import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts'
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse } from './businessLogic.ts';
-import { generatePackageShippingResponse } from './packageInquiryService.ts';
+import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
@@ -62,7 +61,70 @@ serve(async (req) => {
     // Get destination addresses for shipping inquiries
     const destinationAddresses = await getDestinationAddresses(supabase);
 
-    // 📦 NUEVA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes
+    // Get upcoming trips for deadline inquiries
+    const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
+
+    // 🚨 NUEVA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes
+    const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
+    if (packageDeadlineResponse) {
+      console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      let deadlineInteractionId: string | null = null;
+      try {
+        const { data: deadlineInteractionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: packageDeadlineResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isPackageDeadlineInquiry: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && deadlineInteractionData) {
+          deadlineInteractionId = deadlineInteractionData.id;
+          await updateLearningModel(supabase, deadlineInteractionId, customerPhone, message, packageDeadlineResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: packageDeadlineResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: deadlineInteractionId,
+        wasEscalated: false
+      };
+
+      console.log('⏰ RESPUESTA DE PLAZO DE ENTREGA ENVIADA - Información completa proporcionada');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 📦 SEGUNDA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA DE ENVÍO detectada - Proporcionando información de direcciones');
@@ -122,7 +184,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 PRIORIDAD MÁXIMA: Detectar solicitudes de entrega a domicilio
+    // 🏠 TERCERA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');

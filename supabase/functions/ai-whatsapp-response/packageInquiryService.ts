@@ -1,5 +1,6 @@
 
 
+
 import { CustomerInfo } from './types.ts';
 
 // Detectar consultas sobre dónde enviar paquetes
@@ -22,6 +23,113 @@ export function isPackageShippingInquiry(message: string): boolean {
   const normalizedMessage = message.toLowerCase();
   
   return shippingKeywords.some(keyword => normalizedMessage.includes(keyword));
+}
+
+// NUEVA FUNCIÓN: Detectar consultas sobre plazos de entrega de paquetes
+export function isPackageDeliveryDeadlineInquiry(message: string): boolean {
+  const deadlineKeywords = [
+    'hasta cuando', 'hasta cuándo', 'hasta que hora', 'hasta qué hora',
+    'tiempo de entregar', 'tiempo para entregar', 'plazo para entregar',
+    'limite para entregar', 'límite para entregar', 'hora limite', 'hora límite',
+    'tengo tiempo', 'me queda tiempo', 'puedo entregar',
+    'fecha limite', 'fecha límite', 'hasta que fecha', 'hasta qué fecha',
+    'cuando debo entregar', 'cuándo debo entregar', 'deadline',
+    'ultimo dia', 'último día', 'ultima hora', 'última hora'
+  ];
+
+  const normalizedMessage = message.toLowerCase();
+  
+  return deadlineKeywords.some(keyword => normalizedMessage.includes(keyword));
+}
+
+// NUEVA FUNCIÓN: Generar respuesta para consultas sobre plazos de entrega
+export function generatePackageDeliveryDeadlineResponse(
+  customerInfo: CustomerInfo, 
+  customerMessage: string,
+  upcomingTrips: any[]
+): string | null {
+  
+  // Solo procesar si es una consulta sobre plazos de entrega
+  if (!isPackageDeliveryDeadlineInquiry(customerMessage)) {
+    return null;
+  }
+
+  const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  // Si no hay viajes próximos programados
+  if (!upcomingTrips || upcomingTrips.length === 0) {
+    return `¡Hola ${customerName}! 👋⏰
+
+🚨 **PLAZO DE ENTREGA DE PAQUETES**
+
+📅 **Estado actual:** No hay viajes programados en los próximos días
+
+📋 **Para programar tu envío:**
+
+📞 **Contacta a nuestro coordinador:**
+🧑‍💼 **Darwin Pedroza**  
+📱 **+573127271746**
+
+**🎯 Darwin te ayudará con:**
+• 📅 Programar próximos viajes
+• ⏰ Confirmar fechas y horarios  
+• 📦 Reservar espacio para tu paquete
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  }
+
+  // Obtener el próximo viaje
+  const nextTrip = upcomingTrips[0];
+  const tripDate = new Date(nextTrip.trip_date + 'T00:00:00');
+  
+  // Calcular fecha límite (un día antes del viaje)
+  const deadlineDate = new Date(tripDate);
+  deadlineDate.setDate(deadlineDate.getDate() - 1);
+  
+  // Formatear la fecha límite en español
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  };
+  const formattedDeadline = deadlineDate.toLocaleDateString('es-ES', options);
+  
+  // Formatear fecha del viaje
+  const formattedTripDate = tripDate.toLocaleDateString('es-ES', options);
+  
+  // Capitalizar primera letra del día de la semana
+  const capitalizedDeadline = formattedDeadline.charAt(0).toUpperCase() + formattedDeadline.slice(1);
+  const capitalizedTripDate = formattedTripDate.charAt(0).toUpperCase() + formattedTripDate.slice(1);
+
+  return `¡Hola ${customerName}! 👋⏰
+
+⚠️ **PLAZO DE ENTREGA DE PAQUETES**
+
+🚨 **Tienes hasta las 6:00 PM del ${capitalizedDeadline} para que recibamos tu paquete.**
+
+**Después de este horario no aseguramos que pueda viajar en este viaje programado para el ${capitalizedTripDate}.**
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✈️ **PRÓXIMO VIAJE PROGRAMADO:**
+📅 **Fecha:** ${capitalizedTripDate}
+🛫 **Ruta:** ${nextTrip.origin} → ${nextTrip.destination}
+${nextTrip.flight_number ? `✈️ **Vuelo:** ${nextTrip.flight_number}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 **RESERVAR ESPACIO:**
+🧑‍💼 **Darwin Pedroza**  
+📱 **+573127271746**
+
+**🎯 Para confirmar:**
+• ✅ Reserva de espacio en el vuelo
+• 📦 Detalles de tu paquete
+• 📋 Proceso de entrega
+
+¡No esperes hasta el último momento! ⏰
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }
 
 // Detectar destino mencionado en el mensaje

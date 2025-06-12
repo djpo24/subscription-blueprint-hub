@@ -41,6 +41,8 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
     );
   }
 
+  console.log('📋 [ChatList] Rendering chat list with', chats.length, 'conversations');
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -49,16 +51,17 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
       <CardContent className="p-0 h-[calc(100%-5rem)]">
         <ScrollArea className="h-full">
           <div className="space-y-1 p-2">
-            {chats.map((chat) => {
+            {chats.map((chat, index) => {
               // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
               const displayName = chat.customerName || 'Cliente';
               const messageTime = chat.lastMessageTime || chat.timestamp || '';
               
-              console.log('📋 [ChatList] Rendering chat item:', {
+              console.log('📋 [ChatList] Rendering chat item #', index + 1, {
                 phone: chat.phone,
                 customerName: chat.customerName,
                 displayName,
-                isRegistered: chat.isRegistered
+                isRegistered: chat.isRegistered,
+                messageTime
               });
               
               return (
@@ -69,6 +72,7 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
                   messageTime={messageTime}
                   selectedPhone={selectedPhone}
                   onChatSelect={onChatSelect}
+                  index={index + 1}
                 />
               );
             })}
@@ -85,10 +89,20 @@ interface ChatListItemProps {
   messageTime: string;
   selectedPhone: string | null;
   onChatSelect: (phone: string) => void;
+  index: number;
 }
 
-function ChatListItem({ chat, displayName, messageTime, selectedPhone, onChatSelect }: ChatListItemProps) {
-  const { data: packageIndicator } = useCustomerPackageStatus(chat.phone);
+function ChatListItem({ chat, displayName, messageTime, selectedPhone, onChatSelect, index }: ChatListItemProps) {
+  const { data: packageIndicator, isLoading, error } = useCustomerPackageStatus(chat.phone);
+
+  console.log('🎯 [ChatListItem]', `#${index}`, {
+    phone: chat.phone,
+    customerName: chat.customerName,
+    hasIndicator: !!packageIndicator,
+    isLoading,
+    error: error?.message,
+    indicatorStatus: packageIndicator?.status
+  });
 
   return (
     <div
@@ -123,6 +137,9 @@ function ChatListItem({ chat, displayName, messageTime, selectedPhone, onChatSel
                     packageIndicator={packageIndicator}
                     size="sm"
                   />
+                )}
+                {isLoading && (
+                  <div className="w-3 h-3 bg-gray-300 rounded-full animate-pulse" />
                 )}
               </div>
               <Badge 

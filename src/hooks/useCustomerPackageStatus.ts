@@ -14,28 +14,65 @@ export function useCustomerPackageStatus(customerPhone: string) {
           return null;
         }
 
-        const normalizedPhone = customerPhone.replace(/[\s\-\(\)\+]/g, '');
-        console.log('🔍 [useCustomerPackageStatus] Searching for phone:', customerPhone, 'normalized:', normalizedPhone);
+        // Crear múltiples variaciones del número de teléfono para búsqueda más amplia
+        const originalPhone = customerPhone.trim();
+        const normalizedPhone = originalPhone.replace(/[\s\-\(\)\+]/g, '');
+        const withCountryCode = normalizedPhone.startsWith('57') ? normalizedPhone : `57${normalizedPhone}`;
+        const withoutCountryCode = normalizedPhone.startsWith('57') ? normalizedPhone.substring(2) : normalizedPhone;
+        const withPlus = `+${normalizedPhone}`;
+        
+        const phoneVariations = [
+          originalPhone,
+          normalizedPhone,
+          withCountryCode,
+          withoutCountryCode,
+          withPlus,
+          `+57${withoutCountryCode}`
+        ].filter((phone, index, arr) => arr.indexOf(phone) === index); // Remove duplicates
 
-        // Buscar el cliente por múltiples campos de teléfono
-        const { data: customer } = await supabase
+        console.log('🔍 [useCustomerPackageStatus] Searching for phone variations:', {
+          original: originalPhone,
+          variations: phoneVariations
+        });
+
+        // Buscar el cliente por múltiples variaciones de teléfono
+        const { data: customers, error: customerError } = await supabase
           .from('customers')
           .select('id, name, phone, whatsapp_number')
-          .or(`phone.eq.${customerPhone},whatsapp_number.eq.${customerPhone},phone.eq.${normalizedPhone},whatsapp_number.eq.${normalizedPhone}`)
-          .maybeSingle();
+          .or(phoneVariations.map(phone => 
+            `phone.eq.${phone},whatsapp_number.eq.${phone}`
+          ).join(','));
 
-        if (!customer) {
-          console.log('🔍 [useCustomerPackageStatus] Customer not found for phone:', customerPhone);
+        if (customerError) {
+          console.error('❌ [useCustomerPackageStatus] Error searching customers:', customerError);
           return null;
         }
 
-        console.log('🔍 [useCustomerPackageStatus] Customer found:', customer.name, customer.id);
+        console.log('🔍 [useCustomerPackageStatus] Customer search results:', {
+          phone: originalPhone,
+          foundCustomers: customers?.length || 0,
+          customers: customers?.map(c => ({ id: c.id, name: c.name, phone: c.phone, whatsapp: c.whatsapp_number }))
+        });
+
+        if (!customers || customers.length === 0) {
+          console.log('🔍 [useCustomerPackageStatus] No customer found for phone:', originalPhone);
+          return null;
+        }
+
+        // Si encontramos múltiples clientes, usar el primero
+        const customer = customers[0];
+        console.log('🔍 [useCustomerPackageStatus] Using customer:', customer.name, customer.id);
 
         // Obtener los paquetes del cliente
-        const { data: packages } = await supabase
+        const { data: packages, error: packagesError } = await supabase
           .from('packages')
           .select('id, status, amount_to_collect, delivered_at')
           .eq('customer_id', customer.id);
+
+        if (packagesError) {
+          console.error('❌ [useCustomerPackageStatus] Error fetching packages:', packagesError);
+          return null;
+        }
 
         if (!packages || packages.length === 0) {
           console.log('🔍 [useCustomerPackageStatus] No packages found for customer:', customer.id);
@@ -44,10 +81,15 @@ export function useCustomerPackageStatus(customerPhone: string) {
 
         // Obtener todos los pagos para los paquetes del cliente
         const packageIds = packages.map(pkg => pkg.id);
-        const { data: payments } = await supabase
+        const { data: payments, error: paymentsError } = await supabase
           .from('customer_payments')
           .select('package_id, amount')
           .in('package_id', packageIds);
+
+        if (paymentsError) {
+          console.error('❌ [useCustomerPackageStatus] Error fetching payments:', paymentsError);
+          return null;
+        }
 
         console.log('🔍 [useCustomerPackageStatus] Customer:', customer.name, 'packages:', packages.length, 'payments:', payments?.length || 0);
 

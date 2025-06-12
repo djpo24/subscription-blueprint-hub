@@ -10,124 +10,78 @@ interface DeliveryPayment {
 
 interface DeliverPackageParams {
   packageId: string;
-  deliveredBy: string;
+  deliveredBy: string; // UUID del usuario
   payments?: DeliveryPayment[];
 }
 
 export class DeliveryService {
-  static async deliverPackage({ packageId, deliveredBy, payments }: DeliverPackageParams) {
-    console.log('🚀 [DeliveryService] Iniciando entrega de paquete:', {
-      packageId,
-      deliveredBy,
-      payments,
-      paymentsCount: payments?.length || 0
-    });
+  static async deliverPackage(params: DeliverPackageParams) {
+    console.log('🚀 [DeliveryService] Iniciando entrega de paquete:', params);
+    
+    const { packageId, deliveredBy, payments } = params;
+    
+    // Validaciones
+    if (!packageId) {
+      throw new Error('ID del paquete es requerido');
+    }
+    if (!deliveredBy) {
+      throw new Error('Información del entregador es requerida');
+    }
 
     try {
-      // Validar parámetros de entrada
-      if (!packageId) {
-        throw new Error('ID del paquete es requerido');
-      }
-      if (!deliveredBy) {
-        throw new Error('Información del entregador es requerida');
-      }
-
-      console.log('✅ [DeliveryService] Parámetros validados correctamente');
-
-      // Obtener información del paquete
-      const { data: packageData, error: packageError } = await supabase
-        .from('packages')
-        .select('*')
-        .eq('id', packageId)
-        .single();
-
-      if (packageError) {
-        console.error('❌ [DeliveryService] Error obteniendo paquete:', packageError);
-        throw new Error('No se pudo encontrar el paquete especificado');
-      }
-
-      // Verificar que el paquete se puede entregar
-      if (packageData.status === 'delivered') {
-        throw new Error('Este paquete ya ha sido entregado');
-      }
-
-      console.log('📦 [DeliveryService] Paquete encontrado:', {
-        tracking: packageData.tracking_number,
-        status: packageData.status,
-        customer: packageData.customer_id
-      });
-
-      // Actualizar el estado del paquete
-      const { data: updateData, error: updateError } = await supabase
+      // 1. Actualizar el estado del paquete a 'delivered'
+      console.log('📦 [DeliveryService] Actualizando estado del paquete a delivered...');
+      const { error: packageError } = await supabase
         .from('packages')
         .update({
           status: 'delivered',
-          delivered_by: deliveredBy,
           delivered_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          delivered_by: deliveredBy
         })
-        .eq('id', packageId)
-        .select()
-        .single();
+        .eq('id', packageId);
 
-      if (updateError) {
-        console.error('❌ [DeliveryService] Error actualizando paquete:', updateError);
-        throw new Error('No se pudo actualizar el estado del paquete');
+      if (packageError) {
+        console.error('❌ [DeliveryService] Error actualizando paquete:', packageError);
+        throw new Error(`Error actualizando el paquete: ${packageError.message}`);
       }
 
       console.log('✅ [DeliveryService] Paquete actualizado exitosamente');
 
-      // Crear evento de tracking
-      const { error: trackingError } = await supabase
-        .from('tracking_events')
-        .insert({
-          package_id: packageId,
-          event_type: 'delivered',
-          description: `Paquete entregado por ${deliveredBy}`,
-          location: packageData.destination || 'Destino',
-          created_at: new Date().toISOString()
-        });
-
-      if (trackingError) {
-        console.warn('⚠️ [DeliveryService] Error creando evento de tracking:', trackingError);
-        // No lanzar error, es secundario
-      }
-
-      // Registrar pagos si existen
+      // 2. Registrar los pagos si existen
       if (payments && payments.length > 0) {
-        console.log('💰 [DeliveryService] Procesando pagos:', payments.length);
+        console.log('💰 [DeliveryService] Registrando pagos:', payments);
         
         for (const payment of payments) {
-          try {
+          if (payment.amount > 0) {
+            console.log('💳 [DeliveryService] Registrando pago individual:', payment);
+            
             const { error: paymentError } = await supabase
               .from('customer_payments')
               .insert({
                 package_id: packageId,
-                amount: Number(payment.amount),
-                currency: payment.currency,
+                amount: payment.amount,
                 payment_method: payment.method_id,
-                notes: `Pago registrado durante entrega - ${payment.type}`,
+                currency: payment.currency,
                 created_by: deliveredBy,
-                created_at: new Date().toISOString()
+                payment_date: new Date().toISOString()
               });
 
             if (paymentError) {
               console.error('❌ [DeliveryService] Error registrando pago:', paymentError);
+              // No hacer throw aquí para no bloquear la entrega si solo falla el pago
+              console.warn('⚠️ [DeliveryService] Continuando con entrega a pesar del error en el pago');
             } else {
               console.log('✅ [DeliveryService] Pago registrado exitosamente');
             }
-          } catch (paymentError) {
-            console.error('❌ [DeliveryService] Error procesando pago:', paymentError);
-            // Continuar con otros pagos
           }
         }
       }
 
       console.log('🎉 [DeliveryService] Entrega completada exitosamente');
-      return updateData;
+      return { success: true, packageId, deliveredBy };
 
     } catch (error) {
-      console.error('❌ [DeliveryService] Error completo en entrega:', error);
+      console.error('❌ [DeliveryService] Error en deliverPackage:', error);
       throw error;
     }
   }

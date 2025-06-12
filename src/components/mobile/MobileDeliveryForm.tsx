@@ -43,7 +43,7 @@ export function MobileDeliveryForm({
     console.log('👤 [MobileDeliveryForm] Usuario:', user);
     console.log('🆔 [MobileDeliveryForm] Delivered by (ID):', deliveredBy);
     console.log('📧 [MobileDeliveryForm] Delivered by (Display):', deliveredByDisplay);
-    console.log('💰 [MobileDeliveryForm] Pagos:', payments);
+    console.log('💰 [MobileDeliveryForm] Pagos antes de procesar:', payments);
 
     if (!user || !deliveredBy) {
       console.error('❌ [MobileDeliveryForm] Usuario no autenticado o ID no disponible');
@@ -53,12 +53,22 @@ export function MobileDeliveryForm({
 
     try {
       const validPayments = getValidPayments();
-      console.log('✅ [MobileDeliveryForm] Pagos válidos:', validPayments);
+      console.log('✅ [MobileDeliveryForm] Pagos válidos para envío:', validPayments);
+
+      // Asegurar que los pagos tengan el formato correcto
+      const formattedPayments = validPayments.map(payment => ({
+        method_id: payment.method_id,
+        amount: Number(payment.amount),
+        currency: payment.currency,
+        type: payment.type
+      }));
+
+      console.log('💳 [MobileDeliveryForm] Pagos formateados:', formattedPayments);
 
       const deliveryData = {
         packageId: pkg.id,
         deliveredBy: deliveredBy, // Usar UUID del usuario
-        payments: validPayments.length > 0 ? validPayments : undefined
+        payments: formattedPayments.length > 0 ? formattedPayments : undefined
       };
 
       console.log('📤 [MobileDeliveryForm] Enviando datos de entrega:', deliveryData);
@@ -71,7 +81,7 @@ export function MobileDeliveryForm({
       setTimeout(() => {
         console.log('🏁 [MobileDeliveryForm] Cerrando vista...');
         onDeliveryComplete();
-      }, 500);
+      }, 1000);
 
     } catch (error) {
       console.error('❌ [MobileDeliveryForm] Error completo en handleSubmit:', error);

@@ -41,7 +41,7 @@ export function extractDestinationFromMessage(message: string): string | null {
   return null;
 }
 
-// Generar respuesta para consultas de envío de paquetes
+// Generar respuesta para consultas de envío de paquetes - MEJORADA CON ESTRUCTURA
 export function generatePackageShippingResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -56,18 +56,21 @@ export function generatePackageShippingResponse(
   const customerName = customerInfo.customerFirstName || 'Cliente';
   const extractedDestination = extractDestinationFromMessage(customerMessage);
   
-  // Si no se especifica destino, preguntar
+  // Si no se especifica destino, preguntar CON ESTRUCTURA CLARA
   if (!extractedDestination) {
     return `¡Hola ${customerName}! 📦
 
-Para ayudarte con el envío de tu paquete, necesito saber:
+**ENVÍO DE ENCOMIENDAS**
 
-**¿Hacia qué destino quieres enviar tu encomienda?**
+Para ayudarte con el envío, necesito conocer:
 
-🇨🇼 **Curazao**
-🇨🇴 **Barranquilla, Colombia**
+🎯 **¿Hacia qué destino quieres enviar tu encomienda?**
 
-Por favor indícame el destino y te proporcionaré toda la información necesaria para el envío.`;
+**Destinos disponibles:**
+• 🇨🇼 **Curazao**
+• 🇨🇴 **Barranquilla, Colombia**
+
+Una vez me indiques el destino, te proporcionaré toda la información necesaria para el envío.`;
   }
 
   // Buscar la dirección de origen correspondiente
@@ -75,26 +78,33 @@ Por favor indícame el destino y te proporcionaré toda la información necesari
   
   let response = `¡Hola ${customerName}! 📦
 
-**Información para envío hacia ${extractedDestination}:**
+**INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
 
 📍 **Dirección para entregar tu paquete:**
 ${originAddress || 'Dirección no disponible en el sistema'}
 
-📋 **Proceso de envío:**
-1. Lleva tu paquete a la dirección indicada
-2. Nuestro equipo lo recibirá y procesará
-3. Será transportado hacia ${extractedDestination}
-4. Te notificaremos cuando llegue a destino
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📞 **Para reservar espacio en el próximo viaje:**
-Contáctate con nuestro coordinador **Darwin Pedroza** al:
-**+599 9696 4306**
+📞 **RESERVAR ESPACIO EN EL PRÓXIMO VIAJE**
 
-Darwin te ayudará con:
-✅ Reserva de espacio en el próximo viaje
-✅ Información de fechas disponibles
-✅ Detalles de tarifas y pagos
-✅ Seguimiento de tu envío
+**Contacta a nuestro coordinador:**
+👤 **Darwin Pedroza**  
+📱 **+599 9696 4306**
+
+**Darwin te ayudará con:**
+• ✅ Reserva de espacio
+• ✅ Fechas disponibles  
+• ✅ Tarifas y pagos
+• ✅ Seguimiento del envío
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 **PROCESO DE ENVÍO:**
+
+**1.** Lleva tu paquete a la dirección indicada
+**2.** Nuestro equipo lo recibirá y procesará  
+**3.** Será transportado hacia ${extractedDestination}
+**4.** Te notificaremos cuando llegue a destino
 
 ¡Estamos listos para ayudarte con tu envío! 🚚`;
 

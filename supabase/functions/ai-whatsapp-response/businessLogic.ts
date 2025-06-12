@@ -11,7 +11,7 @@ export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isV
   if (criticalPackages.length > 0) {
     return {
       isValid: false,
-      message: `⚠️ URGENTE: Tienes ${criticalPackages.length} encomienda${criticalPackages.length > 1 ? 's' : ''} disponible${criticalPackages.length > 1 ? 's' : ''} para retiro inmediato.`
+      message: `⚠️ **URGENTE:** Tienes ${criticalPackages.length} encomienda${criticalPackages.length > 1 ? 's' : ''} disponible${criticalPackages.length > 1 ? 's' : ''} para retiro inmediato.`
     };
   }
 
@@ -55,7 +55,7 @@ export function isHomeDeliveryRequest(message: string): boolean {
   return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Nueva función para generar respuesta de entrega a domicilio con formato de moneda correcto
+// Nueva función para generar respuesta de entrega a domicilio - MEJORADA CON ESTRUCTURA
 export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
   // Solo procesar si es una solicitud de entrega
   if (!isHomeDeliveryRequest(customerMessage)) {
@@ -66,13 +66,20 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, custome
 
   // Si el cliente no está registrado o no tiene encomiendas
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
-    return `Hola ${customerName} 👋
+    return `¡Hola ${customerName}! 👋
+
+🏠 **ENTREGA A DOMICILIO**
 
 Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro sistema.
 
-Un momento por favor, estoy transfiriendo tu consulta a nuestra coordinadora Josefa quien verificará tu información y te ayudará con la entrega.
+🤝 **TRANSFERENCIA A COORDINADORA**
 
-Josefa te responderá en breve para coordinar los detalles de la entrega 📦🚚`;
+Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
+• Verificará tu información  
+• Te ayudará con la entrega
+• Coordinará todos los detalles
+
+**Josefa te responderá en breve** 📦🚚`;
   }
 
   // Si tiene encomiendas, verificar el estado
@@ -85,12 +92,14 @@ Josefa te responderá en breve para coordinar los detalles de la entrega 📦�
   if (deliverablePackages.length > 0 || pendingPaymentPackages.length > 0) {
     let response = `¡Hola ${customerName}! 📦
 
-Veo que tienes encomienda${(deliverablePackages.length + pendingPaymentPackages.length) > 1 ? 's' : ''} en nuestro sistema:`;
+🏠 **SOLICITUD DE ENTREGA A DOMICILIO**
+
+📋 **TUS ENCOMIENDAS:**`;
 
     if (deliverablePackages.length > 0) {
       response += `\n\n✅ **Disponible${deliverablePackages.length > 1 ? 's' : ''} para entrega:**`;
       deliverablePackages.forEach(pkg => {
-        response += `\n• ${pkg.tracking_number} - ${pkg.description || 'Encomienda'}`;
+        response += `\n• **${pkg.tracking_number}** - ${pkg.description || 'Encomienda'}`;
       });
     }
 
@@ -102,17 +111,21 @@ Veo que tienes encomienda${(deliverablePackages.length + pendingPaymentPackages.
           ? `ƒ${pkg.pendingAmount} florines`
           : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
         
-        response += `\n• ${pkg.tracking_number} - Pendiente: ${formattedAmount}`;
+        response += `\n• **${pkg.tracking_number}** - Pendiente: **${formattedAmount}**`;
       });
     }
 
-    response += `\n\n🚚 **Para coordinar la entrega a domicilio:**
-Un momento por favor, estoy transfiriendo tu solicitud a nuestra coordinadora Josefa quien coordinará todos los detalles contigo.
+    response += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Josefa te contactará en breve para confirmar:
-📍 Dirección de entrega
-⏰ Horario disponible
-💰 Detalles de pago (si aplica)
+🤝 **COORDINACIÓN DE ENTREGA**
+
+Estoy transfiriendo tu solicitud a nuestra coordinadora **Josefa** quien coordinará:
+
+📍 **Dirección de entrega**
+⏰ **Horario disponible**  
+💰 **Detalles de pago** (si aplica)
+
+**Josefa te contactará en breve** para confirmar todos los detalles.
 
 ¡Gracias por tu paciencia! 😊`;
 
@@ -120,11 +133,20 @@ Josefa te contactará en breve para confirmar:
   }
 
   // Si tiene encomiendas pero no están listas para entrega
-  return `Hola ${customerName} 👋
+  return `¡Hola ${customerName}! 👋
 
-Veo que tienes ${customerInfo.packagesCount} encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema, pero aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega.
+🏠 **ENTREGA A DOMICILIO**
 
-Un momento por favor, estoy transfiriendo tu consulta a nuestra coordinadora Josefa quien verificará el estado actual de tus encomiendas y te informará sobre las opciones de entrega.
+📦 **ESTADO DE TUS ENCOMIENDAS:**
+• Tienes **${customerInfo.packagesCount}** encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema
+• Aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega
 
-Josefa te responderá pronto con los detalles actualizados 📦`;
+🤝 **VERIFICACIÓN DE ESTADO**
+
+Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
+• Verificará el estado actual de tus encomiendas
+• Te informará sobre las opciones de entrega
+• Te mantendrá actualizado sobre el progreso
+
+**Josefa te responderá pronto** con los detalles actualizados 📦`;
 }

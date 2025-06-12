@@ -74,13 +74,17 @@ export function detectPackageStatusInquiry(message: string): boolean {
     /dónde.*encomienda/i,
     /dónde.*paquete/i,
     /cuándo.*encomienda/i,
-    /cuándo.*paquete/i
+    /cuándo.*paquete/i,
+    /donde.*encomienda/i,
+    /donde.*paquete/i,
+    /cuando.*encomienda/i,
+    /cuando.*paquete/i
   ];
 
   return packageInquiryPatterns.some(pattern => pattern.test(message));
 }
 
-// NUEVA FUNCIÓN: Generar respuesta de clarificación para encomiendas en origen
+// FUNCIÓN COMPLETAMENTE REESCRITA: Análisis inteligente de consultas de encomiendas
 export function generatePackageOriginClarificationResponse(
   customerInfo: CustomerInfo, 
   message: string,
@@ -93,25 +97,87 @@ export function generatePackageOriginClarificationResponse(
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
+  console.log(`🔍 [PackageInquiry] Analizando consulta de encomienda para ${customerName}: packagesCount=${customerInfo.packagesCount}`);
+  
   // Extraer número de tracking si está presente
   const trackingMatch = message.match(/\b(EO-\d{4}-\d+)\b/i);
   const trackingNumber = trackingMatch ? trackingMatch[1] : null;
   
-  let response = `¡Hola ${customerName}! 👋📦\n\n`;
-  
-  if (trackingNumber) {
-    response += `Veo que consultas por tu encomienda **${trackingNumber}**.\n\n`;
-  } else {
-    response += `Veo que consultas por tu encomienda.\n\n`;
+  // CASO 1: Cliente NO registrado o SIN encomiendas
+  if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
+    console.log(`📭 [PackageInquiry] Cliente sin encomiendas registradas`);
+    
+    if (trackingNumber) {
+      return `¡Hola ${customerName}! 👋📦
+
+Veo que consultas por la encomienda **${trackingNumber}**.
+
+📋 **Para verificar el estado actual**, necesito que me confirmes:
+
+🔍 **¿Eres el remitente o el destinatario de esta encomienda?**
+
+Una vez me confirmes esto, podré darte información específica y actualizada sobre tu encomienda.
+
+✈️ **Envíos Ojito** - Información precisa cuando la necesitas`;
+    } else {
+      return `¡Hola ${customerName}! 👋📦
+
+Para ayudarte con información sobre tu encomienda, necesito algunos datos:
+
+🔍 **Por favor compárteme:**
+• 📋 **Número de tracking** (ejemplo: EO-2025-1234)
+• 🆔 **¿Eres el remitente o destinatario?**
+
+Con esta información podré darte detalles exactos sobre el estado y ubicación de tu encomienda.
+
+✈️ **Envíos Ojito** - Información precisa cuando la necesitas`;
+    }
   }
   
-  response += `Para brindarte la información exacta que necesitas, por favor dime:\n\n`;
+  // CASO 2: Cliente CON encomiendas registradas
+  console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) registrada(s)`);
+  
+  let response = `¡Hola ${customerName}! 👋📦\n\n`;
+  
+  // Si menciona un tracking específico
+  if (trackingNumber) {
+    response += `Veo que consultas por la encomienda **${trackingNumber}**.\n\n`;
+    response += `📋 **Tienes ${customerInfo.packagesCount} encomienda(s) en nuestro sistema.**\n\n`;
+  } else {
+    response += `📋 **Tienes ${customerInfo.packagesCount} encomienda(s) en nuestro sistema.**\n\n`;
+  }
+  
+  // Mostrar información específica de las encomiendas
+  if (customerInfo.pendingDeliveryPackages.length > 0) {
+    response += `📦 **Encomiendas en destino (listas para recoger):**\n`;
+    customerInfo.pendingDeliveryPackages.slice(0, 3).forEach((pkg: any) => {
+      response += `• **${pkg.tracking_number}** - ${pkg.status}\n`;
+      response += `  📍 Destino: ${pkg.destination}\n`;
+      if (pkg.description) {
+        response += `  📝 ${pkg.description}\n`;
+      }
+    });
+    response += `\n`;
+  }
+  
+  if (customerInfo.pendingPaymentPackages.length > 0) {
+    response += `💰 **Encomiendas con saldo pendiente:**\n`;
+    customerInfo.pendingPaymentPackages.slice(0, 3).forEach((pkg: any) => {
+      const formattedAmount = pkg.currency === 'AWG' 
+        ? `ƒ${pkg.pendingAmount} florines`
+        : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
+      response += `• **${pkg.tracking_number}** - Pendiente: ${formattedAmount}\n`;
+      response += `  📍 Destino: ${pkg.destination}\n`;
+    });
+    response += `\n`;
+  }
+  
   response += `🤔 **¿Qué información específica necesitas?**\n\n`;
   response += `• 🛫 **¿Cuándo sale el viaje?** (fecha de departure)\n`;
   response += `• 🛬 **¿Cuándo llega a destino?** (fecha de arrival)\n`;
   response += `• 📍 **¿Dónde puedo recogerla cuando llegue?** (dirección en destino)\n`;
   response += `• ⏰ **¿Hasta cuándo tengo tiempo para que salga en el próximo viaje?**\n`;
-  response += `• 📊 **¿Cuál es el estado actual de mi encomienda?**\n\n`;
+  response += `• 📊 **¿Cuál es el estado actual?**\n\n`;
   response += `Una vez me digas qué necesitas saber, te daré la información exacta y actualizada. 😊\n\n`;
   response += `✈️ **Envíos Ojito** - Información precisa cuando la necesitas`;
 

@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -65,10 +64,10 @@ serve(async (req) => {
     // Get upcoming trips for all inquiries
     const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
 
-    // 🎯 NUEVA PRIORIDAD MÁXIMA: Detectar consultas sobre encomiendas específicas que necesitan clarificación
+    // 🎯 PRIMERA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
     const packageClarificationResponse = generatePackageOriginClarificationResponse(customerInfo, message);
     if (packageClarificationResponse) {
-      console.log('❓ CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Solicitando clarificación');
+      console.log('📦 CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Proporcionando información contextual inteligente');
       
       const responseTime = Date.now() - startTime;
 
@@ -86,7 +85,7 @@ serve(async (req) => {
               customerFound: customerInfo.customerFound,
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
-              isPackageClarificationRequest: true,
+              isIntelligentPackageInquiry: true,
               botAlwaysResponds: true
             },
             response_time_ms: responseTime,
@@ -118,7 +117,7 @@ serve(async (req) => {
         wasEscalated: false
       };
 
-      console.log('❓ RESPUESTA DE CLARIFICACIÓN ENVIADA - Bot pidiendo información específica');
+      console.log('📦 RESPUESTA INTELIGENTE ENVIADA - Información contextual basada en datos del cliente');
       
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

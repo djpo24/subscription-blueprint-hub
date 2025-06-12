@@ -29,10 +29,15 @@ export function CollectedOrdersTable() {
   };
 
   const getPaymentMethodBadge = (method: string) => {
-    console.log('🔧 [CollectedOrdersTable] Processing payment method:', method, 'Type:', typeof method);
+    console.log('🔧 [CollectedOrdersTable] === PAYMENT METHOD DEBUG ===');
+    console.log('🔧 [CollectedOrdersTable] Raw method value:', method);
+    console.log('🔧 [CollectedOrdersTable] Method type:', typeof method);
+    console.log('🔧 [CollectedOrdersTable] Method JSON:', JSON.stringify(method));
+    console.log('🔧 [CollectedOrdersTable] Method string length:', String(method).length);
     
     // Normalizar el método - convertir a string y limpiar
     const normalizedMethod = String(method || '').toLowerCase().trim();
+    console.log('🔧 [CollectedOrdersTable] Normalized method:', normalizedMethod);
     
     const methodMap: { [key: string]: { label: string; variant: any } } = {
       'efectivo': { label: 'Efectivo', variant: 'default' },
@@ -44,14 +49,19 @@ export function CollectedOrdersTable() {
       '2': { label: 'Transferencia', variant: 'secondary' },
       '3': { label: 'Tarjeta', variant: 'outline' },
       '4': { label: 'Otro', variant: 'outline' },
+      // Mapeo directo para casos específicos
+      'cash': { label: 'Efectivo', variant: 'default' },
+      'transfer': { label: 'Transferencia', variant: 'secondary' },
+      'card': { label: 'Tarjeta', variant: 'outline' },
     };
     
     const methodInfo = methodMap[normalizedMethod] || { 
-      label: normalizedMethod || 'Método desconocido', 
+      label: `${normalizedMethod || 'Método desconocido'} (RAW: ${method})`, 
       variant: 'outline' 
     };
     
     console.log('🔧 [CollectedOrdersTable] Method mapping result:', methodInfo);
+    console.log('🔧 [CollectedOrdersTable] === END DEBUG ===');
     
     return <Badge variant={methodInfo.variant}>{methodInfo.label}</Badge>;
   };

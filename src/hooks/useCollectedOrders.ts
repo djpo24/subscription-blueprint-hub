@@ -48,23 +48,43 @@ export function useCollectedOrders() {
           return [];
         }
 
+        // Agregar logs detallados de cada payment_method
+        data.forEach((payment, index) => {
+          console.log(`🔍 [useCollectedOrders] Payment ${index}:`, {
+            id: payment.id,
+            payment_method: payment.payment_method,
+            payment_method_type: typeof payment.payment_method,
+            payment_method_raw: JSON.stringify(payment.payment_method),
+            amount: payment.amount
+          });
+        });
+
         // Transformar los datos para el formato esperado
         const transformedData = data
           .filter((payment: CustomerPayment) => payment.packages) // Solo pagos con paquetes válidos
-          .map((payment: CustomerPayment) => ({
-            payment_id: payment.id,
-            amount: payment.amount,
-            payment_method: payment.payment_method,
-            currency: payment.currency || 'COP',
-            payment_date: payment.payment_date,
-            notes: payment.notes,
-            created_by: payment.created_by,
-            tracking_number: payment.packages?.tracking_number || 'N/A',
-            destination: payment.packages?.destination || 'N/A',
-            delivered_at: payment.packages?.delivered_at || null,
-            customer_name: payment.packages?.customers?.name || 'N/A',
-            customer_phone: payment.packages?.customers?.phone || 'N/A'
-          }));
+          .map((payment: CustomerPayment) => {
+            const result = {
+              payment_id: payment.id,
+              amount: payment.amount,
+              payment_method: payment.payment_method,
+              currency: payment.currency || 'COP',
+              payment_date: payment.payment_date,
+              notes: payment.notes,
+              created_by: payment.created_by,
+              tracking_number: payment.packages?.tracking_number || 'N/A',
+              destination: payment.packages?.destination || 'N/A',
+              delivered_at: payment.packages?.delivered_at || null,
+              customer_name: payment.packages?.customers?.name || 'N/A',
+              customer_phone: payment.packages?.customers?.phone || 'N/A'
+            };
+            
+            console.log(`🔍 [useCollectedOrders] Transformed payment ${payment.id}:`, {
+              payment_method: result.payment_method,
+              payment_method_type: typeof result.payment_method
+            });
+            
+            return result;
+          });
 
         console.log('✅ Transformed collected orders data:', transformedData);
         return transformedData;

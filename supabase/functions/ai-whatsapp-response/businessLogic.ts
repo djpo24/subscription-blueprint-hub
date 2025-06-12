@@ -55,7 +55,7 @@ export function isHomeDeliveryRequest(message: string): boolean {
   return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Nueva función para generar respuesta de entrega a domicilio - CON EMOJIS MEJORADOS
+// Nueva función para generar respuesta de entrega a domicilio - CON EMOJIS CORREGIDOS
 export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
   // Solo procesar si es una solicitud de entrega
   if (!isHomeDeliveryRequest(customerMessage)) {
@@ -66,7 +66,7 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, custome
 
   // Si el cliente no está registrado o no tiene encomiendas
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
-    return `¡Hola ${customerName}! 👋🚀
+    return `¡Hola ${customerName}! 👋✈️
 
 🏠 **ENTREGA A DOMICILIO**
 
@@ -76,12 +76,12 @@ Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro
 
 Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
 • ✅ Verificará tu información  
-• 🚚 Te ayudará con la entrega
+• ✈️ Te ayudará con la entrega
 • 📋 Coordinará todos los detalles
 
-**👤 Josefa te responderá en breve** 📦🚚
+**👤 Josefa te responderá en breve** 📦✈️
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
   // Si tiene encomiendas, verificar el estado
@@ -92,7 +92,7 @@ Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
   const pendingPaymentPackages = customerInfo.pendingPaymentPackages;
 
   if (deliverablePackages.length > 0 || pendingPaymentPackages.length > 0) {
-    let response = `¡Hola ${customerName}! 👋🚀
+    let response = `¡Hola ${customerName}! 👋✈️
 
 🏠 **SOLICITUD DE ENTREGA A DOMICILIO**
 
@@ -131,13 +131,13 @@ Estoy transfiriendo tu solicitud a nuestra coordinadora **Josefa** quien coordin
 
 ¡Gracias por tu paciencia! 😊
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 
     return response;
   }
 
   // Si tiene encomiendas pero no están listas para entrega
-  return `¡Hola ${customerName}! 👋🚀
+  return `¡Hola ${customerName}! 👋✈️
 
 🏠 **ENTREGA A DOMICILIO**
 
@@ -154,5 +154,5 @@ Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
 
 **👤 Josefa te responderá pronto** con los detalles actualizados 📦
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }

@@ -68,9 +68,9 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
   let tripsText = '';
   
   if (requestedDestination) {
-    tripsText += `🚀 **PRÓXIMOS ENVÍOS DE ENCOMIENDAS HACIA ${requestedDestination.toUpperCase()}:**\n\n`;
+    tripsText += `✈️ **PRÓXIMOS ENVÍOS DE ENCOMIENDAS HACIA ${requestedDestination.toUpperCase()}:**\n\n`;
   } else {
-    tripsText += '🚀 **PRÓXIMOS ENVÍOS DE ENCOMIENDAS PROGRAMADOS:**\n\n';
+    tripsText += '✈️ **PRÓXIMOS ENVÍOS DE ENCOMIENDAS PROGRAMADOS:**\n\n';
   }
   
   trips.forEach((trip, index) => {
@@ -84,7 +84,7 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
     
     tripsText += `${index + 1}. 📅 **${formattedDate}**\n`;
     tripsText += `   🎯 **Destino del envío:** ${trip.destination}\n`;
-    tripsText += `   🚢 **Salida desde:** ${trip.origin}\n`;
+    tripsText += `   ✈️ **Salida desde:** ${trip.origin}\n`;
     
     if (trip.flight_number) {
       tripsText += `   ✈️ **Vuelo:** ${trip.flight_number}\n`;
@@ -107,18 +107,18 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
 - Si el cliente pregunta por envíos hacia Curazao: mostrar SOLO viajes con destino Curazao 🇨🇼
 - Si el cliente pregunta por envíos hacia Barranquilla: mostrar SOLO viajes con destino Barranquilla 🇨🇴
 - SIEMPRE verificar coherencia entre pregunta del cliente y respuesta
-- Usar emojis específicos: 📅 para fechas, ✈️ para vuelos, 🎯 para destinos, 🚢 para origen
+- Usar emojis específicos: 📅 para fechas, ✈️ para vuelos, 🎯 para destinos, ✈️ para origen
 
 💬 **REGLAS DE COMUNICACIÓN:**
 - NO mencionar que no somos agencia de viajes (el cliente ya lo sabe)
 - NO hacer recordatorios innecesarios sobre el tipo de empresa
 - Responder de forma directa y clara con emojis apropiados
 - Mantener coherencia entre la pregunta y la respuesta
-- Usar el branding: "🚀 Envíos Ojito - Conectando Barranquilla y Curazao"
+- Usar el branding: "✈️ Envíos Ojito - Conectando Barranquilla y Curazao"
 
 ✅ **EJEMPLO CORRECTO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"
-Respuesta: "¡Hola! 👋🚀 El próximo envío hacia Curazao 🇨🇼 es el viernes 13 de junio 📅. ¿Quieres reservar espacio para tu encomienda? 📦"
+Respuesta: "¡Hola! 👋✈️ El próximo envío hacia Curazao 🇨🇼 es el viernes 13 de junio 📅. ¿Quieres reservar espacio para tu encomienda? 📦"
 
 ❌ **EJEMPLO INCORRECTO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"  

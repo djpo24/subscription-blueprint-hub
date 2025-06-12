@@ -41,7 +41,7 @@ export function extractDestinationFromMessage(message: string): string | null {
   return null;
 }
 
-// Generar respuesta para consultas de envío de paquetes - CON EMOJIS MEJORADOS
+// Generar respuesta para consultas de envío de paquetes - CON EMOJIS CORREGIDOS
 export function generatePackageShippingResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -58,7 +58,7 @@ export function generatePackageShippingResponse(
   
   // Si no se especifica destino, preguntar CON EMOJIS Y ESTRUCTURA CLARA
   if (!extractedDestination) {
-    return `¡Hola ${customerName}! 👋🚀
+    return `¡Hola ${customerName}! 👋✈️
 
 📦 **ENVÍO DE ENCOMIENDAS**
 
@@ -72,13 +72,13 @@ Para ayudarte con el envío, necesito conocer:
 
 Una vez me indiques el destino, te proporcionaré toda la información necesaria para el envío. 📋
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
   // Buscar la dirección de origen correspondiente
   const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
   
-  let response = `¡Hola ${customerName}! 👋🚀
+  let response = `¡Hola ${customerName}! 👋✈️
 
 📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
 
@@ -87,11 +87,11 @@ ${originAddress || 'Dirección no disponible en el sistema'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📞 **RESERVAR ESPACIO EN EL PRÓXIMO VIAJE** ✈️
+📞 **RESERVAR ESPACIO EN EL PRÓXIMO VUELO** ✈️
 
 **👤 Contacta a nuestro coordinador:**
 🧑‍💼 **Darwin Pedroza**  
-📱 **+599 9696 4306**
+📱 **+573127271746**
 
 **🎯 Darwin te ayudará con:**
 • ✅ Reserva de espacio
@@ -105,12 +105,12 @@ ${originAddress || 'Dirección no disponible en el sistema'}
 
 **1️⃣** Lleva tu paquete a la dirección indicada 📍
 **2️⃣** Nuestro equipo lo recibirá y procesará 👥  
-**3️⃣** Será transportado hacia ${extractedDestination} 🚚✈️
+**3️⃣** Será transportado hacia ${extractedDestination} ✈️
 **4️⃣** Te notificaremos cuando llegue a destino 📢
 
-¡Estamos listos para ayudarte con tu envío! 🚚💼
+¡Estamos listos para ayudarte con tu envío! ✈️💼
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 
   return response;
 }

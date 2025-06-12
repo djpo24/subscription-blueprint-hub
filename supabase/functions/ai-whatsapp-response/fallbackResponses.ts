@@ -13,7 +13,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
       const currency = firstPackage.currency || 'COP';
       const totalPendingThisCurrency = customerInfo.currencyBreakdown[currency] || firstPackage.pendingAmount;
       
-      return `¡Hola ${customerInfo.customerFirstName}! 👋🚀
+      return `¡Hola ${customerInfo.customerFirstName}! 👋✈️
 
 💰 **SALDO PENDIENTE**
 
@@ -30,7 +30,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
 👤 Contacta a nuestra coordinadora **Josefa**
 📱 **+59996964306**
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
     } 
     
     if (customerInfo.pendingDeliveryPackages.length > 0) {
@@ -42,8 +42,8 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
         statusMessage = '✅ **DISPONIBLE PARA RETIRO**';
         statusEmoji = '🏆';
       } else if (firstPackage.status === 'transito') {
-        statusMessage = '🚚 **EN TRÁNSITO HACIA DESTINO**';
-        statusEmoji = '🛣️';
+        statusMessage = '✈️ **EN TRÁNSITO HACIA DESTINO**';
+        statusEmoji = '✈️';
       } else if (firstPackage.status === 'despachado') {
         statusMessage = '📦 **DESPACHADA HACIA DESTINO**';
         statusEmoji = '✈️';
@@ -52,7 +52,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
         statusEmoji = '📊';
       }
       
-      return `¡Hola ${customerInfo.customerFirstName}! 👋🚀
+      return `¡Hola ${customerInfo.customerFirstName}! 👋✈️
 
 ${statusEmoji} ${statusMessage}
 
@@ -64,10 +64,10 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 **Y ${customerInfo.p
 
 ❓ ¿Necesitas información adicional sobre alguna de tus encomiendas?
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
     }
     
-    return `¡Hola ${customerInfo.customerFirstName}! 👋🚀
+    return `¡Hola ${customerInfo.customerFirstName}! 👋✈️
 
 📊 **ESTADO ACTUAL:**
 
@@ -77,13 +77,13 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 **Y ${customerInfo.p
 
 💼 ¿En qué puedo ayudarte hoy?
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
   
-  // Respuesta para clientes nuevos o sin información específica - CON EMOJIS MEJORADOS
+  // Respuesta para clientes nuevos o sin información específica - CON EMOJIS CORREGIDOS
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
-  return `¡Hola ${customerName}! 👋🚀
+  return `¡Hola ${customerName}! 👋✈️
 
 **Soy SARA, tu asistente virtual de Envíos Ojito**
 
@@ -91,7 +91,7 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 **Y ${customerInfo.p
 
 📦 **Consultas de encomiendas**
 💰 **Estados de cuenta y pagos**  
-🚚 **Información de viajes y horarios**
+✈️ **Información de vuelos y horarios**
 📍 **Direcciones de oficinas**
 💵 **Tarifas de envío**
 🏠 **Entregas a domicilio**
@@ -106,20 +106,20 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 **Y ${customerInfo.p
 
 *🎯 Reservas de espacio, procesos especiales y más*
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }
 
-// Nueva función para generar respuestas más contextuales - CON EMOJIS MEJORADOS
+// Nueva función para generar respuestas más contextuales - CON EMOJIS CORREGIDOS
 export function generateContextualResponse(customerInfo: CustomerInfo, questionContext: string): string {
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
   // Analizar el contexto de la pregunta para dar una respuesta más específica
   if (questionContext.toLowerCase().includes('viaje') || questionContext.toLowerCase().includes('próximo')) {
-    return `¡Hola ${customerName}! 👋🚀
+    return `¡Hola ${customerName}! 👋✈️
 
-🚚 **INFORMACIÓN DE VIAJES**
+✈️ **INFORMACIÓN DE VUELOS**
 
-📅 **Próximos viajes programados:**
+📅 **Próximos vuelos programados:**
 Puedo ayudarte con la información disponible.
 
 🎯 **¿A qué destino específico necesitas viajar o enviar?**
@@ -134,7 +134,7 @@ Puedo ayudarte con la información disponible.
 
 *🎯 Para confirmar disponibilidad y apartar tu espacio*
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
   
   if (questionContext.toLowerCase().includes('tarifa') || questionContext.toLowerCase().includes('precio') || questionContext.toLowerCase().includes('costo')) {
@@ -158,7 +158,7 @@ Con esa información puedo darte las tarifas actuales.
 
 *💼 Según peso o características especiales*
 
-🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
   
   // Respuesta general más natural y estructurada

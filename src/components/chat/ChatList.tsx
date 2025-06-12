@@ -1,4 +1,3 @@
-
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +7,9 @@ import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
 import { PackageStatusIndicator } from './components/PackageStatusIndicator';
+import { ChatStatusFilters } from './components/ChatStatusFilters';
+import { useChatStatusFilters } from '@/hooks/useChatStatusFilters';
+import { useMemo } from 'react';
 
 interface ChatItem {
   phone: string;
@@ -27,6 +29,21 @@ interface ChatListProps {
 }
 
 export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) {
+  // Obtener los estados de paquetes para todos los chats
+  const chatStatuses = useMemo(() => {
+    const statuses: Record<string, any> = {};
+    // Esta lógica se manejará dentro de cada ChatListItem para mantener la eficiencia
+    return statuses;
+  }, []);
+
+  // Usar el hook de filtros (por ahora sin estados hasta que implementemos la lógica completa)
+  const {
+    selectedStatus,
+    setSelectedStatus,
+    filteredChats,
+    chatCounts
+  } = useChatStatusFilters(chats, chatStatuses);
+
   if (chats.length === 0) {
     return (
       <Card className="h-full">
@@ -41,18 +58,25 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
     );
   }
 
-  console.log('📋 [ChatList] Rendering chat list with', chats.length, 'conversations');
+  console.log('📋 [ChatList] Rendering chat list with', chats.length, 'conversations, filtered:', filteredChats.length);
 
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Conversaciones</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Conversaciones</CardTitle>
+          <ChatStatusFilters 
+            selectedStatus={selectedStatus}
+            onStatusSelect={setSelectedStatus}
+            chatCounts={chatCounts}
+          />
+        </div>
       </CardHeader>
       <CardContent className="p-0 h-[calc(100%-5rem)]">
         <ScrollArea className="h-full">
           <div className="space-y-1 p-2">
+            {/* Por ahora mostramos todos los chats, el filtrado se implementará cuando tengamos los estados */}
             {chats.map((chat, index) => {
-              // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
               const displayName = chat.customerName || 'Cliente';
               const messageTime = chat.lastMessageTime || chat.timestamp || '';
               

@@ -21,7 +21,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
   const [isConnected, setIsConnected] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isSubscribingRef = useRef(false);
+  const isInitializingRef = useRef(false);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Iniciando limpieza del canal...');
@@ -42,27 +42,21 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
     }
     
     setIsConnected(false);
-    isSubscribingRef.current = false;
+    isInitializingRef.current = false;
     console.log('✅ Limpieza completada');
   }, []);
 
   const createChannel = useCallback(() => {
-    // Evitar crear múltiples canales si ya estamos suscribiéndonos
-    if (isSubscribingRef.current) {
-      console.log('⏳ Ya hay una suscripción en proceso, omitiendo...');
-      return null;
-    }
-
-    // Limpiar canal existente antes de crear uno nuevo
-    if (channelRef.current) {
-      console.log('🔄 Limpiando canal existente antes de crear nuevo...');
-      cleanup();
+    // Evitar crear múltiples canales si ya estamos inicializando
+    if (isInitializingRef.current || channelRef.current) {
+      console.log('⏳ Canal ya existe o está siendo creado, omitiendo...');
+      return;
     }
 
     console.log('🔄 Creando nuevo canal de detección...');
-    isSubscribingRef.current = true;
+    isInitializingRef.current = true;
     
-    const channelName = `messages-detection-${Date.now()}`;
+    const channelName = `messages-detection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -129,26 +123,26 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
         
         if (status === 'SUBSCRIBED') {
           console.log('✅ Canal conectado exitosamente');
+          channelRef.current = channel;
           setIsConnected(true);
-          isSubscribingRef.current = false;
+          isInitializingRef.current = false;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           console.log('❌ Error en canal:', status);
           setIsConnected(false);
-          isSubscribingRef.current = false;
+          isInitializingRef.current = false;
+          channelRef.current = null;
           
           // Reconectar automáticamente solo si está habilitado
           if (isEnabled && !reconnectTimeoutRef.current) {
             reconnectTimeoutRef.current = setTimeout(() => {
               console.log('🔄 Reintentando conexión automática...');
-              channelRef.current = createChannel();
+              createChannel();
               reconnectTimeoutRef.current = null;
             }, 3000);
           }
         }
       });
-
-    return channel;
-  }, [isEnabled, onMessageDetected, cleanup]);
+  }, [isEnabled, onMessageDetected]);
 
   useEffect(() => {
     if (!isEnabled) {
@@ -157,10 +151,10 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
       return;
     }
 
-    // Solo crear canal si no existe uno activo
-    if (!channelRef.current && !isSubscribingRef.current) {
+    // Solo crear canal si no existe uno activo y no estamos inicializando
+    if (!channelRef.current && !isInitializingRef.current) {
       console.log('🎯 Iniciando sistema de auto-respuesta...');
-      channelRef.current = createChannel();
+      createChannel();
     }
 
     return cleanup;

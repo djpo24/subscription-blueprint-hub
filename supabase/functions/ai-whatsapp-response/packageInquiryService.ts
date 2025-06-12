@@ -1,4 +1,3 @@
-
 import { CustomerInfo } from './types.ts';
 
 // Detectar consultas sobre dónde enviar paquetes
@@ -20,6 +19,20 @@ export function isPackageShippingInquiry(message: string): boolean {
 
   const normalizedMessage = message.toLowerCase();
   
+  // NUEVA LÓGICA: Excluir consultas que claramente preguntan por fechas de viajes
+  const tripDateKeywords = [
+    'cuando viajan', 'cuándo viajan', 'cuando hay viaje', 'cuándo hay viaje',
+    'próximo viaje', 'proximo viaje', 'siguiente viaje',
+    'fecha del viaje', 'fecha de viaje', 'fechas de viaje',
+    'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen'
+  ];
+  
+  // Si la consulta es claramente sobre fechas de viajes, NO es consulta de envío
+  const isAboutTripDates = tripDateKeywords.some(keyword => normalizedMessage.includes(keyword));
+  if (isAboutTripDates) {
+    return false;
+  }
+  
   return shippingKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
@@ -40,14 +53,18 @@ export function isPackageDeliveryDeadlineInquiry(message: string): boolean {
   return deadlineKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Detectar consultas sobre fechas de próximos viajes
+// FUNCIÓN MEJORADA: Detectar consultas sobre fechas de próximos viajes con mayor precisión
 export function isNextTripInquiry(message: string): boolean {
   const tripKeywords = [
     'cuando es el próximo viaje', 'cuándo es el próximo viaje',
     'próximo viaje', 'proximo viaje', 'siguiente viaje',
     'cuando viajan', 'cuándo viajan', 'fecha del viaje',
     'próxima fecha', 'proxima fecha', 'cuando hay viaje',
-    'cuándo hay viaje', 'próximos vuelos', 'proximos vuelos'
+    'cuándo hay viaje', 'próximos vuelos', 'proximos vuelos',
+    'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen',
+    'fechas de viaje', 'fecha de viaje', 'horario de viajes',
+    'programación de viajes', 'programacion de viajes',
+    'itinerario de viajes', 'calendario de viajes'
   ];
 
   const normalizedMessage = message.toLowerCase();
@@ -89,6 +106,139 @@ export function analyzeCompleteInquiry(message: string): {
     isMultipleQuestionInquiry,
     questionCount
   };
+}
+
+// FUNCIÓN NUEVA: Generar respuesta específica para consultas de fechas de viajes
+export function generateTripDateResponse(
+  customerInfo: CustomerInfo,
+  customerMessage: string,
+  upcomingTrips: any[]
+): string | null {
+  
+  const analysis = analyzeCompleteInquiry(customerMessage);
+  
+  // Solo procesar si es una consulta específica sobre fechas de viajes (no múltiple)
+  if (analysis.isMultipleQuestionInquiry || !analysis.hasTripDateQuestion) {
+    return null;
+  }
+
+  console.log(`📅 [TripDateResponse] Generando respuesta de fechas de viajes para destino: ${analysis.destination}`);
+
+  const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  // Si no se especifica destino, mostrar todos los próximos viajes
+  if (!analysis.destination) {
+    if (!upcomingTrips || upcomingTrips.length === 0) {
+      return `¡Hola ${customerName}! 👋✈️
+
+📅 **Próximos viajes programados:**
+
+🚨 **No hay viajes programados** en los próximos días.
+
+📞 **Para programar viajes, contacta a:**
+🧑‍💼 **Darwin Pedroza**  
+📱 **+573127271746**
+
+Darwin te informará sobre las próximas fechas disponibles.
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+    }
+
+    // Mostrar todos los próximos viajes
+    let response = `¡Hola ${customerName}! 👋✈️
+
+📅 **Próximos viajes programados:**
+
+`;
+
+    upcomingTrips.slice(0, 5).forEach((trip, index) => {
+      const tripDate = new Date(trip.trip_date + 'T00:00:00');
+      const formattedDate = tripDate.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      });
+      const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+      
+      response += `${index + 1}. 📅 **${capitalizedDate}**\n`;
+      response += `   🛫 **${trip.origin}** → **${trip.destination}**\n`;
+      if (trip.flight_number) {
+        response += `   ✈️ **Vuelo:** ${trip.flight_number}\n`;
+      }
+      response += `\n`;
+    });
+
+    response += `📞 **Reservar espacio:** Contacta a **Darwin Pedroza** al **+573127271746**
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+
+    return response;
+  }
+  
+  // Buscar viajes HACIA el destino solicitado
+  const destinationTrips = upcomingTrips.filter(trip => {
+    const tripDestination = trip.destination.toLowerCase();
+    const requestedDestination = analysis.destination!.toLowerCase();
+    
+    if (requestedDestination.includes('colombia') || requestedDestination.includes('barranquilla')) {
+      return tripDestination.includes('barranquilla') || tripDestination.includes('colombia');
+    } else if (requestedDestination.includes('curazao') || requestedDestination.includes('curacao')) {
+      return tripDestination.includes('curazao') || tripDestination.includes('curacao');
+    }
+    
+    return false;
+  });
+  
+  console.log(`🚀 [TripSearch] Viajes encontrados hacia ${analysis.destination}: ${destinationTrips.length}`);
+  
+  if (destinationTrips.length === 0) {
+    return `¡Hola ${customerName}! 👋✈️
+
+📅 **Viajes hacia ${analysis.destination.toUpperCase()}:**
+
+🚨 **No hay viajes programados hacia ${analysis.destination}** en los próximos días.
+
+📞 **Contacta a nuestro coordinador:**
+🧑‍💼 **Darwin Pedroza**  
+📱 **+573127271746**
+
+Darwin te informará sobre las próximas fechas disponibles para ${analysis.destination}.
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+  }
+  
+  // Mostrar los próximos viajes hacia el destino específico
+  let response = `¡Hola ${customerName}! 👋✈️
+
+📅 **Próximos viajes hacia ${analysis.destination.toUpperCase()}:**
+
+`;
+
+  destinationTrips.slice(0, 3).forEach((trip, index) => {
+    const tripDate = new Date(trip.trip_date + 'T00:00:00');
+    const formattedDate = tripDate.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+    const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+    
+    response += `${index + 1}. 📅 **${capitalizedDate}**\n`;
+    response += `   🛫 **Salida desde:** ${trip.origin}\n`;
+    response += `   🛫 **Destino:** ${trip.destination}\n`;
+    if (trip.flight_number) {
+      response += `   ✈️ **Vuelo:** ${trip.flight_number}\n`;
+    }
+    response += `\n`;
+  });
+
+  response += `📞 **Reservar espacio:** Contacta a **Darwin Pedroza** al **+573127271746**
+
+¿Necesitas información sobre el proceso de envío?
+
+✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+
+  return response;
 }
 
 // FUNCIÓN MEJORADA: Generar respuesta integrada SOLO para consultas verdaderamente múltiples
@@ -373,10 +523,10 @@ export function generatePackageShippingResponse(
   destinationAddresses: any[]
 ): string | null {
   
-  // Solo procesar si es una consulta simple de envío (no múltiple)
+  // Solo procesar si es una consulta simple de envío (no múltiple y no sobre fechas de viajes)
   const analysis = analyzeCompleteInquiry(customerMessage);
-  if (analysis.isMultipleQuestionInquiry) {
-    return null; // Will be handled by integrated response
+  if (analysis.isMultipleQuestionInquiry || analysis.hasTripDateQuestion) {
+    return null; // Will be handled by integrated response or trip date response
   }
   
   // Solo procesar si es una consulta de envío

@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -7,7 +8,7 @@ import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts'
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse } from './businessLogic.ts';
-import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse } from './packageInquiryService.ts';
+import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse, generateTripDateResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
@@ -184,7 +185,67 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 TERCERA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
+    // 📅 TERCERA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
+    const tripDateResponse = generateTripDateResponse(customerInfo, message, allUpcomingTrips);
+    if (tripDateResponse) {
+      console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando fechas reales de próximos viajes');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      let tripDateInteractionId: string | null = null;
+      try {
+        const { data: tripDateInteractionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: tripDateResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isTripDateInquiry: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && tripDateInteractionData) {
+          tripDateInteractionId = tripDateInteractionData.id;
+          await updateLearningModel(supabase, tripDateInteractionId, customerPhone, message, tripDateResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: tripDateResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: tripDateInteractionId,
+        wasEscalated: false
+      };
+
+      console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Información real de próximos viajes proporcionada');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 🚨 CUARTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
       console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
@@ -244,7 +305,7 @@ serve(async (req) => {
       });
     }
 
-    // 📦 CUARTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
+    // 📦 QUINTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
@@ -304,7 +365,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 QUINTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 SEXTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');

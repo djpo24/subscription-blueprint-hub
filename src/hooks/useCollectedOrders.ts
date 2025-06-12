@@ -48,17 +48,6 @@ export function useCollectedOrders() {
           return [];
         }
 
-        // Agregar logs detallados de cada payment_method
-        data.forEach((payment, index) => {
-          console.log(`🔍 [useCollectedOrders] Payment ${index}:`, {
-            id: payment.id,
-            payment_method: payment.payment_method,
-            payment_method_type: typeof payment.payment_method,
-            payment_method_raw: JSON.stringify(payment.payment_method),
-            amount: payment.amount
-          });
-        });
-
         // Transformar los datos para el formato esperado
         const transformedData = data
           .filter((payment: CustomerPayment) => payment.packages) // Solo pagos con paquetes válidos
@@ -77,11 +66,6 @@ export function useCollectedOrders() {
               customer_name: payment.packages?.customers?.name || 'N/A',
               customer_phone: payment.packages?.customers?.phone || 'N/A'
             };
-            
-            console.log(`🔍 [useCollectedOrders] Transformed payment ${payment.id}:`, {
-              payment_method: result.payment_method,
-              payment_method_type: typeof result.payment_method
-            });
             
             return result;
           });

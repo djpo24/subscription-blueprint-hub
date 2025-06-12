@@ -13,13 +13,14 @@ export function AIResponseButton({
   customerMessage,
   customerPhone,
   customerId,
-  onSendMessage
+  onResponseGenerated
 }: AIResponseButtonProps) {
   const [aiResponse, setAiResponse] = useState<string>('');
   const [isFromFallback, setIsFromFallback] = useState<boolean>(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [currentInteractionId, setCurrentInteractionId] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<'positive' | 'negative' | null>(null);
+  const [showResponse, setShowResponse] = useState<boolean>(false);
   
   const { generateAIResponse, isGenerating } = useAIWhatsAppResponse();
   const { submitFeedback, isSubmittingFeedback } = useAIFeedback();
@@ -36,7 +37,11 @@ export function AIResponseButton({
       setAiResponse(result.response);
       setIsFromFallback(result.isFromFallback || false);
       setCustomerInfo(result.customerInfo || null);
-      setFeedbackGiven(null); // Reset feedback state
+      setFeedbackGiven(null);
+      setShowResponse(true);
+      
+      // Notify parent component
+      onResponseGenerated(result);
       
     } catch (error) {
       console.error('Error generating AI response:', error);
@@ -52,7 +57,9 @@ export function AIResponseButton({
   };
 
   const handleSendResponse = () => {
-    onSendMessage(aiResponse);
+    // Pass the response back to parent for sending
+    onResponseGenerated({ response: aiResponse, action: 'send' });
+    setShowResponse(false);
     setAiResponse('');
     setIsFromFallback(false);
     setCustomerInfo(null);
@@ -68,6 +75,14 @@ export function AIResponseButton({
       title: "Enviado",
       description,
     });
+  };
+
+  const handleDismissResponse = () => {
+    setShowResponse(false);
+    setAiResponse('');
+    setIsFromFallback(false);
+    setCustomerInfo(null);
+    setFeedbackGiven(null);
   };
 
   const handleFeedback = async (feedbackType: 'positive' | 'negative') => {
@@ -115,13 +130,14 @@ export function AIResponseButton({
         {isGenerating ? 'Analizando cliente y generando respuesta...' : 'Generar respuesta inteligente'}
       </Button>
 
-      {aiResponse && (
+      {showResponse && aiResponse && (
         <AIResponseDisplay
           response={aiResponse}
           isFromFallback={isFromFallback}
           customerInfo={customerInfo}
           onCopy={handleCopyResponse}
           onSend={handleSendResponse}
+          onDismiss={handleDismissResponse}
           feedbackComponent={feedbackComponent}
         />
       )}

@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
-import { AIResponseDisplay } from './components/AIResponseDisplay';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
@@ -31,29 +30,14 @@ export function ChatMessage({
   customerId,
   isBotEnabled = true
 }: ChatMessageProps) {
-  const [aiResponse, setAIResponse] = useState<any>(null);
-  const [showAIResponse, setShowAIResponse] = useState(false);
-
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
 
   const handleAIResponseGenerated = (response: any) => {
-    setAIResponse(response);
-    setShowAIResponse(true);
-  };
-
-  const handleSendAIResponse = () => {
-    if (aiResponse?.response) {
-      onSendMessage(aiResponse.response);
-      setShowAIResponse(false);
-      setAIResponse(null);
+    if (response.action === 'send' && response.response) {
+      onSendMessage(response.response);
     }
-  };
-
-  const handleDismissAIResponse = () => {
-    setShowAIResponse(false);
-    setAIResponse(null);
   };
 
   return (
@@ -123,7 +107,7 @@ export function ChatMessage({
               <AIResponseButton
                 customerPhone={customerPhone}
                 customerId={customerId || ''}
-                messageContent={message.message_content || ''}
+                customerMessage={message.message_content || ''}
                 onResponseGenerated={handleAIResponseGenerated}
               />
             </div>
@@ -139,18 +123,6 @@ export function ChatMessage({
           )}
         </div>
       </div>
-
-      {/* Respuesta de IA generada */}
-      {showAIResponse && aiResponse && (
-        <>
-          <Separator />
-          <AIResponseDisplay
-            response={aiResponse}
-            onSend={handleSendAIResponse}
-            onDismiss={handleDismissAIResponse}
-          />
-        </>
-      )}
     </div>
   );
 }

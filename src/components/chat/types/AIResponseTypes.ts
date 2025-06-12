@@ -3,7 +3,7 @@ export interface AIResponseButtonProps {
   customerMessage: string;
   customerPhone: string;
   customerId?: string | null;
-  onSendMessage: (message: string) => void;
+  onResponseGenerated: (response: any) => void;
 }
 
 export interface CustomerInfo {
@@ -40,5 +40,6 @@ export interface AIResponseDisplayProps {
   customerInfo: CustomerInfo | null;
   onCopy: () => void;
   onSend: () => void;
+  onDismiss: () => void;
   feedbackComponent: React.ReactNode;
 }

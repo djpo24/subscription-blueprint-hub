@@ -11,7 +11,6 @@ import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
 import { AIResponseDisplay } from './components/AIResponseDisplay';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
-import type { AIResponseResult } from './types/AIResponseTypes';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -32,14 +31,14 @@ export function ChatMessage({
   customerId,
   isBotEnabled = true
 }: ChatMessageProps) {
-  const [aiResponse, setAIResponse] = useState<AIResponseResult | null>(null);
+  const [aiResponse, setAIResponse] = useState<any>(null);
   const [showAIResponse, setShowAIResponse] = useState(false);
 
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
 
-  const handleAIResponseGenerated = (response: AIResponseResult) => {
+  const handleAIResponseGenerated = (response: any) => {
     setAIResponse(response);
     setShowAIResponse(true);
   };
@@ -122,9 +121,9 @@ export function ChatMessage({
           {isFromCustomer && isBotEnabled && (
             <div className="mt-2 flex justify-start">
               <AIResponseButton
-                message={message.message_content || ''}
                 customerPhone={customerPhone}
-                customerId={customerId}
+                customerId={customerId || ''}
+                messageContent={message.message_content || ''}
                 onResponseGenerated={handleAIResponseGenerated}
               />
             </div>
@@ -147,7 +146,6 @@ export function ChatMessage({
           <Separator />
           <AIResponseDisplay
             response={aiResponse}
-            customerName={customerName}
             onSend={handleSendAIResponse}
             onDismiss={handleDismissAIResponse}
           />

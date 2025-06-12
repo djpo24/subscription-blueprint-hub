@@ -7,9 +7,8 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CustomerInfoButton } from './CustomerInfoButton';
-import { BotToggleButton } from './BotToggleButton';
 import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
-import { useBotToggle } from '@/hooks/useBotToggle';
+import { useGlobalBotToggle } from '@/hooks/useGlobalBotToggle';
 import { PackageStatusIndicator } from './components/PackageStatusIndicator';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
@@ -35,7 +34,7 @@ export function ChatConversation({
   profileImageUrl
 }: ChatConversationProps) {
   const { data: packageIndicator } = useCustomerPackageStatus(phone);
-  const { isBotEnabled } = useBotToggle(phone);
+  const { isBotEnabled } = useGlobalBotToggle();
   const displayName = customerName || 'Cliente';
 
   return (
@@ -78,12 +77,6 @@ export function ChatConversation({
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Botón de toggle del bot */}
-            <BotToggleButton 
-              customerPhone={phone}
-              onToggle={(enabled) => console.log(`Bot ${enabled ? 'enabled' : 'disabled'} for ${phone}`)}
-            />
-            
             {customerId && (
               <CustomerInfoButton 
                 customerId={customerId}

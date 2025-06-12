@@ -1,10 +1,11 @@
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
+import { GlobalBotToggleButton } from './chat/GlobalBotToggleButton';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -80,6 +81,21 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
+  // Header global con el botón del bot
+  const ChatHeader = () => (
+    <Card className="mb-4">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Sistema de Chat WhatsApp
+          </CardTitle>
+          <GlobalBotToggleButton />
+        </div>
+      </CardHeader>
+    </Card>
+  );
+
   // Vista móvil - mostrar solo lista o solo conversación
   if (isMobile) {
     // Si hay una conversación seleccionada, mostrar solo la conversación
@@ -102,6 +118,9 @@ export function ChatView() {
               <h2 className="text-lg font-semibold">
                 {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
               </h2>
+              <div className="ml-auto">
+                <GlobalBotToggleButton />
+              </div>
             </div>
             
             {/* Conversación completa */}
@@ -125,6 +144,7 @@ export function ChatView() {
     // Vista de lista de chats en móvil
     return (
       <div className="h-[calc(100vh-12rem)]">
+        <ChatHeader />
         {formattedChatList.length === 0 ? (
           <Card className="h-full">
             <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
@@ -149,6 +169,7 @@ export function ChatView() {
   // Vista desktop - mantener el layout actual de dos columnas
   return (
     <div className="h-[calc(100vh-12rem)]">
+      <ChatHeader />
       <div className="h-full flex">
         {/* Columna izquierda - Lista de chats */}
         <div className="w-1/3 min-w-[300px] max-w-[400px]">

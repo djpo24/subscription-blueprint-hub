@@ -7,6 +7,7 @@ import { MessageSquare, UserCheck, UserX, MessageCircle, UserPlus } from 'lucide
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
+import { CustomerInfoButton } from './CustomerInfoButton';
 import { useConsultaEncomienda } from '@/hooks/useConsultaEncomienda';
 import { CustomerFormDialog } from '@/components/CustomerFormDialog';
 import { getCountryCodeFromPhone } from '@/utils/countryUtils';
@@ -149,6 +150,15 @@ export function ChatConversation({
             </div>
             
             <div className="flex gap-2">
+              {/* Botón de información del cliente solo si está registrado */}
+              {isRegistered && customerId && (
+                <CustomerInfoButton
+                  customerId={customerId}
+                  customerName={displayName}
+                  customerPhone={phone}
+                />
+              )}
+              
               {!isRegistered && (
                 <Button
                   onClick={handleCreateCustomer}

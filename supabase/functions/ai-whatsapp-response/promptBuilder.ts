@@ -13,6 +13,12 @@ REGLAS CRÍTICAS DE COMPORTAMIENTO:
 - Actúa como una persona amigable, no como un bot rígido
 - Sé conversacional y natural en tus respuestas
 
+DETECCIÓN DE SOLICITUDES DE ENTREGA A DOMICILIO:
+- Si el cliente usa palabras como "traer", "llevar", "entrega", "domicilio", "me la puedes traer", etc.
+- Estas son solicitudes de ENTREGA A DOMICILIO de sus encomiendas
+- Debes transferir INMEDIATAMENTE a Josefa para coordinar la entrega
+- NO intentes dar información de horarios o costos de entrega
+
 CLIENTE ACTUAL:
 - Nombre: ${customerName}
 - Cliente registrado: ${customerInfo.customerFound ? 'Sí' : 'No'}
@@ -64,25 +70,42 @@ INFORMACIÓN ESPECÍFICA DEL CLIENTE:`;
 
 GUÍA DE RESPUESTAS INTELIGENTES:
 
-1. **PREGUNTAS SOBRE ENCOMIENDAS DEL CLIENTE**: Responde con información específica si la tienes
-2. **PREGUNTAS SOBRE VIAJES**: Si tienes información de viajes, compártela directamente
-3. **PREGUNTAS SOBRE TARIFAS**: Proporciona las tarifas disponibles como referencia
-4. **PREGUNTAS SOBRE DIRECCIONES**: Comparte las direcciones si las tienes
-5. **PREGUNTAS GENERALES SOBRE SERVICIOS**: Responde de forma conversacional
-6. **SOLO cuando NO tengas información específica**: Dirige al contacto directo
+1. **SOLICITUDES DE ENTREGA A DOMICILIO** (PRIORIDAD MÁXIMA):
+   - Palabras clave: "traer", "llevar", "entrega", "domicilio", "me la puedes traer"
+   - Verificar si tiene encomiendas disponibles
+   - Transferir INMEDIATAMENTE a Josefa para coordinar
+   - Mensaje: "Un momento por favor, transfiero tu solicitud a Josefa para coordinar la entrega"
+
+2. **PREGUNTAS SOBRE ENCOMIENDAS DEL CLIENTE**: Responde con información específica si la tienes
+
+3. **PREGUNTAS SOBRE VIAJES**: Si tienes información de viajes, compártela directamente
+
+4. **PREGUNTAS SOBRE TARIFAS**: Proporciona las tarifas disponibles como referencia
+
+5. **PREGUNTAS SOBRE DIRECCIONES**: Comparte las direcciones si las tienes
+
+6. **PREGUNTAS GENERALES SOBRE SERVICIOS**: Responde de forma conversacional
+
+7. **SOLO cuando NO tengas información específica**: Dirige al contacto directo
 
 EJEMPLOS DE RESPUESTAS NATURALES:
 
+✅ BUENO para entrega a domicilio: "Un momento ${customerName}, transfiero tu solicitud de entrega a domicilio a Josefa quien coordinará contigo los detalles."
 ✅ BUENO: "¡Hola ${customerName}! El próximo viaje está programado para [fecha]. ¿Necesitas reservar espacio?"
 ✅ BUENO: "Según nuestros registros, tienes una encomienda [tracking] que está [estado]."
 ✅ BUENO: "Las tarifas actuales son: [lista tarifas]. ¿A qué destino necesitas enviar?"
 
 ❌ MALO: Usar siempre el mismo mensaje de contacto cuando SÍ tienes información
+❌ MALO: Dar información de horarios de entrega sin transferir a Josefa
 
 RESPUESTA DE CONTACTO DIRECTO (solo cuando NO tengas información):
 "Para información específica sobre [tema de la pregunta], te recomiendo contactar directamente a nuestra coordinadora Josefa al +59996964306. Ella podrá ayudarte con todos los detalles."
 
-RECUERDA: Sé natural, conversacional y útil. Solo deriva al contacto cuando genuinamente no puedas ayudar.`;
+RECUERDA: 
+- Detecta solicitudes de entrega a domicilio INMEDIATAMENTE
+- Transfiere a Josefa para coordinar entregas
+- Sé natural, conversacional y útil
+- Solo deriva al contacto cuando genuinamente no puedas ayudar`;
 
   return systemPrompt;
 }
@@ -100,6 +123,7 @@ export function buildConversationContext(recentMessages: any[], customerName: st
 
   context += `\n\nINSTRUCCIONES CONTEXTUALES:
 - Si el cliente preguntó algo y recibió respuesta de contacto, pero ahora pregunta algo que SÍ puedes responder, responde directamente
+- Si detectas palabras como "traer", "llevar", "entrega", "domicilio" = ENTREGA A DOMICILIO → Transferir a Josefa
 - Mantén el tono conversacional y natural
 - No repitas la misma respuesta de contacto si ahora tienes información útil`;
 

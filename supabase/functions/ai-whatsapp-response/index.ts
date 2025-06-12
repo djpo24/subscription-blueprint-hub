@@ -6,7 +6,7 @@ import { getCustomerInfo } from './customerService.ts';
 import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts';
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
-import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse } from './businessLogic.ts';
+import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse } from './businessLogic.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
@@ -56,6 +56,64 @@ serve(async (req) => {
       packagesCount: customerInfo.packagesCount,
       botSiempreResponde: true
     });
+
+    // 🏠 PRIORIDAD MÁXIMA: Detectar solicitudes de entrega a domicilio
+    const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
+    if (homeDeliveryResponse) {
+      console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      try {
+        const { data: interactionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: homeDeliveryResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isHomeDeliveryRequest: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError) {
+          await updateLearningModel(supabase, interactionData.id, customerPhone, message, homeDeliveryResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: homeDeliveryResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: interactionData?.id || null,
+        wasEscalated: false
+      };
+
+      console.log('🏠 RESPUESTA DE ENTREGA A DOMICILIO ENVIADA - Josefa coordinará');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get additional context data
     const freightRates = await getActiveFreightRates(supabase);

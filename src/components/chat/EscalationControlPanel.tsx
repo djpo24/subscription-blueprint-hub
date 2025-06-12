@@ -26,10 +26,22 @@ interface AdminEscalation {
 export function EscalationControlPanel() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: userRole } = useCurrentUserRole();
+  const { data: userRole, isLoading: roleLoading } = useCurrentUserRole();
   const [adminPhone, setAdminPhone] = useState('');
 
-  // Verificar permisos
+  // Verificar permisos con loading state
+  if (roleLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-gray-500">
+            Verificando permisos...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (userRole?.role !== 'admin') {
     return (
       <Card>
@@ -46,31 +58,43 @@ export function EscalationControlPanel() {
   const { data: adminConfig, isLoading: configLoading } = useQuery({
     queryKey: ['admin-escalation-config'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_app_secret', { 
-        secret_name: 'ADMIN_ESCALATION_PHONE' 
-      });
-      
-      if (error) {
-        console.error('Error obteniendo configuración:', error);
-        return '+573014940399'; // Valor por defecto
+      try {
+        const { data, error } = await supabase.rpc('get_app_secret', { 
+          secret_name: 'ADMIN_ESCALATION_PHONE' 
+        });
+        
+        if (error) {
+          console.error('Error obteniendo configuración:', error);
+          return '+573014940399'; // Valor por defecto
+        }
+        
+        return data || '+573014940399';
+      } catch (error) {
+        console.error('Error en queryFn:', error);
+        return '+573014940399';
       }
-      
-      return data || '+573014940399';
-    }
+    },
+    enabled: userRole?.role === 'admin'
   });
 
   // Obtener escalaciones pendientes
   const { data: escalations, isLoading: escalationsLoading } = useQuery({
     queryKey: ['admin-escalations'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_escalations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as AdminEscalation[];
-    }
+      try {
+        const { data, error } = await supabase
+          .from('admin_escalations')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data as AdminEscalation[];
+      } catch (error) {
+        console.error('Error obteniendo escalaciones:', error);
+        return [];
+      }
+    },
+    enabled: userRole?.role === 'admin'
   });
 
   // Actualizar estado local cuando se carga la configuración

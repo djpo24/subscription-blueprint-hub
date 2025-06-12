@@ -1,4 +1,3 @@
-
 import { CustomerInfo } from './types.ts';
 
 export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isValid: boolean; message?: string } {
@@ -64,12 +63,12 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, custome
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
 
-  // Respuesta directa sin ofrecer servicios - solo dirigir a Josefa
+  // Respuesta directa sin ofrecer servicios - solo dirigir a Darwin
   return `Hola ${customerName} 👋
 
-Para solicitudes de entrega a domicilio, por favor contacta directamente a nuestra coordinadora Josefa al +59996964306.
+Para solicitudes de entrega a domicilio, por favor contacta directamente a nuestro coordinador Darwin al +573127271746.
 
-Ella podrá ayudarte con todos los detalles de este servicio.
+Él podrá ayudarte con todos los detalles de este servicio.
 
 ¡Gracias! 😊`;
 }

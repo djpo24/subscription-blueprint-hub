@@ -19,6 +19,13 @@ export function AutoResponseIndicator() {
     });
   };
 
+  const handleInfoClick = () => {
+    toast({
+      title: "ℹ️ Auto-respuesta activa",
+      description: "El bot está monitoreando mensajes entrantes y responderá automáticamente",
+    });
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Badge 
@@ -32,7 +39,7 @@ export function AutoResponseIndicator() {
       </Badge>
       <AlertCircle 
         className="h-4 w-4 text-blue-500 cursor-help" 
-        title="El bot está monitoreando mensajes entrantes y responderá automáticamente"
+        onClick={handleInfoClick}
       />
     </div>
   );

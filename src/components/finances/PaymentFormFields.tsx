@@ -29,7 +29,7 @@ export function PaymentFormFields({
   
   return (
     <div className="space-y-4">
-      {/* Payment Section - usando el componente móvil */}
+      {/* Payment Section - usando la misma lógica del formulario móvil */}
       <MobilePaymentSection
         package={mockPackage}
         payments={payments}

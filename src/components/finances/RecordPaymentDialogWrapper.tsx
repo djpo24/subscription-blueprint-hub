@@ -10,11 +10,12 @@ export function RecordPaymentDialogWrapper({
   customer,
   onPaymentRecorded
 }: RecordPaymentDialogProps) {
+  // USAR LA MISMA LÓGICA DE HOOK QUE EL FORMULARIO MÓVIL
   const {
     notes,
     setNotes,
     isLoading,
-    payments, // Ahora es un array
+    payments, // Ahora es PaymentEntryData[] como en el formulario móvil
     mockPackage,
     handlePaymentUpdate,
     addPayment,
@@ -34,7 +35,7 @@ export function RecordPaymentDialogWrapper({
     return null;
   }
 
-  // Always show the dialog if we have a customer, create a basic mockPackage if needed
+  // IDÉNTICA lógica de fallback que en el formulario móvil
   const displayPackage = mockPackage || {
     id: customer.id,
     tracking_number: customer.package_numbers,

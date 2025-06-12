@@ -19,9 +19,10 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
   // Get customer data to ensure we have complete customer information
   const { customer: customerData } = useCustomerData(customer?.id || '');
   
-  // Use the package currency if available, otherwise default to COP
+  // Use the package currency if available, otherwise default to COP - MISMA LÓGICA
   const packageCurrency = customerPackages[0]?.currency || mockPackage?.currency || 'COP';
   
+  // USAR LA MISMA LÓGICA DE GESTIÓN DE PAGOS QUE EN EL FORMULARIO MÓVIL
   const {
     payments,
     addPayment,
@@ -32,7 +33,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     getValidPayments
   } = usePaymentManagement(packageCurrency);
 
-  // Enhanced mock package with complete customer data
+  // Enhanced mock package with complete customer data - IDÉNTICO AL FORMULARIO MÓVIL
   const enhancedMockPackage = mockPackage && customerData ? {
     ...mockPackage,
     customers: {
@@ -45,7 +46,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
   console.log('🔧 [useRecordPaymentDialog] Customer data:', customerData);
   console.log('🔧 [useRecordPaymentDialog] Enhanced mock package:', enhancedMockPackage);
 
-  // Reset form when dialog opens/closes or customer changes
+  // Reset form when dialog opens/closes or customer changes - MISMA LÓGICA
   useEffect(() => {
     if (isOpen && customer) {
       resetPayments();
@@ -53,10 +54,12 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     }
   }, [isOpen, customer?.id, resetPayments]);
 
+  // IDÉNTICA lógica de actualización de pagos que en el formulario móvil
   const handlePaymentUpdate = (index: number, field: string, value: string) => {
     updatePayment(index, field as any, value, customer?.total_pending_amount || 0);
   };
 
+  // IDÉNTICA lógica de envío que en el formulario móvil
   const handleSubmit = async (onSuccess: () => void, onClose: () => void) => {
     if (!customer || !user?.id) {
       console.error('❌ No customer or user available');
@@ -79,7 +82,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
 
       console.log('💳 Submitting payments with user ID:', user.id);
       
-      // Convert ValidPayment[] to PaymentEntryData[] format
+      // IDÉNTICA conversión que en el formulario móvil: ValidPayment[] to PaymentEntryData[]
       const paymentEntries: PaymentEntryData[] = validPayments.map(payment => ({
         methodId: payment.method_id,
         amount: payment.amount.toString(),
@@ -91,7 +94,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
         customer,
         payments: paymentEntries,
         notes,
-        currentUserId: user.id // Pass the current user UUID
+        currentUserId: user.id
       });
 
       toast({
@@ -118,7 +121,7 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
     notes,
     setNotes,
     isLoading,
-    payments,
+    payments, // Ahora es PaymentEntryData[] como en el formulario móvil
     mockPackage: enhancedMockPackage,
     handlePaymentUpdate,
     addPayment,

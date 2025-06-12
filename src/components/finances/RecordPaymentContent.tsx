@@ -45,11 +45,11 @@ export function RecordPaymentContent({
   console.log('🏗️ [RecordPaymentContent] Mock package:', mockPackage);
   console.log('💳 [RecordPaymentContent] Payments:', payments);
   
-  // Usar la divisa del paquete
+  // Usar la divisa del paquete - MISMA LÓGICA QUE EN EL FORMULARIO MÓVIL
   const packageCurrency = mockPackage?.currency || 'COP';
   console.log('💰 [RecordPaymentContent] Package currency:', packageCurrency);
   
-  // Calcular totales de pago
+  // Calcular totales de pago - MISMA LÓGICA QUE EN EL FORMULARIO MÓVIL
   const totalCollected = payments.reduce((sum, payment) => {
     const amount = parseFloat(payment.amount) || 0;
     return sum + amount;
@@ -62,15 +62,15 @@ export function RecordPaymentContent({
   console.log('📊 [RecordPaymentContent] Total collected:', totalCollected);
   console.log('📊 [RecordPaymentContent] Remaining amount:', remainingAmount);
 
-  // Verificar si hay al menos un pago válido
+  // Verificar si hay al menos un pago válido - MISMA LÓGICA QUE EN EL FORMULARIO MÓVIL
   const hasValidPayments = payments.some(p => p.methodId && p.amount && parseFloat(p.amount) > 0);
 
   return (
     <div className="space-y-4">
-      {/* Package Info - usando el componente móvil */}
+      {/* Package Info - usando el componente móvil IDÉNTICO */}
       <MobilePackageInfo package={mockPackage} />
 
-      {/* Payment Form Fields */}
+      {/* Payment Form Fields - usando la MISMA lógica del formulario móvil */}
       <PaymentFormFields
         mockPackage={mockPackage}
         payments={payments}
@@ -82,17 +82,17 @@ export function RecordPaymentContent({
         getCurrencySymbol={getCurrencySymbol}
       />
 
-      {/* Payment Summary Warning */}
+      {/* Payment Summary Warning - MISMA lógica de validación */}
       <PaymentSummaryCard
         remainingAmount={remainingAmount}
         currency={packageCurrency}
         currencySymbol={currencySymbol}
       />
 
-      {/* Action Buttons */}
+      {/* Action Buttons - usando hasValidPayments como en el formulario móvil */}
       <RecordPaymentActions
         isLoading={isLoading}
-        hasPayments={hasValidPayments} // Usar hasValidPayments en lugar de payments.length > 0
+        hasPayments={hasValidPayments}
         onCancel={onCancel}
         onSubmit={onSubmit}
       />

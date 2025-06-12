@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -12,6 +11,13 @@ import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } 
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
 import { getDestinationAddresses, formatAddressesForPrompt } from './destinationAddressService.ts';
+import { 
+  createEscalationRequest, 
+  checkForAdminResponse, 
+  shouldEscalateToAdmin, 
+  generateCustomerNotificationMessage 
+} from './escalationService.ts';
+import { notifyAdminOfEscalation } from './adminNotificationService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -43,6 +49,31 @@ serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
+    }
+
+    // 🔍 Verificar si hay una respuesta del administrador pendiente
+    const adminResponse = await checkForAdminResponse(supabase, customerPhone);
+    if (adminResponse) {
+      console.log('✅ Found admin response, sending to customer');
+      
+      const result: AIResponseResult = {
+        response: adminResponse,
+        hasPackageInfo: false,
+        isFromFallback: false,
+        customerInfo: {
+          found: false,
+          name: '',
+          pendingAmount: 0,
+          pendingPackages: 0,
+          transitPackages: 0
+        },
+        interactionId: null,
+        isAdminResponse: true
+      };
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // 🔒 Get SECURE customer information - only for the specific customer
@@ -106,6 +137,7 @@ serve(async (req) => {
     let aiResponse: string;
     let wasFallback = false;
     let interactionId: string | null = null;
+    let wasEscalated = false;
     
     try {
       aiResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
@@ -113,6 +145,40 @@ serve(async (req) => {
       // Add business validation warning if needed
       if (!validationResult.isValid) {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
+      }
+
+      // 🚨 Verificar si la respuesta debe ser escalada al administrador
+      if (shouldEscalateToAdmin(message, aiResponse)) {
+        console.log('🚨 Escalating question to administrator');
+        
+        const customerName = customerInfo.customerFirstName || 'Cliente';
+        const escalationId = await createEscalationRequest(
+          supabase,
+          customerPhone,
+          customerName,
+          message
+        );
+
+        if (escalationId) {
+          // Notificar al administrador
+          const notificationSent = await notifyAdminOfEscalation(
+            supabase,
+            escalationId,
+            customerName,
+            message
+          );
+
+          if (notificationSent) {
+            // Enviar mensaje de notificación al cliente
+            aiResponse = generateCustomerNotificationMessage(customerName);
+            wasEscalated = true;
+            console.log('✅ Question escalated successfully');
+          } else {
+            console.log('❌ Failed to notify admin, using original AI response');
+          }
+        } else {
+          console.log('❌ Failed to create escalation, using original AI response');
+        }
       }
       
       console.log('✅ Secure AI Response generated successfully for customer');
@@ -144,6 +210,7 @@ serve(async (req) => {
             tripsFound: upcomingTrips.length,
             requestedDestination: tripQuery.destination,
             addressesConfigured: destinationAddresses.length,
+            wasEscalated: wasEscalated,
             conversationHistory: recentMessages?.slice(-3).map(msg => ({
               message: msg.message?.substring(0, 100),
               isFromCustomer: msg.isFromCustomer,
@@ -191,7 +258,8 @@ serve(async (req) => {
         destination: tripQuery.destination,
         tripsFound: upcomingTrips.length,
         nextTripDate: upcomingTrips.length > 0 ? upcomingTrips[0].trip_date : null
-      } : undefined
+      } : undefined,
+      wasEscalated: wasEscalated
     };
 
     console.log('🎯 Secure customer-specific response delivered:', {
@@ -203,6 +271,7 @@ serve(async (req) => {
       hasTripsContext: tripQuery.shouldQuery,
       tripsFound: upcomingTrips.length,
       addressesConfigured: destinationAddresses.length,
+      wasEscalated: wasEscalated,
       responseTime: responseTime + 'ms',
       dataPrivacyCompliant: true
     });

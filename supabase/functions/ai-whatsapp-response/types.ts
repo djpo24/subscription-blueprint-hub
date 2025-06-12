@@ -1,4 +1,3 @@
-
 export interface CustomerInfo {
   customerFound: boolean;
   customerFirstName: string;
@@ -33,15 +32,17 @@ export interface AIResponseResult {
   isFromFallback: boolean;
   customerInfo: {
     found: boolean;
-    name?: string;
+    name: string;
     pendingAmount: number;
     pendingPackages: number;
     transitPackages: number;
   };
-  interactionId?: string | null;
+  interactionId: string | null;
   tripsInfo?: {
-    destination?: string;
+    destination: string;
     tripsFound: number;
-    nextTripDate?: string | null;
+    nextTripDate: string | null;
   };
+  wasEscalated?: boolean;
+  isAdminResponse?: boolean;
 }

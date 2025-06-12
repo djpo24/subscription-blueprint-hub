@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { handleAdminResponse } from '../ai-whatsapp-response/adminNotificationService.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -322,9 +322,22 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
 
   console.log('Incoming message stored')
 
-  // If it's a text message, you could implement auto-responses here
+  // If it's a text message, check if it's from an admin responding to an escalation
   if (type === 'text' && text?.body) {
     console.log('Received text message:', text.body)
-    // Add auto-response logic here if needed
+    
+    // Check if this message is from an admin responding to an escalation
+    const adminResponseHandled = await handleAdminResponse(
+      supabaseClient,
+      from,
+      text.body
+    );
+
+    if (adminResponseHandled) {
+      console.log('✅ Admin response processed and forwarded to customer');
+      return;
+    }
+    
+    // Add other auto-response logic here if needed
   }
 }

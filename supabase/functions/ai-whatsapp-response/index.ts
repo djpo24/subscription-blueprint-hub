@@ -11,6 +11,18 @@ const corsHeaders = {
 // Helper function to wait
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Helper function to format currency based on package currency
+const formatCurrencyWithSymbol = (amount: number, currency: string = 'COP'): string => {
+  const upperCurrency = currency.toUpperCase();
+  
+  if (upperCurrency === 'AWG') {
+    return `ƒ${amount.toLocaleString()} florines`;
+  } else {
+    // Default to COP (Colombian Pesos)
+    return `$${amount.toLocaleString()} pesos`;
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,7 +54,8 @@ serve(async (req) => {
       pendingDeliveryPackages: [],
       pendingPaymentPackages: [],
       totalPending: 0,
-      totalFreight: 0
+      totalFreight: 0,
+      currencyBreakdown: {}
     };
 
     let actualCustomerId = customerId;
@@ -100,8 +113,14 @@ serve(async (req) => {
         customerInfo.packagesCount = packages.length;
         customerInfo.packages = packages;
 
-        // Calculate total freight
-        customerInfo.totalFreight = packages.reduce((sum, p) => sum + (p.freight || 0), 0);
+        // Calculate total freight by currency
+        const freightByCurrency = packages.reduce((acc, p) => {
+          const currency = p.currency || 'COP';
+          acc[currency] = (acc[currency] || 0) + (p.freight || 0);
+          return acc;
+        }, {} as Record<string, number>);
+        
+        customerInfo.totalFreight = freightByCurrency;
 
         // Find pending delivery packages (not delivered yet)
         customerInfo.pendingDeliveryPackages = packages.filter(p => 
@@ -122,11 +141,18 @@ serve(async (req) => {
             .select('*')
             .in('package_id', deliveredPackages.map(p => p.id));
 
-          // Calculate pending amounts
+          // Calculate pending amounts by currency
+          const pendingByCurrency = {} as Record<string, number>;
+          
           customerInfo.pendingPaymentPackages = deliveredPackages.map(pkg => {
             const packagePayments = payments?.filter(p => p.package_id === pkg.id) || [];
             const totalPaid = packagePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
             const pendingAmount = (pkg.amount_to_collect || 0) - totalPaid;
+            
+            if (pendingAmount > 0) {
+              const currency = pkg.currency || 'COP';
+              pendingByCurrency[currency] = (pendingByCurrency[currency] || 0) + pendingAmount;
+            }
             
             return {
               ...pkg,
@@ -135,40 +161,42 @@ serve(async (req) => {
             };
           }).filter(p => p.pendingAmount > 0);
 
-          customerInfo.totalPending = customerInfo.pendingPaymentPackages.reduce(
-            (sum, p) => sum + p.pendingAmount, 0
-          );
+          customerInfo.currencyBreakdown = pendingByCurrency;
+          customerInfo.totalPending = Object.values(pendingByCurrency).reduce((sum, amount) => sum + amount, 0);
         }
       }
     }
 
     // Create a more detailed system prompt based on customer information
-    const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    };
-
     let systemPrompt = `Eres SARA, asistente virtual de Ojitos Express. Responde como una persona real, amigable y profesional. NUNCA menciones que eres un bot o IA.
 
 REGLAS DE FORMATO OBLIGATORIAS:
 1. Siempre saluda por el nombre del cliente
 2. Usa emojis moderadamente para ser más amigable 
-3. Estructura la información en líneas separadas para claridad
+3. Estructura la información con SALTOS DE LÍNEA para cada dato preciso
 4. Mantén respuestas CONCISAS y DIRECTAS
 5. Cuando menciones montos, úsalos en líneas separadas para destacar
-6. Si hay descripción de productos, inclúyela entre paréntesis
+6. Si hay descripción de productos, inclúyela entre paréntesis en línea separada
 7. Termina siempre con una oferta de ayuda adicional
+
+FORMATO DE DIVISAS:
+- Para pesos colombianos (COP): $30 pesos
+- Para florines de Aruba (AWG): ƒ30 florines
 
 INFORMACIÓN DEL CLIENTE:`;
 
     if (customerInfo.customerFound) {
       systemPrompt += `
 - Cliente: ${customerInfo.customerName}
-- Total de encomiendas: ${customerInfo.packagesCount}
-- Flete total histórico: ${formatCurrency(customerInfo.totalFreight)}`;
+- Total de encomiendas: ${customerInfo.packagesCount}`;
+
+      // Add freight information by currency
+      if (Object.keys(customerInfo.totalFreight).length > 0) {
+        systemPrompt += `\n- Flete total histórico:`;
+        Object.entries(customerInfo.totalFreight).forEach(([currency, amount]) => {
+          systemPrompt += `\n  ${formatCurrencyWithSymbol(amount as number, currency)}`;
+        });
+      }
 
       if (customerInfo.pendingDeliveryPackages.length > 0) {
         systemPrompt += `
@@ -178,7 +206,7 @@ ENCOMIENDAS PENDIENTES DE ENTREGA (${customerInfo.pendingDeliveryPackages.length
           systemPrompt += `
 - ${pkg.tracking_number}: ${pkg.status} (${pkg.origin} → ${pkg.destination})
   Descripción: ${pkg.description || 'Sin descripción'}
-  Flete: ${formatCurrency(pkg.freight || 0)}`;
+  Flete: ${formatCurrencyWithSymbol(pkg.freight || 0, pkg.currency)}`;
         });
       }
 
@@ -190,13 +218,20 @@ ENCOMIENDAS CON PAGOS PENDIENTES (${customerInfo.pendingPaymentPackages.length})
           systemPrompt += `
 - ${pkg.tracking_number}: ${pkg.status}
   Descripción: ${pkg.description || 'Sin descripción'}
-  Total a cobrar: ${formatCurrency(pkg.amount_to_collect || 0)}
-  Ya pagado: ${formatCurrency(pkg.totalPaid || 0)}
-  PENDIENTE: ${formatCurrency(pkg.pendingAmount)}`;
+  Total a cobrar: ${formatCurrencyWithSymbol(pkg.amount_to_collect || 0, pkg.currency)}
+  Ya pagado: ${formatCurrencyWithSymbol(pkg.totalPaid || 0, pkg.currency)}
+  PENDIENTE: ${formatCurrencyWithSymbol(pkg.pendingAmount, pkg.currency)}`;
         });
-        systemPrompt += `
 
-TOTAL PENDIENTE DE PAGO: ${formatCurrency(customerInfo.totalPending)}`;
+        if (Object.keys(customerInfo.currencyBreakdown).length > 0) {
+          systemPrompt += `
+
+TOTAL PENDIENTE DE PAGO:`;
+          Object.entries(customerInfo.currencyBreakdown).forEach(([currency, amount]) => {
+            systemPrompt += `
+${formatCurrencyWithSymbol(amount as number, currency)}`;
+          });
+        }
       }
 
       if (customerInfo.pendingDeliveryPackages.length === 0 && customerInfo.pendingPaymentPackages.length === 0) {
@@ -217,11 +252,13 @@ EJEMPLOS DE RESPUESTAS BIEN ESTRUCTURADAS:
 Para pagos pendientes:
 "¡Hola [Nombre]! 😊
 
-Claro que sí, puedes pasar cuando gustes. El valor total a pagar es de:
+Claro que sí, puedes pasar cuando gustes.
 
-💰 ${formatCurrency(customerInfo.totalPending || 0)}
+El valor total a pagar es de:
+💰 $30,000 pesos
 
-Por tu encomienda de ([descripción de productos])
+Por tu encomienda de:
+📦 (productos varios)
 
 ¿Necesitas más información? ¡Con gusto te ayudo! 🌟"
 
@@ -229,15 +266,18 @@ Para consultas de estado:
 "¡Hola [Nombre]! 📦
 
 Tu encomienda está:
-🚚 [Estado actual]
-📍 [Ubicación]
+🚚 En tránsito
+📍 Bogotá
 
 ¿Hay algo más en lo que pueda ayudarte?"
 
-Para información general:
+Para múltiples divisas:
 "¡Hola [Nombre]! 😊
 
-[Información específica solicitada]
+Tienes pendientes de pago:
+
+💰 $25,000 pesos
+💰 ƒ15 florines
 
 ¿Necesitas ayuda con algo más? ¡Estoy aquí para ti! 💫"
 
@@ -246,6 +286,7 @@ INSTRUCCIONES ESPECÍFICAS:
 - NUNCA escribas párrafos largos
 - Destaca montos importantes en líneas separadas
 - Incluye descripciones de productos entre paréntesis cuando sea relevante
+- Usa la divisa correcta según la encomienda
 - Usa emojis apropiados pero sin exceso
 - Termina siempre ofreciendo ayuda adicional
 
@@ -261,7 +302,7 @@ NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
@@ -323,13 +364,20 @@ NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
       if (customerInfo.customerFound) {
         if (customerInfo.pendingPaymentPackages.length > 0) {
           const firstPackage = customerInfo.pendingPaymentPackages[0];
+          const currency = firstPackage.currency || 'COP';
+          
+          // Calculate total pending for this currency
+          const totalPendingThisCurrency = customerInfo.currencyBreakdown[currency] || firstPackage.pendingAmount;
+          
           aiResponse = `¡Hola ${customerInfo.customerName}! 😊
 
-Claro que sí, puedes pasar cuando gustes. El valor total a pagar es de:
+Claro que sí, puedes pasar cuando gustes.
 
-💰 ${formatCurrency(customerInfo.totalPending)}
+El valor total a pagar es de:
+💰 ${formatCurrencyWithSymbol(totalPendingThisCurrency, currency)}
 
-Por tu encomienda de (${firstPackage.description || 'productos varios'})
+Por tu encomienda de:
+📦 (${firstPackage.description || 'productos varios'})
 
 ¿Necesitas más información? ¡Con gusto te ayudo! 🌟`;
         } else if (customerInfo.pendingDeliveryPackages.length > 0) {

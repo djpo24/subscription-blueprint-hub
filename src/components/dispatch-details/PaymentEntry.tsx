@@ -32,18 +32,11 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     console.log('💰 [PaymentEntry] Amount input changed from:', payment.amount, 'to:', newValue);
-    console.log('💰 [PaymentEntry] Calling onUpdate with:', { index, field: 'amount', value: newValue });
+    console.log('💰 [PaymentEntry] Input event target value:', e.target.value);
+    console.log('💰 [PaymentEntry] Calling onUpdate with index:', index, 'field: amount, value:', newValue);
     
-    // Prevenir comportamiento por defecto del evento
-    e.preventDefault();
-    
-    // Llamar a onUpdate y verificar que se ejecute
-    try {
-      onUpdate(index, 'amount', newValue);
-      console.log('💰 [PaymentEntry] onUpdate called successfully');
-    } catch (error) {
-      console.error('💰 [PaymentEntry] Error calling onUpdate:', error);
-    }
+    // Llamar directamente sin preventDefault para no interferir
+    onUpdate(index, 'amount', newValue);
   };
 
   // También agregar logging cuando el componente se re-renderiza
@@ -106,7 +99,6 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
             onChange={handleAmountChange}
             onFocus={() => console.log('💰 [PaymentEntry] Amount field focused')}
             onBlur={() => console.log('💰 [PaymentEntry] Amount field blurred')}
-            onInput={(e) => console.log('💰 [PaymentEntry] onInput event:', (e.target as HTMLInputElement).value)}
             placeholder="0.00"
             className="flex-1 h-14 text-xl font-semibold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             style={{ fontSize: '20px' }}

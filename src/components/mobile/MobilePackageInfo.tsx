@@ -17,8 +17,12 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
   const requiresPayment = pkg.amount_to_collect && pkg.amount_to_collect > 0;
   const packageCurrency = pkg.currency || 'COP';
   
-  // Logs detallados para debug
+  // Logs detallados para debug del cliente
   console.log('📋 [MobilePackageInfo] Package data:', pkg);
+  console.log('👤 [MobilePackageInfo] Customer data:', pkg.customers);
+  console.log('📧 [MobilePackageInfo] Customer name:', pkg.customers?.name);
+  console.log('📧 [MobilePackageInfo] Customer email:', pkg.customers?.email);
+  console.log('📞 [MobilePackageInfo] Customer phone:', pkg.customers?.phone);
   console.log('💰 [MobilePackageInfo] Package currency:', packageCurrency);
   console.log('💰 [MobilePackageInfo] Amount to collect:', pkg.amount_to_collect);
   console.log('💰 [MobilePackageInfo] Requires payment:', requiresPayment);
@@ -80,6 +84,19 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
     } else {
       return `${items[0]}, ${items[1]}, ${items[2].substring(0, 4)}...`;
     }
+  };
+
+  // Función mejorada para obtener el nombre del cliente
+  const getCustomerName = () => {
+    const customerName = pkg.customers?.name;
+    console.log('🔍 [MobilePackageInfo] Getting customer name:', customerName);
+    
+    if (!customerName || customerName.trim() === '') {
+      console.log('⚠️ [MobilePackageInfo] No customer name found, returning fallback');
+      return 'Sin nombre asignado';
+    }
+    
+    return customerName.trim();
   };
 
   const handleToggleAllPackages = () => {
@@ -156,11 +173,11 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
                   <span className="text-gray-700">{pkg.destination}</span>
                 </div>
 
-                {/* Customer Name */}
+                {/* Customer Name - LÍNEA CORREGIDA */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">{pkg.customers?.name || 'Cliente no especificado'}</span>
+                    <span className="font-medium">{getCustomerName()}</span>
                   </div>
                   <button className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                     Ver chat
@@ -241,7 +258,7 @@ export function MobilePackageInfo({ package: pkg }: MobilePackageInfoProps) {
                       {/* Cliente */}
                       <div className="flex items-center gap-2">
                         <User className="h-3 w-3 text-gray-400" />
-                        <span className="text-sm text-gray-700">{deliveredPkg.customers?.name || 'N/A'}</span>
+                        <span className="text-sm text-gray-700">{deliveredPkg.customers?.name || 'Sin nombre asignado'}</span>
                       </div>
 
                       {/* Ruta */}

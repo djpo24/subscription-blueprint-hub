@@ -21,7 +21,7 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
 
 ✅ Ya entregada${customerInfo.pendingPaymentPackages.length > 1 ? 's' : ''}, pendiente pago únicamente.
 
-¿Necesitas información específica de alguna encomienda?`;
+Para procesar el pago o información específica, contacta a nuestra coordinadora Josefa al +59996964306.`;
     } 
     
     if (customerInfo.pendingDeliveryPackages.length > 0) {
@@ -48,7 +48,7 @@ ${statusMessage}
 
 ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pendingDeliveryPackages.length - 1} encomienda${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 's' : ''} adicional${customerInfo.pendingDeliveryPackages.length - 1 > 1 ? 'es' : ''}.` : ''}
 
-¿Necesitas información específica?`;
+Para coordinaciones específicas, contacta a Josefa al +59996964306.`;
     }
     
     return `¡Hola ${customerInfo.customerFirstName}! ✅
@@ -57,23 +57,29 @@ ${customerInfo.pendingDeliveryPackages.length > 1 ? `\n📦 Y ${customerInfo.pen
 • Total encomiendas: ${customerInfo.packagesCount}
 • Todo al día - sin pendientes
 
-¿En qué puedo ayudarte hoy?`;
+Para nuevas consultas o servicios, contacta a nuestra coordinadora Josefa al +59996964306.`;
   }
   
-  // Respuesta para clientes nuevos o sin información específica
+  // Respuesta para clientes nuevos o sin información específica - CON CONTACTO DIRECTO
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
   return `¡Hola ${customerName}! 👋
 
-Soy SARA, tu asistente virtual de Envíos Ojito. Estoy aquí para ayudarte con:
+Soy SARA, tu asistente virtual de Envíos Ojito. Puedo ayudarte con:
 
-📦 **Consultas de encomiendas**
-💰 **Estados de cuenta**
-🚚 **Información de viajes y entregas**
-📋 **Tarifas y servicios**
+📦 **Consultas de encomiendas existentes**
+📋 **Estados de cuenta**
+🚚 **Información general de viajes**
 📍 **Direcciones de oficinas**
 
-¿En qué puedo asistirte hoy?
+Para servicios específicos como:
+• Reservas de espacio
+• Cotizaciones personalizadas  
+• Programación de envíos
+• Coordinaciones especiales
 
-💡 *Puedes preguntarme por el número de tracking de tu encomienda, saldos pendientes, próximos viajes, o cualquier otra consulta.*`;
+📞 **Contacta directamente a nuestra coordinadora Josefa:**
+**+59996964306**
+
+Ella podrá ayudarte con todos los detalles y procesos específicos que necesites. 😊`;
 }

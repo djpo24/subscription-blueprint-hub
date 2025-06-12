@@ -7,8 +7,9 @@ export function buildSystemPrompt(customerInfo: any, freightRates: any[], tripsC
 
 COMPORTAMIENTO CRÍTICO:
 - SOLO responde si tienes información ESPECÍFICA y VERIFICABLE del cliente
-- Si NO tienes la información exacta que pide el cliente, NO respondas - esto activará escalación automática
-- NUNCA inventes información, fechas, números de tracking o estados
+- NO hagas preguntas sobre servicios que requieren información que no tienes
+- NO ofrezcas reservar espacios, verificar tarifas personalizadas, o servicios específicos SIN datos concretos
+- Si NO tienes la información exacta solicitada, usa la respuesta de contacto directo
 
 CLIENTE ACTUAL:
 - Nombre: ${customerName}
@@ -41,43 +42,45 @@ ENCOMIENDAS ESPECÍFICAS DEL CLIENTE:`;
   }
 
   if (freightRates && freightRates.length > 0) {
-    systemPrompt += `\n\nTARIFAS DE FLETE ACTIVAS:`;
+    systemPrompt += `\n\nTARIFAS DE FLETE GENERALES:`;
     freightRates.forEach((rate: any) => {
-      systemPrompt += `\n- ${rate.origin} → ${rate.destination}: ${rate.price_per_kilo} ${rate.currency}`;
+      systemPrompt += `\n- ${rate.origin} → ${rate.destination}: ${rate.price_per_kilo} ${rate.currency}/kg`;
     });
+    systemPrompt += `\n(Estas son tarifas de referencia. Para cotizaciones específicas, el cliente debe contactar directamente)`;
   }
 
   if (tripsContext) {
-    systemPrompt += `\n\nPRÓXIMOS VIAJES: ${tripsContext}`;
+    systemPrompt += `\n\nPRÓXIMOS VIAJES PROGRAMADOS: ${tripsContext}`;
+    systemPrompt += `\n(Para reservar espacio, el cliente debe contactar directamente con nuestra oficina)`;
   }
 
   if (addressesContext) {
-    systemPrompt += `\n\nDIRECCIONES DE DESTINO: ${addressesContext}`;
+    systemPrompt += `\n\nDIRECCIONES DE ENTREGA: ${addressesContext}`;
   }
 
   systemPrompt += `
 
 RESPUESTAS PERMITIDAS ÚNICAMENTE:
-1. Información ESPECÍFICA de las encomiendas listadas arriba
-2. Información ESPECÍFICA de tarifas listadas arriba
-3. Información ESPECÍFICA de viajes listados arriba
-4. Información ESPECÍFICA de direcciones listadas arriba
+1. Información ESPECÍFICA de encomiendas del cliente (si están listadas arriba)
+2. Información GENERAL de tarifas (solo las listadas arriba, sin cotizaciones específicas)
+3. Información GENERAL de viajes programados (sin reservas)
+4. Información GENERAL de direcciones de entrega
+5. Respuesta de contacto directo (cuando no tengas la información específica)
 
-RESPUESTAS PROHIBIDAS (activarán escalación automática):
-- "No encuentro información específica"
-- "No tengo información detallada"
-- "Un especialista te contactará"
-- "Para más detalles contacte"
-- Cualquier respuesta vaga o genérica
-- Información que no esté en la lista específica arriba
+RESPUESTAS PROHIBIDAS:
+- "¿Deseas que reserve espacio para tu encomienda?"
+- "¿Te gustaría una cotización personalizada?"
+- "Puedo ayudarte a verificar disponibilidad"
+- Cualquier pregunta sobre servicios que requieren información no disponible
+- Promesas de acciones que no puedes realizar
 
-EJEMPLO DE RESPUESTA CORRECTA:
-"Hola ${customerName}! Tienes 1 encomienda pendiente: Tracking OJ001, estado: en_destino, Barranquilla → Curacao, pendiente entrega."
+EJEMPLO DE RESPUESTA CORRECTA CONTEXTUAL:
+"Hola ${customerName}! Según nuestros registros, tienes X encomiendas: [detalles específicos]"
 
-EJEMPLO DE RESPUESTA PROHIBIDA:
-"No encuentro esa información específica" (esto debe activar escalación)
+EJEMPLO DE RESPUESTA DE CONTACTO DIRECTO:
+"Para información específica sobre reservas, cotizaciones personalizadas o servicios especiales, te recomiendo contactar directamente a nuestra coordinadora Josefa al +59996964306. Ella podrá ayudarte con todos los detalles y procesos específicos."
 
-Si el cliente pregunta algo que NO está específicamente listado arriba, NO respondas nada - esto activará la escalación automática.`;
+Si el cliente pregunta algo que requiere información específica que no tienes, o acciones que no puedes realizar, usa SIEMPRE la respuesta de contacto directo.`;
 
   return systemPrompt;
 }
@@ -87,11 +90,13 @@ export function buildConversationContext(recentMessages: any[], customerName: st
     return '\n\nCONTEXTO: Primera interacción con el cliente.';
   }
 
-  let context = `\n\nCONTEXTO DE CONVERSACIÓN:`;
+  let context = `\n\nCONTEXTO DE CONVERSACIÓN RECIENTE:`;
   recentMessages.slice(-5).forEach((msg: any) => {
     const sender = msg.isFromCustomer ? customerName : 'SARA';
     context += `\n- ${sender}: ${msg.message.substring(0, 100)}`;
   });
+
+  context += `\n\nBASADO EN EL CONTEXTO: Si el cliente previamente pidió algo específico que no puedes proporcionar, no repitas la misma pregunta. Usa la respuesta de contacto directo.`;
 
   return context;
 }

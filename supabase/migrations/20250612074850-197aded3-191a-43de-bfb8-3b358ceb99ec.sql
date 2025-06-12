@@ -51,7 +51,7 @@ CREATE TABLE public.marketing_contacts (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Insertar configuración inicial
+-- Insertar configuración inicial con plantilla específica para el negocio
 INSERT INTO public.marketing_settings (
   message_frequency_days,
   trip_window_days,
@@ -61,12 +61,17 @@ INSERT INTO public.marketing_settings (
   15,
   30,
   true,
-  'Hola {customer_name}! 🚀 Te informamos sobre los próximos viajes programados para los siguientes 30 días:
+  '¡Hola {customer_name}! 🚀
+
+📦 *PRÓXIMOS ENVÍOS DISPONIBLES*
 
 {trip_details}
 
-💼 ¡Contáctanos para reservar tu espacio!
-📱 Responde a este mensaje para más información.'
+💼 ¿Tienes paquetes por enviar?
+📱 Contáctanos para reservar tu espacio
+🚚 Servicio puerta a puerta
+
+*Envíos Ojitos* - Conectando Barranquilla y Curazao'
 );
 
 -- Función para obtener viajes en un rango de fechas
@@ -96,11 +101,11 @@ BEGIN
   FROM public.trips t
   WHERE t.trip_date BETWEEN start_date AND end_date
     AND t.status IN ('scheduled', 'pending')
-  ORDER BY t.trip_date ASC;
+  ORDER BY t.trip_date ASC, t.origin ASC;
 END;
 $$;
 
--- Función para generar el contenido del mensaje con viajes
+-- Función mejorada para generar el contenido del mensaje con rutas específicas
 CREATE OR REPLACE FUNCTION public.generate_marketing_message(
   customer_name_param TEXT,
   template_param TEXT,
@@ -115,13 +120,13 @@ DECLARE
   trip_record RECORD;
   message_content TEXT;
 BEGIN
-  -- Construir detalles de viajes
+  -- Construir detalles de viajes organizados por ruta
   FOR trip_record IN 
     SELECT * FROM public.get_trips_for_marketing_period(start_date, end_date)
   LOOP
     trip_details := trip_details || 
       '📅 ' || to_char(trip_record.trip_date, 'DD/MM/YYYY') || 
-      ' - ' || trip_record.origin || ' → ' || trip_record.destination;
+      ' - Envío ' || trip_record.origin || ' → ' || trip_record.destination;
     
     IF trip_record.flight_number IS NOT NULL THEN
       trip_details := trip_details || ' (Vuelo: ' || trip_record.flight_number || ')';
@@ -132,7 +137,7 @@ BEGIN
   
   -- Si no hay viajes, usar mensaje por defecto
   IF trip_details = '' THEN
-    trip_details := 'No hay viajes programados para este período.';
+    trip_details := 'No hay envíos programados para este período. ¡Contáctanos para programar tu envío!';
   END IF;
   
   -- Reemplazar placeholders en el template
@@ -145,6 +150,7 @@ $$;
 
 -- Índices para optimizar consultas
 CREATE INDEX idx_trips_date_status ON public.trips(trip_date, status);
+CREATE INDEX idx_trips_origin_destination ON public.trips(origin, destination);
 CREATE INDEX idx_marketing_contacts_phone ON public.marketing_contacts(phone_number);
 CREATE INDEX idx_marketing_campaigns_sent_at ON public.marketing_campaigns(sent_at);
 CREATE INDEX idx_marketing_message_log_campaign ON public.marketing_message_log(campaign_id);

@@ -56,8 +56,8 @@ serve(async (req) => {
     const basePrompt = buildSystemPrompt(customerInfo);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt, learningContext);
 
-    // Add business intelligence insights
-    const businessInsight = generateBusinessIntelligentResponse(customerInfo);
+    // Add business intelligence insights only if timing validation failed
+    const businessInsight = !validationResult.isValid ? generateBusinessIntelligentResponse(customerInfo) : '';
     const contextualMessage = businessInsight ? `${message}\n\nContexto adicional: ${businessInsight}` : message;
 
     // Try to get AI response with enhanced prompt
@@ -68,8 +68,13 @@ serve(async (req) => {
     try {
       aiResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
       
-      // Add business validation warning if needed
-      if (!validationResult.isValid) {
+      // Add business validation warning ONLY if timing is invalid AND it's relevant to the message
+      if (!validationResult.isValid && (
+        message.toLowerCase().includes('viaje') ||
+        message.toLowerCase().includes('fecha') ||
+        message.toLowerCase().includes('envio') ||
+        message.toLowerCase().includes('encomienda')
+      )) {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
       }
       
@@ -149,16 +154,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Error in enhanced ai-whatsapp-response:', error);
     
-    // Enhanced fallback response with human-like touch
-    const fallbackResponse = `¡Hola! 😊
-
-Estoy teniendo algunos problemas técnicos en este momento.
-
-🙏 Pero no te preocupes, un miembro de nuestro equipo te contactará muy pronto para ayudarte.
-
-Si tienes el número de tracking de tu encomienda, compártelo para acelerar la atención. 📦
-
-¡Gracias por tu paciencia! 🌟`;
+    // Simple fallback response without predetermined content
+    const fallbackResponse = `Disculpa, estoy teniendo dificultades técnicas en este momento. Un miembro de nuestro equipo te contactará pronto para ayudarte.`;
     
     return new Response(JSON.stringify({ 
       error: error.message,

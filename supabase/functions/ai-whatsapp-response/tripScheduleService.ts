@@ -15,7 +15,7 @@ export async function getUpcomingTripsByDestination(
   destination?: string, 
   daysAhead: number = 30
 ): Promise<TripSchedule[]> {
-  console.log(`🗓️ [TripSchedule] Consultando viajes próximos${destination ? ` hacia ${destination}` : ''} en los próximos ${daysAhead} días`);
+  console.log(`🗓️ [TripSchedule] Consultando envíos próximos${destination ? ` hacia ${destination}` : ''} en los próximos ${daysAhead} días`);
   
   const today = new Date();
   const futureDate = new Date();
@@ -49,28 +49,28 @@ export async function getUpcomingTripsByDestination(
   const { data: trips, error } = await query;
   
   if (error) {
-    console.error('❌ [TripSchedule] Error consultando viajes:', error);
+    console.error('❌ [TripSchedule] Error consultando envíos:', error);
     return [];
   }
   
-  console.log(`✅ [TripSchedule] Encontrados ${trips?.length || 0} viajes próximos`);
+  console.log(`✅ [TripSchedule] Encontrados ${trips?.length || 0} envíos próximos`);
   return trips || [];
 }
 
 export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination?: string): string {
   if (!trips || trips.length === 0) {
     if (requestedDestination) {
-      return `No hay viajes programados hacia ${requestedDestination} en los próximos 30 días.`;
+      return `No hay envíos de encomiendas programados hacia ${requestedDestination} en los próximos 30 días.`;
     }
-    return 'No hay viajes programados en los próximos 30 días.';
+    return 'No hay envíos de encomiendas programados en los próximos 30 días.';
   }
 
   let tripsText = '';
   
   if (requestedDestination) {
-    tripsText += `PRÓXIMOS VIAJES HACIA ${requestedDestination.toUpperCase()}:\n\n`;
+    tripsText += `PRÓXIMOS ENVÍOS DE ENCOMIENDAS HACIA ${requestedDestination.toUpperCase()}:\n\n`;
   } else {
-    tripsText += 'PRÓXIMOS VIAJES PROGRAMADOS:\n\n';
+    tripsText += 'PRÓXIMOS ENVÍOS DE ENCOMIENDAS PROGRAMADOS:\n\n';
   }
   
   trips.forEach((trip, index) => {
@@ -83,7 +83,7 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
     });
     
     tripsText += `${index + 1}. 📅 ${formattedDate}\n`;
-    tripsText += `   🛫 Ruta: ${trip.origin} → ${trip.destination}\n`;
+    tripsText += `   📦 Ruta de envío: ${trip.origin} → ${trip.destination}\n`;
     
     if (trip.flight_number) {
       tripsText += `   ✈️ Vuelo: ${trip.flight_number}\n`;
@@ -93,12 +93,13 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
   });
 
   tripsText += `
-INSTRUCCIONES PARA CONSULTAS DE FECHAS DE VIAJES:
-- Si el cliente pregunta por fechas de viajes sin especificar destino, pregunta hacia dónde quiere viajar
-- Los destinos disponibles son: Barranquilla ↔ Curazao
-- Proporciona las fechas exactas de los viajes programados
-- Explica que pueden reservar espacio contactándonos con anticipación
-- Si no hay viajes en las fechas solicitadas, sugiere fechas alternativas cercanas`;
+INSTRUCCIONES PARA CONSULTAS DE FECHAS DE ENVÍO DE ENCOMIENDAS:
+- Si el cliente pregunta por fechas de envío sin especificar destino, pregunta: "¿Hacia dónde quieres llevar la encomienda?"
+- Los destinos disponibles para envío de encomiendas son: Barranquilla y Curazao
+- Proporciona las fechas exactas de los envíos programados
+- Explica que pueden reservar espacio para su encomienda contactándonos con anticipación
+- Si no hay envíos en las fechas solicitadas, sugiere fechas alternativas cercanas
+- SIEMPRE aclara que son fechas de ENVÍO DE ENCOMIENDAS, no viajes de personas`;
 
   return tripsText;
 }
@@ -106,11 +107,11 @@ INSTRUCCIONES PARA CONSULTAS DE FECHAS DE VIAJES:
 export function shouldQueryTrips(message: string): { shouldQuery: boolean; destination?: string } {
   const messageLower = message.toLowerCase();
   
-  // Palabras clave que indican consulta de fechas/viajes
+  // Palabras clave que indican consulta de fechas/envíos de encomiendas
   const tripKeywords = [
-    'fecha', 'fechas', 'viaje', 'viajes', 'próximo', 'próximos',
+    'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
     'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
-    'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario'
+    'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'llevar', 'encomienda'
   ];
   
   const hasKeyword = tripKeywords.some(keyword => messageLower.includes(keyword));

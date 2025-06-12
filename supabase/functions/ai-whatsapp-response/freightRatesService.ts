@@ -40,7 +40,7 @@ export function formatFreightRateForPrompt(rates: FreightRate[]): string {
     return 'No hay tarifas de flete configuradas en el sistema.';
   }
 
-  let ratesText = 'TARIFAS DE FLETE VIGENTES (por kilogramo):\n';
+  let ratesText = 'TARIFAS DE FLETE VIGENTES PARA ENVÍO DE ENCOMIENDAS (por kilogramo):\n';
   
   rates.forEach(rate => {
     const currencySymbol = rate.currency === 'COP' ? '$' : 
@@ -48,7 +48,7 @@ export function formatFreightRateForPrompt(rates: FreightRate[]): string {
     const currencyName = rate.currency === 'COP' ? 'pesos' : 
                         rate.currency === 'AWG' ? 'florines' : rate.currency;
     
-    ratesText += `- ${rate.origin} → ${rate.destination}: ${currencySymbol}${rate.price_per_kilo} ${currencyName}/kg\n`;
+    ratesText += `- Envío ${rate.origin} → ${rate.destination}: ${currencySymbol}${rate.price_per_kilo} ${currencyName}/kg\n`;
     
     if (rate.notes) {
       ratesText += `  Nota: ${rate.notes}\n`;
@@ -56,12 +56,13 @@ export function formatFreightRateForPrompt(rates: FreightRate[]): string {
   });
 
   ratesText += `
-INSTRUCCIONES PARA CONSULTAS DE TARIFAS:
-- Si el cliente pregunta sobre precios o tarifas, SIEMPRE pregunta primero por el destino
-- Las rutas disponibles son: Barranquilla ↔ Curazao
-- Proporciona la tarifa exacta según la ruta solicitada
-- Explica que los precios son por kilogramo
-- Menciona que pueden variar según el peso total del envío`;
+INSTRUCCIONES PARA CONSULTAS DE TARIFAS DE ENVÍO:
+- Si el cliente pregunta sobre precios o tarifas, SIEMPRE pregunta: "¿Hacia dónde quieres enviar tu encomienda?"
+- Las rutas disponibles para envío de encomiendas son: Barranquilla → Curazao y Curazao → Barranquilla
+- Proporciona la tarifa exacta según la ruta de envío solicitada
+- Explica que los precios son por kilogramo de encomienda
+- Menciona que pueden variar según el peso total del envío
+- NUNCA inventes tarifas que no estén en el sistema`;
 
   return ratesText;
 }

@@ -80,6 +80,7 @@ Encontré su cuenta en nuestro sistema. Tiene ${customerInfo.pendingDeliveryPack
 🚚 Tracking principal: ${firstPackage.tracking_number}
 📍 Estado actual: ${statusMessage}
 📍 Ruta: ${firstPackage.origin} → ${firstPackage.destination}
+📝 Descripción: ${firstPackage.description || 'Sin descripción específica registrada'}
 
 ${availabilityMessage}
 
@@ -106,7 +107,7 @@ No logro localizar una cuenta asociada a este número en nuestro sistema de enco
 🔒 Por políticas de seguridad, solo puedo proporcionar información de cuentas verificadas.
 
 Para ayudarle mejor, ¿podría compartirme:
-- Su nombre completo
+- Su nombre completo como aparece registrado
 - Número de tracking de su encomienda
 - Cualquier número adicional donde pueda estar registrado
 

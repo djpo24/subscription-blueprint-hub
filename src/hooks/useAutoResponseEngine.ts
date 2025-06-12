@@ -7,7 +7,7 @@ import { useWhatsAppSender } from './useWhatsAppSender';
 interface DetectedMessage {
   id: string;
   from_phone: string;
-  customer_id: string | null; // Permitir null para clientes no registrados
+  customer_id: string | null;
   message_content: string;
   timestamp: string;
 }
@@ -22,24 +22,30 @@ export function useAutoResponseEngine() {
       id: message.id,
       phone: message.from_phone,
       customerId: message.customer_id || 'UNREGISTERED',
-      isRegistered: !!message.customer_id
+      isRegistered: !!message.customer_id,
+      content: message.message_content?.substring(0, 50) + '...'
     });
 
     try {
-      // Step 1: Generate AI response (works for both registered and unregistered)
+      // Add a small delay to ensure message is fully processed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 1: Generate AI response
       console.log('🤖 Step 1: Generating AI response...');
       const aiResponse = await processAIResponse({
         message: message.message_content,
         customerPhone: message.from_phone,
-        customerId: message.customer_id || 'unregistered' // Pasar string para clientes no registrados
+        customerId: message.customer_id
       });
+
+      console.log('✅ AI response generated:', aiResponse.substring(0, 100) + '...');
 
       // Step 2: Send via WhatsApp
       console.log('📤 Step 2: Sending WhatsApp message...');
       const sendSuccess = await sendWhatsAppMessage({
         phone: message.from_phone,
         message: aiResponse,
-        customerId: message.customer_id, // Puede ser null
+        customerId: message.customer_id,
         notificationType: message.customer_id ? 'auto_reply' : 'auto_reply_unregistered'
       });
 
@@ -58,7 +64,7 @@ export function useAutoResponseEngine() {
     } catch (error) {
       console.error('❌ Auto-response engine error:', error);
       
-      // Try to send emergency fallback
+      // Try emergency fallback
       try {
         console.log('🚨 Attempting emergency fallback...');
         const emergencyResponse = "¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto.";
@@ -66,7 +72,7 @@ export function useAutoResponseEngine() {
         const fallbackSuccess = await sendWhatsAppMessage({
           phone: message.from_phone,
           message: emergencyResponse,
-          customerId: message.customer_id, // Puede ser null
+          customerId: message.customer_id,
           notificationType: message.customer_id ? 'auto_reply_fallback' : 'auto_reply_fallback_unregistered'
         });
 

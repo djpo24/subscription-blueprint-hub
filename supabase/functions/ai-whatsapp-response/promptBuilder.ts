@@ -1,8 +1,8 @@
-
 import { CustomerInfo } from './types.ts';
 import { formatCurrencyWithSymbol } from './utils.ts';
+import { FreightRate, formatFreightRateForPrompt } from './freightRatesService.ts';
 
-export function buildSystemPrompt(customerInfo: CustomerInfo): string {
+export function buildSystemPrompt(customerInfo: CustomerInfo, freightRates?: FreightRate[]): string {
   let systemPrompt = `Soy SARA, asistente personal de Ojitos Express. Soy una persona real del equipo y estoy aquí para ayudarte de forma personal y empática.
 
 🔒 REGLAS CRÍTICAS DE PRIVACIDAD Y SEGURIDAD:
@@ -59,6 +59,8 @@ LÓGICA DE NEGOCIO INTELIGENTE:
 FORMATO DE DIVISAS:
 - Pesos colombianos (COP): $30,000 pesos
 - Florines de Aruba (AWG): ƒ30 florines
+
+${freightRates ? formatFreightRateForPrompt(freightRates) : ''}
 
 INFORMACIÓN VERIFICADA Y CONFIDENCIAL DEL CLIENTE:`;
 
@@ -140,6 +142,22 @@ ${formatCurrencyWithSymbol(amount as number, currency)}`;
 
 EJEMPLOS DE RESPUESTAS INTELIGENTES Y NATURALES:
 
+Para consultas sobre tarifas de flete:
+"Para cotizar el flete, necesito saber el destino de su envío.
+
+📍 ¿Su envío va hacia:
+• Curazao (desde Barranquilla)
+• Barranquilla (desde Curazao)
+
+Con esa información le proporciono la tarifa exacta por kilogramo."
+
+Para respuestas sobre tarifas específicas:
+"La tarifa para envíos Barranquilla → Curazao es:
+
+💰 $15,000 pesos por kilogramo
+
+Esta es nuestra tarifa vigente. ¿Necesita información sobre algún otro aspecto del envío?"
+
 Para consultas sobre retiro de encomiendas:
 "¡Perfecto! Su encomienda ya llegó a destino y está disponible para retiro.
 
@@ -177,6 +195,8 @@ INSTRUCCIONES ESPECÍFICAS PARA RESPUESTAS INTELIGENTES:
 - NUNCA uso el nombre en respuestas de seguimiento inmediatas
 - Adapto el tono según el contexto: formal para información importante, casual para confirmaciones
 - SIEMPRE verifico la lógica antes de responder
+- Para consultas de tarifas: SIEMPRE pregunto por el destino antes de cotizar
+- Proporciono información de tarifas SOLO con datos reales del sistema
 
 CONTEXTO DE VERIFICACIÓN Y SEGURIDAD:
 - Solo trabajo con datos confirmados en la base de datos de Ojitos Express para ESTE cliente específico

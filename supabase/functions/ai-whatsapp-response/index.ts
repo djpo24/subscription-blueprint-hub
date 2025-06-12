@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -9,6 +8,7 @@ import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse } from './businessLogic.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
+import { getActiveFreightRates } from './freightRatesService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -56,6 +56,10 @@ serve(async (req) => {
       hasPrivateData: customerInfo.pendingPaymentPackages.length > 0 || customerInfo.pendingDeliveryPackages.length > 0
     });
 
+    // 🚚 Get active freight rates for intelligent pricing responses
+    const freightRates = await getActiveFreightRates(supabase);
+    console.log('🚚 Retrieved freight rates:', freightRates.length, 'active rates');
+
     // 🔒 Get conversation history ONLY for this specific customer
     const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
     console.log('💬 Retrieved secure conversation history:', recentMessages?.length || 0, 'messages for this customer only');
@@ -67,8 +71,8 @@ serve(async (req) => {
     // Build learning context for adaptive responses - customer-specific
     const learningContext = buildLearningContext(customerInfo);
 
-    // Create enhanced system prompt with conversation context - all customer-specific
-    const basePrompt = buildSystemPrompt(customerInfo);
+    // Create enhanced system prompt with conversation context and freight rates - all customer-specific
+    const basePrompt = buildSystemPrompt(customerInfo, freightRates);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
@@ -113,6 +117,7 @@ serve(async (req) => {
             packagesCount: customerInfo.packagesCount,
             businessValidation: validationResult,
             learningContext: learningContext,
+            freightRatesAvailable: freightRates.length > 0,
             conversationHistory: recentMessages?.slice(-3).map(msg => ({
               message: msg.message?.substring(0, 100), // Limitar longitud para privacidad
               isFromCustomer: msg.isFromCustomer,
@@ -163,6 +168,7 @@ serve(async (req) => {
       hasBusinessValidation: !validationResult.isValid,
       hasLearningContext: true,
       hasConversationContext: recentMessages?.length > 0,
+      hasFreightRates: freightRates.length > 0,
       responseTime: responseTime + 'ms',
       dataPrivacyCompliant: true
     });

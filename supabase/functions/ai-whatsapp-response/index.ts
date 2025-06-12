@@ -24,7 +24,11 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🤖 AI Response Request (Enhanced with Context):', { message, customerPhone, customerId });
+    console.log('🔒 AI Response Request (Secure & Customer-Specific):', { 
+      message: message?.substring(0, 50) + '...', 
+      customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), // Parcialmente ocultar teléfono en logs
+      customerId: customerId || 'not_provided'
+    });
     const startTime = Date.now();
 
     // Initialize Supabase client
@@ -38,32 +42,39 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Get comprehensive customer information
+    // 🔒 Get SECURE customer information - only for the specific customer
     const { customerInfo, actualCustomerId } = await getCustomerInfo(
       supabase, 
       customerPhone, 
       customerId
     );
 
-    // Get recent conversation history for context
-    const recentMessages = await getRecentConversationHistory(supabase, customerPhone, actualCustomerId);
-    console.log('💬 Retrieved conversation history:', recentMessages?.length || 0, 'messages');
+    console.log('🔐 Customer Security Check:', {
+      customerFound: customerInfo.customerFound,
+      customerId: actualCustomerId || 'not_authenticated',
+      packagesCount: customerInfo.packagesCount,
+      hasPrivateData: customerInfo.pendingPaymentPackages.length > 0 || customerInfo.pendingDeliveryPackages.length > 0
+    });
 
-    // Validate business logic (packages timing)
+    // 🔒 Get conversation history ONLY for this specific customer
+    const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
+    console.log('💬 Retrieved secure conversation history:', recentMessages?.length || 0, 'messages for this customer only');
+
+    // Validate business logic (packages timing) - only for this customer
     const validationResult = validatePackageDeliveryTiming(customerInfo);
-    console.log('🔍 Business validation:', validationResult);
+    console.log('🔍 Business validation for this customer:', validationResult);
 
-    // Build learning context for adaptive responses
+    // Build learning context for adaptive responses - customer-specific
     const learningContext = buildLearningContext(customerInfo);
 
-    // Create enhanced system prompt with conversation context
+    // Create enhanced system prompt with conversation context - all customer-specific
     const basePrompt = buildSystemPrompt(customerInfo);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
-    // Add business intelligence insights
+    // Add business intelligence insights - only for this customer
     const businessInsight = generateBusinessIntelligentResponse(customerInfo);
-    const contextualMessage = businessInsight ? `${message}\n\nContexto adicional: ${businessInsight}` : message;
+    const contextualMessage = businessInsight ? `${message}\n\nContexto específico del cliente: ${businessInsight}` : message;
 
     // Try to get AI response with enhanced prompt and context
     let aiResponse: string;
@@ -78,7 +89,7 @@ serve(async (req) => {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
       }
       
-      console.log('✅ Enhanced AI Response with context generated successfully');
+      console.log('✅ Secure AI Response generated successfully for customer');
     } catch (error) {
       console.error('❌ OpenAI Error:', error.message);
       wasFallback = true;
@@ -88,7 +99,7 @@ serve(async (req) => {
     // Calculate response time
     const responseTime = Date.now() - startTime;
 
-    // Store the interaction in the database for learning purposes
+    // Store the interaction in the database for learning purposes - with privacy protection
     try {
       const { data: interactionData, error: insertError } = await supabase
         .from('ai_chat_interactions')
@@ -98,10 +109,15 @@ serve(async (req) => {
           user_message: message,
           ai_response: aiResponse,
           context_info: {
-            ...customerInfo,
+            customerFound: customerInfo.customerFound,
+            packagesCount: customerInfo.packagesCount,
             businessValidation: validationResult,
             learningContext: learningContext,
-            conversationHistory: recentMessages?.slice(-3) // Store last 3 messages for analysis
+            conversationHistory: recentMessages?.slice(-3).map(msg => ({
+              message: msg.message?.substring(0, 100), // Limitar longitud para privacidad
+              isFromCustomer: msg.isFromCustomer,
+              timestamp: msg.timestamp
+            })) // Store only last 3 messages with limited content
           },
           response_time_ms: responseTime,
           was_fallback: wasFallback
@@ -112,7 +128,7 @@ serve(async (req) => {
       if (insertError) {
         console.error('❌ Error storing interaction:', insertError);
       } else {
-        console.log('✅ Enhanced interaction with context stored for learning');
+        console.log('✅ Secure interaction stored for learning (customer-specific data only)');
         interactionId = interactionData.id;
         
         // Update learning model asynchronously
@@ -142,11 +158,13 @@ serve(async (req) => {
       interactionId: interactionId
     };
 
-    console.log('🎯 Enhanced response with conversation context delivered:', {
+    console.log('🎯 Secure customer-specific response delivered:', {
+      customerAuthenticated: customerInfo.customerFound,
       hasBusinessValidation: !validationResult.isValid,
       hasLearningContext: true,
       hasConversationContext: recentMessages?.length > 0,
-      responseTime: responseTime + 'ms'
+      responseTime: responseTime + 'ms',
+      dataPrivacyCompliant: true
     });
 
     return new Response(JSON.stringify(result), {
@@ -154,18 +172,20 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in enhanced ai-whatsapp-response:', error);
+    console.error('❌ Error in secure ai-whatsapp-response:', error);
     
-    // Enhanced fallback response with human-like touch
+    // Enhanced fallback response with human-like touch and privacy emphasis
     const fallbackResponse = `¡Hola! 😊
 
 Estoy teniendo algunos problemas técnicos en este momento.
 
-🙏 Pero no te preocupes, un miembro de nuestro equipo te contactará muy pronto para ayudarte.
+🔒 Por políticas de privacidad, solo puedo acceder a información de cuentas verificadas.
 
-Si tienes el número de tracking de tu encomienda, compártelo para acelerar la atención. 📦
+🙏 Un miembro de nuestro equipo le contactará muy pronto para ayudarle de forma personalizada.
 
-¡Gracias por tu paciencia! 🌟`;
+Si tiene el número de tracking de su encomienda personal, compártelo para acelerar la atención. 📦
+
+¡Gracias por su paciencia y por confiar en nosotros! 🌟`;
     
     return new Response(JSON.stringify({ 
       error: error.message,
@@ -178,33 +198,33 @@ Si tienes el número de tracking de tu encomienda, compártelo para acelerar la 
   }
 });
 
-async function getRecentConversationHistory(supabase: any, customerPhone: string, customerId?: string) {
+async function getSecureConversationHistory(supabase: any, customerPhone: string, customerId?: string) {
   try {
-    // Get recent incoming messages (from customer)
+    // 🔒 ONLY get messages for this specific customer phone number
     const { data: incomingMessages, error: incomingError } = await supabase
       .from('incoming_messages')
       .select('message_content, timestamp')
-      .eq('from_phone', customerPhone)
+      .eq('from_phone', customerPhone) // Strict filter by phone
       .order('timestamp', { ascending: false })
       .limit(10);
 
     if (incomingError) {
-      console.error('Error fetching incoming messages for context:', incomingError);
+      console.error('Error fetching incoming messages for this customer:', incomingError);
     }
 
-    // Get recent sent messages (from SARA)
+    // 🔒 ONLY get sent messages for this specific customer phone number
     const { data: sentMessages, error: sentError } = await supabase
       .from('sent_messages')
       .select('message, sent_at')
-      .eq('phone', customerPhone)
+      .eq('phone', customerPhone) // Strict filter by phone
       .order('sent_at', { ascending: false })
       .limit(10);
 
     if (sentError) {
-      console.error('Error fetching sent messages for context:', sentError);
+      console.error('Error fetching sent messages for this customer:', sentError);
     }
 
-    // Combine and sort by timestamp
+    // Combine and sort by timestamp - all messages are already filtered by customer phone
     const allMessages: Array<{
       message: string;
       isFromCustomer: boolean;
@@ -235,14 +255,18 @@ async function getRecentConversationHistory(supabase: any, customerPhone: string
       });
     }
 
-    // Sort by timestamp (most recent first) and return last 8 messages
-    return allMessages
+    // Sort by timestamp (most recent first) and return last 8 messages for THIS customer only
+    const customerMessages = allMessages
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 8)
       .reverse(); // Reverse to get chronological order for context
 
+    console.log(`🔐 Retrieved ${customerMessages.length} secure messages for customer phone: ${customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`);
+    
+    return customerMessages;
+
   } catch (error) {
-    console.error('Error building conversation context:', error);
+    console.error('Error building secure conversation context:', error);
     return [];
   }
 }

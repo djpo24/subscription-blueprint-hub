@@ -8,44 +8,48 @@ export function generateFallbackResponse(customerInfo: CustomerInfo): string {
       const firstPackage = customerInfo.pendingPaymentPackages[0];
       const currency = firstPackage.currency || 'COP';
       
-      // Calculate total pending for this currency - ONLY REAL DATA
+      // Calculate total pending for this currency - ONLY REAL DATA from THIS customer
       const totalPendingThisCurrency = customerInfo.currencyBreakdown[currency] || firstPackage.pendingAmount;
       
       return `¡Hola! 😊
 
-Revisé tu cuenta en nuestro sistema y confirmo que tienes un saldo pendiente de:
+Revisé su cuenta personal en nuestro sistema y confirmo que tiene un saldo pendiente de:
 
 💰 ${formatCurrencyWithSymbol(totalPendingThisCurrency, currency)}
 
-Este saldo corresponde a tu encomienda registrada en nuestro sistema.
+Este saldo corresponde a su encomienda registrada en su cuenta personal.
 
-¿Necesitas que confirme algún detalle específico? ¡Aquí estoy para ayudarte! 🌟`;
+¿Necesita que confirme algún detalle específico de su cuenta? ¡Aquí estoy para ayudarle! 🌟`;
     } else if (customerInfo.pendingDeliveryPackages.length > 0) {
       const firstPackage = customerInfo.pendingDeliveryPackages[0];
       return `¡Hola! 📦
 
-Según nuestro sistema, tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} registrada${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''}:
+Según su cuenta en nuestro sistema, tiene ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} registrada${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''}:
 
-🚚 Tracking: ${firstPackage.tracking_number}
+🚚 Su tracking: ${firstPackage.tracking_number}
 📍 Estado actual: ${firstPackage.status}
 
-¿Hay algo específico que necesites confirmar? 😊`;
+¿Hay algo específico que necesite confirmar sobre su encomienda? 😊`;
     } else {
       return `¡Hola! 😊
 
-Según nuestro sistema, tienes todas tus encomiendas al día.
+Según su cuenta en nuestro sistema, tiene todas sus encomiendas al día.
 
-¿En qué más puedo ayudarte hoy? 🌟`;
+¿En qué más puedo ayudarle con su cuenta hoy? 🌟`;
     }
   } else {
     return `¡Hola! 😊
 
-No logro localizar tu información en nuestro sistema con este número.
+No logro localizar una cuenta asociada a este número en nuestro sistema.
 
-Para ayudarte mejor, ¿podrías compartirme:
-- Tu número de tracking
-- El nombre con el que registraste la encomienda
+🔒 Por políticas de seguridad, solo puedo proporcionar información de cuentas verificadas.
 
-Un miembro de nuestro equipo también te contactará pronto para verificar tu información. 📞`;
+Para ayudarle mejor, ¿podría compartirme:
+- Su número de tracking personal
+- El nombre con el que registró su encomienda
+
+Un miembro de nuestro equipo también le contactará pronto para verificar su información personal. 📞
+
+¡Protegemos la privacidad de todos nuestros clientes! 🛡️`;
   }
 }

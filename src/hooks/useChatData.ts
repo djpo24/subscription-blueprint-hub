@@ -38,8 +38,11 @@ export function useChatData(): ChatData {
           .select(`
             *,
             customers (
+              id,
               name,
-              profile_image_url
+              profile_image_url,
+              phone,
+              whatsapp_number
             )
           `)
           .order('timestamp', { ascending: false })
@@ -50,14 +53,19 @@ export function useChatData(): ChatData {
           throw incomingError;
         }
 
+        console.log('📥 Incoming messages raw data:', incomingData?.slice(0, 3));
+
         // Fetch sent messages (including auto-responses) - increased limit to 1000
         const { data: sentData, error: sentError } = await supabase
           .from('sent_messages')
           .select(`
             *,
             customers (
+              id,
               name,
-              profile_image_url
+              profile_image_url,
+              phone,
+              whatsapp_number
             )
           `)
           .order('sent_at', { ascending: false })
@@ -68,14 +76,19 @@ export function useChatData(): ChatData {
           throw sentError;
         }
 
+        console.log('📤 Sent messages raw data:', sentData?.slice(0, 3));
+
         // Fetch notification log for template messages - increased limit to 1000
         const { data: notificationData, error: notificationError } = await supabase
           .from('notification_log')
           .select(`
             *,
             customers (
+              id,
               name,
-              profile_image_url
+              profile_image_url,
+              phone,
+              whatsapp_number
             )
           `)
           .in('notification_type', ['consulta_encomienda', 'package_arrival_notification', 'customer_service_followup'])
@@ -89,38 +102,56 @@ export function useChatData(): ChatData {
         }
 
         // Convert incoming messages to unified format
-        const incomingMessages = (incomingData || []).map(msg => ({
-          id: msg.id,
-          whatsapp_message_id: msg.whatsapp_message_id,
-          from_phone: msg.from_phone,
-          customer_id: msg.customer_id,
-          message_type: msg.message_type,
-          message_content: msg.message_content,
-          media_url: msg.media_url,
-          timestamp: msg.timestamp,
-          is_from_customer: true,
-          customers: msg.customers ? {
-            name: msg.customers.name,
-            profile_image_url: msg.customers.profile_image_url || undefined
-          } : undefined
-        } as IncomingMessage & { is_from_customer: boolean }));
+        const incomingMessages = (incomingData || []).map(msg => {
+          console.log(`📨 Processing incoming message from ${msg.from_phone}:`, {
+            hasCustomer: !!msg.customers,
+            customerName: msg.customers?.name,
+            customerId: msg.customer_id,
+            customerData: msg.customers
+          });
+
+          return {
+            id: msg.id,
+            whatsapp_message_id: msg.whatsapp_message_id,
+            from_phone: msg.from_phone,
+            customer_id: msg.customer_id,
+            message_type: msg.message_type,
+            message_content: msg.message_content,
+            media_url: msg.media_url,
+            timestamp: msg.timestamp,
+            is_from_customer: true,
+            customers: msg.customers ? {
+              name: msg.customers.name,
+              profile_image_url: msg.customers.profile_image_url || undefined
+            } : undefined
+          } as IncomingMessage & { is_from_customer: boolean };
+        });
 
         // Convert sent messages to unified format (including auto-responses)
-        const sentMessages = (sentData || []).map(msg => ({
-          id: `sent_${msg.id}`,
-          whatsapp_message_id: msg.whatsapp_message_id,
-          from_phone: msg.phone,
-          customer_id: msg.customer_id,
-          message_type: 'text' as const,
-          message_content: msg.message,
-          media_url: msg.image_url,
-          timestamp: msg.sent_at,
-          is_from_customer: false,
-          customers: msg.customers ? {
-            name: msg.customers.name,
-            profile_image_url: msg.customers.profile_image_url || undefined
-          } : undefined
-        } as IncomingMessage & { is_from_customer: boolean }));
+        const sentMessages = (sentData || []).map(msg => {
+          console.log(`📤 Processing sent message to ${msg.phone}:`, {
+            hasCustomer: !!msg.customers,
+            customerName: msg.customers?.name,
+            customerId: msg.customer_id,
+            customerData: msg.customers
+          });
+
+          return {
+            id: `sent_${msg.id}`,
+            whatsapp_message_id: msg.whatsapp_message_id,
+            from_phone: msg.phone,
+            customer_id: msg.customer_id,
+            message_type: 'text' as const,
+            message_content: msg.message,
+            media_url: msg.image_url,
+            timestamp: msg.sent_at,
+            is_from_customer: false,
+            customers: msg.customers ? {
+              name: msg.customers.name,
+              profile_image_url: msg.customers.profile_image_url || undefined
+            } : undefined
+          } as IncomingMessage & { is_from_customer: boolean };
+        });
 
         // Convert template notifications to unified format
         const templateMessages = (notificationData || []).map(notification => ({
@@ -166,6 +197,16 @@ export function useChatData(): ChatData {
           total: allMessages.length
         });
 
+        // Log sample of messages with customer data for debugging
+        console.log('📋 Sample messages with customer data:', 
+          allMessages.slice(0, 5).map(msg => ({
+            phone: msg.from_phone,
+            hasCustomer: !!msg.customers,
+            customerName: msg.customers?.name,
+            message: msg.message_content?.substring(0, 50)
+          }))
+        );
+
         return allMessages;
       } catch (error) {
         console.error('❌ Error in useChatData:', error);
@@ -190,9 +231,16 @@ export function useChatData(): ChatData {
   messages.forEach(message => {
     const phone = message.from_phone;
     if (!conversationsByPhone[phone]) {
+      const customerName = message.customers?.name || phone;
+      console.log(`👤 Creating conversation for ${phone}:`, {
+        customerName,
+        hasCustomerData: !!message.customers,
+        customerId: message.customer_id
+      });
+
       conversationsByPhone[phone] = {
         customerId: message.customer_id,
-        customerName: message.customers?.name || phone,
+        customerName,
         messages: [],
         profileImageUrl: message.customers?.profile_image_url
       };
@@ -217,6 +265,12 @@ export function useChatData(): ChatData {
         displayMessage = `🤖 SARA: ${displayMessage}`;
       }
 
+      console.log(`💬 Adding to chat list ${phone}:`, {
+        customerName: conversation.customerName,
+        customerId: conversation.customerId,
+        lastMessage: displayMessage.substring(0, 30)
+      });
+
       chatList.push({
         phone,
         customerName: conversation.customerName,
@@ -231,6 +285,12 @@ export function useChatData(): ChatData {
 
   // Sort chat list by most recent message
   chatList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  console.log('📊 Final chat list summary:', {
+    totalChats: chatList.length,
+    chatsWithNames: chatList.filter(c => c.customerName !== c.phone).length,
+    chatsWithoutNames: chatList.filter(c => c.customerName === c.phone).length
+  });
 
   return {
     chatList,

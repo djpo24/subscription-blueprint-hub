@@ -78,6 +78,7 @@ export function ChatConversation({
             <CustomerInfoButton 
               customerId={customerId}
               customerName={displayName}
+              customerPhone={phone}
             />
           )}
         </div>

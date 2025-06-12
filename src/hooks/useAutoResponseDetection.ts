@@ -65,20 +65,34 @@ export function useAutoResponseDetection() {
           processedMessages.current.add(newMessage.id);
 
           try {
-            console.log('🤖 Generating automatic response for:', {
+            console.log('🤖 Starting AI response generation for:', {
               phone: newMessage.from_phone,
               customerId: newMessage.customer_id,
               message: newMessage.message_content?.substring(0, 100)
             });
 
-            // Generate AI response
-            const aiResponse = await generateAIResponse({
-              message: newMessage.message_content || '',
-              customerPhone: newMessage.from_phone,
-              customerId: newMessage.customer_id
+            // LLAMADA DIRECTA A LA FUNCIÓN DE IA - CRÍTICO PARA EL CONSUMO DE OPENAI
+            console.log('📞 Invoking ai-whatsapp-response function directly...');
+            const { data: aiData, error: aiError } = await supabase.functions.invoke('ai-whatsapp-response', {
+              body: {
+                message: newMessage.message_content || '',
+                customerPhone: newMessage.from_phone,
+                customerId: newMessage.customer_id
+              }
             });
 
-            console.log('✅ AI response generated successfully:', aiResponse.response?.substring(0, 100) + '...');
+            if (aiError) {
+              console.error('❌ Error calling AI function:', aiError);
+              throw new Error('Error al generar respuesta de IA: ' + aiError.message);
+            }
+
+            if (aiData.error) {
+              console.error('❌ AI function returned error:', aiData.error);
+              throw new Error('Error en función de IA: ' + aiData.error);
+            }
+
+            const aiResponse = aiData.response;
+            console.log('✅ AI response generated successfully:', aiResponse?.substring(0, 100) + '...');
 
             // Send the response automatically using the notification system
             const { data: notificationData, error: logError } = await supabase
@@ -87,7 +101,7 @@ export function useAutoResponseDetection() {
                 package_id: null,
                 customer_id: newMessage.customer_id,
                 notification_type: 'auto_reply',
-                message: aiResponse.response,
+                message: aiResponse,
                 status: 'pending'
               })
               .select()
@@ -98,12 +112,15 @@ export function useAutoResponseDetection() {
               throw new Error('Error al crear registro de notificación automática');
             }
 
+            console.log('📝 Notification log created:', notificationData.id);
+
             // Send via WhatsApp using the notification function
+            console.log('📤 Sending WhatsApp notification...');
             const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
               body: {
                 notificationId: notificationData.id,
                 phone: newMessage.from_phone,
-                message: aiResponse.response,
+                message: aiResponse,
                 customerId: newMessage.customer_id
               }
             });
@@ -118,7 +135,7 @@ export function useAutoResponseDetection() {
               throw new Error('Error de WhatsApp: ' + responseData.error);
             }
 
-            console.log('📤 Automatic response sent successfully');
+            console.log('📤 Automatic response sent successfully to WhatsApp');
 
             toast({
               title: "🤖 Respuesta automática enviada",
@@ -132,6 +149,7 @@ export function useAutoResponseDetection() {
             try {
               const fallbackMessage = "¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto para ayudarte.";
               
+              console.log('🔄 Sending fallback response...');
               const { data: notificationData, error: logError } = await supabase
                 .from('notification_log')
                 .insert({
@@ -153,6 +171,8 @@ export function useAutoResponseDetection() {
                     customerId: newMessage.customer_id
                   }
                 });
+
+                console.log('✅ Fallback response sent successfully');
 
                 toast({
                   title: "🤖 Respuesta automática de emergencia",

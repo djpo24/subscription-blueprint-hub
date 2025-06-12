@@ -26,6 +26,15 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
   console.log('💳 [PaymentEntry] Payment data:', payment);
   console.log('💳 [PaymentEntry] Available methods:', paymentMethods);
   console.log('💳 [PaymentEntry] Current methodId:', payment.methodId);
+  console.log('💳 [PaymentEntry] Current amount value:', payment.amount);
+  console.log('💳 [PaymentEntry] onUpdate function:', typeof onUpdate);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    console.log('💰 [PaymentEntry] Amount input changed from:', payment.amount, 'to:', newValue);
+    console.log('💰 [PaymentEntry] Calling onUpdate with:', { index, field: 'amount', value: newValue });
+    onUpdate(index, 'amount', newValue);
+  };
 
   return (
     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
@@ -80,14 +89,17 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
           <Input
             type="number"
             inputMode="decimal"
+            step="0.01"
+            min="0"
             value={payment.amount}
-            onChange={(e) => {
-              console.log('💰 [PaymentEntry] Amount changed to:', e.target.value);
-              onUpdate(index, 'amount', e.target.value);
-            }}
+            onChange={handleAmountChange}
+            onFocus={() => console.log('💰 [PaymentEntry] Amount field focused')}
+            onBlur={() => console.log('💰 [PaymentEntry] Amount field blurred')}
             placeholder="0.00"
             className="flex-1 h-14 text-xl font-semibold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             style={{ fontSize: '20px' }}
+            disabled={false}
+            readOnly={false}
           />
           {canRemove && (
             <Button

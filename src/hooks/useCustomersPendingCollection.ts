@@ -6,10 +6,10 @@ export function useCustomersPendingCollection() {
   return useQuery({
     queryKey: ['customers-pending-collection'],
     queryFn: async () => {
-      console.log('🔍 Fetching customers with pending collections...');
+      console.log('🔍 [useCustomersPendingCollection] Fetching customers with pending collections...');
       
       try {
-        // Use a direct SQL query instead of the ambiguous RPC function
+        // Get delivered packages with customer data
         const { data, error } = await supabase
           .from('packages')
           .select(`
@@ -33,34 +33,38 @@ export function useCustomersPendingCollection() {
           .limit(50);
 
         if (error) {
-          console.error('❌ Error fetching pending collections:', error);
+          console.error('❌ [useCustomersPendingCollection] Error fetching packages:', error);
           throw new Error(`Error en la base de datos: ${error.message}`);
         }
 
-        console.log('📊 Raw packages data:', data);
-
         if (!Array.isArray(data)) {
-          console.warn('⚠️ Data is not an array, returning empty array');
+          console.warn('⚠️ [useCustomersPendingCollection] Data is not an array, returning empty array');
           return [];
         }
 
-        // Transform the data to match the expected format and calculate pending amounts
-        const transformedData = await Promise.all(
-          data.map(async (pkg) => {
-            // Get total paid for this package
-            const { data: payments, error: paymentsError } = await supabase
-              .from('customer_payments')
-              .select('amount')
-              .eq('package_id', pkg.id);
+        // Get all payments to calculate real pending amounts
+        const { data: allPayments, error: paymentsError } = await supabase
+          .from('customer_payments')
+          .select('package_id, amount');
 
-            if (paymentsError) {
-              console.warn('⚠️ Error fetching payments for package:', pkg.id, paymentsError);
-            }
+        if (paymentsError) {
+          console.warn('⚠️ [useCustomersPendingCollection] Error fetching payments:', paymentsError);
+        }
 
-            const totalPaid = (payments || []).reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const payments = allPayments || [];
+        console.log('💰 [useCustomersPendingCollection] Total payments found:', payments.length);
+
+        // Transform data and calculate real pending amounts
+        const transformedData = data
+          .map((pkg) => {
+            // Calculate total paid for this specific package
+            const packagePayments = payments.filter(p => p.package_id === pkg.id);
+            const totalPaid = packagePayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
             const pendingAmount = Math.max(0, (pkg.amount_to_collect || 0) - totalPaid);
 
-            // Only include packages with pending amounts > 0
+            console.log(`📦 [useCustomersPendingCollection] Package ${pkg.tracking_number}: should collect ${pkg.amount_to_collect}, paid ${totalPaid}, pending ${pendingAmount}`);
+
+            // Only include packages with actual pending amounts > 0
             if (pendingAmount <= 0) {
               return null;
             }
@@ -78,20 +82,22 @@ export function useCustomersPendingCollection() {
               currency: pkg.currency || 'COP'
             };
           })
-        );
+          .filter(item => item !== null); // Remove packages with no pending amount
 
-        // Filter out null entries (packages with no pending amount)
-        const filteredData = transformedData.filter(item => item !== null);
+        console.log('✅ [useCustomersPendingCollection] Final pending collections:', transformedData.length);
+        
+        // Calculate total pending amount for display
+        const totalPendingAmount = transformedData.reduce((sum, item) => sum + (item?.pending_amount || 0), 0);
+        console.log('💰 [useCustomersPendingCollection] Total pending amount:', totalPendingAmount);
 
-        console.log('✅ Transformed pending collections data:', filteredData);
-        return filteredData;
+        return transformedData;
       } catch (error) {
-        console.error('❌ Error in useCustomersPendingCollection:', error);
+        console.error('❌ [useCustomersPendingCollection] Error:', error);
         throw error;
       }
     },
-    refetchInterval: 30000, // Refrescar cada 30 segundos
-    retry: 3, // Reintentar 3 veces en caso de error
-    retryDelay: 1000, // Esperar 1 segundo entre reintentos
+    refetchInterval: 5000, // Refresh every 5 seconds to catch new payments
+    retry: 3,
+    retryDelay: 1000,
   });
 }

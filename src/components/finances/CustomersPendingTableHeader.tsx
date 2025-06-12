@@ -13,6 +13,8 @@ export function CustomersPendingTableHeader({
   customersCount, 
   totalPendingAmount 
 }: CustomersPendingTableHeaderProps) {
+  console.log('📊 [CustomersPendingTableHeader] Rendering with:', { customersCount, totalPendingAmount });
+  
   return (
     <CardHeader>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
@@ -27,8 +29,8 @@ export function CustomersPendingTableHeader({
         </CardTitle>
         {customersCount > 0 && (
           <div className="text-sm text-gray-600">
-            Total pendiente: <span className="font-medium text-red-600">
-              {formatCurrency(totalPendingAmount, 'COP')}
+            <span className="font-medium text-red-600">
+              Total pendiente: {formatCurrency(totalPendingAmount, 'COP')}
             </span>
           </div>
         )}

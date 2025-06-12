@@ -10,7 +10,8 @@ import {
   DollarSign,
   Eye,
   UserCheck,
-  Megaphone
+  Megaphone,
+  AlertTriangle
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -49,6 +50,11 @@ export const createMenuItems = (
       icon: MessageSquare,
       badge: unreadCount > 0 ? unreadCount : undefined
     });
+  }
+
+  // Add Escalations tab for admins only
+  if (showUsersTab) { // Using showUsersTab as proxy for admin role
+    items.push({ value: 'escalations', title: 'Escalaciones', icon: AlertTriangle });
   }
 
   if (showMarketingTab) {

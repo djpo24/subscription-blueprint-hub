@@ -5,6 +5,7 @@ import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
+import { EscalationTab } from '@/components/tabs/EscalationTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { UsersTab } from '@/components/tabs/UsersTab';
@@ -124,6 +125,7 @@ export default function Index() {
                 {activeTab === 'dispatches' && 'Despachos'}
                 {activeTab === 'finances' && 'Finanzas'}
                 {activeTab === 'chat' && 'Chat'}
+                {activeTab === 'escalations' && 'Escalaciones'}
                 {activeTab === 'notifications' && 'Notificaciones'}
                 {activeTab === 'customers' && 'Clientes'}
                 {activeTab === 'users' && 'Usuarios'}
@@ -160,6 +162,7 @@ export default function Index() {
               <DispatchesTab />
               <FinancesTab />
               <ChatTab />
+              <EscalationTab />
               <MarketingTab />
               <NotificationsTab />
               <CustomersTab />

@@ -480,6 +480,25 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
             console.error('❌ Error sending auto-response V3:', sendError)
           } else {
             console.log('🎉 Auto-response sent successfully V3')
+            
+            // 📝 STORE AUTO-RESPONSE IN CHAT - This is the key addition
+            console.log('💾 Storing auto-response in sent_messages for chat display...')
+            
+            const { error: storeChatError } = await supabaseClient
+              .from('sent_messages')
+              .insert({
+                customer_id: customer?.id || null,
+                phone: from,
+                message: aiResponse.response,
+                status: 'sent',
+                whatsapp_message_id: sendData?.whatsapp_message_id || null
+              })
+
+            if (storeChatError) {
+              console.error('❌ Error storing auto-response in chat V3:', storeChatError)
+            } else {
+              console.log('✅ Auto-response stored in chat successfully V3')
+            }
           }
         }
       } catch (autoResponseError) {

@@ -29,7 +29,7 @@ export function useChatData(): ChatData {
   const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-data'],
     queryFn: async (): Promise<IncomingMessage[]> => {
-      console.log('🔍 Fetching chat data with sent messages...');
+      console.log('🔍 Fetching chat data with auto-responses...');
       
       try {
         // Fetch incoming messages
@@ -50,7 +50,7 @@ export function useChatData(): ChatData {
           throw incomingError;
         }
 
-        // Fetch sent messages
+        // Fetch sent messages (including auto-responses)
         const { data: sentData, error: sentError } = await supabase
           .from('sent_messages')
           .select(`
@@ -105,7 +105,7 @@ export function useChatData(): ChatData {
           } : undefined
         } as IncomingMessage & { is_from_customer: boolean }));
 
-        // Convert sent messages to unified format
+        // Convert sent messages to unified format (including auto-responses)
         const sentMessages = (sentData || []).map(msg => ({
           id: `sent_${msg.id}`,
           whatsapp_message_id: msg.whatsapp_message_id,
@@ -159,7 +159,7 @@ export function useChatData(): ChatData {
           .filter(msg => msg.from_phone) // Only include messages with phone numbers
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        console.log('✅ Fetched messages:', {
+        console.log('✅ Fetched messages with auto-responses:', {
           incoming: incomingMessages.length,
           sent: sentMessages.length,
           templates: templateMessages.length,
@@ -172,7 +172,7 @@ export function useChatData(): ChatData {
         return [];
       }
     },
-    refetchInterval: 5000,
+    refetchInterval: 3000, // Refresh every 3 seconds to show auto-responses quickly
   });
 
   // Group messages by phone number
@@ -214,7 +214,7 @@ export function useChatData(): ChatData {
       if (lastMessage.message_type === 'template') {
         displayMessage = `📋 ${displayMessage}`;
       } else if (messageWithFlag.is_from_customer === false) {
-        displayMessage = `Tú: ${displayMessage}`;
+        displayMessage = `🤖 SARA: ${displayMessage}`;
       }
 
       chatList.push({

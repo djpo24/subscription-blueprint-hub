@@ -7,9 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Número del administrador Didier Pedroza
-const ADMIN_PHONE = '573014940399';
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -304,15 +301,6 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Prom
   }
 }
 
-async function isFromAdmin(phoneNumber: string): Promise<boolean> {
-  const cleanPhone = phoneNumber.replace(/[\s\-\(\)+]/g, '')
-  const cleanAdminPhone = ADMIN_PHONE.replace(/[\s\-\(\)+]/g, '')
-  
-  return cleanPhone === cleanAdminPhone || 
-         cleanPhone.endsWith(cleanAdminPhone) || 
-         cleanAdminPhone.endsWith(cleanPhone)
-}
-
 async function handleAdminResponse(message: any, supabaseClient: any): Promise<boolean> {
   const { text, from } = message
   
@@ -415,41 +403,6 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     video: video?.id
   })
 
-  // 🔧 VERIFICAR SI ES MENSAJE DEL ADMINISTRADOR
-  const isAdmin = await isFromAdmin(from)
-  
-  if (isAdmin) {
-    console.log('👨‍💼 Mensaje del administrador detectado, procesando escalación...')
-    
-    // Almacenar mensaje del admin en incoming_messages
-    const adminMessageData = {
-      whatsapp_message_id: id,
-      from_phone: from,
-      customer_id: null, // No customer ID for admin
-      message_type: type,
-      message_content: text?.body || 'Mensaje del administrador',
-      media_url: null,
-      timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-      raw_data: message
-    }
-
-    await supabaseClient
-      .from('incoming_messages')
-      .insert(adminMessageData)
-
-    // Manejar respuesta del admin a escalación
-    const wasEscalationResponse = await handleAdminResponse(message, supabaseClient)
-    
-    if (wasEscalationResponse) {
-      console.log('✅ Admin escalation response processed successfully')
-    } else {
-      console.log('📋 Admin message processed but not linked to escalation')
-    }
-    
-    // NO GENERAR RESPUESTA AUTOMÁTICA PARA EL ADMINISTRADOR
-    return
-  }
-
   // Get access token from app secrets
   const { data: accessTokenData } = await supabaseClient.rpc('get_app_secret', { 
     secret_name: 'META_WHATSAPP_TOKEN' 
@@ -475,33 +428,6 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       return customerPhone === fromClean || customerPhone.endsWith(fromClean) || fromClean.endsWith(customerPhone)
     }) || existingCustomers[0]
   }
-
-  // 🚫 SI NO HAY CLIENTE REGISTRADO, NO PROCESAR EL MENSAJE
-  if (!customer) {
-    console.log('⚠️ Mensaje de número no registrado V3:', from)
-    console.log('🚫 No se procesará el mensaje - cliente no registrado en la plataforma')
-    
-    // Almacenar el mensaje sin customer_id para fines de auditoría
-    const messageData = {
-      whatsapp_message_id: id,
-      from_phone: from,
-      customer_id: null, // Explícitamente null para números no registrados
-      message_type: type,
-      message_content: text?.body || `Mensaje no soportado: ${type}`,
-      media_url: null,
-      timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-      raw_data: message
-    }
-
-    await supabaseClient
-      .from('incoming_messages')
-      .insert(messageData)
-
-    console.log('📝 Mensaje almacenado para auditoría pero no se generará respuesta automática')
-    return // NO PROCESAR MÁS
-  }
-
-  console.log('✅ Cliente registrado encontrado V3:', customer.name)
 
   // Prepare message content and media URL
   let messageContent = ''
@@ -554,7 +480,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
   const messageData = {
     whatsapp_message_id: id,
     from_phone: from,
-    customer_id: customer.id, // Solo para clientes registrados
+    customer_id: customer?.id || null,
     message_type: mediaType,
     message_content: messageContent,
     media_url: mediaUrl,
@@ -575,9 +501,9 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
   }
 
-  // 🤖 AUTO RESPONSE LOGIC - Only for text messages from registered customers
+  // 🤖 AUTO RESPONSE LOGIC - Only for text messages
   if (type === 'text' && text?.body) {
-    console.log('📱 Received text message from registered customer V3:', text.body)
+    console.log('📱 Received text message V3:', text.body)
     
     // Check if auto-responses are enabled
     const autoSettings = await checkAutoResponseSettings()
@@ -586,12 +512,12 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       console.log('🤖 Auto-response is enabled, generating response...')
       
       try {
-        // Generate AI response
+        // Generate AI response - even if customer is not found, let AI handle it
         const { data: aiResponse, error: aiError } = await supabaseClient.functions.invoke('ai-whatsapp-response', {
           body: {
             message: text.body,
             customerPhone: from,
-            customerId: customer.id
+            customerId: customer?.id || null
           }
         })
 
@@ -608,7 +534,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
             body: {
               phone: from,
               message: aiResponse.response,
-              customerId: customer.id,
+              customerId: customer?.id || null,
               isAutoResponse: true
             }
           })
@@ -624,7 +550,7 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
             const { error: storeChatError } = await supabaseClient
               .from('sent_messages')
               .insert({
-                customer_id: customer.id,
+                customer_id: customer?.id || null,
                 phone: from,
                 message: aiResponse.response,
                 status: 'sent',

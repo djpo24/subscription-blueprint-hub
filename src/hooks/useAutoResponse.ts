@@ -55,13 +55,6 @@ export function useAutoResponse() {
 
           processedMessages.current.add(newMessage.id);
 
-          // Verificar si el mensaje es del administrador (no auto-responder a admin)
-          const adminPhone = '+573014940399'; // Número del admin
-          if (newMessage.from_phone === adminPhone || newMessage.from_phone === '573014940399') {
-            console.log('👨‍💼 Admin message detected, skipping auto-response');
-            return;
-          }
-
           try {
             console.log('🤖 Generating auto-response...');
             

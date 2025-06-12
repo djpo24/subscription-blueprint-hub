@@ -17,7 +17,7 @@ export async function createEscalationRequest(
   originalQuestion: string
 ): Promise<string | null> {
   try {
-    console.log('🔄 Creating escalation request for customer:', customerName);
+    console.log('🚨 ESCALACIÓN CRÍTICA - Creando solicitud para:', customerName);
     
     const { data, error } = await supabase
       .from('admin_escalations')
@@ -31,14 +31,14 @@ export async function createEscalationRequest(
       .single();
 
     if (error) {
-      console.error('❌ Error creating escalation:', error);
+      console.error('❌ Error crítico creando escalación:', error);
       return null;
     }
 
-    console.log('✅ Escalation created successfully:', data.id);
+    console.log('✅ Escalación creada exitosamente:', data.id);
     return data.id;
   } catch (error) {
-    console.error('❌ Error in createEscalationRequest:', error);
+    console.error('❌ Error crítico en createEscalationRequest:', error);
     return null;
   }
 }
@@ -48,7 +48,7 @@ export async function checkForAdminResponse(
   customerPhone: string
 ): Promise<string | null> {
   try {
-    console.log('🔍 Checking for admin response for phone:', customerPhone);
+    console.log('🔍 Verificando respuesta del administrador para:', customerPhone);
     
     const { data, error } = await supabase
       .from('admin_escalations')
@@ -60,14 +60,14 @@ export async function checkForAdminResponse(
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('❌ Error checking admin response:', error);
+      console.error('❌ Error verificando respuesta admin:', error);
       return null;
     }
 
     if (data && data.admin_response) {
-      console.log('✅ Found admin response:', data.id);
+      console.log('✅ Respuesta del admin encontrada:', data.id);
       
-      // Mark as closed to avoid re-sending
+      // Marcar como cerrada para evitar re-envío
       await supabase
         .from('admin_escalations')
         .update({ status: 'closed' })
@@ -78,98 +78,93 @@ export async function checkForAdminResponse(
 
     return null;
   } catch (error) {
-    console.error('❌ Error in checkForAdminResponse:', error);
+    console.error('❌ Error en checkForAdminResponse:', error);
     return null;
   }
 }
 
 export function shouldEscalateToAdmin(message: string, aiResponse: string, customerInfo: any): boolean {
-  console.log('🤔 Evaluating escalation criteria for message:', message.substring(0, 50));
+  console.log('🔥 EVALUACIÓN RADICAL DE ESCALACIÓN');
   
-  // Detectar si la IA está dando respuestas vagas o no informativas
-  const vagueResponseIndicators = [
+  // ESCALACIÓN AUTOMÁTICA: Si la IA responde con frases prohibidas
+  const prohibitedResponses = [
     'no encuentro información específica',
     'no tengo información detallada',
     'no puedo acceder a esa información',
     'contacte a nuestro equipo',
-    'un miembro de nuestro equipo le contactará',
+    'un miembro de nuestro equipo',
     'no está en mi base de conocimientos',
     'no tengo acceso a esa información',
     'para más detalles contacte',
     'necesitaría más información',
-    'no puedo proporcionar esa información específica',
+    'no puedo proporcionar esa información',
     'le recomiendo contactar',
-    'deberá contactar directamente'
+    'deberá contactar directamente',
+    'no tengo esa información disponible',
+    'consulte con nuestro personal'
   ];
 
-  const hasVagueResponse = vagueResponseIndicators.some(indicator => 
-    aiResponse.toLowerCase().includes(indicator.toLowerCase())
+  const hasProhibitedResponse = prohibitedResponses.some(phrase => 
+    aiResponse.toLowerCase().includes(phrase.toLowerCase())
   );
 
-  // Detectar preguntas específicas que requieren información que el bot no tiene
-  const specificQuestionPatterns = [
-    /dónde está mi .+/i,
-    /cuándo llega mi .+/i,
+  // ESCALACIÓN AUTOMÁTICA: Cliente sin encomiendas preguntando sobre envíos específicos
+  const hasNoPackages = !customerInfo.customerFound || customerInfo.packagesCount === 0;
+  
+  const askingAboutSpecificPackage = /\b(tracking|encomienda|paquete|envío|dónde está|cuándo llega)\b/i.test(message);
+
+  // ESCALACIÓN AUTOMÁTICA: Preguntas que requieren información específica
+  const requiresSpecificInfo = [
+    /dónde está mi/i,
+    /cuándo llega/i,
     /por qué no ha llegado/i,
     /cuándo van a entregar/i,
     /dónde puedo recoger/i,
-    /quién puede ayudarme/i,
-    /necesito hablar con alguien/i,
-    /quiero hacer una queja/i,
-    /tengo un problema con/i,
-    /mi paquete está dañado/i,
-    /no recibí mi encomienda/i,
-    /el tracking no funciona/i
-  ];
+    /tracking.*no funciona/i,
+    /problema con.*encomienda/i,
+    /queja/i,
+    /reclamo/i
+  ].some(pattern => pattern.test(message));
 
-  const isSpecificQuestion = specificQuestionPatterns.some(pattern => 
-    pattern.test(message)
-  );
+  // DECISIÓN RADICAL: Escalar si cumple CUALQUIERA de estos criterios
+  const shouldEscalate = hasProhibitedResponse || 
+                         (hasNoPackages && askingAboutSpecificPackage) || 
+                         requiresSpecificInfo;
 
-  // Detectar si el cliente no tiene paquetes y está preguntando sobre envíos específicos
-  const hasNoPackageInfo = !customerInfo.customerFound || customerInfo.packagesCount === 0;
-  
-  const askingAboutSpecificPackage = /\b(paquete|encomienda|envío|bicicleta|caja|sobre)\b/i.test(message) 
-    && /(dónde|cuándo|cómo|por qué)/i.test(message);
-
-  // Criterios más estrictos para escalación
-  const shouldEscalate = (
-    hasVagueResponse || 
-    (isSpecificQuestion && hasNoPackageInfo) ||
-    (askingAboutSpecificPackage && hasNoPackageInfo)
-  );
-
-  console.log('📋 Escalation evaluation:', {
-    hasVagueResponse,
-    isSpecificQuestion,
-    hasNoPackageInfo,
+  console.log('🚨 DECISIÓN DE ESCALACIÓN RADICAL:', {
+    hasProhibitedResponse,
+    hasNoPackages,
     askingAboutSpecificPackage,
+    requiresSpecificInfo,
     shouldEscalate,
-    customerPackages: customerInfo.packagesCount,
-    customerFound: customerInfo.customerFound
+    aiResponseLength: aiResponse.length,
+    customerPackages: customerInfo.packagesCount
   });
 
   return shouldEscalate;
 }
 
 export function generateEscalationMessage(customerName: string, originalQuestion: string): string {
-  return `🚨 PREGUNTA ESCALADA DE CLIENTE
+  return `🚨 ESCALACIÓN AUTOMÁTICA - CLIENTE REQUIERE ATENCIÓN
 
 👤 Cliente: ${customerName}
-📞 Teléfono: Se ocultó por privacidad
 ❓ Pregunta: ${originalQuestion}
 
-Esta pregunta fue escalada automáticamente porque el bot no tiene la información específica que el cliente necesita.
+⚠️ SARA no pudo proporcionar información específica verificable.
 
-Para responder, simplemente envía tu mensaje y será retransmitido automáticamente al cliente.`;
+📱 Para responder: Envía tu mensaje y será retransmitido automáticamente al cliente.
+
+⏰ Responde lo antes posible para mantener la calidad del servicio.`;
 }
 
 export function generateCustomerNotificationMessage(customerName: string): string {
-  return `Hola${customerName ? ' ' + customerName : ''} 😊
+  return `Hola${customerName ? ' ' + customerName : ''} 👋
 
-No tengo la información específica que necesitas en este momento. He trasladado tu consulta a un especialista de nuestro equipo de Envíos Ojito para brindarte una respuesta precisa.
+Tu consulta requiere información específica que no tengo disponible en este momento. 
 
-📞 Te responderán muy pronto con la información exacta que necesitas.
+🔄 He transferido tu pregunta directamente a nuestro especialista Didier Pedroza de Envíos Ojito.
 
-¡Gracias por tu paciencia! 🌟`;
+📞 Te responderá en los próximos minutos con la información exacta que necesitas.
+
+¡Gracias por tu paciencia! 🙏`;
 }

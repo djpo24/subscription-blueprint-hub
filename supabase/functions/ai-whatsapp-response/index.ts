@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -34,7 +33,7 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🔒 AI Response Request (Secure & Customer-Specific):', { 
+    console.log('🔥 SISTEMA RADICAL ACTIVADO:', { 
       message: message?.substring(0, 50) + '...', 
       customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
       customerId: customerId || 'not_provided'
@@ -55,7 +54,7 @@ serve(async (req) => {
     // 🔍 Verificar si hay una respuesta del administrador pendiente
     const adminResponse = await checkForAdminResponse(supabase, customerPhone);
     if (adminResponse) {
-      console.log('✅ Found admin response, sending to customer');
+      console.log('✅ Respuesta del admin encontrada, enviando al cliente');
       
       const result: AIResponseResult = {
         response: adminResponse,
@@ -77,64 +76,92 @@ serve(async (req) => {
       });
     }
 
-    // 🔒 Get SECURE customer information - only for the specific customer
+    // Get customer information
     const { customerInfo, actualCustomerId } = await getCustomerInfo(
       supabase, 
       customerPhone, 
       customerId
     );
 
-    console.log('🔐 Customer Security Check:', {
+    console.log('🔐 ANÁLISIS RADICAL DEL CLIENTE:', {
       customerFound: customerInfo.customerFound,
-      customerId: actualCustomerId || 'not_authenticated',
       packagesCount: customerInfo.packagesCount,
-      hasPrivateData: customerInfo.pendingPaymentPackages.length > 0 || customerInfo.pendingDeliveryPackages.length > 0
+      hasSpecificData: customerInfo.pendingPaymentPackages.length > 0 || customerInfo.pendingDeliveryPackages.length > 0
     });
 
-    // 🚚 Get active freight rates for intelligent pricing responses
+    // Get additional context data
     const freightRates = await getActiveFreightRates(supabase);
-    console.log('🚚 Retrieved freight rates:', freightRates.length, 'active rates');
-
-    // 🏢 Get configured destination addresses for pickup information
     const destinationAddresses = await getDestinationAddresses(supabase);
-    console.log('🏢 Retrieved destination addresses:', destinationAddresses.length, 'configured addresses');
-
-    // 🗓️ Check if customer is asking about trip schedules
+    
     const tripQuery = shouldQueryTrips(message);
     let upcomingTrips: any[] = [];
     let tripsContext = '';
     
     if (tripQuery.shouldQuery) {
-      console.log('🗓️ Customer asking about trip schedules, querying upcoming trips...');
       upcomingTrips = await getUpcomingTripsByDestination(supabase, tripQuery.destination);
       tripsContext = formatTripsForPrompt(upcomingTrips, tripQuery.destination);
-      console.log(`✅ Found ${upcomingTrips.length} upcoming trips for context`);
     }
 
-    // 🔒 Get conversation history ONLY for this specific customer - increased limit
     const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
-    console.log('💬 Retrieved secure conversation history:', recentMessages?.length || 0, 'messages for this customer only');
-
-    // Validate business logic (packages timing) - only for this customer
     const validationResult = validatePackageDeliveryTiming(customerInfo);
-    console.log('🔍 Business validation for this customer:', validationResult);
-
-    // Build learning context for adaptive responses - customer-specific
     const learningContext = buildLearningContext(customerInfo);
-
-    // Format destination addresses for AI context
     const addressesContext = formatAddressesForPrompt(destinationAddresses);
 
-    // Create enhanced system prompt with conversation context, freight rates, trips context, and addresses
+    // DECISIÓN RADICAL: Si no hay información específica, escalar inmediatamente
+    const hasSpecificInfo = customerInfo.customerFound && customerInfo.packagesCount > 0;
+    
+    if (!hasSpecificInfo) {
+      console.log('🚨 ESCALACIÓN INMEDIATA - SIN INFORMACIÓN ESPECÍFICA');
+      
+      const customerName = customerInfo.customerFirstName || 'Cliente';
+      const escalationId = await createEscalationRequest(
+        supabase,
+        customerPhone,
+        customerName,
+        message
+      );
+
+      if (escalationId) {
+        const notificationSent = await notifyAdminOfEscalation(
+          supabase,
+          escalationId,
+          customerName,
+          message
+        );
+
+        if (notificationSent) {
+          const customerNotification = generateCustomerNotificationMessage(customerName);
+          
+          const result: AIResponseResult = {
+            response: customerNotification,
+            hasPackageInfo: false,
+            isFromFallback: false,
+            customerInfo: {
+              found: false,
+              name: customerName,
+              pendingAmount: 0,
+              pendingPackages: 0,
+              transitPackages: 0
+            },
+            interactionId: null,
+            wasEscalated: true
+          };
+
+          return new Response(JSON.stringify(result), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+
+    // Crear prompt radical solo con información específica
     const basePrompt = buildSystemPrompt(customerInfo, freightRates, tripsContext, addressesContext);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
-    // Add business intelligence insights - only for this customer
     const businessInsight = generateBusinessIntelligentResponse(customerInfo);
     const contextualMessage = businessInsight ? `${message}\n\nContexto específico del cliente: ${businessInsight}` : message;
 
-    // Try to get AI response with enhanced prompt and context
     let aiResponse: string;
     let wasFallback = false;
     let interactionId: string | null = null;
@@ -143,14 +170,13 @@ serve(async (req) => {
     try {
       aiResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
       
-      // Add business validation warning if needed
       if (!validationResult.isValid) {
         aiResponse = `${validationResult.message}\n\n${aiResponse}`;
       }
 
-      // 🚨 Verificar si la respuesta debe ser escalada al administrador (CRITERIOS MÁS ESTRICTOS)
+      // EVALUACIÓN RADICAL: Verificar si debe escalar
       if (shouldEscalateToAdmin(message, aiResponse, customerInfo)) {
-        console.log('🚨 Escalating question to administrator - AI cannot provide specific information');
+        console.log('🚨 ESCALACIÓN AUTOMÁTICA ACTIVADA - IA NO TIENE INFORMACIÓN ESPECÍFICA');
         
         const customerName = customerInfo.customerFirstName || 'Cliente';
         const escalationId = await createEscalationRequest(
@@ -161,7 +187,6 @@ serve(async (req) => {
         );
 
         if (escalationId) {
-          // Notificar al administrador
           const notificationSent = await notifyAdminOfEscalation(
             supabase,
             escalationId,
@@ -170,29 +195,39 @@ serve(async (req) => {
           );
 
           if (notificationSent) {
-            // Enviar mensaje de notificación al cliente
             aiResponse = generateCustomerNotificationMessage(customerName);
             wasEscalated = true;
-            console.log('✅ Question escalated successfully - AI lacked specific information');
-          } else {
-            console.log('❌ Failed to notify admin, using original AI response');
+            console.log('✅ ESCALACIÓN AUTOMÁTICA EXITOSA');
           }
-        } else {
-          console.log('❌ Failed to create escalation, using original AI response');
         }
       }
       
-      console.log('✅ Secure AI Response generated successfully for customer');
     } catch (error) {
-      console.error('❌ OpenAI Error:', error.message);
-      wasFallback = true;
-      aiResponse = generateFallbackResponse(customerInfo);
+      console.error('❌ Error OpenAI - ESCALACIÓN DE EMERGENCIA:', error.message);
+      
+      // ESCALACIÓN DE EMERGENCIA cuando OpenAI falla
+      const customerName = customerInfo.customerFirstName || 'Cliente';
+      const escalationId = await createEscalationRequest(
+        supabase,
+        customerPhone,
+        customerName,
+        `ERROR TÉCNICO - Mensaje original: ${message}`
+      );
+
+      if (escalationId) {
+        await notifyAdminOfEscalation(supabase, escalationId, customerName, message);
+        aiResponse = generateCustomerNotificationMessage(customerName);
+        wasEscalated = true;
+        wasFallback = true;
+      } else {
+        aiResponse = generateFallbackResponse(customerInfo);
+        wasFallback = true;
+      }
     }
 
-    // Calculate response time
     const responseTime = Date.now() - startTime;
 
-    // Store the interaction in the database for learning purposes - with privacy protection
+    // Store interaction
     try {
       const { data: interactionData, error: insertError } = await supabase
         .from('ai_chat_interactions')
@@ -204,19 +239,9 @@ serve(async (req) => {
           context_info: {
             customerFound: customerInfo.customerFound,
             packagesCount: customerInfo.packagesCount,
-            businessValidation: validationResult,
-            learningContext: learningContext,
-            freightRatesAvailable: freightRates.length > 0,
-            tripsQueried: tripQuery.shouldQuery,
-            tripsFound: upcomingTrips.length,
-            requestedDestination: tripQuery.destination,
-            addressesConfigured: destinationAddresses.length,
             wasEscalated: wasEscalated,
-            conversationHistory: recentMessages?.slice(-3).map(msg => ({
-              message: msg.message?.substring(0, 100),
-              isFromCustomer: msg.isFromCustomer,
-              timestamp: msg.timestamp
-            }))
+            radicalModeActive: true,
+            hasSpecificInfo: hasSpecificInfo
           },
           response_time_ms: responseTime,
           was_fallback: wasFallback
@@ -224,20 +249,9 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (insertError) {
-        console.error('❌ Error storing interaction:', insertError);
-      } else {
-        console.log('✅ Secure interaction stored for learning (customer-specific data only)');
+      if (!insertError) {
         interactionId = interactionData.id;
-        
-        // Update learning model asynchronously
-        await updateLearningModel(
-          supabase,
-          interactionId,
-          customerPhone,
-          message,
-          aiResponse
-        );
+        await updateLearningModel(supabase, interactionId, customerPhone, message, aiResponse);
       }
     } catch (storeError) {
       console.error('❌ Error storing interaction:', storeError);
@@ -263,18 +277,11 @@ serve(async (req) => {
       wasEscalated: wasEscalated
     };
 
-    console.log('🎯 Secure customer-specific response delivered:', {
-      customerAuthenticated: customerInfo.customerFound,
-      hasBusinessValidation: !validationResult.isValid,
-      hasLearningContext: true,
-      hasConversationContext: recentMessages?.length > 0,
-      hasFreightRates: freightRates.length > 0,
-      hasTripsContext: tripQuery.shouldQuery,
-      tripsFound: upcomingTrips.length,
-      addressesConfigured: destinationAddresses.length,
+    console.log('🔥 RESPUESTA RADICAL ENTREGADA:', {
       wasEscalated: wasEscalated,
+      hasSpecificInfo: hasSpecificInfo,
       responseTime: responseTime + 'ms',
-      dataPrivacyCompliant: true
+      radicalModeActive: true
     });
 
     return new Response(JSON.stringify(result), {
@@ -282,25 +289,19 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in secure ai-whatsapp-response:', error);
+    console.error('❌ Error crítico en sistema radical:', error);
     
-    // Enhanced fallback response with human-like touch and privacy emphasis
-    const fallbackResponse = `¡Hola! 😊
+    const emergencyResponse = `🚨 Error técnico crítico detectado.
 
-Estoy teniendo algunos problemas técnicos en este momento.
+Un especialista de Envíos Ojito le contactará inmediatamente para resolver su consulta.
 
-🔒 Por políticas de privacidad, solo puedo acceder a información de cuentas verificadas.
-
-🙏 Un miembro de nuestro equipo de Envíos Ojito le contactará muy pronto para ayudarle de forma personalizada.
-
-Si tiene el número de tracking de su encomienda personal, compártelo para acelerar la atención. 📦
-
-¡Gracias por su paciencia y por confiar en nosotros! 🌟`;
+Disculpe las molestias. 🙏`;
     
     return new Response(JSON.stringify({ 
       error: error.message,
-      response: fallbackResponse,
-      isFromFallback: true
+      response: emergencyResponse,
+      isFromFallback: true,
+      wasEscalated: true
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

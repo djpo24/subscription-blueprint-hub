@@ -7,6 +7,7 @@ import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts'
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse } from './businessLogic.ts';
+import { generatePackageShippingResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
@@ -57,6 +58,67 @@ serve(async (req) => {
       botSiempreResponde: true
     });
 
+    // Get destination addresses for shipping inquiries
+    const destinationAddresses = await getDestinationAddresses(supabase);
+
+    // 📦 NUEVA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes
+    const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
+    if (packageShippingResponse) {
+      console.log('📦 CONSULTA DE ENVÍO detectada - Proporcionando información de direcciones');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      try {
+        const { data: interactionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: packageShippingResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isPackageShippingInquiry: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && interactionData) {
+          await updateLearningModel(supabase, interactionData.id, customerPhone, message, packageShippingResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: packageShippingResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: interactionData?.id || null,
+        wasEscalated: false
+      };
+
+      console.log('📦 RESPUESTA DE ENVÍO ENVIADA - Información completa proporcionada');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // 🏠 PRIORIDAD MÁXIMA: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
@@ -86,7 +148,7 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (!insertError) {
+        if (!insertError && interactionData) {
           await updateLearningModel(supabase, interactionData.id, customerPhone, message, homeDeliveryResponse);
         }
       } catch (storeError) {
@@ -117,7 +179,6 @@ serve(async (req) => {
 
     // Get additional context data
     const freightRates = await getActiveFreightRates(supabase);
-    const destinationAddresses = await getDestinationAddresses(supabase);
     
     const tripQuery = shouldQueryTrips(message);
     let upcomingTrips: any[] = [];
@@ -189,7 +250,7 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (!insertError) {
+      if (!insertError && interactionData) {
         interactionId = interactionData.id;
         await updateLearningModel(supabase, interactionId, customerPhone, message, aiResponse);
       }

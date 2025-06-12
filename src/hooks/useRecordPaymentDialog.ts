@@ -6,6 +6,7 @@ import { usePaymentManagement } from '@/hooks/usePaymentManagement';
 import { PaymentSubmissionService } from '@/services/paymentSubmissionService';
 import { toast } from '@/hooks/use-toast';
 import type { RecordPaymentCustomer } from '@/types/recordPayment';
+import type { PaymentEntryData } from '@/types/payment';
 
 export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, isOpen: boolean) {
   const [notes, setNotes] = useState('');
@@ -61,9 +62,17 @@ export function useRecordPaymentDialog(customer: RecordPaymentCustomer | null, i
 
       console.log('💳 Submitting payments with user ID:', user.id);
       
+      // Convert ValidPayment[] to PaymentEntryData[] format
+      const paymentEntries: PaymentEntryData[] = validPayments.map(payment => ({
+        methodId: payment.method_id,
+        amount: payment.amount.toString(),
+        currency: payment.currency,
+        type: payment.type
+      }));
+
       const result = await PaymentSubmissionService.submitPayment({
         customer,
-        payments: validPayments,
+        payments: paymentEntries,
         notes,
         currentUserId: user.id // Pass the current user UUID
       });

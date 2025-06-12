@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -220,7 +221,7 @@ Estoy teniendo algunos problemas técnicos en este momento.
 
 🔒 Por políticas de privacidad, solo puedo acceder a información de cuentas verificadas.
 
-🙏 Un miembro de nuestro equipo le contactará muy pronto para ayudarle de forma personalizada.
+🙏 Un miembro de nuestro equipo de Envíos Ojito le contactará muy pronto para ayudarle de forma personalizada.
 
 Si tiene el número de tracking de su encomienda personal, compártelo para acelerar la atención. 📦
 

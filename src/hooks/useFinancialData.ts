@@ -55,31 +55,42 @@ export function useFinancialData() {
       // Total freight from all packages
       const totalFreight = packages?.reduce((sum, p) => sum + (p.freight || 0), 0) || 0;
       
-      // Total amount that should be collected from delivered packages
-      const totalAmountToCollect = packages?.reduce((sum, p) => {
-        if (p.status === 'delivered' && p.amount_to_collect) {
-          return sum + p.amount_to_collect;
+      // Filter packages that are "en_destino" or "delivered" and have amount_to_collect
+      const eligiblePackages = packages?.filter(p => 
+        (p.status === 'en_destino' || p.status === 'delivered') && 
+        p.amount_to_collect && 
+        p.amount_to_collect > 0
+      ) || [];
+
+      console.log('📦 [useFinancialData] Eligible packages (en_destino/delivered):', eligiblePackages.length);
+
+      // Calculate total amount that should be collected from eligible packages
+      const totalAmountToCollect = eligiblePackages.reduce((sum, p) => {
+        return sum + (p.amount_to_collect || 0);
+      }, 0);
+
+      // Total actually collected from payments for eligible packages
+      const totalCollected = payments?.reduce((sum, p) => {
+        // Only count payments for eligible packages
+        const isEligiblePackage = eligiblePackages.some(pkg => pkg.id === p.package_id);
+        if (isEligiblePackage) {
+          return sum + (p.amount || 0);
         }
         return sum;
       }, 0) || 0;
-
-      // Total actually collected from payments
-      const totalCollected = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
       
-      // Pending collections = what should be collected - what was actually collected
+      // Pending collections = what should be collected - what was actually collected for eligible packages
       const pendingCollections = Math.max(0, totalAmountToCollect - totalCollected);
       
-      // Count of packages that still have pending amounts
-      const totalPendingPackages = packages?.filter(p => {
-        if (p.status !== 'delivered' || !p.amount_to_collect) return false;
-        
+      // Count of eligible packages that still have pending amounts
+      const totalPendingPackages = eligiblePackages.filter(p => {
         // Get payments for this specific package
         const packagePayments = payments?.filter(payment => payment.package_id === p.id) || [];
         const totalPaidForPackage = packagePayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
         
         // Package has pending amount if what should be collected > what was paid
-        return p.amount_to_collect > totalPaidForPackage;
-      }).length || 0;
+        return (p.amount_to_collect || 0) > totalPaidForPackage;
+      }).length;
 
       const summary: FinancialSummary = {
         totalCollected,
@@ -93,8 +104,10 @@ export function useFinancialData() {
       };
 
       console.log('📊 [useFinancialData] Summary calculated:', summary);
-      console.log('💰 [useFinancialData] Total collected (real):', totalCollected);
-      console.log('⏳ [useFinancialData] Pending collections (real):', pendingCollections);
+      console.log('💰 [useFinancialData] Total to collect from eligible packages:', totalAmountToCollect);
+      console.log('💰 [useFinancialData] Total collected from eligible packages:', totalCollected);
+      console.log('⏳ [useFinancialData] Pending collections (en_destino/delivered only):', pendingCollections);
+      console.log('📦 [useFinancialData] Eligible packages count:', eligiblePackages.length);
 
       return {
         summary,

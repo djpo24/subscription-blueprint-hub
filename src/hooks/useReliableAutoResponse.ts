@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,17 +13,27 @@ interface DetectedMessage {
 
 export function useReliableAutoResponse() {
   const { toast } = useToast();
+  const processingRef = useRef(new Set<string>());
 
   const processAutoResponse = useCallback(async (message: DetectedMessage) => {
-    console.log('🤖 ===== INICIANDO AUTO-RESPUESTA =====');
+    // Verificar si ya se está procesando este mensaje
+    if (processingRef.current.has(message.id)) {
+      console.log('⏭️ Mensaje ya en procesamiento, omitiendo:', message.id);
+      return false;
+    }
+
+    // Marcar como en procesamiento
+    processingRef.current.add(message.id);
+
+    console.log('🤖 ===== INICIANDO AUTO-RESPUESTA ÚNICA =====');
     console.log('📞 Teléfono:', message.from_phone);
     console.log('👤 Cliente:', message.customer_id ? 'REGISTRADO' : 'NO REGISTRADO');
-    console.log('💬 Mensaje:', message.message_content);
+    console.log('💬 Mensaje:', message.message_content.substring(0, 50) + '...');
     console.log('🆔 ID Mensaje:', message.id);
 
     try {
       // Paso 1: Generar respuesta con IA
-      console.log('🧠 Generando respuesta con IA...');
+      console.log('🧠 Generando respuesta única con IA...');
       
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-whatsapp-response', {
         body: {
@@ -47,7 +57,7 @@ export function useReliableAutoResponse() {
       console.log('✅ Respuesta IA generada:', responseText.substring(0, 100) + '...');
 
       // Paso 2: Crear log de notificación
-      console.log('📝 Creando log de notificación...');
+      console.log('📝 Creando log único de notificación...');
       
       const notificationType = message.customer_id ? 'auto_reply' : 'auto_reply_unregistered';
       
@@ -58,7 +68,11 @@ export function useReliableAutoResponse() {
           customer_id: message.customer_id,
           notification_type: notificationType,
           message: responseText,
-          status: 'pending'
+          status: 'pending',
+          metadata: {
+            original_message_id: message.id,
+            processed_at: new Date().toISOString()
+          }
         })
         .select()
         .single();
@@ -68,10 +82,10 @@ export function useReliableAutoResponse() {
         throw new Error(`Error log: ${logError.message}`);
       }
 
-      console.log('✅ Log creado con ID:', notificationData.id);
+      console.log('✅ Log único creado con ID:', notificationData.id);
 
-      // Paso 3: Enviar por WhatsApp
-      console.log('📤 Enviando por WhatsApp...');
+      // Paso 3: Enviar por WhatsApp UNA SOLA VEZ
+      console.log('📤 Enviando respuesta única por WhatsApp...');
       
       const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
@@ -92,7 +106,7 @@ export function useReliableAutoResponse() {
         throw new Error(`API WhatsApp: ${whatsappResponse.error}`);
       }
 
-      console.log('🎉 ===== AUTO-RESPUESTA ENVIADA EXITOSAMENTE =====');
+      console.log('🎉 ===== AUTO-RESPUESTA ÚNICA ENVIADA EXITOSAMENTE =====');
       console.log('📞 Enviado a:', message.from_phone);
       console.log('👤 Tipo cliente:', message.customer_id ? 'registrado' : 'no registrado');
 
@@ -109,47 +123,6 @@ export function useReliableAutoResponse() {
       console.error('Error:', error.message);
       console.error('Teléfono:', message.from_phone);
 
-      // Intentar respuesta de emergencia
-      try {
-        console.log('🚨 Enviando respuesta de emergencia...');
-        
-        const emergencyResponse = "¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto.";
-        
-        const { data: emergencyLog, error: emergencyLogError } = await supabase
-          .from('notification_log')
-          .insert({
-            package_id: null,
-            customer_id: message.customer_id,
-            notification_type: 'auto_reply_emergency',
-            message: emergencyResponse,
-            status: 'pending'
-          })
-          .select()
-          .single();
-
-        if (!emergencyLogError && emergencyLog) {
-          const { error: emergencySendError } = await supabase.functions.invoke('send-whatsapp-notification', {
-            body: {
-              notificationId: emergencyLog.id,
-              phone: message.from_phone,
-              message: emergencyResponse,
-              customerId: message.customer_id
-            }
-          });
-
-          if (!emergencySendError) {
-            console.log('✅ Respuesta de emergencia enviada');
-            toast({
-              title: "🤖 Respuesta de emergencia enviada",
-              description: `Se envió respuesta básica debido a error técnico`,
-            });
-            return true;
-          }
-        }
-      } catch (emergencyError) {
-        console.error('❌ Error en respuesta de emergencia:', emergencyError);
-      }
-
       toast({
         title: "❌ Error en auto-respuesta",
         description: `No se pudo responder automáticamente a ${message.from_phone}`,
@@ -157,6 +130,11 @@ export function useReliableAutoResponse() {
       });
 
       return false;
+    } finally {
+      // Remover del procesamiento después de un delay
+      setTimeout(() => {
+        processingRef.current.delete(message.id);
+      }, 5000);
     }
   }, [toast]);
 

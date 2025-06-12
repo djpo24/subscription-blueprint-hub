@@ -55,7 +55,7 @@ export function isHomeDeliveryRequest(message: string): boolean {
   return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Nueva función para generar respuesta de entrega a domicilio
+// Nueva función para generar respuesta de entrega a domicilio con formato de moneda correcto
 export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
   // Solo procesar si es una solicitud de entrega
   if (!isHomeDeliveryRequest(customerMessage)) {
@@ -97,7 +97,12 @@ Veo que tienes encomienda${(deliverablePackages.length + pendingPaymentPackages.
     if (pendingPaymentPackages.length > 0) {
       response += `\n\n💰 **Entregada${pendingPaymentPackages.length > 1 ? 's' : ''}, pendiente${pendingPaymentPackages.length > 1 ? 's' : ''} de pago:**`;
       pendingPaymentPackages.forEach(pkg => {
-        response += `\n• ${pkg.tracking_number} - Pendiente: ${pkg.pendingAmount} ${pkg.currency}`;
+        // Usar el formato correcto para mostrar pendientes
+        const formattedAmount = pkg.currency === 'AWG' 
+          ? `ƒ${pkg.pendingAmount} florines`
+          : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
+        
+        response += `\n• ${pkg.tracking_number} - Pendiente: ${formattedAmount}`;
       });
     }
 

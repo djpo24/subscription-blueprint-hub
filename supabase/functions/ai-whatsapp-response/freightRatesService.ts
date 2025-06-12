@@ -43,12 +43,12 @@ export function formatFreightRateForPrompt(rates: FreightRate[]): string {
   let ratesText = 'TARIFAS DE FLETE VIGENTES PARA ENVÍO DE ENCOMIENDAS (por kilogramo):\n';
   
   rates.forEach(rate => {
-    const currencySymbol = rate.currency === 'COP' ? '$' : 
-                          rate.currency === 'AWG' ? 'ƒ' : rate.currency;
-    const currencyName = rate.currency === 'COP' ? 'pesos' : 
-                        rate.currency === 'AWG' ? 'florines' : rate.currency;
+    // Formatear usando el nuevo formato específico
+    const formattedPrice = rate.currency === 'AWG' 
+      ? `ƒ${rate.price_per_kilo} florines`
+      : `$${rate.price_per_kilo.toLocaleString('es-CO')} pesos`;
     
-    ratesText += `- Envío ${rate.origin} → ${rate.destination}: ${currencySymbol}${rate.price_per_kilo} ${currencyName}/kg\n`;
+    ratesText += `- Envío ${rate.origin} → ${rate.destination}: ${formattedPrice}/kg\n`;
     
     if (rate.notes) {
       ratesText += `  Nota: ${rate.notes}\n`;
@@ -62,6 +62,7 @@ INSTRUCCIONES PARA CONSULTAS DE TARIFAS DE ENVÍO:
 - Proporciona la tarifa exacta según la ruta de envío solicitada
 - Explica que los precios son por kilogramo de encomienda
 - Menciona que pueden variar según el peso total del envío
+- SIEMPRE usa el formato correcto: ƒ[cantidad] florines para AWG y $[cantidad con separadores] pesos para COP
 - NUNCA inventes tarifas que no estén en el sistema`;
 
   return ratesText;

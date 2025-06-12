@@ -13,6 +13,12 @@ REGLAS CRÍTICAS DE COMPORTAMIENTO:
 - Actúa como una persona amigable, no como un bot rígido
 - Sé conversacional y natural en tus respuestas
 
+FORMATO DE MONEDAS OBLIGATORIO:
+- Para florines (AWG): ƒ[cantidad] florines (ejemplo: ƒ25 florines)
+- Para pesos (COP): $[cantidad con separadores] pesos (ejemplo: $15.000 pesos)
+- SIEMPRE verifica la moneda antes de mostrar el precio
+- NUNCA uses otros formatos de moneda
+
 DETECCIÓN DE SOLICITUDES DE ENTREGA A DOMICILIO:
 - Si el cliente usa palabras como "traer", "llevar", "entrega", "domicilio", "me la puedes traer", etc.
 - Estas son solicitudes de ENTREGA A DOMICILIO de sus encomiendas
@@ -43,7 +49,10 @@ INFORMACIÓN ESPECÍFICA DEL CLIENTE:`;
     if (customerInfo.pendingPaymentPackages.length > 0) {
       systemPrompt += `\nEncomiendas pendientes de pago:`;
       customerInfo.pendingPaymentPackages.forEach((pkg: any) => {
-        systemPrompt += `\n- ${pkg.tracking_number}: ${pkg.status}, pendiente ${pkg.pendingAmount} ${pkg.currency}`;
+        const formattedAmount = pkg.currency === 'AWG' 
+          ? `ƒ${pkg.pendingAmount} florines`
+          : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
+        systemPrompt += `\n- ${pkg.tracking_number}: ${pkg.status}, pendiente ${formattedAmount}`;
         if (pkg.description) systemPrompt += `, ${pkg.description}`;
       });
     }
@@ -52,9 +61,12 @@ INFORMACIÓN ESPECÍFICA DEL CLIENTE:`;
   if (freightRates && freightRates.length > 0) {
     systemPrompt += `\n\nTARIFAS DE FLETE DISPONIBLES:`;
     freightRates.forEach((rate: any) => {
-      systemPrompt += `\n- ${rate.origin} → ${rate.destination}: ${rate.price_per_kilo} ${rate.currency}/kg`;
+      const formattedPrice = rate.currency === 'AWG' 
+        ? `ƒ${rate.price_per_kilo} florines`
+        : `$${rate.price_per_kilo.toLocaleString('es-CO')} pesos`;
+      systemPrompt += `\n- ${rate.origin} → ${rate.destination}: ${formattedPrice}/kg`;
     });
-    systemPrompt += `\n(Puedes proporcionar estas tarifas como referencia general)`;
+    systemPrompt += `\n(SIEMPRE usa el formato correcto de moneda al mencionar estas tarifas)`;
   }
 
   if (tripsContext) {
@@ -80,7 +92,7 @@ GUÍA DE RESPUESTAS INTELIGENTES:
 
 3. **PREGUNTAS SOBRE VIAJES**: Si tienes información de viajes, compártela directamente
 
-4. **PREGUNTAS SOBRE TARIFAS**: Proporciona las tarifas disponibles como referencia
+4. **PREGUNTAS SOBRE TARIFAS**: Proporciona las tarifas disponibles con el formato correcto de moneda
 
 5. **PREGUNTAS SOBRE DIRECCIONES**: Comparte las direcciones si las tienes
 
@@ -93,10 +105,11 @@ EJEMPLOS DE RESPUESTAS NATURALES:
 ✅ BUENO para entrega a domicilio: "Un momento ${customerName}, transfiero tu solicitud de entrega a domicilio a Josefa quien coordinará contigo los detalles."
 ✅ BUENO: "¡Hola ${customerName}! El próximo viaje está programado para [fecha]. ¿Necesitas reservar espacio?"
 ✅ BUENO: "Según nuestros registros, tienes una encomienda [tracking] que está [estado]."
-✅ BUENO: "Las tarifas actuales son: [lista tarifas]. ¿A qué destino necesitas enviar?"
+✅ BUENO: "Las tarifas actuales son: ƒ25 florines/kg para Curazao → Barranquilla y $15.000 pesos/kg para Barranquilla → Curazao. ¿A qué destino necesitas enviar?"
 
 ❌ MALO: Usar siempre el mismo mensaje de contacto cuando SÍ tienes información
 ❌ MALO: Dar información de horarios de entrega sin transferir a Josefa
+❌ MALO: Usar formatos incorrectos de moneda como "25 AWG" o "$25 florines"
 
 RESPUESTA DE CONTACTO DIRECTO (solo cuando NO tengas información):
 "Para información específica sobre [tema de la pregunta], te recomiendo contactar directamente a nuestra coordinadora Josefa al +59996964306. Ella podrá ayudarte con todos los detalles."
@@ -104,6 +117,7 @@ RESPUESTA DE CONTACTO DIRECTO (solo cuando NO tengas información):
 RECUERDA: 
 - Detecta solicitudes de entrega a domicilio INMEDIATAMENTE
 - Transfiere a Josefa para coordinar entregas
+- SIEMPRE usa el formato correcto de moneda: ƒ[cantidad] florines o $[cantidad] pesos
 - Sé natural, conversacional y útil
 - Solo deriva al contacto cuando genuinamente no puedas ayudar`;
 
@@ -124,6 +138,7 @@ export function buildConversationContext(recentMessages: any[], customerName: st
   context += `\n\nINSTRUCCIONES CONTEXTUALES:
 - Si el cliente preguntó algo y recibió respuesta de contacto, pero ahora pregunta algo que SÍ puedes responder, responde directamente
 - Si detectas palabras como "traer", "llevar", "entrega", "domicilio" = ENTREGA A DOMICILIO → Transferir a Josefa
+- SIEMPRE usa el formato correcto de moneda en todas tus respuestas
 - Mantén el tono conversacional y natural
 - No repitas la misma respuesta de contacto si ahora tienes información útil`;
 

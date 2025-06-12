@@ -16,19 +16,21 @@ export function useStableAutoResponseSystem() {
   const { isConnected, processedCount } = useSimpleMessageDetection({
     isEnabled: isAutoResponseEnabled,
     onMessageDetected: async (message) => {
-      if (!isAutoResponseEnabled) {
-        console.log('🚫 Auto-respuesta deshabilitada durante procesamiento');
-        return;
-      }
+      try {
+        if (!isAutoResponseEnabled) {
+          console.log('🚫 Auto-respuesta deshabilitada durante procesamiento');
+          return;
+        }
 
-      console.log('🚀 MENSAJE DETECTADO - ACTIVANDO AUTO-RESPUESTA');
-      console.log('📞 Teléfono:', message.from_phone);
-      console.log('💬 Contenido:', message.message_content.substring(0, 50) + '...');
-      
-      // Procesar inmediatamente sin esperar
-      processAutoResponse(message).catch(error => {
-        console.error('❌ Error en processAutoResponse:', error);
-      });
+        console.log('🚀 MENSAJE DETECTADO - ACTIVANDO AUTO-RESPUESTA');
+        console.log('📞 Teléfono:', message.from_phone);
+        console.log('💬 Contenido:', message.message_content.substring(0, 50) + '...');
+        
+        // Procesar inmediatamente sin esperar
+        await processAutoResponse(message);
+      } catch (error) {
+        console.error('❌ Error en callback de auto-respuesta:', error);
+      }
     }
   });
 

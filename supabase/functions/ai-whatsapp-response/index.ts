@@ -10,6 +10,7 @@ import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse } fr
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
+import { getDestinationAddresses, formatAddressesForPrompt } from './destinationAddressService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -61,6 +62,10 @@ serve(async (req) => {
     const freightRates = await getActiveFreightRates(supabase);
     console.log('🚚 Retrieved freight rates:', freightRates.length, 'active rates');
 
+    // 🏢 Get configured destination addresses for pickup information
+    const destinationAddresses = await getDestinationAddresses(supabase);
+    console.log('🏢 Retrieved destination addresses:', destinationAddresses.length, 'configured addresses');
+
     // 🗓️ Check if customer is asking about trip schedules
     const tripQuery = shouldQueryTrips(message);
     let upcomingTrips: any[] = [];
@@ -84,8 +89,11 @@ serve(async (req) => {
     // Build learning context for adaptive responses - customer-specific
     const learningContext = buildLearningContext(customerInfo);
 
-    // Create enhanced system prompt with conversation context, freight rates, and trips context
-    const basePrompt = buildSystemPrompt(customerInfo, freightRates, tripsContext);
+    // Format destination addresses for AI context
+    const addressesContext = formatAddressesForPrompt(destinationAddresses);
+
+    // Create enhanced system prompt with conversation context, freight rates, trips context, and addresses
+    const basePrompt = buildSystemPrompt(customerInfo, freightRates, tripsContext, addressesContext);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
     const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
 
@@ -134,6 +142,7 @@ serve(async (req) => {
             tripsQueried: tripQuery.shouldQuery,
             tripsFound: upcomingTrips.length,
             requestedDestination: tripQuery.destination,
+            addressesConfigured: destinationAddresses.length,
             conversationHistory: recentMessages?.slice(-3).map(msg => ({
               message: msg.message?.substring(0, 100),
               isFromCustomer: msg.isFromCustomer,
@@ -192,6 +201,7 @@ serve(async (req) => {
       hasFreightRates: freightRates.length > 0,
       hasTripsContext: tripQuery.shouldQuery,
       tripsFound: upcomingTrips.length,
+      addressesConfigured: destinationAddresses.length,
       responseTime: responseTime + 'ms',
       dataPrivacyCompliant: true
     });

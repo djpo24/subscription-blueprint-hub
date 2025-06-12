@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
+import { useGlobalBotToggle } from '@/hooks/useGlobalBotToggle';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
@@ -18,7 +19,6 @@ interface ChatMessageProps {
   onSendMessage: (message: string, image?: File) => void;
   customerPhone: string;
   customerId?: string | null;
-  isBotEnabled?: boolean;
 }
 
 export function ChatMessage({ 
@@ -27,9 +27,9 @@ export function ChatMessage({
   profileImageUrl,
   onSendMessage,
   customerPhone,
-  customerId,
-  isBotEnabled = true
+  customerId
 }: ChatMessageProps) {
+  const { isBotEnabled } = useGlobalBotToggle();
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });

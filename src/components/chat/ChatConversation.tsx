@@ -8,7 +8,6 @@ import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CustomerInfoButton } from './CustomerInfoButton';
 import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
-import { useGlobalBotToggle } from '@/hooks/useGlobalBotToggle';
 import { PackageStatusIndicator } from './components/PackageStatusIndicator';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
@@ -34,7 +33,6 @@ export function ChatConversation({
   profileImageUrl
 }: ChatConversationProps) {
   const { data: packageIndicator } = useCustomerPackageStatus(phone);
-  const { isBotEnabled } = useGlobalBotToggle();
   const displayName = customerName || 'Cliente';
 
   return (
@@ -110,7 +108,6 @@ export function ChatConversation({
                   onSendMessage={onSendMessage}
                   customerPhone={phone}
                   customerId={customerId}
-                  isBotEnabled={isBotEnabled}
                 />
               ))}
             </div>

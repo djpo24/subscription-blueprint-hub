@@ -23,15 +23,37 @@ serve(async (req) => {
       customerId: customerId || 'not_provided'
     });
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Initialize Supabase client with enhanced error handling
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase configuration');
+      throw new Error('Supabase configuration missing');
+    }
+    
+    console.log('🔗 Initializing Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Test database connection
+    console.log('🔍 Testing database connection...');
+    const { data: testData, error: testError } = await supabase
+      .from('user_profiles')
+      .select('count')
+      .limit(1);
+    
+    if (testError) {
+      console.error('❌ Database connection test failed:', testError);
+      // Continue anyway, but log the issue
+    } else {
+      console.log('✅ Database connection successful');
+    }
 
     // Get OpenAI API key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
     // Get customer information for result construction
+    console.log('👤 Getting customer information...');
     const { customerInfo, actualCustomerId } = await getCustomerInfo(
       supabase, 
       customerPhone, 
@@ -39,6 +61,7 @@ serve(async (req) => {
     );
 
     // Generate AI response
+    console.log('🧠 Generating AI response...');
     const responseResult = await generateAIResponse(
       supabase,
       message,
@@ -48,6 +71,7 @@ serve(async (req) => {
     );
 
     // Store interaction
+    console.log('💾 Storing interaction...');
     const interactionId = await storeInteraction(
       supabase,
       customerPhone,
@@ -93,6 +117,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error crítico - Generando respuesta de emergencia:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      cause: error.cause
+    });
     
     const emergencyResponse = `¡Hola! 👋
 

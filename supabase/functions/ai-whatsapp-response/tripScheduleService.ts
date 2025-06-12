@@ -60,17 +60,17 @@ export async function getUpcomingTripsByDestination(
 export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination?: string): string {
   if (!trips || trips.length === 0) {
     if (requestedDestination) {
-      return `No hay envíos de encomiendas programados hacia ${requestedDestination} en los próximos 30 días.`;
+      return `❌ No hay envíos de encomiendas programados hacia ${requestedDestination} en los próximos 30 días.`;
     }
-    return 'No hay envíos de encomiendas programados en los próximos 30 días.';
+    return '❌ No hay envíos de encomiendas programados en los próximos 30 días.';
   }
 
   let tripsText = '';
   
   if (requestedDestination) {
-    tripsText += `PRÓXIMOS ENVÍOS DE ENCOMIENDAS HACIA ${requestedDestination.toUpperCase()}:\n\n`;
+    tripsText += `🚀 **PRÓXIMOS ENVÍOS DE ENCOMIENDAS HACIA ${requestedDestination.toUpperCase()}:**\n\n`;
   } else {
-    tripsText += 'PRÓXIMOS ENVÍOS DE ENCOMIENDAS PROGRAMADOS:\n\n';
+    tripsText += '🚀 **PRÓXIMOS ENVÍOS DE ENCOMIENDAS PROGRAMADOS:**\n\n';
   }
   
   trips.forEach((trip, index) => {
@@ -82,41 +82,45 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
       day: 'numeric'
     });
     
-    tripsText += `${index + 1}. 📅 ${formattedDate}\n`;
-    tripsText += `   📦 Destino del envío: ${trip.destination}\n`;
-    tripsText += `   🚢 Salida desde: ${trip.origin}\n`;
+    tripsText += `${index + 1}. 📅 **${formattedDate}**\n`;
+    tripsText += `   🎯 **Destino del envío:** ${trip.destination}\n`;
+    tripsText += `   🚢 **Salida desde:** ${trip.origin}\n`;
     
     if (trip.flight_number) {
-      tripsText += `   ✈️ Vuelo: ${trip.flight_number}\n`;
+      tripsText += `   ✈️ **Vuelo:** ${trip.flight_number}\n`;
     }
     
-    tripsText += `   📋 Estado: ${trip.status === 'scheduled' ? 'Programado' : 'Pendiente'}\n\n`;
+    const statusIcon = trip.status === 'scheduled' ? '✅' : '⏳';
+    const statusText = trip.status === 'scheduled' ? 'Programado' : 'Pendiente';
+    tripsText += `   ${statusIcon} **Estado:** ${statusText}\n\n`;
   });
 
   tripsText += `
-INSTRUCCIONES INTELIGENTES PARA RESPUESTAS DE FECHAS DE ENVÍO:
+📋 **INSTRUCCIONES INTELIGENTES PARA RESPUESTAS DE FECHAS DE ENVÍO:**
 
-ANÁLISIS PREVIO OBLIGATORIO:
+🔍 **ANÁLISIS PREVIO OBLIGATORIO:**
 - ANTES de responder, analizar si el destino solicitado coincide con el destino de los viajes encontrados
 - VERIFICAR que la ruta mostrada sea coherente con lo solicitado por el cliente
 - NUNCA mostrar rutas contradictorias (ejemplo: cliente pide envío a Curazao, no mostrar "Curazao → Barranquilla")
 
-FORMATO DE RESPUESTA INTELIGENTE:
-- Si el cliente pregunta por envíos hacia Curazao: mostrar SOLO viajes con destino Curazao
-- Si el cliente pregunta por envíos hacia Barranquilla: mostrar SOLO viajes con destino Barranquilla
+📝 **FORMATO DE RESPUESTA INTELIGENTE CON EMOJIS:**
+- Si el cliente pregunta por envíos hacia Curazao: mostrar SOLO viajes con destino Curazao 🇨🇼
+- Si el cliente pregunta por envíos hacia Barranquilla: mostrar SOLO viajes con destino Barranquilla 🇨🇴
 - SIEMPRE verificar coherencia entre pregunta del cliente y respuesta
+- Usar emojis específicos: 📅 para fechas, ✈️ para vuelos, 🎯 para destinos, 🚢 para origen
 
-REGLAS DE COMUNICACIÓN:
+💬 **REGLAS DE COMUNICACIÓN:**
 - NO mencionar que no somos agencia de viajes (el cliente ya lo sabe)
 - NO hacer recordatorios innecesarios sobre el tipo de empresa
-- Responder de forma directa y clara
+- Responder de forma directa y clara con emojis apropiados
 - Mantener coherencia entre la pregunta y la respuesta
+- Usar el branding: "🚀 Envíos Ojito - Conectando Barranquilla y Curazao"
 
-EJEMPLO CORRECTO:
+✅ **EJEMPLO CORRECTO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"
-Respuesta: "El próximo envío hacia Curazao es el viernes 13 de junio. ¿Quieres reservar espacio para tu encomienda?"
+Respuesta: "¡Hola! 👋🚀 El próximo envío hacia Curazao 🇨🇼 es el viernes 13 de junio 📅. ¿Quieres reservar espacio para tu encomienda? 📦"
 
-EJEMPLO INCORRECTO:
+❌ **EJEMPLO INCORRECTO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"  
 Respuesta: "Envío hacia Curazao: Ruta Curazao → Barranquilla" (CONTRADICTORIO)`;
 

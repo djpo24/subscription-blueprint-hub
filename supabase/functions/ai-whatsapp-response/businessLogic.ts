@@ -11,7 +11,7 @@ export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isV
   if (criticalPackages.length > 0) {
     return {
       isValid: false,
-      message: `⚠️ **URGENTE:** Tienes ${criticalPackages.length} encomienda${criticalPackages.length > 1 ? 's' : ''} disponible${criticalPackages.length > 1 ? 's' : ''} para retiro inmediato.`
+      message: `🚨 **URGENTE:** Tienes ${criticalPackages.length} encomienda${criticalPackages.length > 1 ? 's' : ''} disponible${criticalPackages.length > 1 ? 's' : ''} para retiro inmediato. 📦🏆`
     };
   }
 
@@ -28,13 +28,13 @@ export function generateBusinessIntelligentResponse(customerInfo: CustomerInfo):
 
   if (customerInfo.pendingPaymentPackages.length > 0) {
     const totalPending = Object.values(customerInfo.currencyBreakdown).reduce((sum, amount) => sum + amount, 0);
-    insights.push(`Cliente con saldo pendiente: ${totalPending} (${customerInfo.pendingPaymentPackages.length} encomiendas)`);
+    insights.push(`💰 Cliente con saldo pendiente: ${totalPending} (${customerInfo.pendingPaymentPackages.length} encomiendas) 📋`);
   }
 
   if (customerInfo.pendingDeliveryPackages.length > 0) {
     const atDestination = customerInfo.pendingDeliveryPackages.filter(pkg => pkg.status === 'en_destino').length;
     if (atDestination > 0) {
-      insights.push(`${atDestination} encomienda(s) disponible(s) para retiro`);
+      insights.push(`🏆 ${atDestination} encomienda(s) disponible(s) para retiro 📦`);
     }
   }
 
@@ -55,7 +55,7 @@ export function isHomeDeliveryRequest(message: string): boolean {
   return deliveryKeywords.some(keyword => normalizedMessage.includes(keyword));
 }
 
-// Nueva función para generar respuesta de entrega a domicilio - MEJORADA CON ESTRUCTURA
+// Nueva función para generar respuesta de entrega a domicilio - CON EMOJIS MEJORADOS
 export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, customerMessage: string): string | null {
   // Solo procesar si es una solicitud de entrega
   if (!isHomeDeliveryRequest(customerMessage)) {
@@ -66,20 +66,22 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, custome
 
   // Si el cliente no está registrado o no tiene encomiendas
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
-    return `¡Hola ${customerName}! 👋
+    return `¡Hola ${customerName}! 👋🚀
 
 🏠 **ENTREGA A DOMICILIO**
 
-Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro sistema.
+Para solicitar entrega a domicilio necesito verificar tus encomiendas en nuestro sistema. 🔍
 
 🤝 **TRANSFERENCIA A COORDINADORA**
 
 Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
-• Verificará tu información  
-• Te ayudará con la entrega
-• Coordinará todos los detalles
+• ✅ Verificará tu información  
+• 🚚 Te ayudará con la entrega
+• 📋 Coordinará todos los detalles
 
-**Josefa te responderá en breve** 📦🚚`;
+**👤 Josefa te responderá en breve** 📦🚚
+
+🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
   // Si tiene encomiendas, verificar el estado
@@ -90,16 +92,16 @@ Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
   const pendingPaymentPackages = customerInfo.pendingPaymentPackages;
 
   if (deliverablePackages.length > 0 || pendingPaymentPackages.length > 0) {
-    let response = `¡Hola ${customerName}! 📦
+    let response = `¡Hola ${customerName}! 👋🚀
 
 🏠 **SOLICITUD DE ENTREGA A DOMICILIO**
 
 📋 **TUS ENCOMIENDAS:**`;
 
     if (deliverablePackages.length > 0) {
-      response += `\n\n✅ **Disponible${deliverablePackages.length > 1 ? 's' : ''} para entrega:**`;
+      response += `\n\n✅ **Disponible${deliverablePackages.length > 1 ? 's' : ''} para entrega:** 🏆`;
       deliverablePackages.forEach(pkg => {
-        response += `\n• **${pkg.tracking_number}** - ${pkg.description || 'Encomienda'}`;
+        response += `\n• 📦 **${pkg.tracking_number}** - ${pkg.description || 'Encomienda'}`;
       });
     }
 
@@ -111,7 +113,7 @@ Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
           ? `ƒ${pkg.pendingAmount} florines`
           : `$${pkg.pendingAmount.toLocaleString('es-CO')} pesos`;
         
-        response += `\n• **${pkg.tracking_number}** - Pendiente: **${formattedAmount}**`;
+        response += `\n• 💵 **${pkg.tracking_number}** - Pendiente: **${formattedAmount}**`;
       });
     }
 
@@ -125,28 +127,32 @@ Estoy transfiriendo tu solicitud a nuestra coordinadora **Josefa** quien coordin
 ⏰ **Horario disponible**  
 💰 **Detalles de pago** (si aplica)
 
-**Josefa te contactará en breve** para confirmar todos los detalles.
+**👤 Josefa te contactará en breve** para confirmar todos los detalles.
 
-¡Gracias por tu paciencia! 😊`;
+¡Gracias por tu paciencia! 😊
+
+🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 
     return response;
   }
 
   // Si tiene encomiendas pero no están listas para entrega
-  return `¡Hola ${customerName}! 👋
+  return `¡Hola ${customerName}! 👋🚀
 
 🏠 **ENTREGA A DOMICILIO**
 
 📦 **ESTADO DE TUS ENCOMIENDAS:**
-• Tienes **${customerInfo.packagesCount}** encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema
-• Aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega
+• Tienes **${customerInfo.packagesCount}** encomienda${customerInfo.packagesCount > 1 ? 's' : ''} en nuestro sistema 📋
+• Aún no ${customerInfo.packagesCount > 1 ? 'están' : 'está'} disponible${customerInfo.packagesCount > 1 ? 's' : ''} para entrega ⏳
 
 🤝 **VERIFICACIÓN DE ESTADO**
 
 Estoy transfiriendo tu consulta a nuestra coordinadora **Josefa** quien:
-• Verificará el estado actual de tus encomiendas
-• Te informará sobre las opciones de entrega
-• Te mantendrá actualizado sobre el progreso
+• 🔍 Verificará el estado actual de tus encomiendas
+• 📋 Te informará sobre las opciones de entrega
+• 📢 Te mantendrá actualizado sobre el progreso
 
-**Josefa te responderá pronto** con los detalles actualizados 📦`;
+**👤 Josefa te responderá pronto** con los detalles actualizados 📦
+
+🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 }

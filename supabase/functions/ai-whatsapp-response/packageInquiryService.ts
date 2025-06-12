@@ -41,7 +41,7 @@ export function extractDestinationFromMessage(message: string): string | null {
   return null;
 }
 
-// Generar respuesta para consultas de envío de paquetes - MEJORADA CON ESTRUCTURA
+// Generar respuesta para consultas de envío de paquetes - CON EMOJIS MEJORADOS
 export function generatePackageShippingResponse(
   customerInfo: CustomerInfo, 
   customerMessage: string,
@@ -56,57 +56,61 @@ export function generatePackageShippingResponse(
   const customerName = customerInfo.customerFirstName || 'Cliente';
   const extractedDestination = extractDestinationFromMessage(customerMessage);
   
-  // Si no se especifica destino, preguntar CON ESTRUCTURA CLARA
+  // Si no se especifica destino, preguntar CON EMOJIS Y ESTRUCTURA CLARA
   if (!extractedDestination) {
-    return `¡Hola ${customerName}! 📦
+    return `¡Hola ${customerName}! 👋🚀
 
-**ENVÍO DE ENCOMIENDAS**
+📦 **ENVÍO DE ENCOMIENDAS**
 
 Para ayudarte con el envío, necesito conocer:
 
 🎯 **¿Hacia qué destino quieres enviar tu encomienda?**
 
-**Destinos disponibles:**
+**🌎 Destinos disponibles:**
 • 🇨🇼 **Curazao**
 • 🇨🇴 **Barranquilla, Colombia**
 
-Una vez me indiques el destino, te proporcionaré toda la información necesaria para el envío.`;
+Una vez me indiques el destino, te proporcionaré toda la información necesaria para el envío. 📋
+
+🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
   }
 
   // Buscar la dirección de origen correspondiente
   const originAddress = findOriginAddressForDestination(extractedDestination, destinationAddresses);
   
-  let response = `¡Hola ${customerName}! 📦
+  let response = `¡Hola ${customerName}! 👋🚀
 
-**INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
+📦 **INFORMACIÓN PARA ENVÍO HACIA ${extractedDestination.toUpperCase()}**
 
 📍 **Dirección para entregar tu paquete:**
 ${originAddress || 'Dirección no disponible en el sistema'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📞 **RESERVAR ESPACIO EN EL PRÓXIMO VIAJE**
+📞 **RESERVAR ESPACIO EN EL PRÓXIMO VIAJE** ✈️
 
-**Contacta a nuestro coordinador:**
-👤 **Darwin Pedroza**  
+**👤 Contacta a nuestro coordinador:**
+🧑‍💼 **Darwin Pedroza**  
 📱 **+599 9696 4306**
 
-**Darwin te ayudará con:**
+**🎯 Darwin te ayudará con:**
 • ✅ Reserva de espacio
-• ✅ Fechas disponibles  
-• ✅ Tarifas y pagos
-• ✅ Seguimiento del envío
+• 📅 Fechas disponibles  
+• 💰 Tarifas y pagos
+• 📋 Seguimiento del envío
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📋 **PROCESO DE ENVÍO:**
 
-**1.** Lleva tu paquete a la dirección indicada
-**2.** Nuestro equipo lo recibirá y procesará  
-**3.** Será transportado hacia ${extractedDestination}
-**4.** Te notificaremos cuando llegue a destino
+**1️⃣** Lleva tu paquete a la dirección indicada 📍
+**2️⃣** Nuestro equipo lo recibirá y procesará 👥  
+**3️⃣** Será transportado hacia ${extractedDestination} 🚚✈️
+**4️⃣** Te notificaremos cuando llegue a destino 📢
 
-¡Estamos listos para ayudarte con tu envío! 🚚`;
+¡Estamos listos para ayudarte con tu envío! 🚚💼
+
+🚀 **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 
   return response;
 }

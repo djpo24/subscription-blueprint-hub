@@ -37,33 +37,46 @@ export async function getActiveFreightRates(supabase: any): Promise<FreightRate[
 
 export function formatFreightRateForPrompt(rates: FreightRate[]): string {
   if (!rates || rates.length === 0) {
-    return 'No hay tarifas de flete configuradas en el sistema.';
+    return '❌ No hay tarifas de flete configuradas en el sistema.';
   }
 
-  let ratesText = 'TARIFAS DE FLETE VIGENTES PARA ENVÍO DE ENCOMIENDAS (por kilogramo):\n';
+  let ratesText = '💰 **TARIFAS DE FLETE VIGENTES PARA ENVÍO DE ENCOMIENDAS** (por kilogramo):\n\n';
   
   rates.forEach(rate => {
-    // Formatear usando el nuevo formato específico
+    // Formatear usando el nuevo formato específico con emojis
     const formattedPrice = rate.currency === 'AWG' 
       ? `ƒ${rate.price_per_kilo} florines`
       : `$${rate.price_per_kilo.toLocaleString('es-CO')} pesos`;
     
-    ratesText += `- Envío ${rate.origin} → ${rate.destination}: ${formattedPrice}/kg\n`;
+    ratesText += `📦 **Envío ${rate.origin} → ${rate.destination}:** ${formattedPrice}/kg 💰\n`;
     
     if (rate.notes) {
-      ratesText += `  Nota: ${rate.notes}\n`;
+      ratesText += `   📝 Nota: ${rate.notes}\n`;
     }
   });
 
   ratesText += `
-INSTRUCCIONES PARA CONSULTAS DE TARIFAS DE ENVÍO:
-- Si el cliente pregunta sobre precios o tarifas, SIEMPRE pregunta: "¿Hacia dónde quieres enviar tu encomienda?"
-- Las rutas disponibles para envío de encomiendas son: Barranquilla → Curazao y Curazao → Barranquilla
+📋 **INSTRUCCIONES PARA CONSULTAS DE TARIFAS DE ENVÍO CON EMOJIS:**
+
+🎯 **PREGUNTAS OBLIGATORIAS:**
+- Si el cliente pregunta sobre precios o tarifas, SIEMPRE pregunta: "¿Hacia dónde quieres enviar tu encomienda? 🌎"
+- Las rutas disponibles para envío de encomiendas son: 
+  • 🇨🇴 Barranquilla → 🇨🇼 Curazao
+  • 🇨🇼 Curazao → 🇨🇴 Barranquilla
+
+💰 **INFORMACIÓN DE TARIFAS:**
 - Proporciona la tarifa exacta según la ruta de envío solicitada
-- Explica que los precios son por kilogramo de encomienda
-- Menciona que pueden variar según el peso total del envío
+- Explica que los precios son por kilogramo de encomienda 📦
+- Menciona que pueden variar según el peso total del envío ⚖️
 - SIEMPRE usa el formato correcto: ƒ[cantidad] florines para AWG y $[cantidad con separadores] pesos para COP
-- NUNCA inventes tarifas que no estén en el sistema`;
+- NUNCA inventes tarifas que no estén en el sistema ❌
+
+🎨 **FORMATO CON EMOJIS:**
+- Usar 💰 para precios y tarifas
+- Usar 📦 para encomiendas
+- Usar 🌎 para destinos
+- Usar ⚖️ para peso
+- Usar 🚀 para branding: "Envíos Ojito - Conectando Barranquilla y Curazao"`;
 
   return ratesText;
 }

@@ -29,34 +29,39 @@ export function CollectedOrdersTable() {
   };
 
   const getPaymentMethodBadge = (method: string) => {
+    console.log('🔧 [CollectedOrdersTable] === PAYMENT METHOD DEBUG ===');
+    console.log('🔧 [CollectedOrdersTable] Raw method value:', method);
+    console.log('🔧 [CollectedOrdersTable] Method type:', typeof method);
+    console.log('🔧 [CollectedOrdersTable] Method JSON:', JSON.stringify(method));
+    console.log('🔧 [CollectedOrdersTable] Method string length:', String(method).length);
+    
     // Normalizar el método - convertir a string y limpiar
     const normalizedMethod = String(method || '').toLowerCase().trim();
+    console.log('🔧 [CollectedOrdersTable] Normalized method:', normalizedMethod);
     
-    // Mapeo mejorado basado en los datos reales de la base de datos
     const methodMap: { [key: string]: { label: string; variant: any } } = {
-      // Métodos de texto principales
       'efectivo': { label: 'Efectivo', variant: 'default' },
       'transferencia': { label: 'Transferencia', variant: 'secondary' },
       'tarjeta': { label: 'Tarjeta', variant: 'outline' },
       'otro': { label: 'Otro', variant: 'outline' },
-      
-      // Mapeos numéricos (valores legacy en la base de datos)
+      // Agregar mapeos adicionales para posibles variaciones
       '1': { label: 'Efectivo', variant: 'default' },
       '2': { label: 'Transferencia', variant: 'secondary' },
       '3': { label: 'Tarjeta', variant: 'outline' },
       '4': { label: 'Otro', variant: 'outline' },
-      
-      // Mapeos en inglés (por compatibilidad)
+      // Mapeo directo para casos específicos
       'cash': { label: 'Efectivo', variant: 'default' },
       'transfer': { label: 'Transferencia', variant: 'secondary' },
       'card': { label: 'Tarjeta', variant: 'outline' },
-      'other': { label: 'Otro', variant: 'outline' },
     };
     
     const methodInfo = methodMap[normalizedMethod] || { 
-      label: `Método desconocido: ${method}`, 
+      label: `${normalizedMethod || 'Método desconocido'} (RAW: ${method})`, 
       variant: 'outline' 
     };
+    
+    console.log('🔧 [CollectedOrdersTable] Method mapping result:', methodInfo);
+    console.log('🔧 [CollectedOrdersTable] === END DEBUG ===');
     
     return <Badge variant={methodInfo.variant}>{methodInfo.label}</Badge>;
   };

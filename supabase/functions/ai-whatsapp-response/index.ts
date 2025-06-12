@@ -7,7 +7,7 @@ import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts'
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
 import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse } from './businessLogic.ts';
-import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse } from './packageInquiryService.ts';
+import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
@@ -61,10 +61,70 @@ serve(async (req) => {
     // Get destination addresses for shipping inquiries
     const destinationAddresses = await getDestinationAddresses(supabase);
 
-    // Get upcoming trips for deadline inquiries
+    // Get upcoming trips for all inquiries
     const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
 
-    // 🚨 NUEVA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes
+    // 🎯 NUEVA PRIORIDAD MÁXIMA: Detectar consultas integradas con múltiples preguntas
+    const integratedResponse = generateIntegratedPackageResponse(customerInfo, message, allUpcomingTrips, destinationAddresses);
+    if (integratedResponse) {
+      console.log('🎯 CONSULTA MÚLTIPLE INTEGRADA detectada - Proporcionando respuesta completa');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      let integratedInteractionId: string | null = null;
+      try {
+        const { data: integratedInteractionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: integratedResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isIntegratedMultipleInquiry: true,
+              botAlwaysResponds: true
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && integratedInteractionData) {
+          integratedInteractionId = integratedInteractionData.id;
+          await updateLearningModel(supabase, integratedInteractionId, customerPhone, message, integratedResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: integratedResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: integratedInteractionId,
+        wasEscalated: false
+      };
+
+      console.log('🎯 RESPUESTA INTEGRADA ENVIADA - Todas las preguntas respondidas correctamente');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 🚨 SEGUNDA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
       console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
@@ -124,7 +184,7 @@ serve(async (req) => {
       });
     }
 
-    // 📦 SEGUNDA PRIORIDAD MEJORADA: Detectar consultas sobre dónde enviar paquetes Y respuestas de destino
+    // 📦 TERCERA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
@@ -146,7 +206,6 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isPackageShippingInquiry: true,
-              destinationExtracted: extractDestinationFromMessage(message),
               botAlwaysResponds: true
             },
             response_time_ms: responseTime,
@@ -185,7 +244,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 TERCERA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 CUARTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');

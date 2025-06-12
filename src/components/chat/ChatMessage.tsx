@@ -1,17 +1,26 @@
 
-import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Clock, Image as ImageIcon, Bot, User, Reply } from 'lucide-react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
-import type { ChatMessage } from '@/types/chatMessage';
+import { AIResponseDisplay } from './components/AIResponseDisplay';
+import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+import type { AIResponseResult } from './types/AIResponseTypes';
 
 interface ChatMessageProps {
-  message: ChatMessage;
+  message: ChatMessageType;
   customerName?: string;
-  profileImageUrl?: string;
-  onSendMessage?: (message: string) => void;
-  customerPhone?: string;
+  profileImageUrl?: string | null;
+  onSendMessage: (message: string, image?: File) => void;
+  customerPhone: string;
   customerId?: string | null;
+  isBotEnabled?: boolean;
 }
 
 export function ChatMessage({ 
@@ -20,19 +29,38 @@ export function ChatMessage({
   profileImageUrl,
   onSendMessage,
   customerPhone,
-  customerId
+  customerId,
+  isBotEnabled = true
 }: ChatMessageProps) {
-  const isFromCustomer = message.is_from_customer;
-  const timeAgo = formatDistanceToNow(new Date(message.timestamp), {
-    addSuffix: true,
-    locale: es,
-  });
+  const [aiResponse, setAIResponse] = useState<AIResponseResult | null>(null);
+  const [showAIResponse, setShowAIResponse] = useState(false);
 
-  const shouldShowAIButton = isFromCustomer && onSendMessage && customerPhone && message.message_content;
+  const isFromCustomer = message.is_from_customer !== false;
+  const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
+  const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
+
+  const handleAIResponseGenerated = (response: AIResponseResult) => {
+    setAIResponse(response);
+    setShowAIResponse(true);
+  };
+
+  const handleSendAIResponse = () => {
+    if (aiResponse?.response) {
+      onSendMessage(aiResponse.response);
+      setShowAIResponse(false);
+      setAIResponse(null);
+    }
+  };
+
+  const handleDismissAIResponse = () => {
+    setShowAIResponse(false);
+    setAIResponse(null);
+  };
 
   return (
-    <div className={`flex ${isFromCustomer ? 'justify-start' : 'justify-end'} mb-4`}>
-      <div className={`flex items-start gap-2 max-w-[80%] ${isFromCustomer ? 'flex-row' : 'flex-row-reverse'}`}>
+    <div className="space-y-3">
+      <div className={`flex ${isFromCustomer ? 'justify-start' : 'justify-end'} items-start gap-3`}>
+        {/* Avatar del cliente (solo para mensajes entrantes) */}
         {isFromCustomer && (
           <CustomerAvatar 
             customerName={customerName || 'Cliente'}
@@ -42,52 +70,89 @@ export function ChatMessage({
             showStatusIndicator={false}
           />
         )}
-        
-        <div className="space-y-2">
-          <div className={`rounded-lg px-3 py-2 ${
-            isFromCustomer 
-              ? 'bg-gray-100 text-gray-900' 
-              : 'bg-blue-500 text-white'
-          }`}>
-            {message.message_type === 'text' && message.message_content && (
-              <p className="text-sm whitespace-pre-wrap">{message.message_content}</p>
-            )}
-            
-            {message.message_type === 'image' && message.media_url && (
+
+        {/* Contenido del mensaje */}
+        <div className={`max-w-[80%] ${isFromCustomer ? 'order-1' : 'order-2'}`}>
+          <Card className={`${isFromCustomer ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
+            <CardContent className="p-3">
+              {/* Header del mensaje con indicador de origen */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {isFromCustomer ? (
+                    <User className="h-3 w-3 text-gray-600" />
+                  ) : (
+                    <Bot className="h-3 w-3 text-blue-600" />
+                  )}
+                  <span className="text-xs font-medium text-gray-600">
+                    {isFromCustomer ? (customerName || 'Cliente') : 'Enviado'}
+                  </span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {messageTime}
+                </Badge>
+              </div>
+
+              {/* Contenido del mensaje */}
               <div className="space-y-2">
-                <img 
-                  src={message.media_url} 
-                  alt="Imagen enviada" 
-                  className="max-w-xs rounded"
-                />
                 {message.message_content && (
-                  <p className="text-sm">{message.message_content}</p>
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {message.message_content}
+                  </p>
+                )}
+                
+                {message.media_url && (
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <ImageIcon className="h-3 w-3" />
+                    <span>Imagen adjunta</span>
+                  </div>
                 )}
               </div>
-            )}
-            
-            {message.message_type === 'template' && (
-              <p className="text-sm italic">{message.message_content}</p>
-            )}
-            
-            <div className={`text-xs mt-1 ${
-              isFromCustomer ? 'text-gray-500' : 'text-blue-100'
-            }`}>
-              {timeAgo}
+
+              {/* Timestamp detallado */}
+              <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
+                <Clock className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-400">
+                  {messageDate} a las {messageTime}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Botón de respuesta IA solo para mensajes del cliente y si el bot está habilitado */}
+          {isFromCustomer && isBotEnabled && (
+            <div className="mt-2 flex justify-start">
+              <AIResponseButton
+                message={message.message_content || ''}
+                customerPhone={customerPhone}
+                customerId={customerId}
+                onResponseGenerated={handleAIResponseGenerated}
+              />
             </div>
-          </div>
-          
-          {/* AI Response Button - solo para mensajes de clientes */}
-          {shouldShowAIButton && (
-            <AIResponseButton
-              customerMessage={message.message_content}
-              customerPhone={customerPhone}
-              customerId={customerId}
-              onSendMessage={onSendMessage}
-            />
+          )}
+
+          {/* Mensaje cuando el bot está deshabilitado */}
+          {isFromCustomer && !isBotEnabled && (
+            <div className="mt-2 flex justify-start">
+              <Badge variant="secondary" className="text-xs">
+                Bot desactivado - Respuesta manual requerida
+              </Badge>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Respuesta de IA generada */}
+      {showAIResponse && aiResponse && (
+        <>
+          <Separator />
+          <AIResponseDisplay
+            response={aiResponse}
+            customerName={customerName}
+            onSend={handleSendAIResponse}
+            onDismiss={handleDismissAIResponse}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -43,20 +43,27 @@ export function useAdvancedBotToggle() {
       try {
         console.log('🔍 Loading bot settings from database...');
         
-        const { data: autoResponseEnabled, error: autoError } = await supabase
-          .rpc('get_bot_setting', { setting_name: 'auto_response_enabled' });
+        // Use direct queries instead of RPC calls temporarily
+        const { data: autoResponseData, error: autoError } = await supabase
+          .from('bot_settings')
+          .select('setting_value')
+          .eq('setting_name', 'auto_response_enabled')
+          .single();
         
-        const { data: manualResponseEnabled, error: manualError } = await supabase
-          .rpc('get_bot_setting', { setting_name: 'manual_response_enabled' });
+        const { data: manualResponseData, error: manualError } = await supabase
+          .from('bot_settings')
+          .select('setting_value')
+          .eq('setting_name', 'manual_response_enabled')
+          .single();
 
         if (autoError || manualError) {
           console.error('Error loading bot settings:', { autoError, manualError });
           return;
         }
 
-        const newStates = {
-          isAutoResponseEnabled: autoResponseEnabled ?? false,
-          isManualResponseEnabled: manualResponseEnabled ?? true
+        const newStates: BotStates = {
+          isAutoResponseEnabled: autoResponseData?.setting_value ?? false,
+          isManualResponseEnabled: manualResponseData?.setting_value ?? true
         };
 
         console.log('✅ Bot settings loaded:', newStates);
@@ -87,13 +94,16 @@ export function useAdvancedBotToggle() {
     try {
       console.log('🔄 Updating auto-response setting to:', enabled);
       
-      const { data: success, error } = await supabase
-        .rpc('update_bot_setting', { 
-          setting_name: 'auto_response_enabled', 
-          new_value: enabled 
-        });
+      // Use direct update instead of RPC call temporarily
+      const { error } = await supabase
+        .from('bot_settings')
+        .update({ 
+          setting_value: enabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_name', 'auto_response_enabled');
 
-      if (error || !success) {
+      if (error) {
         console.error('Error updating auto-response setting:', error);
         throw new Error('Failed to update setting');
       }
@@ -114,13 +124,16 @@ export function useAdvancedBotToggle() {
     try {
       console.log('🔄 Updating manual-response setting to:', enabled);
       
-      const { data: success, error } = await supabase
-        .rpc('update_bot_setting', { 
-          setting_name: 'manual_response_enabled', 
-          new_value: enabled 
-        });
+      // Use direct update instead of RPC call temporarily
+      const { error } = await supabase
+        .from('bot_settings')
+        .update({ 
+          setting_value: enabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_name', 'manual_response_enabled');
 
-      if (error || !success) {
+      if (error) {
         console.error('Error updating manual-response setting:', error);
         throw new Error('Failed to update setting');
       }

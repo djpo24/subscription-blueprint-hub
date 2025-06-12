@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
 import { AdvancedBotToggleButton } from './chat/AdvancedBotToggleButton';
+import { AutoResponseIndicator } from './chat/AutoResponseIndicator';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,7 +81,7 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
-  // Header global con el control avanzado del bot
+  // Header global con el control avanzado del bot y indicador de auto-respuesta
   const ChatHeader = () => (
     <Card className="mb-4">
       <CardHeader className="pb-3">
@@ -91,6 +91,7 @@ export function ChatView() {
             Sistema de Chat WhatsApp
           </CardTitle>
           <div className="flex items-center gap-3">
+            <AutoResponseIndicator />
             <AdvancedBotToggleButton />
           </div>
         </div>
@@ -120,7 +121,8 @@ export function ChatView() {
               <h2 className="text-lg font-semibold">
                 {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
               </h2>
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-2">
+                <AutoResponseIndicator />
                 <AdvancedBotToggleButton />
               </div>
             </div>

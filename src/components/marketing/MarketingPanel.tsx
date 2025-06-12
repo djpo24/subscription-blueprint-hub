@@ -15,7 +15,7 @@ export function MarketingPanel() {
         <div>
           <h1 className="text-3xl font-bold">Panel de Marketing</h1>
           <p className="text-gray-500 mt-2">
-            Gestiona campañas automáticas de WhatsApp para promocionar viajes
+            Gestiona campañas automáticas de WhatsApp para promocionar servicios de envío de encomiendas
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export function MarketingPanel() {
               <CardTitle>Análisis de Campañas</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500">Próximamente: Métricas detalladas de rendimiento</p>
+              <p className="text-gray-500">Próximamente: Métricas detalladas de rendimiento de campañas de envíos</p>
             </CardContent>
           </Card>
         </TabsContent>

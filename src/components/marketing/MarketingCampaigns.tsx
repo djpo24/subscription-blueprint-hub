@@ -18,7 +18,7 @@ export function MarketingCampaigns() {
       const result = await sendCampaign();
       toast({
         title: "Campaña enviada",
-        description: `Se han enviado ${result.totalSent} mensajes exitosamente`,
+        description: `Se han enviado ${result.totalSent} mensajes exitosamente sobre envíos programados`,
       });
     } catch (error: any) {
       toast({
@@ -34,7 +34,7 @@ export function MarketingCampaigns() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Campañas de Marketing</CardTitle>
+            <CardTitle>Campañas de Marketing de Envíos</CardTitle>
             <div className="flex gap-2">
               <Button 
                 onClick={handleSendCampaign}

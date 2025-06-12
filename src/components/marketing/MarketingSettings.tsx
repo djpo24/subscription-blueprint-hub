@@ -55,8 +55,8 @@ export function MarketingSettings() {
 
   const handleTestMessage = () => {
     const testMessage = formData.messageTemplate
-      .replace('{customer_name}', 'Juan Pérez')
-      .replace('{trip_details}', '📅 15/06/2024 - Miami → Bogotá (Vuelo: AA123)\n📅 20/06/2024 - Bogotá → Miami (Vuelo: AA456)');
+      .replace('{customer_name}', 'María González')
+      .replace('{trip_details}', '📦 15/06/2024 - Envío Barranquilla → Curazao (Vuelo: AA123)\n📦 20/06/2024 - Envío Curazao → Barranquilla (Vuelo: AA456)');
     
     toast({
       title: "Vista previa del mensaje",
@@ -107,7 +107,7 @@ export function MarketingSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="window">Ventana de viajes (días)</Label>
+              <Label htmlFor="window">Ventana de envíos (días)</Label>
               <Input
                 id="window"
                 type="number"
@@ -120,7 +120,7 @@ export function MarketingSettings() {
                 }))}
               />
               <p className="text-sm text-gray-500">
-                Informar sobre viajes en los próximos X días
+                Informar sobre envíos programados en los próximos X días
               </p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function MarketingSettings() {
               <p className="mb-2">Variables disponibles:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li><code>{'{customer_name}'}</code> - Nombre del cliente</li>
-                <li><code>{'{trip_details}'}</code> - Lista de viajes programados</li>
+                <li><code>{'{trip_details}'}</code> - Lista de envíos programados</li>
               </ul>
             </div>
           </div>

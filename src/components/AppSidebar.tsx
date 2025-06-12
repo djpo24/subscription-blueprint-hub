@@ -32,20 +32,19 @@ export function AppSidebar({
   } = useSidebar();
   const isMobile = useIsMobile();
 
-  // Show tabs based on user role - Updated permissions for travelers
+  // Show tabs based on user role
   const showUsersTab = userRole?.role === 'admin';
   const showNotificationsTab = userRole?.role === 'admin' || userRole?.role === 'traveler';
   const showSettingsTab = userRole?.role === 'admin';
-  // Updated: Chat is now available for admin, employee and traveler
   const showChatTab = userRole?.role === 'admin' || userRole?.role === 'employee' || userRole?.role === 'traveler';
-  // Updated: Finances is now available for admin, employee and traveler
   const showFinancesTab = userRole?.role === 'admin' || userRole?.role === 'employee' || userRole?.role === 'traveler';
+  const showMarketingTab = userRole?.role === 'admin';
   
   if (isLoading) {
     return <SidebarLoadingState />;
   }
   
-  const menuItems = createMenuItems(showUsersTab, showNotificationsTab, showSettingsTab, showChatTab, showFinancesTab, unreadCount);
+  const menuItems = createMenuItems(showUsersTab, showNotificationsTab, showSettingsTab, showChatTab, showFinancesTab, showMarketingTab, unreadCount);
   
   const handleTabChange = (tab: string) => {
     onTabChange(tab);

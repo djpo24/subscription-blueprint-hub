@@ -9,7 +9,8 @@ import {
   Settings, 
   DollarSign,
   Eye,
-  UserCheck
+  UserCheck,
+  Megaphone
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -25,6 +26,7 @@ export const createMenuItems = (
   showSettingsTab: boolean, 
   showChatTab: boolean, 
   showFinancesTab: boolean,
+  showMarketingTab: boolean,
   unreadCount: number
 ): MenuItem[] => {
   const items: MenuItem[] = [
@@ -47,6 +49,10 @@ export const createMenuItems = (
       icon: MessageSquare,
       badge: unreadCount > 0 ? unreadCount : undefined
     });
+  }
+
+  if (showMarketingTab) {
+    items.push({ value: 'marketing', title: 'Marketing', icon: Megaphone });
   }
 
   if (showNotificationsTab) {

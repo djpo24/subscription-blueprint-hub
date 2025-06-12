@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
@@ -10,6 +11,7 @@ import { UsersTab } from '@/components/tabs/UsersTab';
 import { CustomersTab } from '@/components/tabs/CustomersTab';
 import { DeveloperTab } from '@/components/tabs/DeveloperTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
+import { MarketingTab } from '@/components/tabs/MarketingTab';
 import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -127,6 +129,7 @@ export default function Index() {
                 {activeTab === 'users' && 'Usuarios'}
                 {activeTab === 'settings' && 'Configuración'}
                 {activeTab === 'developer' && 'Preview'}
+                {activeTab === 'marketing' && 'Marketing'}
               </h2>
             </div>
 
@@ -157,6 +160,7 @@ export default function Index() {
               <DispatchesTab />
               <FinancesTab />
               <ChatTab />
+              <MarketingTab />
               <NotificationsTab />
               <CustomersTab />
               <UsersTab />

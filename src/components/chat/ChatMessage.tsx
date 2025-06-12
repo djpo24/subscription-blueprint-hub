@@ -37,7 +37,9 @@ export function ChatMessage({
           <CustomerAvatar 
             customerName={customerName || 'Cliente'}
             profileImageUrl={profileImageUrl}
+            customerPhone={customerPhone}
             size="sm"
+            showStatusIndicator={false}
           />
         )}
         

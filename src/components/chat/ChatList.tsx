@@ -74,7 +74,9 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
                       <CustomerAvatar 
                         customerName={displayName}
                         profileImageUrl={chat.profileImageUrl}
+                        customerPhone={chat.phone}
                         size="md"
+                        showStatusIndicator={true}
                       />
                     </div>
                     

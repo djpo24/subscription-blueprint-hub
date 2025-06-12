@@ -1,17 +1,15 @@
 
-import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, UserCheck, UserX, MessageCircle, UserPlus } from 'lucide-react';
+import { UserCheck, UserX, MessageSquare } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CustomerInfoButton } from './CustomerInfoButton';
-import { useConsultaEncomienda } from '@/hooks/useConsultaEncomienda';
-import { CustomerFormDialog } from '@/components/CustomerFormDialog';
-import { getCountryCodeFromPhone } from '@/utils/countryUtils';
-import { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
+import { PackageStatusIndicator } from './components/PackageStatusIndicator';
+import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatConversationProps {
   phone: string;
@@ -21,7 +19,7 @@ interface ChatConversationProps {
   isRegistered: boolean;
   onSendMessage: (message: string, image?: File) => void;
   isLoading: boolean;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 }
 
 export function ChatConversation({
@@ -34,207 +32,94 @@ export function ChatConversation({
   isLoading,
   profileImageUrl
 }: ChatConversationProps) {
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [customerFormOpen, setCustomerFormOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { sendConsultaEncomienda, isSending } = useConsultaEncomienda();
-
-  // Mostrar nombre registrado si está disponible, si no mostrar "Cliente"
+  const { data: packageIndicator } = useCustomerPackageStatus(phone);
   const displayName = customerName || 'Cliente';
 
-  console.log('ChatConversation render:', {
-    phone,
-    customerName,
-    displayName,
-    customerId,
-    isRegistered,
-    profileImageUrl
-  });
-
-  const scrollToBottom = () => {
-    if (autoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, autoScroll]);
-
-  const handleInitiateChat = async () => {
-    try {
-      console.log('🔘 [BUTTON] Iniciar Chat button clicked:', {
-        displayName,
-        phone,
-        customerId
-      });
-      
-      if (!displayName) {
-        console.error('❌ [BUTTON] No displayName provided');
-        return;
-      }
-      
-      if (!phone) {
-        console.error('❌ [BUTTON] No phone provided');
-        return;
-      }
-      
-      console.log('⏳ [BUTTON] Calling sendConsultaEncomienda...');
-      const success = await sendConsultaEncomienda(displayName, phone, customerId || undefined);
-      
-      if (success) {
-        console.log('✅ [BUTTON] Plantilla consulta_encomienda enviada exitosamente');
-      } else {
-        console.log('❌ [BUTTON] Plantilla consulta_encomienda falló');
-      }
-    } catch (error: any) {
-      console.error('❌ [BUTTON] Error in handleInitiateChat:', error);
-      console.error('❌ [BUTTON] Error stack:', error.stack);
-    }
-  };
-
-  const handleCreateCustomer = () => {
-    setCustomerFormOpen(true);
-  };
-
-  const handleCustomerCreated = (newCustomerId: string) => {
-    console.log('✅ Cliente creado con ID:', newCustomerId);
-    // El formulario se cerrará automáticamente
-    // La página se refrescará y mostrará el cliente registrado
-    window.location.reload();
-  };
-
-  // Extraer código de país y número del teléfono completo
-  const getPhoneComponents = () => {
-    if (!phone) return { countryCode: '+57', phoneNumber: '' };
-    
-    const countryCode = getCountryCodeFromPhone(phone);
-    const phoneNumber = countryCode ? phone.replace(countryCode, '') : phone;
-    
-    return {
-      countryCode: countryCode || '+57',
-      phoneNumber: phoneNumber
-    };
-  };
-
   return (
-    <>
-      <Card className="h-full flex flex-col">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CustomerAvatar 
-                customerName={displayName}
-                profileImageUrl={profileImageUrl}
-                size="md"
-              />
-              <div>
-                <CardTitle className="text-lg">{displayName}</CardTitle>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>{phone}</span>
-                  <Badge variant={isRegistered ? "default" : "secondary"} className="text-xs">
-                    {isRegistered ? (
-                      <>
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Registrado
-                      </>
-                    ) : (
-                      <>
-                        <UserX className="h-3 w-3 mr-1" />
-                        No registrado
-                      </>
-                    )}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+    <Card className="h-full flex flex-col">
+      {/* Header con información del cliente */}
+      <CardHeader className="flex-shrink-0 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CustomerAvatar 
+              customerName={displayName}
+              profileImageUrl={profileImageUrl}
+              customerPhone={phone}
+              size="md"
+              showStatusIndicator={false}
+            />
             
-            <div className="flex gap-2">
-              {/* Botón de información del cliente solo si está registrado */}
-              {isRegistered && customerId && (
-                <CustomerInfoButton
-                  customerId={customerId}
-                  customerName={displayName}
-                  customerPhone={phone}
-                />
-              )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-semibold">{displayName}</h3>
+                <Badge variant={isRegistered ? "default" : "secondary"} className="text-xs">
+                  {isRegistered ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
+                </Badge>
+                
+                {/* Indicador de estado de paquetes en el header */}
+                {packageIndicator && (
+                  <div className="flex items-center gap-2">
+                    <PackageStatusIndicator 
+                      packageIndicator={packageIndicator}
+                      size="md"
+                    />
+                    <span className="text-xs text-gray-500">
+                      {packageIndicator.label}
+                    </span>
+                  </div>
+                )}
+              </div>
               
-              {!isRegistered && (
-                <Button
-                  onClick={handleCreateCustomer}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Crear Cliente
-                </Button>
-              )}
-              
-              <Button
-                onClick={handleInitiateChat}
-                disabled={isSending}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {isSending ? 'Enviando...' : 'Iniciar Chat'}
-              </Button>
+              <p className="text-sm text-gray-600">{phone}</p>
             </div>
           </div>
-        </CardHeader>
+          
+          {customerId && (
+            <CustomerInfoButton 
+              customerId={customerId}
+              customerName={displayName}
+            />
+          )}
+        </div>
+      </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col min-h-0 p-4">
-          {/* Área de mensajes */}
-          <div 
-            className="flex-1 overflow-y-auto mb-4 space-y-4 scroll-smooth"
-            onScroll={(e) => {
-              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-              const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-              setAutoScroll(isNearBottom);
-            }}
-          >
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-center">No hay mensajes aún</p>
-                <p className="text-sm text-center mt-2">
-                  Los mensajes aparecerán aquí cuando {displayName} escriba
-                </p>
-              </div>
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    customerName={displayName}
-                    profileImageUrl={profileImageUrl}
-                    onSendMessage={onSendMessage}
-                    customerPhone={phone}
-                    customerId={customerId}
-                  />
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
+      {/* Área de mensajes */}
+      <CardContent className="flex-1 p-0 flex flex-col min-h-0">
+        <ScrollArea className="flex-1 px-4">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold mb-2">No hay mensajes</h3>
+              <p className="text-gray-500">
+                Esta es una nueva conversación
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  customerName={customerName}
+                  profileImageUrl={profileImageUrl}
+                  onSendMessage={onSendMessage}
+                  customerPhone={phone}
+                  customerId={customerId}
+                />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
 
-          <ChatInput 
-            onSendMessage={onSendMessage} 
+        {/* Input de chat */}
+        <div className="flex-shrink-0 p-4 border-t">
+          <ChatInput
+            onSendMessage={onSendMessage}
             isLoading={isLoading}
-            placeholder={`Escribir mensaje a ${displayName}...`}
+            placeholder={`Escribe un mensaje a ${displayName}...`}
           />
-        </CardContent>
-      </Card>
-
-      <CustomerFormDialog
-        open={customerFormOpen}
-        onOpenChange={setCustomerFormOpen}
-        onSuccess={handleCustomerCreated}
-        initialPhone={getPhoneComponents()}
-      />
-    </>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,27 +1,30 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
+import { PackageStatusIndicator } from './components/PackageStatusIndicator';
+import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
 
 interface CustomerAvatarProps {
-  name?: string;
-  customerName?: string; // Agregar compatibilidad con ambos nombres
-  profileImageUrl?: string;
+  customerName: string;
+  profileImageUrl?: string | null;
+  customerPhone?: string;
   size?: 'sm' | 'md' | 'lg';
+  showStatusIndicator?: boolean;
 }
 
 export function CustomerAvatar({ 
-  name, 
   customerName, 
   profileImageUrl, 
-  size = 'md' 
+  customerPhone,
+  size = 'md',
+  showStatusIndicator = true
 }: CustomerAvatarProps) {
-  // Usar customerName si está disponible, si no usar name
-  const displayName = customerName || name || 'Cliente';
-
+  const { data: packageIndicator } = useCustomerPackageStatus(customerPhone || '');
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(word => word.charAt(0))
+      .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -33,18 +36,34 @@ export function CustomerAvatar({
     lg: 'h-12 w-12'
   };
 
+  const iconSizes = {
+    sm: 16,
+    md: 20,
+    lg: 24
+  };
+
   return (
-    <Avatar className={sizeClasses[size]}>
-      {profileImageUrl && (
-        <AvatarImage 
-          src={profileImageUrl} 
-          alt={displayName}
-          className="object-cover"
-        />
+    <div className="relative">
+      <Avatar className={sizeClasses[size]}>
+        <AvatarImage src={profileImageUrl || undefined} alt={customerName} />
+        <AvatarFallback className="bg-gray-100 text-gray-600">
+          {customerName ? (
+            getInitials(customerName)
+          ) : (
+            <User size={iconSizes[size]} />
+          )}
+        </AvatarFallback>
+      </Avatar>
+      
+      {/* Indicador de estado de paquetes */}
+      {showStatusIndicator && packageIndicator && (
+        <div className="absolute -bottom-1 -right-1">
+          <PackageStatusIndicator 
+            packageIndicator={packageIndicator}
+            size={size === 'lg' ? 'md' : 'sm'}
+          />
+        </div>
       )}
-      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-        {displayName ? getInitials(displayName) : <User className="h-4 w-4" />}
-      </AvatarFallback>
-    </Avatar>
+    </div>
   );
 }

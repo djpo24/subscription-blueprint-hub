@@ -23,6 +23,10 @@ interface PaymentEntryProps {
 export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: PaymentEntryProps) {
   const { data: paymentMethods = [] } = usePaymentMethods();
 
+  console.log('💳 [PaymentEntry] Payment data:', payment);
+  console.log('💳 [PaymentEntry] Available methods:', paymentMethods);
+  console.log('💳 [PaymentEntry] Current methodId:', payment.methodId);
+
   return (
     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
       {/* Primera fila: Divisa y Método de pago */}
@@ -31,7 +35,10 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
           <label className="text-xs font-medium text-gray-700 mb-1 block">Divisa</label>
           <Select 
             value={payment.currency} 
-            onValueChange={(value) => onUpdate(index, 'currency', value)}
+            onValueChange={(value) => {
+              console.log('💱 [PaymentEntry] Currency changed to:', value);
+              onUpdate(index, 'currency', value);
+            }}
           >
             <SelectTrigger className="h-10 text-sm">
               <SelectValue placeholder="Divisa" />
@@ -47,10 +54,13 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
           <label className="text-xs font-medium text-gray-700 mb-1 block">Método</label>
           <Select 
             value={payment.methodId} 
-            onValueChange={(value) => onUpdate(index, 'methodId', value)}
+            onValueChange={(value) => {
+              console.log('🔧 [PaymentEntry] Method changed to:', value);
+              onUpdate(index, 'methodId', value);
+            }}
           >
             <SelectTrigger className="h-10 text-sm">
-              <SelectValue placeholder="Método" />
+              <SelectValue placeholder="Seleccionar método" />
             </SelectTrigger>
             <SelectContent className="z-50 bg-white border shadow-lg">
               {paymentMethods.map((method) => (
@@ -71,7 +81,10 @@ export function PaymentEntry({ payment, index, onUpdate, onRemove, canRemove }: 
             type="number"
             inputMode="decimal"
             value={payment.amount}
-            onChange={(e) => onUpdate(index, 'amount', e.target.value)}
+            onChange={(e) => {
+              console.log('💰 [PaymentEntry] Amount changed to:', e.target.value);
+              onUpdate(index, 'amount', e.target.value);
+            }}
             placeholder="0.00"
             className="flex-1 h-14 text-xl font-semibold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             style={{ fontSize: '20px' }}

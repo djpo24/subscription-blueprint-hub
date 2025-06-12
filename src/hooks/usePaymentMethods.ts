@@ -12,12 +12,12 @@ export function usePaymentMethods() {
   return useQuery({
     queryKey: ['payment-methods'],
     queryFn: async (): Promise<PaymentMethod[]> => {
-      // Since payment_methods table doesn't exist, return hardcoded payment methods
+      // Métodos de pago que coinciden con los IDs usados en el sistema
       return [
-        { id: '1', name: 'Efectivo COP', currency: 'COP', symbol: '$' },
-        { id: '2', name: 'Efectivo AWG', currency: 'AWG', symbol: 'ƒ' },
-        { id: '3', name: 'Transferencia COP', currency: 'COP', symbol: '$' },
-        { id: '4', name: 'Transferencia AWG', currency: 'AWG', symbol: 'ƒ' }
+        { id: 'efectivo', name: 'Efectivo', currency: 'MULTI', symbol: '$' },
+        { id: 'transferencia', name: 'Transferencia', currency: 'MULTI', symbol: '$' },
+        { id: 'tarjeta', name: 'Tarjeta', currency: 'MULTI', symbol: '$' },
+        { id: 'otro', name: 'Otro', currency: 'MULTI', symbol: '$' }
       ];
     }
   });

@@ -315,6 +315,16 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Prom
   }
 }
 
+async function checkAutoResponseSettings() {
+  // Check if auto responses are enabled (localStorage values)
+  // Since we're in an edge function, we'll assume auto-responses are enabled by default
+  // In a real implementation, you might store this in the database
+  return {
+    isAutoResponseEnabled: true, // Default to enabled
+    isManualResponseEnabled: true
+  }
+}
+
 async function handleIncomingMessage(message: any, supabaseClient: any) {
   const { id, from, timestamp, type, text, image, document, audio, video } = message
   
@@ -423,13 +433,60 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
 
   if (insertError) {
     console.error('Error storing incoming message V3:', insertError)
+    return
   } else {
     console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
   }
 
-  // If it's a text message, you could implement auto-responses here
+  // 🤖 AUTO RESPONSE LOGIC - Only for text messages
   if (type === 'text' && text?.body) {
-    console.log('Received text message V3:', text.body)
-    // Add auto-response logic here if needed
+    console.log('📱 Received text message V3:', text.body)
+    
+    // Check if auto-responses are enabled
+    const autoSettings = await checkAutoResponseSettings()
+    
+    if (autoSettings.isAutoResponseEnabled) {
+      console.log('🤖 Auto-response is enabled, generating response...')
+      
+      try {
+        // Generate AI response
+        const { data: aiResponse, error: aiError } = await supabaseClient.functions.invoke('ai-whatsapp-response', {
+          body: {
+            message: text.body,
+            customerPhone: from,
+            customerId: customer?.id || null
+          }
+        })
+
+        if (aiError) {
+          console.error('❌ Error generating AI response V3:', aiError)
+          return
+        }
+
+        if (aiResponse?.response) {
+          console.log('✅ AI response generated V3:', aiResponse.response.substring(0, 100) + '...')
+          
+          // Send the AI response back via WhatsApp
+          const { data: sendData, error: sendError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
+            body: {
+              phone: from,
+              message: aiResponse.response,
+              customerId: customer?.id || null,
+              isAutoResponse: true
+            }
+          })
+
+          if (sendError) {
+            console.error('❌ Error sending auto-response V3:', sendError)
+          } else {
+            console.log('🎉 Auto-response sent successfully V3')
+          }
+        }
+      } catch (autoResponseError) {
+        console.error('❌ Error in auto-response process V3:', autoResponseError)
+      }
+    } else {
+      console.log('🔕 Auto-response is disabled, skipping automatic reply')
+    }
   }
 }

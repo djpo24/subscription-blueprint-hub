@@ -22,6 +22,8 @@ export function ChatView() {
     console.log('🎯 [ChatView] Component mounted and initializing');
   }, []);
 
+  console.log('🎯 [ChatView] Component is rendering - START');
+
   // Hooks de datos del chat
   const { chatList, conversationsByPhone, isLoading, refetch } = useChatData();
   const { handleSendMessage, isManualSending } = useChatMessages();
@@ -115,28 +117,34 @@ export function ChatView() {
     );
   }
 
+  console.log('🎯 [ChatView] About to render main content');
+
   const formattedChatList = formatChatList(chatList || []);
 
   // Header global con el control avanzado del bot y indicador de auto-respuesta
-  const ChatHeader = () => (
-    <Card className="mb-4">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Sistema de Chat WhatsApp
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            <AutoResponseIndicator />
-            <AdvancedBotToggleButton />
+  const ChatHeader = () => {
+    console.log('🎯 [ChatView] Rendering ChatHeader');
+    return (
+      <Card className="mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Sistema de Chat WhatsApp
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <AutoResponseIndicator />
+              <AdvancedBotToggleButton />
+            </div>
           </div>
-        </div>
-      </CardHeader>
-    </Card>
-  );
+        </CardHeader>
+      </Card>
+    );
+  };
 
   // Vista móvil - mostrar solo lista o solo conversación
   if (isMobile) {
+    console.log('📱 [ChatView] Rendering mobile view');
     // Si hay una conversación seleccionada, mostrar solo la conversación
     if (selectedPhone && conversationsByPhone[selectedPhone]) {
       const messages = convertToChatMessages(conversationsByPhone[selectedPhone].messages);
@@ -207,6 +215,7 @@ export function ChatView() {
   }
 
   // Vista desktop - mantener el layout actual de dos columnas
+  console.log('🖥️ [ChatView] Rendering desktop view');
   return (
     <div className="h-[calc(100vh-12rem)]">
       <ChatHeader />

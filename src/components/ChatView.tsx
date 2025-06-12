@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -14,35 +15,59 @@ import type { ChatMessage } from '@/types/chatMessage';
 
 export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
-  const { chatList, conversationsByPhone, isLoading } = useChatData();
-  const { handleSendMessage, isManualSending } = useChatMessages();
   const isMobile = useIsMobile();
   
-  // Asegurar que el sistema de auto-respuesta esté activo
+  // Debug logging para verificar que el componente se está renderizando
+  useEffect(() => {
+    console.log('🎯 [ChatView] Component mounted and initializing');
+  }, []);
+
+  // Hooks de datos del chat
+  const { chatList, conversationsByPhone, isLoading, refetch } = useChatData();
+  const { handleSendMessage, isManualSending } = useChatMessages();
+  
+  // Sistema de auto-respuesta
   useAutoResponseDetection();
+
+  // Debug logging para el estado de carga
+  useEffect(() => {
+    console.log('🔍 [ChatView] Loading state:', isLoading);
+    console.log('🔍 [ChatView] Chat list length:', chatList?.length || 0);
+  }, [isLoading, chatList]);
 
   // Marcar como visitado cuando se accede a la vista de chat
   useEffect(() => {
     const now = new Date().toISOString();
     localStorage.setItem('chat-last-visited', now);
-    console.log('Chat visited at:', now);
+    console.log('🔍 [ChatView] Chat visited at:', now);
   }, []);
 
   const handleSendMessageWrapper = async (message: string, image?: File) => {
-    if (!selectedPhone) return;
+    if (!selectedPhone) {
+      console.log('⚠️ [ChatView] No phone selected for sending message');
+      return;
+    }
     
     const selectedConversation = conversationsByPhone[selectedPhone];
-    if (!selectedConversation) return;
+    if (!selectedConversation) {
+      console.log('⚠️ [ChatView] No conversation found for phone:', selectedPhone);
+      return;
+    }
 
+    console.log('📤 [ChatView] Sending message to:', selectedPhone);
     await handleSendMessage(
       selectedPhone,
       selectedConversation.customerId,
       message,
       image
     );
+    
+    // Refrescar datos después de enviar
+    refetch();
   };
 
   const handleBackToList = () => {
+    console.log('⬅️ [ChatView] Returning to chat list');
     setSelectedPhone(null);
   };
 
@@ -59,7 +84,7 @@ export function ChatView() {
         is_from_customer: msg.is_from_customer !== false,
         media_url: msg.media_url
       }))
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()); // Sort chronologically for display
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   };
 
   // Convert chatList to proper ChatItem format
@@ -75,7 +100,14 @@ export function ChatView() {
     }));
   };
 
+  // Estado de error
+  if (isLoading === false && (!chatList || chatList.length === 0)) {
+    console.log('📭 [ChatView] No chat data available');
+  }
+
+  // Estado de carga
   if (isLoading) {
+    console.log('⏳ [ChatView] Loading chat data...');
     return (
       <div className="flex justify-center items-center py-12">
         <div className="text-gray-500">Cargando mensajes del chat...</div>
@@ -83,7 +115,7 @@ export function ChatView() {
     );
   }
 
-  const formattedChatList = formatChatList(chatList);
+  const formattedChatList = formatChatList(chatList || []);
 
   // Header global con el control avanzado del bot y indicador de auto-respuesta
   const ChatHeader = () => (

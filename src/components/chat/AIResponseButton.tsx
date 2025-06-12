@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Copy, Send } from 'lucide-react';
+import { Sparkles, Copy, Send, AlertTriangle } from 'lucide-react';
 import { useAIWhatsAppResponse } from '@/hooks/useAIWhatsAppResponse';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +19,7 @@ export function AIResponseButton({
   onSendMessage
 }: AIResponseButtonProps) {
   const [aiResponse, setAiResponse] = useState<string>('');
+  const [isFromFallback, setIsFromFallback] = useState<boolean>(false);
   const { generateAIResponse, isGenerating } = useAIWhatsAppResponse();
   const { toast } = useToast();
 
@@ -31,13 +32,21 @@ export function AIResponseButton({
       });
       
       setAiResponse(result.response);
+      setIsFromFallback(result.isFromFallback || false);
       
-      toast({
-        title: "🤖 Respuesta generada",
-        description: result.hasPackageInfo 
-          ? "Respuesta generada con información de paquetes" 
-          : "Respuesta generada (sin paquetes específicos)",
-      });
+      if (result.isFromFallback) {
+        toast({
+          title: "⚠️ Respuesta de emergencia",
+          description: "Sistema ocupado - se generó respuesta de fallback",
+        });
+      } else {
+        toast({
+          title: "🤖 Respuesta generada",
+          description: result.hasPackageInfo 
+            ? "Respuesta generada con información de paquetes" 
+            : "Respuesta generada (sin paquetes específicos)",
+        });
+      }
     } catch (error) {
       console.error('Error generating AI response:', error);
     }
@@ -54,9 +63,10 @@ export function AIResponseButton({
   const handleSendResponse = () => {
     onSendMessage(aiResponse);
     setAiResponse('');
+    setIsFromFallback(false);
     toast({
       title: "Enviado",
-      description: "Respuesta automática enviada",
+      description: isFromFallback ? "Respuesta de emergencia enviada" : "Respuesta automática enviada",
     });
   };
 
@@ -74,9 +84,25 @@ export function AIResponseButton({
       </Button>
 
       {aiResponse && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-3">
-          <div className="text-sm text-purple-800 font-medium">
-            🤖 Respuesta sugerida por IA:
+        <div className={`border rounded-lg p-3 space-y-3 ${
+          isFromFallback 
+            ? 'bg-amber-50 border-amber-200' 
+            : 'bg-purple-50 border-purple-200'
+        }`}>
+          <div className={`text-sm font-medium flex items-center gap-2 ${
+            isFromFallback ? 'text-amber-800' : 'text-purple-800'
+          }`}>
+            {isFromFallback ? (
+              <>
+                <AlertTriangle className="h-4 w-4" />
+                ⚠️ Respuesta de emergencia (Sistema ocupado):
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                🤖 Respuesta sugerida por IA:
+              </>
+            )}
           </div>
           <div className="text-sm text-gray-700 bg-white rounded p-2 border">
             {aiResponse}
@@ -94,7 +120,11 @@ export function AIResponseButton({
             <Button
               onClick={handleSendResponse}
               size="sm"
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              className={`flex-1 text-white ${
+                isFromFallback 
+                  ? 'bg-amber-600 hover:bg-amber-700' 
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
             >
               <Send className="h-3 w-3 mr-1" />
               Enviar

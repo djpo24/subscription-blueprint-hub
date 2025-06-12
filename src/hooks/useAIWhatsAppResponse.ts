@@ -12,6 +12,7 @@ interface AIResponseRequest {
 interface AIResponseResult {
   response: string;
   hasPackageInfo: boolean;
+  isFromFallback?: boolean;
 }
 
 export function useAIWhatsAppResponse() {
@@ -36,20 +37,36 @@ export function useAIWhatsAppResponse() {
 
       if (data.error) {
         console.error('❌ AI response function error:', data.error);
-        throw new Error(data.error);
+        
+        // Check if it's a rate limit error and provide user-friendly message
+        if (data.error.includes('RATE_LIMIT') || data.error.includes('Too Many Requests')) {
+          toast({
+            title: "Sistema ocupado",
+            description: "El sistema automático está experimentando alta demanda. La respuesta de fallback se ha generado.",
+            variant: "default"
+          });
+        }
+        
+        // Return the fallback response instead of throwing
+        return {
+          response: data.response || "Un agente te contactará pronto para ayudarte.",
+          hasPackageInfo: data.hasPackageInfo || false,
+          isFromFallback: true
+        };
       }
 
       console.log('✅ AI response generated:', data.response);
       return {
         response: data.response,
-        hasPackageInfo: data.hasPackageInfo || false
+        hasPackageInfo: data.hasPackageInfo || false,
+        isFromFallback: false
       };
     },
     onError: (error: any) => {
       console.error('❌ Error in AI response generation:', error);
       toast({
         title: "Error en respuesta automática",
-        description: error.message,
+        description: "Se ha generado una respuesta de fallback. Un agente te contactará pronto.",
         variant: "destructive"
       });
     }

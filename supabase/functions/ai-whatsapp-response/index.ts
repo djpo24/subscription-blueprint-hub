@@ -8,6 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to wait
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -135,32 +138,101 @@ INSTRUCCIONES:
 
 TONO: Amigable, profesional, servicial`;
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        max_tokens: 300,
-        temperature: 0.7,
-      }),
-    });
+    // Function to call OpenAI with retry logic
+    const callOpenAI = async (retryCount = 0): Promise<string> => {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: message }
+            ],
+            max_tokens: 300,
+            temperature: 0.7,
+          }),
+        });
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error(`OpenAI API error (${response.status}):`, errorData);
+          
+          // Handle rate limiting with exponential backoff
+          if (response.status === 429 && retryCount < 3) {
+            const waitTime = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            console.log(`Rate limited, retrying in ${waitTime}ms (attempt ${retryCount + 1}/3)`);
+            await delay(waitTime);
+            return callOpenAI(retryCount + 1);
+          }
+          
+          // Handle different error types
+          if (response.status === 429) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+          } else if (response.status === 401) {
+            throw new Error('INVALID_API_KEY');
+          } else if (response.status >= 500) {
+            throw new Error('OPENAI_SERVER_ERROR');
+          } else {
+            throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+          }
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content;
+        
+      } catch (error) {
+        if (retryCount < 2 && !error.message.includes('RATE_LIMIT_EXCEEDED')) {
+          console.log(`Retrying OpenAI call due to error: ${error.message} (attempt ${retryCount + 1}/3)`);
+          await delay(1000);
+          return callOpenAI(retryCount + 1);
+        }
+        throw error;
+      }
+    };
+
+    // Try to get AI response
+    let aiResponse: string;
+    try {
+      aiResponse = await callOpenAI();
+      console.log('✅ AI Response generated successfully');
+    } catch (error) {
+      console.error('❌ OpenAI Error:', error.message);
+      
+      // Provide specific fallback responses based on error type
+      if (error.message.includes('RATE_LIMIT_EXCEEDED')) {
+        aiResponse = `Hola! Gracias por contactarnos. En este momento nuestro sistema automático está experimentando alta demanda. Un agente de Ojitos Express te contactará pronto para ayudarte con tu consulta. 
+
+Si tienes el número de tracking de tu paquete, puedes compartirlo para que podamos revisar el estado cuando nuestro agente esté disponible. 
+
+¡Gracias por tu paciencia! 🙏`;
+      } else if (error.message.includes('INVALID_API_KEY')) {
+        aiResponse = `Hola! Gracias por contactarnos. Nuestro sistema automático necesita configuración. Un agente de Ojitos Express te contactará pronto para ayudarte. 
+
+¿En qué podemos ayudarte hoy? 😊`;
+      } else {
+        // Generic fallback with package info if available
+        if (packageInfo) {
+          aiResponse = `Hola! Gracias por contactarnos. Veo que tienes los siguientes paquetes:
+
+${packageInfo}
+
+Un agente de Ojitos Express te contactará pronto para ayudarte con cualquier consulta adicional. 
+
+¿Hay algo específico sobre alguno de estos paquetes que te gustaría saber? 📦`;
+        } else {
+          aiResponse = `Hola! Gracias por contactarnos. Un agente de Ojitos Express te contactará pronto para ayudarte. 
+
+Si tienes el número de tracking de tu paquete, no dudes en compartirlo para que podamos ayudarte mejor. 
+
+¡Estamos aquí para ayudarte! 😊`;
+        }
+      }
     }
-
-    const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
-
-    console.log('✅ AI Response generated successfully');
 
     return new Response(JSON.stringify({ 
       response: aiResponse,
@@ -171,9 +243,13 @@ TONO: Amigable, profesional, servicial`;
 
   } catch (error) {
     console.error('❌ Error in ai-whatsapp-response:', error);
+    
+    // Enhanced fallback response
+    const fallbackResponse = "Disculpa, estoy teniendo problemas técnicos en este momento. Un agente de Ojitos Express te contactará pronto para ayudarte. 🙏\n\nSi tienes el número de tracking de tu paquete, compártelo y nuestro agente podrá ayudarte cuando esté disponible.";
+    
     return new Response(JSON.stringify({ 
       error: error.message,
-      response: "Disculpa, estoy teniendo problemas técnicos en este momento. Un agente te contactará pronto para ayudarte. 🙏"
+      response: fallbackResponse
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

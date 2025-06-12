@@ -24,7 +24,9 @@ const queryClient = new QueryClient({
 function AppRoutes() {
   const { user, loading } = useAuth();
 
-  console.log('AppRoutes - user:', user, 'loading:', loading);
+  useEffect(() => {
+    console.log('AppRoutes - user:', user, 'loading:', loading);
+  }, [user, loading]);
 
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {
@@ -40,16 +42,19 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Landing page cuando no hay usuario */}
       <Route 
         path="/" 
         element={user ? <Navigate to="/dashboard" replace /> : <Landing />} 
       />
       
+      {/* Página de autenticación */}
       <Route 
         path="/auth" 
         element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
       />
       
+      {/* Dashboard principal protegido */}
       <Route 
         path="/dashboard" 
         element={
@@ -63,6 +68,7 @@ function AppRoutes() {
         } 
       />
       
+      {/* Cualquier otra ruta */}
       <Route 
         path="*" 
         element={

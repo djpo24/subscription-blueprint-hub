@@ -12,6 +12,7 @@ import { CustomersTab } from '@/components/tabs/CustomersTab';
 import { DeveloperTab } from '@/components/tabs/DeveloperTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { MarketingTab } from '@/components/tabs/MarketingTab';
+import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useIndexData } from '@/hooks/useIndexData';
@@ -85,11 +86,6 @@ export default function Index() {
     refetchUnreadMessages();
   }, []);
 
-  // Debug logging para el estado del tab activo
-  useEffect(() => {
-    console.log('🔍 [Index] Active tab changed:', activeTab);
-  }, [activeTab]);
-
   const packages = packagesData?.data || [];
   const isLoading = packagesData?.isLoading || false;
 
@@ -105,103 +101,6 @@ export default function Index() {
   if (showMobileDelivery) {
     return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
   }
-
-  // Función para renderizar el contenido del tab activo
-  const renderActiveTabContent = () => {
-    console.log('🎯 [Index] Rendering content for tab:', activeTab);
-    
-    try {
-      switch (activeTab) {
-        case 'dashboard':
-          console.log('📊 [Index] Rendering Dashboard');
-          return (
-            <DashboardTab
-              packageStats={packageStats}
-              customersCount={customersCount}
-              onNewPackage={handleNewPackage}
-              onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-              onViewNotifications={handleViewNotifications}
-              onMobileDelivery={handleMobileDelivery}
-              packages={packages}
-              filteredPackages={filteredPackages}
-              isLoading={isLoading}
-              onUpdate={handlePackagesUpdate}
-              onTabChange={setActiveTab}
-            />
-          );
-        case 'trips':
-          console.log('🚗 [Index] Rendering Trips');
-          return (
-            <TripsTab 
-              viewingPackagesByDate={viewingPackagesByDate}
-              trips={trips}
-              tripsLoading={tripsLoading}
-              onAddPackage={handleAddPackageToTrip}
-              onCreateTrip={handleCreateTripFromCalendar}
-              onViewPackagesByDate={handleViewPackagesByDate}
-              onBack={handleBackToCalendar}
-            />
-          );
-        case 'dispatches':
-          console.log('📦 [Index] Rendering Dispatches');
-          return <DispatchesTab />;
-        case 'finances':
-          console.log('💰 [Index] Rendering Finances');
-          return <FinancesTab />;
-        case 'chat':
-          console.log('💬 [Index] Rendering ChatTab - STARTING');
-          const chatComponent = <ChatTab />;
-          console.log('💬 [Index] ChatTab component created:', !!chatComponent);
-          return chatComponent;
-        case 'marketing':
-          console.log('📢 [Index] Rendering Marketing');
-          return <MarketingTab />;
-        case 'notifications':
-          console.log('🔔 [Index] Rendering Notifications');
-          return <NotificationsTab />;
-        case 'customers':
-          console.log('👥 [Index] Rendering Customers');
-          return <CustomersTab />;
-        case 'users':
-          console.log('👤 [Index] Rendering Users');
-          return <UsersTab />;
-        case 'settings':
-          console.log('⚙️ [Index] Rendering Settings');
-          return <SettingsTab />;
-        case 'developer':
-          console.log('🔧 [Index] Rendering Developer');
-          return <DeveloperTab />;
-        default:
-          console.log('⚠️ [Index] Unknown tab:', activeTab, 'defaulting to dashboard');
-          return (
-            <DashboardTab
-              packageStats={packageStats}
-              customersCount={customersCount}
-              onNewPackage={handleNewPackage}
-              onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-              onViewNotifications={handleViewNotifications}
-              onMobileDelivery={handleMobileDelivery}
-              packages={packages}
-              filteredPackages={filteredPackages}
-              isLoading={isLoading}
-              onUpdate={handlePackagesUpdate}
-              onTabChange={setActiveTab}
-            />
-          );
-      }
-    } catch (error) {
-      console.error('❌ [Index] Error rendering tab content:', error);
-      return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-red-500">
-            Error al cargar el contenido. Por favor, recarga la página.
-          </div>
-        </div>
-      );
-    }
-  };
-
-  console.log('🏗️ [Index] About to render main layout');
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
@@ -234,10 +133,40 @@ export default function Index() {
               </h2>
             </div>
 
-            {/* Contenido del tab activo */}
-            <div className="w-full">
-              {renderActiveTabContent()}
-            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <DashboardTab
+                packageStats={packageStats}
+                customersCount={customersCount}
+                onNewPackage={handleNewPackage}
+                onNewTrip={() => handleCreateTripFromCalendar(new Date())}
+                onViewNotifications={handleViewNotifications}
+                onMobileDelivery={handleMobileDelivery}
+                packages={packages}
+                filteredPackages={filteredPackages}
+                isLoading={isLoading}
+                onUpdate={handlePackagesUpdate}
+                onTabChange={setActiveTab}
+              />
+              
+              <TripsTab 
+                viewingPackagesByDate={viewingPackagesByDate}
+                trips={trips}
+                tripsLoading={tripsLoading}
+                onAddPackage={handleAddPackageToTrip}
+                onCreateTrip={handleCreateTripFromCalendar}
+                onViewPackagesByDate={handleViewPackagesByDate}
+                onBack={handleBackToCalendar}
+              />
+              <DispatchesTab />
+              <FinancesTab />
+              <ChatTab />
+              <MarketingTab />
+              <NotificationsTab />
+              <CustomersTab />
+              <UsersTab />
+              <SettingsTab />
+              <DeveloperTab />
+            </Tabs>
 
             <DialogsContainer
               packageDialogOpen={packageDialogOpen}

@@ -22,10 +22,9 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
   const [processedCount, setProcessedCount] = useState(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
-  const lastMessageIdRef = useRef<string | null>(null);
 
   const cleanup = useCallback(() => {
-    console.log('🧹 Limpieza del canal de detección...');
+    console.log('🧹 Iniciando limpieza del canal...');
     
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -33,6 +32,7 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
     }
     
     if (channelRef.current) {
+      console.log('🔌 Removiendo canal existente');
       try {
         supabase.removeChannel(channelRef.current);
       } catch (error) {
@@ -43,22 +43,20 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
     
     setIsConnected(false);
     isInitializingRef.current = false;
-    console.log('✅ Canal limpiado correctamente');
+    console.log('✅ Limpieza completada');
   }, []);
 
   const createChannel = useCallback(() => {
-    // Prevenir múltiples inicializaciones
+    // Evitar crear múltiples canales si ya estamos inicializando
     if (isInitializingRef.current || channelRef.current) {
-      console.log('⏳ Canal ya existe o se está inicializando, omitiendo creación...');
+      console.log('⏳ Canal ya existe o está siendo creado, omitiendo...');
       return;
     }
 
-    console.log('🔄 Creando canal único de detección de mensajes...');
+    console.log('🔄 Creando nuevo canal de detección...');
     isInitializingRef.current = true;
     
-    // Usar un nombre de canal más estable
-    const channelName = 'auto-response-messages';
-    
+    const channelName = `messages-detection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -71,84 +69,76 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
         (payload) => {
           const newMessage = payload.new as any;
           
-          console.log('📨 MENSAJE DETECTADO:', {
+          console.log('📨 Nuevo mensaje detectado:', {
             id: newMessage.id,
             phone: newMessage.from_phone,
-            customer: newMessage.customer_id || 'NO_REGISTRADO'
+            customerId: newMessage.customer_id || 'NO_REGISTRADO',
+            content: newMessage.message_content?.substring(0, 50) + '...'
           });
-          
-          // Validaciones estrictas para evitar duplicados
-          if (!newMessage || !newMessage.id || !newMessage.from_phone || !newMessage.message_content) {
-            console.log('⚠️ Mensaje inválido, omitiendo:', newMessage);
-            return;
-          }
-
-          // Verificar si es el mismo mensaje que acabamos de procesar
-          if (lastMessageIdRef.current === newMessage.id) {
-            console.log('⏭️ Mensaje duplicado detectado, omitiendo:', newMessage.id);
-            return;
-          }
 
           // Verificar si ya fue procesado
           if (processedMessages.current.has(newMessage.id)) {
-            console.log('⏭️ Mensaje ya procesado anteriormente:', newMessage.id);
+            console.log('⏭️ Mensaje ya procesado, omitiendo');
             return;
           }
 
-          // Solo procesar mensajes entrantes (no nuestros mensajes salientes)
+          // Validar datos mínimos
+          if (!newMessage.from_phone || !newMessage.message_content) {
+            console.log('⚠️ Mensaje incompleto, omitiendo');
+            return;
+          }
+
+          // Solo procesar mensajes de clientes (no nuestros mensajes salientes)
           if (newMessage.is_from_customer === false) {
-            console.log('📤 Mensaje saliente detectado, omitiendo auto-respuesta');
+            console.log('📤 Mensaje saliente, omitiendo auto-respuesta');
             return;
           }
 
-          // Actualizar referencia del último mensaje
-          lastMessageIdRef.current = newMessage.id;
-
-          console.log('🚀 PROCESANDO MENSAJE ÚNICO PARA AUTO-RESPUESTA:', {
-            id: newMessage.id,
-            phone: newMessage.from_phone,
-            customer: newMessage.customer_id || 'NO_REGISTRADO'
-          });
-
-          // Marcar como procesado ANTES de llamar el callback
+          // Marcar como procesado
           processedMessages.current.add(newMessage.id);
           setProcessedCount(processedMessages.current.size);
 
-          // Activar callback de auto-respuesta con throttling
-          try {
-            onMessageDetected({
-              id: newMessage.id,
-              from_phone: newMessage.from_phone,
-              customer_id: newMessage.customer_id || null,
-              message_content: newMessage.message_content || '',
-              timestamp: newMessage.timestamp || new Date().toISOString()
-            });
-          } catch (error) {
-            console.error('❌ Error en callback de auto-respuesta:', error);
+          // Limpiar cache si es muy grande
+          if (processedMessages.current.size > 50) {
+            const entries = Array.from(processedMessages.current);
+            processedMessages.current.clear();
+            entries.slice(-25).forEach(id => processedMessages.current.add(id));
+            setProcessedCount(processedMessages.current.size);
           }
+
+          // Activar auto-respuesta inmediatamente
+          console.log('🚀 Activando auto-respuesta automática para:', newMessage.from_phone);
+          
+          onMessageDetected({
+            id: newMessage.id,
+            from_phone: newMessage.from_phone,
+            customer_id: newMessage.customer_id || null,
+            message_content: newMessage.message_content || '',
+            timestamp: newMessage.timestamp
+          });
         }
       )
       .subscribe((status) => {
-        console.log('📡 Estado del canal:', status, 'para', channelName);
+        console.log('📡 Estado del canal:', status, 'Canal:', channelName);
         
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Canal único de auto-respuesta CONECTADO');
+          console.log('✅ Canal conectado exitosamente');
           channelRef.current = channel;
           setIsConnected(true);
           isInitializingRef.current = false;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.log('❌ Error en canal de auto-respuesta:', status);
+          console.log('❌ Error en canal:', status);
           setIsConnected(false);
           isInitializingRef.current = false;
           channelRef.current = null;
           
-          // Reconectar con mayor intervalo para evitar loops
+          // Reconectar automáticamente solo si está habilitado
           if (isEnabled && !reconnectTimeoutRef.current) {
-            console.log('🔄 Programando reconexión en 10 segundos...');
             reconnectTimeoutRef.current = setTimeout(() => {
+              console.log('🔄 Reintentando conexión automática...');
               createChannel();
               reconnectTimeoutRef.current = null;
-            }, 10000); // Aumentado a 10 segundos
+            }, 3000);
           }
         }
       });
@@ -156,32 +146,19 @@ export function useSimpleMessageDetection({ isEnabled, onMessageDetected }: Mess
 
   useEffect(() => {
     if (!isEnabled) {
-      console.log('🚫 Auto-respuesta DESHABILITADA - limpiando canal');
+      console.log('🚫 Auto-respuesta deshabilitada, limpiando...');
       cleanup();
       return;
     }
 
-    console.log('🎯 AUTO-RESPUESTA HABILITADA - iniciando sistema único');
-    
-    // Solo crear canal si no existe
+    // Solo crear canal si no existe uno activo y no estamos inicializando
     if (!channelRef.current && !isInitializingRef.current) {
+      console.log('🎯 Iniciando sistema de auto-respuesta...');
       createChannel();
     }
 
     return cleanup;
   }, [isEnabled, createChannel, cleanup]);
-
-  // Limpiar cache periódicamente pero mantener más entradas
-  useEffect(() => {
-    if (processedMessages.current.size > 100) {
-      console.log('🧹 Limpiando cache de mensajes procesados');
-      const entries = Array.from(processedMessages.current);
-      processedMessages.current.clear();
-      // Mantener los últimos 50 en lugar de 25
-      entries.slice(-50).forEach(id => processedMessages.current.add(id));
-      setProcessedCount(processedMessages.current.size);
-    }
-  }, [processedCount]);
 
   return {
     isConnected,

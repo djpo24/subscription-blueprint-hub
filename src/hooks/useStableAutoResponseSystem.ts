@@ -7,41 +7,27 @@ export function useStableAutoResponseSystem() {
   const { isAutoResponseEnabled } = useAdvancedBotToggle();
   const { processAutoResponse } = useReliableAutoResponse();
 
-  console.log('🎛️ Estado del bot de auto-respuesta:', {
-    enabled: isAutoResponseEnabled,
-    mode: 'AUTOMÁTICO_MEJORADO'
-  });
-
-  // Sistema de detección con callback mejorado
+  // Sistema de auto-respuesta automática - responde inmediatamente a mensajes entrantes
   const { isConnected, processedCount } = useSimpleMessageDetection({
     isEnabled: isAutoResponseEnabled,
     onMessageDetected: async (message) => {
-      try {
-        if (!isAutoResponseEnabled) {
-          console.log('🚫 Auto-respuesta deshabilitada durante procesamiento');
-          return;
-        }
-
-        console.log('🚀 MENSAJE DETECTADO - ACTIVANDO AUTO-RESPUESTA');
-        console.log('📞 Teléfono:', message.from_phone);
-        console.log('💬 Contenido:', message.message_content.substring(0, 50) + '...');
-        
+      if (isAutoResponseEnabled) {
+        console.log('🚀 ACTIVANDO AUTO-RESPUESTA AUTOMÁTICA:', message.from_phone);
         // Procesar inmediatamente sin esperar
-        await processAutoResponse(message);
-      } catch (error) {
-        console.error('❌ Error en callback de auto-respuesta:', error);
+        processAutoResponse(message);
       }
     }
   });
 
-  const systemStatus = {
+  console.log('🎛️ Estado del sistema de auto-respuesta automática:', {
+    enabled: isAutoResponseEnabled,
+    connected: isConnected,
+    processed: processedCount,
+    mode: 'AUTOMÁTICO'
+  });
+
+  return {
     isActive: isAutoResponseEnabled && isConnected,
-    processedCount,
-    isEnabled: isAutoResponseEnabled,
-    isConnected
+    processedCount
   };
-
-  console.log('📊 Estado completo del sistema:', systemStatus);
-
-  return systemStatus;
 }

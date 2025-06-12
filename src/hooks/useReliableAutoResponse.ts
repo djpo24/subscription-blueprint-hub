@@ -1,5 +1,5 @@
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,27 +13,18 @@ interface DetectedMessage {
 
 export function useReliableAutoResponse() {
   const { toast } = useToast();
-  const processingRef = useRef(new Set<string>());
 
   const processAutoResponse = useCallback(async (message: DetectedMessage) => {
-    // Verificar si ya se está procesando este mensaje
-    if (processingRef.current.has(message.id)) {
-      console.log('⏭️ Mensaje ya en procesamiento, omitiendo:', message.id);
-      return false;
-    }
-
-    // Marcar como en procesamiento
-    processingRef.current.add(message.id);
-
-    console.log('🤖 ===== INICIANDO AUTO-RESPUESTA ÚNICA =====');
-    console.log('📞 Teléfono:', message.from_phone);
-    console.log('👤 Cliente:', message.customer_id ? 'REGISTRADO' : 'NO REGISTRADO');
-    console.log('💬 Mensaje:', message.message_content.substring(0, 50) + '...');
-    console.log('🆔 ID Mensaje:', message.id);
+    console.log('🤖 PROCESANDO AUTO-RESPUESTA AUTOMÁTICA para:', {
+      id: message.id,
+      phone: message.from_phone,
+      isRegistered: !!message.customer_id,
+      messagePreview: message.message_content.substring(0, 50) + '...'
+    });
 
     try {
-      // Paso 1: Generar respuesta con IA
-      console.log('🧠 Generando respuesta única con IA...');
+      // Paso 1: Generar respuesta IA
+      console.log('🧠 Generando respuesta IA automática...');
       
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-whatsapp-response', {
         body: {
@@ -44,48 +35,39 @@ export function useReliableAutoResponse() {
       });
 
       if (aiError) {
-        console.error('❌ Error en IA:', aiError);
         throw new Error(`Error IA: ${aiError.message}`);
       }
 
       const responseText = aiResponse?.response;
       if (!responseText) {
-        console.error('❌ Respuesta IA vacía');
         throw new Error('Respuesta IA vacía');
       }
 
-      console.log('✅ Respuesta IA generada:', responseText.substring(0, 100) + '...');
+      console.log('✅ Respuesta IA generada automáticamente:', responseText.substring(0, 100) + '...');
 
       // Paso 2: Crear log de notificación
-      console.log('📝 Creando log único de notificación...');
-      
-      const notificationType = message.customer_id ? 'auto_reply' : 'auto_reply_unregistered';
+      console.log('📝 Creando log de auto-respuesta...');
       
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
         .insert({
           package_id: null,
           customer_id: message.customer_id,
-          notification_type: notificationType,
+          notification_type: message.customer_id ? 'auto_reply' : 'auto_reply_unregistered',
           message: responseText,
-          status: 'pending',
-          metadata: {
-            original_message_id: message.id,
-            processed_at: new Date().toISOString()
-          }
+          status: 'pending'
         })
         .select()
         .single();
 
       if (logError) {
-        console.error('❌ Error creando log:', logError);
         throw new Error(`Error log: ${logError.message}`);
       }
 
-      console.log('✅ Log único creado con ID:', notificationData.id);
+      console.log('✅ Log de auto-respuesta creado:', notificationData.id);
 
-      // Paso 3: Enviar por WhatsApp UNA SOLA VEZ
-      console.log('📤 Enviando respuesta única por WhatsApp...');
+      // Paso 3: Enviar por WhatsApp automáticamente
+      console.log('📤 Enviando auto-respuesta por WhatsApp...');
       
       const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
@@ -97,18 +79,14 @@ export function useReliableAutoResponse() {
       });
 
       if (whatsappError) {
-        console.error('❌ Error función WhatsApp:', whatsappError);
         throw new Error(`Error WhatsApp: ${whatsappError.message}`);
       }
 
       if (whatsappResponse?.error) {
-        console.error('❌ Error API WhatsApp:', whatsappResponse.error);
         throw new Error(`API WhatsApp: ${whatsappResponse.error}`);
       }
 
-      console.log('🎉 ===== AUTO-RESPUESTA ÚNICA ENVIADA EXITOSAMENTE =====');
-      console.log('📞 Enviado a:', message.from_phone);
-      console.log('👤 Tipo cliente:', message.customer_id ? 'registrado' : 'no registrado');
+      console.log('🎉 AUTO-RESPUESTA ENVIADA EXITOSAMENTE a:', message.from_phone);
 
       const customerType = message.customer_id ? 'cliente registrado' : 'cliente no registrado';
       toast({
@@ -119,9 +97,46 @@ export function useReliableAutoResponse() {
       return true;
 
     } catch (error: any) {
-      console.error('❌ ===== ERROR EN AUTO-RESPUESTA =====');
-      console.error('Error:', error.message);
-      console.error('Teléfono:', message.from_phone);
+      console.error('❌ Error en auto-respuesta automática:', error);
+
+      // Intentar respuesta de emergencia automática
+      try {
+        console.log('🚨 Enviando respuesta de emergencia automática...');
+        
+        const emergencyResponse = "¡Hola! 😊 Gracias por escribirnos. Un miembro de nuestro equipo te contactará pronto.";
+        
+        const { data: emergencyLog } = await supabase
+          .from('notification_log')
+          .insert({
+            package_id: null,
+            customer_id: message.customer_id,
+            notification_type: 'auto_reply_emergency',
+            message: emergencyResponse,
+            status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (emergencyLog) {
+          await supabase.functions.invoke('send-whatsapp-notification', {
+            body: {
+              notificationId: emergencyLog.id,
+              phone: message.from_phone,
+              message: emergencyResponse,
+              customerId: message.customer_id
+            }
+          });
+
+          toast({
+            title: "🤖 Respuesta de emergencia enviada",
+            description: `Se envió respuesta básica automática debido a error técnico`,
+          });
+
+          return true;
+        }
+      } catch (emergencyError) {
+        console.error('❌ Error en respuesta de emergencia automática:', emergencyError);
+      }
 
       toast({
         title: "❌ Error en auto-respuesta",
@@ -130,11 +145,6 @@ export function useReliableAutoResponse() {
       });
 
       return false;
-    } finally {
-      // Remover del procesamiento después de un delay
-      setTimeout(() => {
-        processingRef.current.delete(message.id);
-      }, 5000);
     }
   }, [toast]);
 

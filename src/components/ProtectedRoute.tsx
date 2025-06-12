@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
-  console.log('ProtectedRoute - user:', user?.email, 'loading:', loading);
+  console.log('ProtectedRoute - user:', user, 'loading:', loading);
 
   // Si está cargando, mostrar spinner
   if (loading) {
@@ -26,13 +26,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Si no hay usuario autenticado, no renderizar nada (App.tsx se encarga de la redirección)
   if (!user) {
     console.log('ProtectedRoute - No user, App should handle redirect');
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Redirigiendo...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Usuario autenticado, mostrar contenido

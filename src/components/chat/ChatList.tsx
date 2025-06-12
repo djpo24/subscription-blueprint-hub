@@ -1,3 +1,4 @@
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
 import { PackageStatusIndicator } from './components/PackageStatusIndicator';
 import { ChatStatusFilters } from './components/ChatStatusFilters';
 import { useChatStatusFilters } from '@/hooks/useChatStatusFilters';
-import { useMemo } from 'react';
+import { useChatPackageStatuses } from '@/hooks/useChatPackageStatuses';
 
 interface ChatItem {
   phone: string;
@@ -30,13 +31,9 @@ interface ChatListProps {
 
 export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) {
   // Obtener los estados de paquetes para todos los chats
-  const chatStatuses = useMemo(() => {
-    const statuses: Record<string, any> = {};
-    // Esta lógica se manejará dentro de cada ChatListItem para mantener la eficiencia
-    return statuses;
-  }, []);
+  const { data: chatStatuses = {}, isLoading: statusesLoading } = useChatPackageStatuses(chats);
 
-  // Usar el hook de filtros (por ahora sin estados hasta que implementemos la lógica completa)
+  // Usar el hook de filtros con los estados reales
   const {
     selectedStatus,
     setSelectedStatus,
@@ -58,7 +55,7 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
     );
   }
 
-  console.log('📋 [ChatList] Rendering chat list with', chats.length, 'conversations, filtered:', filteredChats.length);
+  console.log('📋 [ChatList] Rendering chat list with', chats.length, 'conversations, filtered:', filteredChats.length, 'statuses loading:', statusesLoading);
 
   return (
     <Card className="h-full">
@@ -75,17 +72,17 @@ export function ChatList({ chats, selectedPhone, onChatSelect }: ChatListProps) 
       <CardContent className="p-0 h-[calc(100%-5rem)]">
         <ScrollArea className="h-full">
           <div className="space-y-1 p-2">
-            {/* Por ahora mostramos todos los chats, el filtrado se implementará cuando tengamos los estados */}
-            {chats.map((chat, index) => {
+            {filteredChats.map((chat, index) => {
               const displayName = chat.customerName || 'Cliente';
               const messageTime = chat.lastMessageTime || chat.timestamp || '';
               
-              console.log('📋 [ChatList] Rendering chat item #', index + 1, {
+              console.log('📋 [ChatList] Rendering filtered chat item #', index + 1, {
                 phone: chat.phone,
                 customerName: chat.customerName,
                 displayName,
                 isRegistered: chat.isRegistered,
-                messageTime
+                messageTime,
+                packageStatus: chatStatuses[chat.phone]
               });
               
               return (

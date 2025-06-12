@@ -1,7 +1,8 @@
 
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Calendar, Package, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Phone, Calendar, Package, MapPin, Truck } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -10,12 +11,14 @@ interface CustomersPendingTableRowProps {
   customer: any;
   index: number;
   onRecordPayment: (customer: any) => void;
+  onDeliver?: (customer: any) => void;
 }
 
 export function CustomersPendingTableRow({ 
   customer, 
   index, 
-  onRecordPayment 
+  onRecordPayment,
+  onDeliver 
 }: CustomersPendingTableRowProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
@@ -93,6 +96,21 @@ export function CustomersPendingTableRow({
       <TableCell className="text-right">
         <div className="font-medium text-red-600">
           {formatCurrency(customer.pending_amount || 0, customer.currency as 'COP' | 'AWG' || 'COP')}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {onDeliver && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onDeliver(customer)}
+              className="flex items-center gap-1"
+            >
+              <Truck className="h-3 w-3" />
+              Entregar
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>

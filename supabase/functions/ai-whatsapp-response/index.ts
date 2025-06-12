@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -21,6 +20,12 @@ const formatCurrencyWithSymbol = (amount: number, currency: string = 'COP'): str
     // Default to COP (Colombian Pesos)
     return `$${amount.toLocaleString()} pesos`;
   }
+};
+
+// Helper function to extract first name only
+const getFirstName = (fullName: string): string => {
+  if (!fullName) return '';
+  return fullName.trim().split(' ')[0];
 };
 
 serve(async (req) => {
@@ -48,7 +53,7 @@ serve(async (req) => {
     // Get comprehensive customer information
     let customerInfo: any = {
       customerFound: false,
-      customerName: '',
+      customerFirstName: '',
       packagesCount: 0,
       packages: [],
       pendingDeliveryPackages: [],
@@ -72,7 +77,7 @@ serve(async (req) => {
       if (customers && customers.length > 0) {
         actualCustomerId = customers[0].id;
         customerInfo.customerFound = true;
-        customerInfo.customerName = customers[0].name;
+        customerInfo.customerFirstName = getFirstName(customers[0].name);
       }
     } else {
       // Get customer info by ID
@@ -84,7 +89,7 @@ serve(async (req) => {
 
       if (customer) {
         customerInfo.customerFound = true;
-        customerInfo.customerName = customer.name;
+        customerInfo.customerFirstName = getFirstName(customer.name);
       }
     }
 
@@ -171,7 +176,7 @@ serve(async (req) => {
     let systemPrompt = `Eres SARA, asistente virtual de Ojitos Express. Responde como una persona real, amigable y profesional. NUNCA menciones que eres un bot o IA.
 
 REGLAS DE FORMATO OBLIGATORIAS:
-1. Siempre saluda por el nombre del cliente
+1. Siempre saluda por el PRIMER NOMBRE únicamente del cliente (sin apellido)
 2. Usa emojis moderadamente para ser más amigable 
 3. Estructura la información con SALTOS DE LÍNEA para cada dato preciso
 4. Mantén respuestas CONCISAS y DIRECTAS
@@ -187,7 +192,7 @@ INFORMACIÓN DEL CLIENTE:`;
 
     if (customerInfo.customerFound) {
       systemPrompt += `
-- Cliente: ${customerInfo.customerName}
+- Cliente: ${customerInfo.customerFirstName}
 - Total de encomiendas: ${customerInfo.packagesCount}`;
 
       // Add freight information by currency
@@ -250,7 +255,7 @@ ${formatCurrencyWithSymbol(amount as number, currency)}`;
 EJEMPLOS DE RESPUESTAS BIEN ESTRUCTURADAS:
 
 Para pagos pendientes:
-"¡Hola [Nombre]! 😊
+"¡Hola [PRIMER NOMBRE]! 😊
 
 Claro que sí, puedes pasar cuando gustes.
 
@@ -263,7 +268,7 @@ Por tu encomienda de:
 ¿Necesitas más información? ¡Con gusto te ayudo! 🌟"
 
 Para consultas de estado:
-"¡Hola [Nombre]! 📦
+"¡Hola [PRIMER NOMBRE]! 📦
 
 Tu encomienda está:
 🚚 En tránsito
@@ -272,7 +277,7 @@ Tu encomienda está:
 ¿Hay algo más en lo que pueda ayudarte?"
 
 Para múltiples divisas:
-"¡Hola [Nombre]! 😊
+"¡Hola [PRIMER NOMBRE]! 😊
 
 Tienes pendientes de pago:
 
@@ -289,6 +294,7 @@ INSTRUCCIONES ESPECÍFICAS:
 - Usa la divisa correcta según la encomienda
 - Usa emojis apropiados pero sin exceso
 - Termina siempre ofreciendo ayuda adicional
+- USAR SOLO EL PRIMER NOMBRE EN EL SALUDO
 
 NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
 
@@ -369,7 +375,7 @@ NUNCA digas: "Soy un bot", "sistema automático", "IA", etc.`;
           // Calculate total pending for this currency
           const totalPendingThisCurrency = customerInfo.currencyBreakdown[currency] || firstPackage.pendingAmount;
           
-          aiResponse = `¡Hola ${customerInfo.customerName}! 😊
+          aiResponse = `¡Hola ${customerInfo.customerFirstName}! 😊
 
 Claro que sí, puedes pasar cuando gustes.
 
@@ -381,7 +387,7 @@ Por tu encomienda de:
 
 ¿Necesitas más información? ¡Con gusto te ayudo! 🌟`;
         } else if (customerInfo.pendingDeliveryPackages.length > 0) {
-          aiResponse = `¡Hola ${customerInfo.customerName}! 📦
+          aiResponse = `¡Hola ${customerInfo.customerFirstName}! 📦
 
 Tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.pendingDeliveryPackages.length > 1 ? 's' : ''} en camino:
 
@@ -389,7 +395,7 @@ Tienes ${customerInfo.pendingDeliveryPackages.length} encomienda${customerInfo.p
 
 ¿Hay algo específico que necesites saber? 😊`;
         } else {
-          aiResponse = `¡Hola ${customerInfo.customerName}! 😊
+          aiResponse = `¡Hola ${customerInfo.customerFirstName}! 😊
 
 ¡Excelente! Tienes todas tus encomiendas al día.
 
@@ -438,7 +444,7 @@ Para ayudarte mejor, necesito localizar tu información.
       isFromFallback: wasFallback,
       customerInfo: {
         found: customerInfo.customerFound,
-        name: customerInfo.customerName,
+        name: customerInfo.customerFirstName,
         pendingAmount: customerInfo.totalPending,
         pendingPackages: customerInfo.pendingPaymentPackages.length,
         transitPackages: customerInfo.pendingDeliveryPackages.length

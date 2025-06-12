@@ -201,6 +201,9 @@ export function ChatConversation({
                     message={message}
                     customerName={displayName}
                     profileImageUrl={profileImageUrl}
+                    onSendMessage={onSendMessage}
+                    customerPhone={phone}
+                    customerId={customerId}
                   />
                 ))}
                 <div ref={messagesEndRef} />

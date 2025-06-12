@@ -15,7 +15,9 @@ export function ChatStatusFilters({ selectedStatus, onStatusSelect, chatCounts }
     'pending_pickup_payment',
     'delivered_pending_payment', 
     'pending_delivery',
+    'dispatched',
     'in_transit',
+    'received_processed',
     'delivered'
   ];
 

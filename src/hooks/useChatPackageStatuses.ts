@@ -157,8 +157,12 @@ export function useChatPackageStatuses(chats: ChatItem[]) {
               } else {
                 customerStatuses.push('pending_delivery');
               }
-            } else if (pkg.status === 'transito' || pkg.status === 'in_transit' || pkg.status === 'despachado') {
+            } else if (pkg.status === 'despachado') {
+              customerStatuses.push('dispatched');
+            } else if (pkg.status === 'transito' || pkg.status === 'in_transit') {
               customerStatuses.push('in_transit');
+            } else if (pkg.status === 'recibido' || pkg.status === 'procesado') {
+              customerStatuses.push('received_processed');
             }
           });
 

@@ -43,7 +43,9 @@ export function useChatStatusFilters(chats: ChatItem[], chatStatuses: Record<str
       'pending_pickup_payment': 0,
       'delivered_pending_payment': 0,
       'pending_delivery': 0,
+      'dispatched': 0,
       'in_transit': 0,
+      'received_processed': 0,
       'delivered': 0
     };
 

@@ -140,9 +140,15 @@ export function useCustomerPackageStatus(customerPhone: string) {
               // Pendiente de entrega sin cobro
               statuses.push('pending_delivery');
             }
-          } else if (pkg.status === 'transito' || pkg.status === 'in_transit' || pkg.status === 'despachado') {
+          } else if (pkg.status === 'despachado') {
+            // Despachado
+            statuses.push('dispatched');
+          } else if (pkg.status === 'transito' || pkg.status === 'in_transit') {
             // En tránsito
             statuses.push('in_transit');
+          } else if (pkg.status === 'recibido' || pkg.status === 'procesado') {
+            // Recibido o procesado
+            statuses.push('received_processed');
           }
         }
 

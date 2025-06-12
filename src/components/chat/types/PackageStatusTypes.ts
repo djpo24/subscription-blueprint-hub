@@ -48,6 +48,6 @@ export const PACKAGE_STATUS_CONFIG: Record<PackageStatus, PackageIndicator> = {
     priority: 5, // Menor prioridad
     color: 'bg-green-500',
     label: 'Entregado',
-    description: 'Entregado correctamente'
+    description: 'Entregado y pago total'
   }
 };

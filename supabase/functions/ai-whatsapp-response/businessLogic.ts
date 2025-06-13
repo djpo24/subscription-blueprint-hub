@@ -87,7 +87,7 @@ export function detectPackageStatusInquiry(message: string): boolean {
   return packageInquiryPatterns.some(pattern => pattern.test(message));
 }
 
-// FUNCIÓN ACTUALIZADA: Respuestas directas y concisas para consultas de encomiendas
+// FUNCIÓN ACTUALIZADA: Respuestas directas y concisas con formato para consultas de encomiendas
 export function generatePackageOriginClarificationResponse(
   customerInfo: CustomerInfo, 
   message: string,
@@ -109,16 +109,16 @@ export function generatePackageOriginClarificationResponse(
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
     console.log(`📭 [PackageInquiry] Cliente sin encomiendas registradas`);
     
-    return `¡Hola ${customerName}! 📦
+    return `¡Hola ${customerName}! 👋
 
-No tenemos encomiendas registradas a tu nombre actualmente.
+No tenemos encomiendas registradas a tu nombre actualmente. 📭
 
-Si enviaste una encomienda, compárteme el número de tracking (ejemplo: EO-2025-1234) para verificar el estado.
+Si enviaste una encomienda, compárteme el número de tracking (ejemplo: **EO-2025-1234**) para verificar el estado.
 
 ✈️ **Envíos Ojito**`;
   }
   
-  // CASO 2: Cliente CON encomiendas - Respuesta DIRECTA según la pregunta
+  // CASO 2: Cliente CON encomiendas - Respuesta DIRECTA según la pregunta con formato
   console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) - Respuesta directa`);
   
   // Si pregunta específicamente sobre llegada/estado
@@ -126,9 +126,17 @@ Si enviaste una encomienda, compárteme el número de tracking (ejemplo: EO-2025
     const pkg = customerInfo.pendingDeliveryPackages[0];
     
     if (pkg.status === 'en_destino') {
-      return `Sí ${customerName}, tu encomienda **${pkg.tracking_number}** ya llegó a ${pkg.destination}. Está lista para recoger. 📦✅`;
+      return `¡Hola ${customerName}! 👋
+
+Sí, tu encomienda **${pkg.tracking_number}** ya llegó a ${pkg.destination}. ✅
+
+📦 Está lista para recoger.`;
     } else {
-      return `No ${customerName}, tu encomienda **${pkg.tracking_number}** aún no ha llegado a ${pkg.destination}. Te avisamos cuando llegue. 📦⏳`;
+      return `¡Hola ${customerName}! 👋
+
+No, tu encomienda **${pkg.tracking_number}** aún no ha llegado a ${pkg.destination}. 🛫
+
+Te avisamos cuando llegue. ⏰`;
     }
   }
   
@@ -137,12 +145,24 @@ Si enviaste una encomienda, compárteme el número de tracking (ejemplo: EO-2025
     const pkg = customerInfo.pendingDeliveryPackages[0];
     
     if (pkg.status === 'en_destino') {
-      return `Tu encomienda **${pkg.tracking_number}** está en ${pkg.destination}, lista para recoger. 📦✅`;
+      return `¡Hola ${customerName}! 👋
+
+Tu encomienda **${pkg.tracking_number}** está en ${pkg.destination}. 📍
+
+✅ Lista para recoger.`;
     } else {
-      return `Tu encomienda **${pkg.tracking_number}** está en tránsito hacia ${pkg.destination}. 📦🛫`;
+      return `¡Hola ${customerName}! 👋
+
+Tu encomienda **${pkg.tracking_number}** está en tránsito hacia ${pkg.destination}. 🛫
+
+Te avisamos cuando llegue. ⏰`;
     }
   }
   
   // Fallback para casos no cubiertos
-  return `Tienes ${customerInfo.packagesCount} encomienda(s) en nuestro sistema. ¿Qué información específica necesitas? 📦`;
+  return `¡Hola ${customerName}! 👋
+
+Tienes **${customerInfo.packagesCount}** encomienda(s) en nuestro sistema. 📦
+
+¿Qué información específica necesitas?`;
 }

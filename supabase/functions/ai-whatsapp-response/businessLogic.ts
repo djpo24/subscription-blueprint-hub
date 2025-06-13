@@ -152,6 +152,72 @@ export function detectDestinationResponseAfterTripInquiry(message: string, conve
   };
 }
 
+// FUNCIÓN NUEVA: Analizar contexto de conversación para respuestas inteligentes
+export function analyzeConversationContext(message: string, conversationHistory: any[]): {
+  isContextualResponse: boolean;
+  contextType?: string;
+  suggestedResponse?: string;
+} {
+  const messageLower = message.toLowerCase().trim();
+  
+  // Detectar "quiero enviar la próxima fecha" o variaciones
+  const wantsToSendNextDate = 
+    messageLower.includes('quiero enviar') && 
+    (messageLower.includes('próxima fecha') || messageLower.includes('proxima fecha') ||
+     messageLower.includes('próximo') || messageLower.includes('proximo'));
+
+  if (!wantsToSendNextDate) {
+    return { isContextualResponse: false };
+  }
+
+  // Analizar últimos 5 mensajes para detectar contexto de fechas de viajes
+  const recentMessages = conversationHistory.slice(-5);
+  const botMessages = recentMessages.filter(msg => !msg.isFromCustomer);
+  
+  // Verificar si se habló de fechas de viajes recientemente
+  const hasTripDateContext = botMessages.some(msg => 
+    msg.message.includes('próximos viajes') || 
+    msg.message.includes('fechas de los próximos viajes') ||
+    msg.message.includes('¿Hacia qué destino') ||
+    msg.message.includes('necesito saber el destino')
+  );
+
+  // Detectar destino mencionado en mensajes previos
+  let detectedDestination: string | undefined;
+  const lastTripMessage = botMessages.find(msg => 
+    msg.message.includes('CURAZAO') || msg.message.includes('BARRANQUILLA')
+  );
+  
+  if (lastTripMessage) {
+    if (lastTripMessage.message.includes('CURAZAO')) {
+      detectedDestination = 'Curazao';
+    } else if (lastTripMessage.message.includes('BARRANQUILLA')) {
+      detectedDestination = 'Barranquilla';
+    }
+  }
+
+  if (hasTripDateContext && detectedDestination) {
+    return {
+      isContextualResponse: true,
+      contextType: 'trip_booking_after_dates',
+      suggestedResponse: `Perfecto! Quieres enviar tu encomienda hacia ${detectedDestination}. 
+
+📦 **¿Qué necesitas para enviar?**
+
+• 📍 **Dirección de entrega en ${detectedDestination}**
+• 📝 **Datos del destinatario**
+• ⚖️ **Peso aproximado del paquete**
+• 💰 **Confirmar tarifas de envío**
+
+📞 **Para reservar tu espacio:** Contacta a **Darwin Pedroza** al **+573127271746**
+
+¿Tienes toda la información lista para proceder con el envío? 📋`
+    };
+  }
+
+  return { isContextualResponse: false };
+}
+
 // FUNCIÓN NUEVA: Generar respuesta con fechas después de respuesta de destino
 export function generateTripDatesAfterDestinationResponse(
   customerInfo: CustomerInfo,
@@ -301,7 +367,9 @@ export function detectPackageStatusInquiry(message: string): boolean {
     /fechas.*viaje/i,
     /próximo.*viaje/i,
     /cuando.*sale/i,
-    /cuándo.*sale/i
+    /cuándo.*sale/i,
+    /quiero.*enviar.*próxima/i,
+    /quiero.*enviar.*proximo/i
   ];
 
   // Si es una consulta de viajes, NO es una consulta de encomienda

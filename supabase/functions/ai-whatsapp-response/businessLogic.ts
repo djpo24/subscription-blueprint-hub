@@ -1,4 +1,6 @@
+
 import { CustomerInfo } from './types.ts';
+import { PackageFlowService } from './packageFlowService.ts';
 
 export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isValid: boolean; message?: string } {
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
@@ -80,13 +82,17 @@ export function detectPackageStatusInquiry(message: string): boolean {
     /cuando.*paquete/i,
     /ya.*llegó/i,
     /llegó.*encomienda/i,
-    /llegó.*paquete/i
+    /llegó.*paquete/i,
+    /qué.*hora/i,
+    /a.*hora/i,
+    /cuándo/i,
+    /cuando/i
   ];
 
   return packageInquiryPatterns.some(pattern => pattern.test(message));
 }
 
-// FUNCIÓN ACTUALIZADA: Respuestas directas y concisas con formato para consultas de encomiendas
+// FUNCIÓN MEJORADA: Respuestas directas usando el nuevo servicio de flujo
 export function generatePackageOriginClarificationResponse(
   customerInfo: CustomerInfo, 
   message: string,
@@ -101,9 +107,6 @@ export function generatePackageOriginClarificationResponse(
   
   console.log(`🔍 [PackageInquiry] Analizando consulta DIRECTA de encomienda para ${customerName}: packagesCount=${customerInfo.packagesCount}`);
   
-  // Detectar si pregunta específicamente sobre llegada/estado
-  const isArrivalInquiry = /ya.*llegó|llegó.*encomienda|llegó.*paquete|está.*lista|puedo.*recoger/i.test(message);
-  
   // CASO 1: Cliente NO registrado o SIN encomiendas
   if (!customerInfo.customerFound || customerInfo.packagesCount === 0) {
     console.log(`📭 [PackageInquiry] Cliente sin encomiendas registradas`);
@@ -117,44 +120,36 @@ Si enviaste una encomienda, compárteme el número de tracking (ejemplo: **EO-20
 ✈️ **Envíos Ojito**`;
   }
   
-  // CASO 2: Cliente CON encomiendas - Respuesta DIRECTA según la pregunta con formato estructurado
-  console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) - Respuesta directa estructurada`);
+  // CASO 2: Cliente CON encomiendas - Usar el nuevo servicio de flujo
+  console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) - Usando servicio de flujo`);
   
-  // Si pregunta específicamente sobre llegada/estado
-  if (isArrivalInquiry && customerInfo.pendingDeliveryPackages.length > 0) {
+  if (customerInfo.pendingDeliveryPackages.length > 0) {
     const pkg = customerInfo.pendingDeliveryPackages[0];
     
+    // Intentar generar respuesta contextual usando el servicio de flujo
+    const contextualResponse = PackageFlowService.generateContextualResponse(
+      customerInfo, 
+      message, 
+      pkg
+    );
+    
+    if (contextualResponse) {
+      return contextualResponse;
+    }
+    
+    // Fallback a respuesta básica si el servicio no puede manejar la consulta
     if (pkg.status === 'en_destino') {
       return `¡Hola ${customerName}! 👋
 
 Sí, tu encomienda **${pkg.tracking_number}** ya llegó a ${pkg.destination}. ✅
 
-📦 Está lista para recoger.`;
-    } else {
-      return `¡Hola ${customerName}! 👋
-
-No, tu encomienda **${pkg.tracking_number}** aún no ha llegado a ${pkg.destination}. 🛫
-
-⏰ Te avisamos cuando llegue.`;
-    }
-  }
-  
-  // Para otras consultas generales sobre encomiendas
-  if (customerInfo.pendingDeliveryPackages.length > 0) {
-    const pkg = customerInfo.pendingDeliveryPackages[0];
-    
-    if (pkg.status === 'en_destino') {
-      return `¡Hola ${customerName}! 👋
-
-Tu encomienda **${pkg.tracking_number}** está en ${pkg.destination}. 📍
-
-✅ Lista para recoger.`;
+📦 **Está lista para recoger.**`;
     } else {
       return `¡Hola ${customerName}! 👋
 
 Tu encomienda **${pkg.tracking_number}** está en tránsito hacia ${pkg.destination}. 🛫
 
-⏰ Te avisamos cuando llegue.`;
+⏰ **Te avisamos cuando llegue.**`;
     }
   }
   

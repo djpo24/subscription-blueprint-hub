@@ -82,10 +82,10 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
-  // Header global con el control avanzado del bot
+  // Header simplificado con solo el control del bot
   const ChatHeader = () => (
     <Card className="mb-4">
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />

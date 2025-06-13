@@ -5,18 +5,23 @@ import { DestinationAddressesManager } from '@/components/flight/DestinationAddr
 import { WhatsAppTemplateTest } from '@/components/flight/WhatsAppTemplateTest';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { WebhookDiagnostic } from '@/components/WebhookDiagnostic';
+import { ChatbotConfigPanel } from '@/components/settings/ChatbotConfigPanel';
 import { TabsContent } from '@/components/ui/tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, MapPin, MessageSquare, Bell, Bug } from 'lucide-react';
+import { Settings, Shield, MapPin, MessageSquare, Bell, Bug, Bot } from 'lucide-react';
 
 export function SettingsTab() {
   return (
     <TabsContent value="settings" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             General
+          </TabsTrigger>
+          <TabsTrigger value="chatbot" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            Chatbot
           </TabsTrigger>
           <TabsTrigger value="admin" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -42,6 +47,10 @@ export function SettingsTab() {
 
         <TabsContent value="general" className="space-y-6">
           <NotificationSettings />
+        </TabsContent>
+
+        <TabsContent value="chatbot" className="space-y-6">
+          <ChatbotConfigPanel />
         </TabsContent>
 
         <TabsContent value="admin" className="space-y-6">

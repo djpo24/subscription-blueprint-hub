@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChatList } from './chat/ChatList';
 import { ChatConversation } from './chat/ChatConversation';
-import { AdvancedBotToggleButton } from './chat/AdvancedBotToggleButton';
 import { AutoResponseProvider } from './chat/AutoResponseProvider';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
@@ -82,19 +81,14 @@ export function ChatView() {
 
   const formattedChatList = formatChatList(chatList);
 
-  // Header simplificado con solo el control del bot
+  // Header simplificado sin controles
   const ChatHeader = () => (
     <Card className="mb-4">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Sistema de Chat WhatsApp
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            <AdvancedBotToggleButton />
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
+          Sistema de Chat WhatsApp
+        </CardTitle>
       </CardHeader>
     </Card>
   );
@@ -122,9 +116,6 @@ export function ChatView() {
                 <h2 className="text-lg font-semibold">
                   {conversationsByPhone[selectedPhone].customerName || 'Cliente'}
                 </h2>
-                <div className="ml-auto">
-                  <AdvancedBotToggleButton />
-                </div>
               </div>
               
               {/* Conversación completa */}

@@ -62,37 +62,7 @@ Para coordinar la entrega de tu encomienda a domicilio, te voy a transferir con 
 🏠 **Envíos Ojito** - ¡Tu encomienda hasta la puerta de tu casa!`;
 }
 
-// NUEVA FUNCIÓN: Detectar consultas sobre encomiendas específicas en origen
-export function detectPackageStatusInquiry(message: string): boolean {
-  const packageInquiryPatterns = [
-    /\b(EO-\d{4}-\d+)\b/i, // Formato de tracking number
-    /encomienda.*está/i,
-    /paquete.*está/i,
-    /mi encomienda/i,
-    /mi paquete/i,
-    /estado.*encomienda/i,
-    /estado.*paquete/i,
-    /dónde.*encomienda/i,
-    /dónde.*paquete/i,
-    /cuándo.*encomienda/i,
-    /cuándo.*paquete/i,
-    /donde.*encomienda/i,
-    /donde.*paquete/i,
-    /cuando.*encomienda/i,
-    /cuando.*paquete/i,
-    /ya.*llegó/i,
-    /llegó.*encomienda/i,
-    /llegó.*paquete/i,
-    /qué.*hora/i,
-    /a.*hora/i,
-    /cuándo/i,
-    /cuando/i
-  ];
-
-  return packageInquiryPatterns.some(pattern => pattern.test(message));
-}
-
-// NUEVA FUNCIÓN: Detectar consultas sobre fechas de viajes/envíos
+// NUEVA FUNCIÓN: Detectar consultas sobre fechas de viajes/envíos - PRIORIDAD ALTA
 export function detectTripScheduleInquiry(message: string): { 
   isTripInquiry: boolean; 
   needsDestination: boolean; 
@@ -168,6 +138,52 @@ Escribe el destino y te muestro todas las fechas disponibles. ✈️`;
   
   // Si ya tiene destino, usar el contexto de viajes que se cargará automáticamente
   return null; // Dejar que el prompt principal maneje la respuesta con el contexto de viajes
+}
+
+// NUEVA FUNCIÓN: Detectar consultas sobre encomiendas específicas en origen - PRIORIDAD MENOR
+export function detectPackageStatusInquiry(message: string): boolean {
+  const packageInquiryPatterns = [
+    /\b(EO-\d{4}-\d+)\b/i, // Formato de tracking number
+    /encomienda.*está/i,
+    /paquete.*está/i,
+    /mi encomienda/i,
+    /mi paquete/i,
+    /estado.*encomienda/i,
+    /estado.*paquete/i,
+    /dónde.*encomienda/i,
+    /dónde.*paquete/i,
+    /cuándo.*encomienda/i,
+    /cuándo.*paquete/i,
+    /donde.*encomienda/i,
+    /donde.*paquete/i,
+    /cuando.*encomienda/i,
+    /cuando.*paquete/i,
+    /ya.*llegó/i,
+    /llegó.*encomienda/i,
+    /llegó.*paquete/i,
+    /qué.*hora/i,
+    /a.*hora/i
+  ];
+
+  // EXCLUIR consultas que claramente son sobre viajes/fechas
+  const tripExclusionPatterns = [
+    /cuando.*viajan/i,
+    /cuándo.*viajan/i,
+    /cuando.*vuelan/i,
+    /cuándo.*vuelan/i,
+    /fechas.*viaje/i,
+    /próximo.*viaje/i,
+    /cuando.*sale/i,
+    /cuándo.*sale/i
+  ];
+
+  // Si es una consulta de viajes, NO es una consulta de encomienda
+  const isTripQuery = tripExclusionPatterns.some(pattern => pattern.test(message));
+  if (isTripQuery) {
+    return false;
+  }
+
+  return packageInquiryPatterns.some(pattern => pattern.test(message));
 }
 
 // FUNCIÓN MEJORADA: Respuestas directas usando el nuevo servicio de flujo

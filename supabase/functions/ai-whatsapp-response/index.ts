@@ -6,7 +6,7 @@ import { getCustomerInfo } from './customerService.ts';
 import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts';
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
-import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse } from './businessLogic.ts';
+import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse, generateTripScheduleResponse } from './businessLogic.ts';
 import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse, generateTripDateResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
@@ -65,7 +65,68 @@ serve(async (req) => {
     // Get upcoming trips for all inquiries
     const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
 
-    // 🎯 PRIMERA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
+    // 🎯 PRIMERA PRIORIDAD: Detectar consultas sobre fechas de viajes (ANTES que encomiendas)
+    const tripScheduleResponse = generateTripScheduleResponse(customerInfo, message);
+    if (tripScheduleResponse) {
+      console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando información inteligente sobre viajes');
+      
+      const responseTime = Date.now() - startTime;
+
+      // Store interaction
+      let tripInteractionId: string | null = null;
+      try {
+        const { data: tripInteractionData, error: insertError } = await supabase
+          .from('ai_chat_interactions')
+          .insert({
+            customer_id: actualCustomerId || null,
+            customer_phone: customerPhone,
+            user_message: message,
+            ai_response: tripScheduleResponse,
+            context_info: {
+              customerFound: customerInfo.customerFound,
+              packagesCount: customerInfo.packagesCount,
+              wasEscalated: false,
+              isTripScheduleInquiry: true,
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+            },
+            response_time_ms: responseTime,
+            was_fallback: false
+          })
+          .select()
+          .single();
+
+        if (!insertError && tripInteractionData) {
+          tripInteractionId = tripInteractionData.id;
+          await updateLearningModel(supabase, tripInteractionId, customerPhone, message, tripScheduleResponse);
+        }
+      } catch (storeError) {
+        console.error('❌ Error storing interaction:', storeError);
+      }
+
+      const result: AIResponseResult = {
+        response: tripScheduleResponse,
+        hasPackageInfo: customerInfo.packagesCount > 0,
+        isFromFallback: false,
+        customerInfo: {
+          found: customerInfo.customerFound,
+          name: customerInfo.customerFirstName,
+          pendingAmount: customerInfo.totalPending,
+          pendingPackages: customerInfo.pendingPaymentPackages.length,
+          transitPackages: customerInfo.pendingDeliveryPackages.length
+        },
+        interactionId: tripInteractionId,
+        wasEscalated: false
+      };
+
+      console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Pregunta inteligente sobre destino');
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 🎯 SEGUNDA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
     const packageClarificationResponse = generatePackageOriginClarificationResponse(customerInfo, message);
     if (packageClarificationResponse) {
       console.log('📦 CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Proporcionando información contextual inteligente');
@@ -126,7 +187,7 @@ serve(async (req) => {
       });
     }
 
-    // 🎯 SEGUNDA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
+    // 🎯 TERCERA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
     const integratedResponse = generateIntegratedPackageResponse(customerInfo, message, allUpcomingTrips, destinationAddresses);
     if (integratedResponse) {
       console.log('🎯 CONSULTA MÚLTIPLE INTEGRADA detectada - Proporcionando respuesta completa');
@@ -187,7 +248,7 @@ serve(async (req) => {
       });
     }
 
-    // 📅 TERCERA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
+    // 📅 CUARTA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
     const tripDateResponse = generateTripDateResponse(customerInfo, message, allUpcomingTrips);
     if (tripDateResponse) {
       console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando fechas reales de próximos viajes');
@@ -248,7 +309,7 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 CUARTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
+    // 🚨 QUINTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
       console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
@@ -309,7 +370,7 @@ serve(async (req) => {
       });
     }
 
-    // 📦 QUINTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
+    // 📦 SEXTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
@@ -370,7 +431,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 SEXTA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 SEPTIMA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');

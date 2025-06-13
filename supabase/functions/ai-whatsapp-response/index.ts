@@ -6,7 +6,7 @@ import { getCustomerInfo } from './customerService.ts';
 import { buildSystemPrompt, buildConversationContext } from './promptBuilder.ts';
 import { callOpenAI } from './openaiService.ts';
 import { generateFallbackResponse } from './fallbackResponses.ts';
-import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse, generateTripScheduleResponse } from './businessLogic.ts';
+import { validatePackageDeliveryTiming, generateBusinessIntelligentResponse, generateHomeDeliveryResponse, generatePackageOriginClarificationResponse, generateTripScheduleResponse, detectDestinationResponseAfterTripInquiry, generateTripDatesAfterDestinationResponse } from './businessLogic.ts';
 import { generatePackageShippingResponse, generatePackageDeliveryDeadlineResponse, generateIntegratedPackageResponse, generateTripDateResponse } from './packageInquiryService.ts';
 import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } from './learningSystem.ts';
 import { getActiveFreightRates } from './freightRatesService.ts';
@@ -65,7 +65,74 @@ serve(async (req) => {
     // Get upcoming trips for all inquiries
     const allUpcomingTrips = await getUpcomingTripsByDestination(supabase);
 
-    // 🎯 PRIMERA PRIORIDAD: Detectar consultas sobre fechas de viajes (ANTES que encomiendas)
+    // Get conversation history for context
+    const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
+
+    // 🎯 PRIMERA PRIORIDAD: Detectar respuesta de destino después de consulta de fechas de viajes
+    const destinationResponseCheck = detectDestinationResponseAfterTripInquiry(message, recentMessages);
+    if (destinationResponseCheck.isDestinationResponse && destinationResponseCheck.shouldShowTripDates) {
+      const tripDatesResponse = generateTripDatesAfterDestinationResponse(customerInfo, message, allUpcomingTrips);
+      if (tripDatesResponse) {
+        console.log('📅 RESPUESTA DE DESTINO CON FECHAS detectada - Mostrando fechas de viajes');
+        
+        const responseTime = Date.now() - startTime;
+
+        // Store interaction
+        let destinationTripInteractionId: string | null = null;
+        try {
+          const { data: destinationTripInteractionData, error: insertError } = await supabase
+            .from('ai_chat_interactions')
+            .insert({
+              customer_id: actualCustomerId || null,
+              customer_phone: customerPhone,
+              user_message: message,
+              ai_response: tripDatesResponse,
+              context_info: {
+                customerFound: customerInfo.customerFound,
+                packagesCount: customerInfo.packagesCount,
+                wasEscalated: false,
+                isDestinationResponseWithTripDates: true,
+                verificationEnabled: true,
+                verificationPassed: true
+              },
+              response_time_ms: responseTime,
+              was_fallback: false
+            })
+            .select()
+            .single();
+
+          if (!insertError && destinationTripInteractionData) {
+            destinationTripInteractionId = destinationTripInteractionData.id;
+            await updateLearningModel(supabase, destinationTripInteractionId, customerPhone, message, tripDatesResponse);
+          }
+        } catch (storeError) {
+          console.error('❌ Error storing interaction:', storeError);
+        }
+
+        const result: AIResponseResult = {
+          response: tripDatesResponse,
+          hasPackageInfo: customerInfo.packagesCount > 0,
+          isFromFallback: false,
+          customerInfo: {
+            found: customerInfo.customerFound,
+            name: customerInfo.customerFirstName,
+            pendingAmount: customerInfo.totalPending,
+            pendingPackages: customerInfo.pendingPaymentPackages.length,
+            transitPackages: customerInfo.pendingDeliveryPackages.length
+          },
+          interactionId: destinationTripInteractionId,
+          wasEscalated: false
+        };
+
+        console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Fechas mostradas correctamente');
+        
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // 🎯 SEGUNDA PRIORIDAD: Detectar consultas sobre fechas de viajes (ANTES que encomiendas)
     const tripScheduleResponse = generateTripScheduleResponse(customerInfo, message);
     if (tripScheduleResponse) {
       console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando información inteligente sobre viajes');
@@ -88,7 +155,7 @@ serve(async (req) => {
               wasEscalated: false,
               isTripScheduleInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -126,7 +193,7 @@ serve(async (req) => {
       });
     }
 
-    // 🎯 SEGUNDA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
+    // 🎯 TERCERA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
     const packageClarificationResponse = generatePackageOriginClarificationResponse(customerInfo, message);
     if (packageClarificationResponse) {
       console.log('📦 CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Proporcionando información contextual inteligente');
@@ -149,7 +216,7 @@ serve(async (req) => {
               wasEscalated: false,
               isIntelligentPackageInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -187,7 +254,7 @@ serve(async (req) => {
       });
     }
 
-    // 🎯 TERCERA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
+    // 🎯 CUARTA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
     const integratedResponse = generateIntegratedPackageResponse(customerInfo, message, allUpcomingTrips, destinationAddresses);
     if (integratedResponse) {
       console.log('🎯 CONSULTA MÚLTIPLE INTEGRADA detectada - Proporcionando respuesta completa');
@@ -210,7 +277,7 @@ serve(async (req) => {
               wasEscalated: false,
               isIntegratedMultipleInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -248,7 +315,7 @@ serve(async (req) => {
       });
     }
 
-    // 📅 CUARTA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
+    // 📅 QUINTA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
     const tripDateResponse = generateTripDateResponse(customerInfo, message, allUpcomingTrips);
     if (tripDateResponse) {
       console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando fechas reales de próximos viajes');
@@ -271,7 +338,7 @@ serve(async (req) => {
               wasEscalated: false,
               isTripDateInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -309,7 +376,7 @@ serve(async (req) => {
       });
     }
 
-    // 🚨 QUINTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
+    // 🚨 SEXTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
       console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
@@ -332,7 +399,7 @@ serve(async (req) => {
               wasEscalated: false,
               isPackageDeadlineInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -370,7 +437,7 @@ serve(async (req) => {
       });
     }
 
-    // 📦 SEXTA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
+    // 📦 SEPTIMA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
       console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
@@ -393,7 +460,7 @@ serve(async (req) => {
               wasEscalated: false,
               isPackageShippingInquiry: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -431,7 +498,7 @@ serve(async (req) => {
       });
     }
 
-    // 🏠 SEPTIMA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 OCTAVA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
       console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');
@@ -454,7 +521,7 @@ serve(async (req) => {
               wasEscalated: false,
               isHomeDeliveryRequest: true,
               verificationEnabled: true,
-              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
+              verificationPassed: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -504,7 +571,6 @@ serve(async (req) => {
       tripsContext = formatTripsForPrompt(upcomingTrips, tripQuery.destination);
     }
 
-    const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
     const validationResult = validatePackageDeliveryTiming(customerInfo);
     const learningContext = buildLearningContext(customerInfo);
     const addressesContext = formatAddressesForPrompt(destinationAddresses);

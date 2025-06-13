@@ -1,3 +1,4 @@
+
 export function buildSystemPrompt(customerInfo: any, freightRates: any[], tripsContext: string, addressesContext: string): string {
   const customerName = customerInfo.customerFirstName || 'Cliente';
   const hasPackages = customerInfo.packagesCount > 0;
@@ -30,6 +31,13 @@ ESTRUCTURA VISUAL OBLIGATORIA - NUNCA OLVIDES:
 - Máximo 3-4 líneas por sección
 - Separar diferentes tipos de información con líneas en blanco
 
+INTELIGENCIA CONTEXTUAL PARA CONSULTAS DE VIAJES:
+- Si preguntan "¿cuándo viajan?" o similar SIN mencionar destino, DEBES preguntar el destino
+- Si mencionan destino específico, mostrar SOLO viajes hacia ese destino
+- NUNCA mostrar información contradictoria o rutas incorrectas
+- Usar fechas exactas del sistema, NUNCA inventar fechas
+- Estructura visual clara con emojis para cada destino
+
 CONOCIMIENTO COMPLETO DEL FLUJO DE ENCOMIENDAS:
 
 ESTADOS DE PAQUETES Y SU SIGNIFICADO REAL:
@@ -60,6 +68,14 @@ MANEJO ESPECÍFICO DE CONSULTAS SOBRE LLEGADA DE ENCOMIENDAS:
   * Si VIAJE = "arrived" pero PAQUETE ≠ "en_destino" → "Sí, acaba de llegar, está siendo procesada"
   * Si VIAJE = "in_transit" → "Está viajando, te avisamos cuando llegue"
   * Si VIAJE = "scheduled" → "Aún no ha salido hacia destino"
+
+MANEJO INTELIGENTE DE CONSULTAS DE FECHAS DE VIAJES:
+- Si pregunta "¿cuándo viajan?" SIN destino → Preguntar destino de forma estructurada
+- Si pregunta "¿cuándo viajan a Curazao?" → Mostrar SOLO viajes hacia Curazao
+- Si pregunta "¿cuándo viajan a Barranquilla?" → Mostrar SOLO viajes hacia Barranquilla
+- USAR SIEMPRE las fechas exactas del sistema proporcionadas en el contexto
+- NUNCA inventar fechas o horarios
+- Estructura visual obligatoria con emojis y separación clara
 
 MANEJO DE CONSULTAS DE TIEMPO:
 - Si pregunta "¿a qué hora?" o "¿cuándo?":
@@ -139,6 +155,22 @@ INFORMACIÓN ESPECÍFICA DEL CLIENTE:`;
 
 EJEMPLOS DE RESPUESTAS CORRECTAS CON ESTRUCTURA VISUAL:
 
+✅ CORRECTO - Pregunta: "¿Cuándo viajan?"
+RESPUESTA ESTRUCTURADA: "¡Hola ${customerName}! 👋
+
+Para mostrarte las fechas de los próximos viajes, necesito saber el destino. 🎯
+
+📍 **¿Hacia dónde quieres enviar?**
+
+• 🇨🇼 **Curazao**
+• 🇨🇴 **Barranquilla**
+
+Escribe el destino y te muestro todas las fechas disponibles. ✈️"
+
+✅ CORRECTO - Pregunta: "¿Cuándo viajan a Curazao?"
+ANÁLISIS: Usar SOLO viajes programados hacia Curazao de los datos del sistema
+RESPUESTA: Mostrar fechas exactas con estructura visual
+
 ✅ CORRECTO - Pregunta: "Ya llegó mi encomienda?"
 RESPUESTA ESTRUCTURADA: "¡Hola ${customerName}! 👋
 
@@ -152,13 +184,11 @@ ANÁLISIS: Verificar estado del paquete y viaje
 - Si viaje está "scheduled": Mostrar fecha exacta del viaje
 - NUNCA inventar horarios ficticios
 
-✅ CORRECTO - Pregunta: "Cuándo sale mi encomienda?"
-RESPUESTA: Verificar viaje asignado y dar fecha real del sistema
-
 ❌ INCORRECTO: Dar horarios ficticios como "6:00 PM" sin verificar datos reales
-❌ INCORRECTO: Ignorar el estado del viaje al responder sobre llegadas
+❌ INCORRECTO: Mostrar rutas contradictorias (cliente pide Curazao, mostrar Curazao → Barranquilla)
 ❌ INCORRECTO: Respuestas en párrafo largo sin estructura
 ❌ INCORRECTO: Información sin emojis o formato visual
+❌ INCORRECTO: No preguntar destino cuando es necesario
 
 REGLAS DE ESTRUCTURA OBLIGATORIAS:
 1. SIEMPRE saludo personalizado con emoji 👋
@@ -169,6 +199,7 @@ REGLAS DE ESTRUCTURA OBLIGATORIAS:
 6. NUNCA párrafos largos continuos
 7. SIEMPRE usar saltos de línea para separar conceptos
 8. SIEMPRE verificar datos reales del sistema antes de responder
+9. SIEMPRE preguntar destino si no está especificado en consultas de viajes
 
 RESPUESTA DE CONTACTO DIRECTO (solo cuando NO tengas información específica):
 "¡Hola ${customerName}! 👋
@@ -182,7 +213,8 @@ RECUERDA SIEMPRE:
 - SALUDO PERSONALIZADO SIEMPRE
 - INFORMACIÓN DIVIDIDA, NUNCA EN PÁRRAFOS LARGOS
 - VERIFICAR ESTADOS REALES DE PAQUETES Y VIAJES
-- FECHAS EXACTAS siempre, nunca información genérica o ficticia`;
+- FECHAS EXACTAS siempre, nunca información genérica o ficticia
+- SER INTELIGENTE: Si falta información crítica (como destino), preguntarla`;
 
   return systemPrompt;
 }
@@ -206,7 +238,9 @@ export function buildConversationContext(recentMessages: any[], customerName: st
 - Si el cliente hizo una pregunta específica, da UNA respuesta específica con formato
 - No hagas listas de opciones a menos que el cliente pregunte qué opciones tiene
 - SIEMPRE usa fechas exactas calculadas de los viajes programados
-- Mantén respuestas cortas, precisas y visualmente atractivas`;
+- Mantén respuestas cortas, precisas y visualmente atractivas
+- Si preguntan sobre viajes SIN especificar destino, pregunta el destino primero
+- SER INTELIGENTE y contextual en las respuestas`;
 
   return context;
 }

@@ -92,6 +92,84 @@ export function detectPackageStatusInquiry(message: string): boolean {
   return packageInquiryPatterns.some(pattern => pattern.test(message));
 }
 
+// NUEVA FUNCIÓN: Detectar consultas sobre fechas de viajes/envíos
+export function detectTripScheduleInquiry(message: string): { 
+  isTripInquiry: boolean; 
+  needsDestination: boolean; 
+  hasDestination: boolean;
+  destination?: string;
+} {
+  const messageLower = message.toLowerCase().trim();
+  
+  // Palabras clave que indican consulta de fechas/envíos
+  const tripKeywords = [
+    'cuando viajan', 'cuándo viajan', 'cuando vuelan', 'cuándo vuelan',
+    'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
+    'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
+    'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'viaje', 'viajes',
+    'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen'
+  ];
+  
+  const isTripInquiry = tripKeywords.some(keyword => messageLower.includes(keyword));
+  
+  if (!isTripInquiry) {
+    return { isTripInquiry: false, needsDestination: false, hasDestination: false };
+  }
+  
+  // Detectar destino mencionado
+  let destination: string | undefined;
+  let hasDestination = false;
+  
+  if (messageLower.includes('curacao') || messageLower.includes('curazao')) {
+    destination = 'Curazao';
+    hasDestination = true;
+  } else if (messageLower.includes('barranquilla') || messageLower.includes('colombia')) {
+    destination = 'Barranquilla';
+    hasDestination = true;
+  }
+  
+  // Si es una consulta de viajes pero no tiene destino, necesita preguntar
+  const needsDestination = !hasDestination;
+  
+  return { 
+    isTripInquiry: true, 
+    needsDestination, 
+    hasDestination,
+    destination 
+  };
+}
+
+// NUEVA FUNCIÓN: Generar respuesta inteligente para consultas de viajes
+export function generateTripScheduleResponse(
+  customerInfo: CustomerInfo, 
+  message: string
+): string | null {
+  const tripInquiry = detectTripScheduleInquiry(message);
+  
+  if (!tripInquiry.isTripInquiry) {
+    return null;
+  }
+  
+  const customerName = customerInfo.customerFirstName || 'Cliente';
+  
+  // Si necesita destino, preguntar de forma estructurada
+  if (tripInquiry.needsDestination) {
+    return `¡Hola ${customerName}! 👋
+
+Para mostrarte las fechas de los próximos viajes, necesito saber el destino. 🎯
+
+📍 **¿Hacia dónde quieres enviar?**
+
+• 🇨🇼 **Curazao**
+• 🇨🇴 **Barranquilla**
+
+Escribe el destino y te muestro todas las fechas disponibles. ✈️`;
+  }
+  
+  // Si ya tiene destino, usar el contexto de viajes que se cargará automáticamente
+  return null; // Dejar que el prompt principal maneje la respuesta con el contexto de viajes
+}
+
 // FUNCIÓN MEJORADA: Respuestas directas usando el nuevo servicio de flujo
 export function generatePackageOriginClarificationResponse(
   customerInfo: CustomerInfo, 

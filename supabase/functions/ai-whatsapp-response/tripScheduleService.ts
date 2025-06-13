@@ -102,6 +102,7 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
 - ANTES de responder, analizar si el destino solicitado coincide con el destino de los viajes encontrados
 - VERIFICAR que la ruta mostrada sea coherente con lo solicitado por el cliente
 - NUNCA mostrar rutas contradictorias (ejemplo: cliente pide envío a Curazao, no mostrar "Curazao → Barranquilla")
+- Si el cliente pregunta SIN especificar destino, OBLIGATORIO preguntar destino primero
 
 📝 **FORMATO DE RESPUESTA INTELIGENTE CON EMOJIS:**
 - Si el cliente pregunta por envíos hacia Curazao: mostrar SOLO viajes con destino Curazao 🇨🇼
@@ -109,20 +110,36 @@ export function formatTripsForPrompt(trips: TripSchedule[], requestedDestination
 - SIEMPRE verificar coherencia entre pregunta del cliente y respuesta
 - Usar emojis específicos: 📅 para fechas, ✈️ para vuelos, 🎯 para destinos, ✈️ para origen
 
-💬 **REGLAS DE COMUNICACIÓN:**
+💬 **REGLAS DE COMUNICACIÓN INTELIGENTE:**
+- Si pregunta "¿cuándo viajan?" SIN destino → OBLIGATORIO preguntar destino
 - NO mencionar que no somos agencia de viajes (el cliente ya lo sabe)
 - NO hacer recordatorios innecesarios sobre el tipo de empresa
 - Responder de forma directa y clara con emojis apropiados
 - Mantener coherencia entre la pregunta y la respuesta
 - Usar el branding: "✈️ Envíos Ojito - Conectando Barranquilla y Curazao"
 
-✅ **EJEMPLO CORRECTO:**
+✅ **EJEMPLO CORRECTO - SIN DESTINO:**
+Cliente: "¿Cuándo viajan?"
+Respuesta: "¡Hola! 👋 Para mostrarte las fechas de los próximos viajes, necesito saber el destino. 🎯
+
+📍 **¿Hacia dónde quieres enviar?**
+
+• 🇨🇼 **Curazao**
+• 🇨🇴 **Barranquilla**
+
+Escribe el destino y te muestro todas las fechas disponibles. ✈️"
+
+✅ **EJEMPLO CORRECTO - CON DESTINO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"
-Respuesta: "¡Hola! 👋✈️ El próximo envío hacia Curazao 🇨🇼 es el viernes 13 de junio 📅. ¿Quieres reservar espacio para tu encomienda? 📦"
+Respuesta: "¡Hola! 👋 El próximo envío hacia Curazao 🇨🇼 es el viernes 13 de junio 📅. ¿Quieres reservar espacio para tu encomienda? 📦"
 
 ❌ **EJEMPLO INCORRECTO:**
 Cliente: "¿Cuándo hay envío hacia Curazao?"  
-Respuesta: "Envío hacia Curazao: Ruta Curazao → Barranquilla" (CONTRADICTORIO)`;
+Respuesta: "Envío hacia Curazao: Ruta Curazao → Barranquilla" (CONTRADICTORIO)
+
+❌ **EJEMPLO INCORRECTO:**
+Cliente: "¿Cuándo viajan?"
+Respuesta: Mostrar fechas sin preguntar destino (FALTA INTELIGENCIA)`;
 
   return tripsText;
 }
@@ -132,10 +149,11 @@ export function shouldQueryTrips(message: string): { shouldQuery: boolean; desti
   
   // Palabras clave que indican consulta de fechas/envíos de encomiendas
   const tripKeywords = [
+    'cuando viajan', 'cuándo viajan', 'cuando vuelan', 'cuándo vuelan',
     'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
     'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
     'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'llevar', 'encomienda',
-    'viaje', 'viajes'
+    'viaje', 'viajes', 'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen'
   ];
   
   const hasKeyword = tripKeywords.some(keyword => messageLower.includes(keyword));

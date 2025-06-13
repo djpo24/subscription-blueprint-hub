@@ -1,4 +1,3 @@
-
 import { CustomerInfo } from './types.ts';
 
 export function validatePackageDeliveryTiming(customerInfo: CustomerInfo): { isValid: boolean; message?: string } {
@@ -44,9 +43,9 @@ export function generateHomeDeliveryResponse(customerInfo: CustomerInfo, message
 
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
-  return `¡Hola ${customerName}! 👋🚚
+  return `¡Hola ${customerName}! 👋
 
-**ENTREGA A DOMICILIO COORDINADA**
+**ENTREGA A DOMICILIO COORDINADA** 🚚
 
 Para coordinar la entrega de tu encomienda a domicilio, te voy a transferir con **Josefa**, nuestra coordinadora de entregas.
 
@@ -118,8 +117,8 @@ Si enviaste una encomienda, compárteme el número de tracking (ejemplo: **EO-20
 ✈️ **Envíos Ojito**`;
   }
   
-  // CASO 2: Cliente CON encomiendas - Respuesta DIRECTA según la pregunta con formato
-  console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) - Respuesta directa`);
+  // CASO 2: Cliente CON encomiendas - Respuesta DIRECTA según la pregunta con formato estructurado
+  console.log(`📦 [PackageInquiry] Cliente con ${customerInfo.packagesCount} encomienda(s) - Respuesta directa estructurada`);
   
   // Si pregunta específicamente sobre llegada/estado
   if (isArrivalInquiry && customerInfo.pendingDeliveryPackages.length > 0) {
@@ -136,7 +135,7 @@ Sí, tu encomienda **${pkg.tracking_number}** ya llegó a ${pkg.destination}. �
 
 No, tu encomienda **${pkg.tracking_number}** aún no ha llegado a ${pkg.destination}. 🛫
 
-Te avisamos cuando llegue. ⏰`;
+⏰ Te avisamos cuando llegue.`;
     }
   }
   
@@ -155,7 +154,7 @@ Tu encomienda **${pkg.tracking_number}** está en ${pkg.destination}. 📍
 
 Tu encomienda **${pkg.tracking_number}** está en tránsito hacia ${pkg.destination}. 🛫
 
-Te avisamos cuando llegue. ⏰`;
+⏰ Te avisamos cuando llegue.`;
     }
   }
   

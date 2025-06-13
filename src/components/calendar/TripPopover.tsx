@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Package, ArrowLeft, Plane, Calendar, Trash2 } from 'lucide-react';
+import { Plus, Package, ArrowLeft, Plane, Calendar, Trash2, User } from 'lucide-react';
 import { getStatusColor, getStatusLabel } from '@/utils/calendarUtils';
 import { usePackagesByTrip } from '@/hooks/usePackagesByTrip';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
@@ -18,6 +18,11 @@ interface Trip {
   flight_number: string | null;
   status: string;
   created_at: string;
+  travelers?: {
+    first_name: string;
+    last_name: string;
+    phone: string;
+  } | null;
 }
 
 interface TripPopoverProps {
@@ -142,6 +147,14 @@ export function TripPopover({
                     </span>
                   )}
                 </div>
+                {selectedTrip.travelers && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <User className="h-4 w-4" />
+                    <span className="text-xs">
+                      Viajero: {selectedTrip.travelers.first_name} {selectedTrip.travelers.last_name}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </DialogHeader>
@@ -185,6 +198,15 @@ export function TripPopover({
                     <div className="font-bold text-black text-sm mb-2">
                       {trip.origin} → {trip.destination}
                     </div>
+                    
+                    {trip.travelers && (
+                      <div className="text-gray-600 text-xs mb-2 flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span className="font-medium">
+                          Viajero: {trip.travelers.first_name} {trip.travelers.last_name}
+                        </span>
+                      </div>
+                    )}
                     
                     {trip.flight_number && (
                       <div className="text-gray-600 text-xs mb-3 font-medium">
@@ -282,7 +304,10 @@ export function TripPopover({
               {tripToDelete && (
                 <>
                   Estás a punto de eliminar el viaje <strong>{tripToDelete.origin} → {tripToDelete.destination}</strong>
-                  {tripToDelete.flight_number && ` (Vuelo: ${tripToDelete.flight_number})`}.
+                  {tripToDelete.flight_number && ` (Vuelo: ${tripToDelete.flight_number})`}
+                  {tripToDelete.travelers && (
+                    <span> del viajero <strong>{tripToDelete.travelers.first_name} {tripToDelete.travelers.last_name}</strong></span>
+                  )}.
                   <br /><br />
                   Esta acción no se puede deshacer. Solo se pueden eliminar viajes que no tengan encomiendas asociadas.
                 </>

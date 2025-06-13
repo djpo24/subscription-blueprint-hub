@@ -12,6 +12,7 @@ import { buildLearningContext, enhancePromptWithLearning, updateLearningModel } 
 import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
 import { getDestinationAddresses, formatAddressesForPrompt } from './destinationAddressService.ts';
+import { verifyAndImproveResponse } from './responseVerificationService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -27,7 +28,7 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🤖 BOT RESPONDE SIEMPRE - Sistema activado:', { 
+    console.log('🤖 BOT CON VERIFICACIÓN - Sistema activado:', { 
       message: message?.substring(0, 50) + '...', 
       customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
       customerId: customerId || 'not_provided'
@@ -55,7 +56,7 @@ serve(async (req) => {
     console.log('🤖 INFORMACIÓN DEL CLIENTE:', {
       customerFound: customerInfo.customerFound,
       packagesCount: customerInfo.packagesCount,
-      botSiempreResponde: true
+      verificationEnabled: true
     });
 
     // Get destination addresses for shipping inquiries
@@ -86,7 +87,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isIntelligentPackageInquiry: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -146,7 +148,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isIntegratedMultipleInquiry: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -206,7 +209,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isTripDateInquiry: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -266,7 +270,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isPackageDeadlineInquiry: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -326,7 +331,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isPackageShippingInquiry: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -386,7 +392,8 @@ serve(async (req) => {
               packagesCount: customerInfo.packagesCount,
               wasEscalated: false,
               isHomeDeliveryRequest: true,
-              botAlwaysResponds: true
+              verificationEnabled: true,
+              verificationPassed: true // Estas respuestas pre-definidas siempre pasan verificación
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -449,26 +456,49 @@ serve(async (req) => {
     const businessInsight = generateBusinessIntelligentResponse(customerInfo);
     const contextualMessage = businessInsight ? `${message}\n\nContexto específico del cliente: ${businessInsight}` : message;
 
-    let aiResponse: string;
+    let finalResponse: string;
     let wasFallback = false;
+    let wasVerified = false;
+    let verificationResult: any = null;
     let interactionId: string | null = null;
     
     try {
-      console.log('🤖 Generando respuesta con OpenAI...');
-      aiResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
+      console.log('🤖 PASO 1: Generando respuesta inicial con OpenAI...');
+      const initialResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
+      
+      console.log('🔍 PASO 2: Verificando respuesta generada...');
+      verificationResult = await verifyAndImproveResponse(
+        initialResponse,
+        message,
+        customerInfo,
+        openAIApiKey
+      );
+      
+      // Decidir qué respuesta usar
+      if (verificationResult.isApproved) {
+        finalResponse = initialResponse;
+        console.log(`✅ VERIFICACIÓN APROBADA: Confianza ${verificationResult.confidence}% - Usando respuesta original`);
+      } else {
+        finalResponse = verificationResult.improvedResponse || initialResponse;
+        console.log(`🔧 VERIFICACIÓN RECHAZADA: Confianza ${verificationResult.confidence}% - Usando respuesta mejorada`);
+        console.log(`🚨 Problemas encontrados: ${verificationResult.issues.join(', ')}`);
+      }
+      
+      wasVerified = true;
       
       if (!validationResult.isValid) {
-        aiResponse = `${validationResult.message}\n\n${aiResponse}`;
+        finalResponse = `${validationResult.message}\n\n${finalResponse}`;
       }
 
-      console.log('✅ Respuesta de OpenAI generada exitosamente');
+      console.log('✅ Respuesta final lista después de verificación');
       
     } catch (error) {
-      console.error('❌ Error OpenAI - Usando respuesta de emergencia:', error.message);
+      console.error('❌ Error en generación/verificación - Usando respuesta de emergencia:', error.message);
       
       // Si OpenAI falla, usar respuesta de emergencia pero NUNCA escalar
-      aiResponse = generateFallbackResponse(customerInfo);
+      finalResponse = generateFallbackResponse(customerInfo);
       wasFallback = true;
+      wasVerified = false;
       
       console.log('🤖 Respuesta de emergencia generada - BOT SIEMPRE RESPONDE');
     }
@@ -483,12 +513,18 @@ serve(async (req) => {
           customer_id: actualCustomerId || null,
           customer_phone: customerPhone,
           user_message: message,
-          ai_response: aiResponse,
+          ai_response: finalResponse,
           context_info: {
             customerFound: customerInfo.customerFound,
             packagesCount: customerInfo.packagesCount,
             wasEscalated: false, // NUNCA escalado
-            botAlwaysResponds: true,
+            verificationEnabled: true,
+            verificationResult: wasVerified ? {
+              approved: verificationResult?.isApproved,
+              confidence: verificationResult?.confidence,
+              issues: verificationResult?.issues,
+              wasImproved: !verificationResult?.isApproved
+            } : null,
             escalationDisabled: true
           },
           response_time_ms: responseTime,
@@ -499,14 +535,14 @@ serve(async (req) => {
 
       if (!insertError && interactionData) {
         interactionId = interactionData.id;
-        await updateLearningModel(supabase, interactionId, customerPhone, message, aiResponse);
+        await updateLearningModel(supabase, interactionId, customerPhone, message, finalResponse);
       }
     } catch (storeError) {
       console.error('❌ Error storing interaction:', storeError);
     }
 
     const result: AIResponseResult = {
-      response: aiResponse,
+      response: finalResponse,
       hasPackageInfo: customerInfo.packagesCount > 0,
       isFromFallback: wasFallback,
       customerInfo: {
@@ -525,9 +561,11 @@ serve(async (req) => {
       wasEscalated: false // NUNCA escalado
     };
 
-    console.log('🤖 RESPUESTA ENTREGADA - BOT SIEMPRE ACTIVO:', {
+    console.log('🤖 RESPUESTA ENTREGADA CON VERIFICACIÓN:', {
       wasEscalated: false,
-      botAlwaysResponds: true,
+      wasVerified: wasVerified,
+      verificationApproved: verificationResult?.isApproved,
+      verificationConfidence: verificationResult?.confidence,
       responseTime: responseTime + 'ms',
       escalationSystemDisabled: true
     });

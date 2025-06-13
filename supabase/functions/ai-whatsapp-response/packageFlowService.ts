@@ -51,7 +51,7 @@ export class PackageFlowService {
 
     const tripDateObj = new Date(tripDate + 'T00:00:00');
     const now = new Date();
-    const isTrip Passed = tripDateObj < now;
+    const isTripPassed = tripDateObj < now;
 
     // Lógica según estado del paquete y viaje
     switch (packageStatus) {

@@ -32,6 +32,8 @@ interface Package {
   customers?: {
     name: string;
     email: string;
+    phone?: string;
+    id_number?: string;
   };
 }
 
@@ -42,7 +44,7 @@ interface PackagesTableProps {
   onUpdate?: (id: string, updates: any) => void;
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
-  searchTerm?: string; // Nuevo prop para recibir el término de búsqueda del header
+  searchTerm?: string;
 }
 
 export function PackagesTable({ 
@@ -52,7 +54,7 @@ export function PackagesTable({
   onUpdate,
   disableChat = false,
   previewRole,
-  searchTerm = '' // Recibir el término de búsqueda del header
+  searchTerm = ''
 }: PackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -61,11 +63,11 @@ export function PackagesTable({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
 
-  // Usar el término de búsqueda del header directamente
+  // Usar búsqueda global cuando hay término de búsqueda
   const { data: searchResults = [], isLoading: isSearching } = usePackageSearch(searchTerm);
 
   // Determinar qué encomiendas mostrar
-  const displayPackages = searchTerm.trim() ? searchResults : (filteredPackages || []);
+  const displayPackages = searchTerm.trim() ? searchResults : packages;
   const displayIsLoading = searchTerm.trim() ? isSearching : isLoading;
 
   // Mostrar detalles específicos si se encuentra una encomienda específica

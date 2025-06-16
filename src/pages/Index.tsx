@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
@@ -90,15 +89,8 @@ export default function Index() {
   const packages = packagesData?.data || [];
   const isLoading = packagesData?.isLoading || false;
 
-  // Solo aplicar filtro local si NO hay término de búsqueda global
-  const filteredPackages = !searchTerm.trim() ? packages.filter((pkg: any) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      pkg.tracking_number.toLowerCase().includes(searchTermLower) ||
-      pkg.description.toLowerCase().includes(searchTermLower) ||
-      pkg.customers?.name.toLowerCase().includes(searchTermLower)
-    );
-  }) : packages;
+  // Simplificar: siempre pasar los paquetes originales, la búsqueda se maneja en PackagesTable
+  const filteredPackages = packages;
 
   if (showMobileDelivery) {
     return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
@@ -149,7 +141,7 @@ export default function Index() {
                 isLoading={isLoading}
                 onUpdate={handlePackagesUpdate}
                 onTabChange={setActiveTab}
-                searchTerm={searchTerm} // Pasar el término de búsqueda
+                searchTerm={searchTerm}
               />
               
               <TripsTab 

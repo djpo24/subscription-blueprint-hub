@@ -60,7 +60,8 @@ export function useEditPackageFormSubmissionNew({
       finalCustomerId: finalCustomerId,
       formTripId: tripId,
       packageTripId: pkg.trip_id,
-      finalTripId: finalTripId
+      finalTripId: finalTripId,
+      currentStatus: pkg.status
     });
     
     if (!finalCustomerId || !finalTripId) {
@@ -118,10 +119,12 @@ export function useEditPackageFormSubmissionNew({
         finalCurrency: validCurrency,
         finalCustomerId,
         finalTripId,
+        currentStatus: pkg.status,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
       });
 
+      // CRITICAL: Preserve the current status - do not change it during updates
       const updateData = {
         customer_id: finalCustomerId,
         description: finalDescription,
@@ -133,10 +136,12 @@ export function useEditPackageFormSubmissionNew({
         destination: tripData.destination,
         flight_number: tripData.flight_number,
         trip_id: finalTripId,
+        // IMPORTANT: Preserve the current status to prevent unwanted state changes
+        status: pkg.status,
         updated_at: new Date().toISOString()
       };
 
-      console.log('🔥 [useEditPackageFormSubmissionNew] UPDATE DATA:', updateData);
+      console.log('🔥 [useEditPackageFormSubmissionNew] UPDATE DATA WITH STATUS PRESERVATION:', updateData);
 
       const { error } = await supabase
         .from('packages')
@@ -148,21 +153,21 @@ export function useEditPackageFormSubmissionNew({
         throw error;
       }
 
-      console.log('✅ [useEditPackageFormSubmissionNew] PACKAGE UPDATED SUCCESSFULLY WITH CURRENCY:', validCurrency);
+      console.log('✅ [useEditPackageFormSubmissionNew] PACKAGE UPDATED SUCCESSFULLY - STATUS PRESERVED:', pkg.status);
 
-      // Create tracking event
+      // Create tracking event for the update (not a status change)
       await supabase
         .from('tracking_events')
         .insert([{
           package_id: pkg.id,
           event_type: 'updated',
-          description: 'Información de encomienda actualizada',
+          description: 'Información de encomienda actualizada (sin cambio de estado)',
           location: tripData.origin
         }]);
 
       toast({
         title: "Encomienda actualizada",
-        description: `La información ha sido actualizada correctamente con divisa ${validCurrency}`
+        description: `La información ha sido actualizada correctamente. Estado preservado: ${pkg.status}`
       });
 
       onSuccess();

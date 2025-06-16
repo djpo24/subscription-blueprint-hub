@@ -94,10 +94,12 @@ export function useEditPackageFormSubmission({
         currencyOriginal: pkg.currency,
         currencyForm: formData.currency,
         currencyFinal: currencyToSave,
+        currentStatus: pkg.status,
         freight: formData.freight ? parseFloat(formData.freight) : 0,
         amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
       });
 
+      // CRITICAL: Preserve the current status during updates
       const updateData = {
         customer_id: customerId,
         description: finalDescription,
@@ -109,10 +111,12 @@ export function useEditPackageFormSubmission({
         destination: tripData.destination,
         flight_number: tripData.flight_number,
         trip_id: tripId,
+        // IMPORTANT: Preserve the current status to prevent unwanted state changes
+        status: pkg.status,
         updated_at: new Date().toISOString()
       };
 
-      console.log('🔥 [EditPackageFormSubmission] UPDATE DATA:', updateData);
+      console.log('🔥 [EditPackageFormSubmission] UPDATE DATA WITH STATUS PRESERVATION:', updateData);
 
       const { error } = await supabase
         .from('packages')
@@ -124,21 +128,21 @@ export function useEditPackageFormSubmission({
         throw error;
       }
 
-      console.log('✅ [EditPackageFormSubmission] PAQUETE ACTUALIZADO EXITOSAMENTE CON DIVISA:', currencyToSave);
+      console.log('✅ [EditPackageFormSubmission] PAQUETE ACTUALIZADO EXITOSAMENTE - ESTADO PRESERVADO:', pkg.status);
 
-      // Create tracking event
+      // Create tracking event for the update (not a status change)
       await supabase
         .from('tracking_events')
         .insert([{
           package_id: pkg.id,
           event_type: 'updated',
-          description: 'Información de encomienda actualizada',
+          description: 'Información de encomienda actualizada (sin cambio de estado)',
           location: tripData.origin
         }]);
 
       toast({
         title: "Encomienda actualizada",
-        description: `La información ha sido actualizada correctamente con divisa ${currencyToSave}`
+        description: `La información ha sido actualizada correctamente. Estado preservado: ${pkg.status}`
       });
 
       onSuccess();

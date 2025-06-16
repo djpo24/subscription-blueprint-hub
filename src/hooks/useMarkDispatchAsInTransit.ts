@@ -11,7 +11,7 @@ export function useMarkDispatchAsInTransit() {
     mutationFn: async ({ dispatchId }: { dispatchId: string }) => {
       console.log('🚀 [useMarkDispatchAsInTransit] Iniciando proceso para dispatch:', dispatchId);
 
-      // PASO 1: Verificar que el despacho existe y está en estado "pending"
+      // PASO 1: Verificar que el despacho existe y está en estado correcto
       const { data: dispatch, error: dispatchError } = await supabase
         .from('dispatch_relations')
         .select('*')
@@ -23,7 +23,13 @@ export function useMarkDispatchAsInTransit() {
         throw new Error('Despacho no encontrado');
       }
 
-      console.log('📋 [useMarkDispatchAsInTransit] Despacho encontrado:', dispatch);
+      // VALIDACIÓN CRÍTICA: Solo permitir transición desde estados válidos
+      if (dispatch.status !== 'procesado' && dispatch.status !== 'pending') {
+        console.error('❌ Error: Estado de despacho inválido para transición:', dispatch.status);
+        throw new Error(`No se puede marcar en tránsito desde estado: ${dispatch.status}`);
+      }
+
+      console.log('📋 [useMarkDispatchAsInTransit] Despacho encontrado con estado válido:', dispatch);
 
       // PASO 2: Obtener SOLO los paquetes de este despacho específico
       const { data: dispatchPackages, error: packagesError } = await supabase
@@ -54,18 +60,30 @@ export function useMarkDispatchAsInTransit() {
 
       console.log('📦 [useMarkDispatchAsInTransit] Paquetes del despacho:', packages);
 
-      // PASO 3: Filtrar paquetes que están despachados (solo estos deben cambiar a tránsito)
+      // PASO 3: VALIDACIÓN CRÍTICA - Filtrar paquetes que están en estado válido para transición
       const packagesReadyForTransit = packages.filter(pkg => 
         pkg.status === 'despachado' || pkg.status === 'procesado'
       );
 
       if (packagesReadyForTransit.length === 0) {
-        throw new Error('No hay paquetes listos para tránsito en este despacho');
+        console.error('❌ Error: No hay paquetes en estado válido para transición:', 
+          packages.map(p => `${p.tracking_number}: ${p.status}`));
+        throw new Error('No hay paquetes listos para tránsito en este despacho. Estados válidos: despachado, procesado');
       }
 
-      console.log('✅ [useMarkDispatchAsInTransit] Paquetes listos para tránsito:', packagesReadyForTransit);
+      // Reportar paquetes con estados inválidos
+      const invalidPackages = packages.filter(pkg => 
+        pkg.status !== 'despachado' && pkg.status !== 'procesado'
+      );
+      
+      if (invalidPackages.length > 0) {
+        console.warn('⚠️ [useMarkDispatchAsInTransit] Paquetes con estados inválidos (no se actualizarán):', 
+          invalidPackages.map(p => `${p.tracking_number}: ${p.status}`));
+      }
 
-      // PASO 4: Actualizar SOLO los paquetes de este despacho a "transito"
+      console.log('✅ [useMarkDispatchAsInTransit] Paquetes válidos para tránsito:', packagesReadyForTransit);
+
+      // PASO 4: Actualizar SOLO los paquetes válidos a "transito"
       const packageIds = packagesReadyForTransit.map(pkg => pkg.id);
       
       const { error: updatePackagesError } = await supabase
@@ -99,11 +117,11 @@ export function useMarkDispatchAsInTransit() {
 
       console.log('✅ [useMarkDispatchAsInTransit] Despacho actualizado a en_transito');
 
-      // PASO 6: Crear eventos de tracking SOLO para los paquetes de este despacho
+      // PASO 6: Crear eventos de tracking SOLO para los paquetes válidos
       const trackingEvents = packagesReadyForTransit.map(pkg => ({
         package_id: pkg.id,
         event_type: 'in_transit',
-        description: 'Paquete en tránsito desde despacho',
+        description: 'Paquete en tránsito desde despacho (transición validada)',
         location: 'En tránsito'
       }));
 
@@ -119,7 +137,8 @@ export function useMarkDispatchAsInTransit() {
       console.log('🎉 [useMarkDispatchAsInTransit] Proceso completado exitosamente');
       
       return { 
-        updatedPackages: packagesReadyForTransit.length, 
+        updatedPackages: packagesReadyForTransit.length,
+        invalidPackages: invalidPackages.length,
         dispatchId 
       };
     },
@@ -140,9 +159,14 @@ export function useMarkDispatchAsInTransit() {
       queryClient.refetchQueries({ queryKey: ['dispatch-relations'] });
       queryClient.refetchQueries({ queryKey: ['dispatch-packages', data.dispatchId] });
       
+      let message = `${data.updatedPackages} paquetes actualizados a "En Tránsito"`;
+      if (data.invalidPackages > 0) {
+        message += `. ${data.invalidPackages} paquetes no se actualizaron por estar en estado inválido.`;
+      }
+      
       toast({
         title: "Despacho marcado en tránsito",
-        description: `${data.updatedPackages} paquetes actualizados a "En Tránsito"`,
+        description: message,
       });
     },
     onError: (error: any) => {

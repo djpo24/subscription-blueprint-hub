@@ -16,7 +16,7 @@ export function usePackages() {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(20); // Mantener el límite para el dashboard
+        .limit(10);
       
       if (error) throw error;
       return data;

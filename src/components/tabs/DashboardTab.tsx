@@ -82,10 +82,10 @@ export function DashboardTab({
       <div className="w-full overflow-x-auto">
         <PackagesTable
           packages={packages}
-          filteredPackages={packages} // Pasar los paquetes sin filtrar, ya que la tabla maneja la búsqueda internamente
+          filteredPackages={filteredPackages}
           isLoading={isLoading}
           onUpdate={onUpdate}
-          disableChat={disableChat}
+          disableChat={false}
           previewRole={previewRole}
         />
       </div>

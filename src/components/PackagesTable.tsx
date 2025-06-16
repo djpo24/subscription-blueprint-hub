@@ -11,6 +11,7 @@ import { ChatDialog } from './chat/ChatDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Search } from 'lucide-react';
 import { usePackageSearch } from '@/hooks/usePackageSearch';
+import { parseCurrencyString } from '@/utils/currencyFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -145,7 +146,7 @@ export function PackagesTable({
                 <PackageTableDetails
                   trackingNumber={specificPackage.tracking_number}
                   amountToCollect={specificPackage.amount_to_collect}
-                  currency={specificPackage.currency}
+                  currency={parseCurrencyString(specificPackage.currency)}
                   freight={specificPackage.freight}
                   weight={specificPackage.weight}
                 />

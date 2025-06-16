@@ -1,4 +1,3 @@
-
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
@@ -39,6 +38,7 @@ interface TravelerPreviewContentProps {
   onTripDialogChange: (open: boolean) => void;
   onTripSuccess: () => void;
   selectedDate?: Date;
+  searchTerm?: string; // Add searchTerm prop
 }
 
 export function TravelerPreviewContent({
@@ -69,6 +69,7 @@ export function TravelerPreviewContent({
   onTripDialogChange,
   onTripSuccess,
   selectedDate,
+  searchTerm = '' // Add searchTerm with default value
 }: TravelerPreviewContentProps) {
   return (
     <SidebarProvider defaultOpen={false}>
@@ -110,6 +111,7 @@ export function TravelerPreviewContent({
                 isLoading={isLoading}
                 onUpdate={onPackagesUpdate}
                 onTabChange={setActiveTab}
+                searchTerm={searchTerm} // Pass searchTerm prop
               />
               
               <TripsTab 

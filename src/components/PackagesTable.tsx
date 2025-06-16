@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EditPackageDialog } from './EditPackageDialog';
@@ -11,7 +11,6 @@ import { ChatDialog } from './chat/ChatDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Search } from 'lucide-react';
 import { usePackageSearch } from '@/hooks/usePackageSearch';
-import { parseCurrencyString } from '@/utils/currencyFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -32,8 +31,6 @@ interface Package {
   customers?: {
     name: string;
     email: string;
-    phone?: string;
-    id_number?: string;
   };
 }
 
@@ -44,7 +41,6 @@ interface PackagesTableProps {
   onUpdate?: (id: string, updates: any) => void;
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
-  searchTerm?: string;
 }
 
 export function PackagesTable({ 
@@ -53,8 +49,7 @@ export function PackagesTable({
   isLoading, 
   onUpdate,
   disableChat = false,
-  previewRole,
-  searchTerm = ''
+  previewRole
 }: PackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -62,16 +57,17 @@ export function PackagesTable({
   const [showChatDialog, setShowChatDialog] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Usar búsqueda global cuando hay término de búsqueda
-  const { data: searchResults = [], isLoading: isSearching } = usePackageSearch(searchTerm);
+  // Usar el hook de búsqueda global cuando hay término de búsqueda
+  const { data: searchResults = [], isLoading: isSearching } = usePackageSearch(searchQuery);
 
   // Determinar qué encomiendas mostrar
-  const displayPackages = searchTerm.trim() ? searchResults : packages;
-  const displayIsLoading = searchTerm.trim() ? isSearching : isLoading;
+  const displayPackages = searchQuery.trim() ? searchResults : (filteredPackages || []);
+  const displayIsLoading = searchQuery.trim() ? isSearching : isLoading;
 
   // Mostrar detalles específicos si se encuentra una encomienda específica
-  const specificPackage = searchTerm.trim() && displayPackages.length === 1 ? displayPackages[0] : null;
+  const specificPackage = searchQuery.trim() && displayPackages.length === 1 ? displayPackages[0] : null;
 
   const handleUpdate = () => {
     if (onUpdate) {
@@ -114,18 +110,28 @@ export function PackagesTable({
           onPrintMultiple={handlePrintMultiple}
         />
         <CardContent>
-          {/* Mostrar estado de búsqueda si hay término */}
-          {searchTerm.trim() && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-600">
+          {/* Buscador global de encomiendas */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Buscar por número de tracking, cliente, cédula, teléfono... (busca en toda la base de datos)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {searchQuery.trim() && (
+              <div className="mt-2 text-sm text-gray-600">
                 {displayIsLoading ? (
-                  '🔍 Buscando en toda la base de datos...'
+                  'Buscando...'
                 ) : (
-                  `✅ ${displayPackages.length} encomienda(s) encontrada(s) para "${searchTerm}"`
+                  `${displayPackages.length} encomienda(s) encontrada(s) ${searchQuery.trim() ? 'en toda la base de datos' : 'en las recientes'}`
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Mostrar detalles específicos si se encuentra una encomienda */}
           {specificPackage && (
@@ -139,7 +145,7 @@ export function PackagesTable({
                 <PackageTableDetails
                   trackingNumber={specificPackage.tracking_number}
                   amountToCollect={specificPackage.amount_to_collect}
-                  currency={parseCurrencyString(specificPackage.currency)}
+                  currency={specificPackage.currency}
                   freight={specificPackage.freight}
                   weight={specificPackage.weight}
                 />
@@ -150,7 +156,7 @@ export function PackagesTable({
           {displayIsLoading ? (
             <div className="flex justify-center py-8">
               <div className="text-gray-500">
-                {searchTerm.trim() ? 'Buscando encomiendas...' : 'Cargando...'}
+                {searchQuery.trim() ? 'Buscando encomiendas...' : 'Cargando...'}
               </div>
             </div>
           ) : (
@@ -187,10 +193,10 @@ export function PackagesTable({
             </Table>
           )}
 
-          {!displayIsLoading && displayPackages.length === 0 && searchTerm.trim() && (
+          {!displayIsLoading && displayPackages.length === 0 && searchQuery.trim() && (
             <div className="text-center py-8">
               <div className="text-gray-500">
-                No se encontraron encomiendas que coincidan con la búsqueda "{searchTerm}"
+                No se encontraron encomiendas que coincidan con la búsqueda "{searchQuery}"
               </div>
             </div>
           )}

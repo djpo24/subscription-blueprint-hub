@@ -1,3 +1,4 @@
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardTab } from './tabs/DashboardTab';
 import { CustomersTab } from './tabs/CustomersTab';
@@ -51,7 +52,6 @@ interface MainTabsProps {
   onViewPackagesByDate?: (date: Date) => void;
   onBack?: () => void;
   selectedDate?: Date;
-  searchTerm?: string; // Add searchTerm prop
 }
 
 export function MainTabs({ 
@@ -77,8 +77,7 @@ export function MainTabs({
   onCreateTrip,
   onViewPackagesByDate,
   onBack,
-  selectedDate,
-  searchTerm = '' // Add searchTerm with default value
+  selectedDate
 }: MainTabsProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const effectiveRole = userRole?.role || 'employee';
@@ -163,7 +162,6 @@ export function MainTabs({
         isLoading={isLoading}
         onUpdate={onUpdate}
         onTabChange={onTabChange}
-        searchTerm={searchTerm} // Pass searchTerm prop
       />
       <CustomersTab />
       <FinancesTab />

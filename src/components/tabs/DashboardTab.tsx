@@ -28,7 +28,6 @@ interface DashboardTabProps {
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
   onTabChange: (tab: string) => void;
-  searchTerm: string; // Agregar searchTerm
 }
 
 export function DashboardTab({
@@ -44,8 +43,7 @@ export function DashboardTab({
   onUpdate,
   disableChat = false,
   previewRole,
-  onTabChange,
-  searchTerm // Recibir searchTerm
+  onTabChange
 }: DashboardTabProps) {
   const handleStatClick = (statType: string) => {
     switch (statType) {
@@ -89,7 +87,6 @@ export function DashboardTab({
           onUpdate={onUpdate}
           disableChat={false}
           previewRole={previewRole}
-          searchTerm={searchTerm} // Pasar el término de búsqueda
         />
       </div>
     </TabsContent>

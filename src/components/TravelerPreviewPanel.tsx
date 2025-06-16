@@ -142,7 +142,6 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
         onTripDialogChange={handleTripDialogClose}
         onTripSuccess={handleTripSuccess}
         selectedDate={selectedDate}
-        searchTerm={searchTerm} // Pass searchTerm prop
       />
 
       <TravelerPreviewPermissions />

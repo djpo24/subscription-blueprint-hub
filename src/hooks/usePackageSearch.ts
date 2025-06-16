@@ -28,42 +28,21 @@ export function usePackageSearch(searchTerm: string) {
         `)
         .or(`
           tracking_number.ilike.%${searchLower}%,
-          description.ilike.%${searchLower}%
+          description.ilike.%${searchLower}%,
+          customers.name.ilike.%${searchLower}%,
+          customers.phone.ilike.%${searchLower}%,
+          customers.id_number.ilike.%${searchLower}%
         `)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(100); // Limitar a 100 resultados para rendimiento
       
       if (error) {
         console.error('❌ [usePackageSearch] Error en búsqueda:', error);
         throw error;
       }
       
-      // Filtrar también por datos del cliente en el frontend
-      const filteredData = data?.filter(pkg => {
-        // Verificar si el término de búsqueda coincide con los datos del cliente
-        if (pkg.customers) {
-          const customerName = pkg.customers.name?.toLowerCase() || '';
-          const customerPhone = pkg.customers.phone?.toLowerCase() || '';
-          const customerIdNumber = pkg.customers.id_number?.toLowerCase() || '';
-          
-          return customerName.includes(searchLower) || 
-                 customerPhone.includes(searchLower) || 
-                 customerIdNumber.includes(searchLower);
-        }
-        return false;
-      }) || [];
-      
-      // Combinar resultados de paquetes y clientes
-      const packageResults = data || [];
-      const combinedResults = [...packageResults, ...filteredData];
-      
-      // Eliminar duplicados basándose en el ID
-      const uniqueResults = combinedResults.filter((pkg, index, self) => 
-        index === self.findIndex(p => p.id === pkg.id)
-      );
-      
-      console.log('✅ [usePackageSearch] Encomiendas encontradas:', uniqueResults.length);
-      return uniqueResults;
+      console.log('✅ [usePackageSearch] Encomiendas encontradas:', data?.length || 0);
+      return data || [];
     },
     enabled: !!searchTerm.trim(),
     staleTime: 30000, // Cache por 30 segundos

@@ -81,8 +81,8 @@ export function DashboardTab({
 
       <div className="w-full overflow-x-auto">
         <PackagesTable
-          packages={packages} // Las 20 más recientes
-          filteredPackages={packages} // Pasamos packages directamente ya que la búsqueda ahora es global
+          packages={packages}
+          filteredPackages={filteredPackages}
           isLoading={isLoading}
           onUpdate={onUpdate}
           disableChat={false}

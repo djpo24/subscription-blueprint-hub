@@ -7,10 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Warehouse, Edit, Printer, MessageSquare } from 'lucide-react';
+import { MoreHorizontal, Calendar, Warehouse, Edit, Printer, MessageSquare, RefreshCw } from 'lucide-react';
 import { ReschedulePackageDialog } from './ReschedulePackageDialog';
 import { EditPackageDialog } from './EditPackageDialog';
 import { PackageLabelDialog } from './PackageLabelDialog';
+import { PackageStatusChangeDialog } from './PackageStatusChangeDialog';
 import { usePackageActions } from '@/hooks/usePackageActions';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 
@@ -54,6 +55,7 @@ export function PackageActionsDropdown({
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLabelDialog, setShowLabelDialog] = useState(false);
+  const [showStatusChangeDialog, setShowStatusChangeDialog] = useState(false);
   const { moveToWarehouse, isMovingToWarehouse } = usePackageActions();
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
 
@@ -71,6 +73,7 @@ export function PackageActionsDropdown({
   const canReschedule = pkg.status !== 'delivered' && pkg.status !== 'bodega';
   const canMoveToWarehouse = pkg.status !== 'delivered' && pkg.status !== 'bodega';
   const canEdit = pkg.status !== 'delivered';
+  const canChangeStatus = userRole?.role === 'admin'; // Solo admins pueden cambiar estado manualmente
   const canChat = !disableChat && userRole?.role === 'admin' && onOpenChat;
 
   return (
@@ -97,6 +100,12 @@ export function PackageActionsDropdown({
             <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
               <Edit className="mr-2 h-4 w-4" />
               Editar encomienda
+            </DropdownMenuItem>
+          )}
+          {canChangeStatus && (
+            <DropdownMenuItem onClick={() => setShowStatusChangeDialog(true)}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Cambiar estado
             </DropdownMenuItem>
           )}
           {canReschedule && (
@@ -126,6 +135,13 @@ export function PackageActionsDropdown({
       <EditPackageDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
+        package={pkg}
+        onSuccess={onUpdate}
+      />
+
+      <PackageStatusChangeDialog
+        open={showStatusChangeDialog}
+        onOpenChange={setShowStatusChangeDialog}
         package={pkg}
         onSuccess={onUpdate}
       />

@@ -10,6 +10,7 @@ import { PackageTableDetails } from './packages-table/PackageTableDetails';
 import { ChatDialog } from './chat/ChatDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Search } from 'lucide-react';
+import { usePackageSearch } from '@/hooks/usePackageSearch';
 
 type Currency = 'COP' | 'AWG';
 
@@ -58,15 +59,15 @@ export function PackagesTable({
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Ensure filteredPackages is always an array
-  const safeFilteredPackages = filteredPackages || [];
-  
-  // Search for specific tracking number if provided
-  const searchedPackages = searchQuery 
-    ? safeFilteredPackages.filter(pkg => 
-        pkg.tracking_number.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : safeFilteredPackages;
+  // Usar el hook de búsqueda global cuando hay término de búsqueda
+  const { data: searchResults = [], isLoading: isSearching } = usePackageSearch(searchQuery);
+
+  // Determinar qué encomiendas mostrar
+  const displayPackages = searchQuery.trim() ? searchResults : (filteredPackages || []);
+  const displayIsLoading = searchQuery.trim() ? isSearching : isLoading;
+
+  // Mostrar detalles específicos si se encuentra una encomienda específica
+  const specificPackage = searchQuery.trim() && displayPackages.length === 1 ? displayPackages[0] : null;
 
   const handleUpdate = () => {
     if (onUpdate) {
@@ -101,32 +102,38 @@ export function PackagesTable({
     setShowChatDialog(true);
   };
 
-  // Show specific package details if searching for tracking number
-  const specificPackage = searchQuery && searchedPackages.length === 1 ? searchedPackages[0] : null;
-
   return (
     <>
       <Card>
         <PackagesTableHeader 
-          packagesCount={searchedPackages.length}
+          packagesCount={displayPackages.length}
           onPrintMultiple={handlePrintMultiple}
         />
         <CardContent>
-          {/* Search input for tracking numbers */}
+          {/* Buscador global de encomiendas */}
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Buscar por número de tracking (ej: EO-2025-3424)..."
+                placeholder="Buscar por número de tracking, cliente, cédula, teléfono... (busca en toda la base de datos)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            {searchQuery.trim() && (
+              <div className="mt-2 text-sm text-gray-600">
+                {displayIsLoading ? (
+                  'Buscando...'
+                ) : (
+                  `${displayPackages.length} encomienda(s) encontrada(s) ${searchQuery.trim() ? 'en toda la base de datos' : 'en las recientes'}`
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Show specific package details if found */}
+          {/* Mostrar detalles específicos si se encuentra una encomienda */}
           {specificPackage && (
             <div className="mb-6">
               <Alert>
@@ -146,9 +153,11 @@ export function PackagesTable({
             </div>
           )}
 
-          {isLoading ? (
+          {displayIsLoading ? (
             <div className="flex justify-center py-8">
-              <div className="text-gray-500">Cargando...</div>
+              <div className="text-gray-500">
+                {searchQuery.trim() ? 'Buscando encomiendas...' : 'Cargando...'}
+              </div>
             </div>
           ) : (
             <Table>
@@ -167,7 +176,7 @@ export function PackagesTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {searchedPackages.map((pkg) => (
+                {displayPackages.map((pkg) => (
                   <PackagesTableRow
                     key={pkg.id}
                     package={pkg}
@@ -183,6 +192,14 @@ export function PackagesTable({
               </TableBody>
             </Table>
           )}
+
+          {!displayIsLoading && displayPackages.length === 0 && searchQuery.trim() && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">
+                No se encontraron encomiendas que coincidan con la búsqueda "{searchQuery}"
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -196,7 +213,7 @@ export function PackagesTable({
       <MultipleLabelsDialog
         open={showMultipleLabelsDialog}
         onOpenChange={setShowMultipleLabelsDialog}
-        packages={searchedPackages}
+        packages={displayPackages}
       />
 
       <ChatDialog

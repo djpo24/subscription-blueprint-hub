@@ -16,7 +16,7 @@ export function usePackages() {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20); // Solo las 20 más recientes para el dashboard
       
       if (error) throw error;
       return data;

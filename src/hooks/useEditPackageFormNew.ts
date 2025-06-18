@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { formatNumber } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -45,7 +46,9 @@ export function useEditPackageFormNew(pkg: Package | null) {
         id: pkg.id,
         tracking: pkg.tracking_number,
         currency: pkg.currency,
-        amount: pkg.amount_to_collect
+        amount: pkg.amount_to_collect,
+        freight: pkg.freight,
+        freightType: typeof pkg.freight
       });
       
       // Parse existing description to extract details and optional description
@@ -80,13 +83,30 @@ export function useEditPackageFormNew(pkg: Package | null) {
         type: typeof validCurrency
       });
 
+      // FIXED: Proper freight formatting without rounding or truncation
+      const freightValue = pkg.freight?.toString() || '';
+      const freightFormatted = pkg.freight ? formatNumber(pkg.freight.toString()) : '';
+      
+      // FIXED: Proper amount formatting without rounding or truncation  
+      const amountValue = pkg.amount_to_collect?.toString() || '';
+      const amountFormatted = pkg.amount_to_collect ? formatNumber(pkg.amount_to_collect.toString()) : '';
+
+      console.log('💰 [useEditPackageFormNew] Values being set:', {
+        freightOriginal: pkg.freight,
+        freightValue: freightValue,
+        freightFormatted: freightFormatted,
+        amountOriginal: pkg.amount_to_collect,
+        amountValue: amountValue,
+        amountFormatted: amountFormatted
+      });
+
       const newFormData: EditPackageFormData = {
         description: optionalDescription,
         weight: pkg.weight?.toString() || '',
-        freight: pkg.freight?.toString() || '',
-        freightFormatted: pkg.freight ? `$${pkg.freight.toLocaleString()}` : '',
-        amountToCollect: pkg.amount_to_collect?.toString() || '',
-        amountToCollectFormatted: pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString()}` : '',
+        freight: freightValue,
+        freightFormatted: freightFormatted,
+        amountToCollect: amountValue,
+        amountToCollectFormatted: amountFormatted,
         currency: validCurrency,
         details: details
       };

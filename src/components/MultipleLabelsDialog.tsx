@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MultiplePackageSelector } from './MultiplePackageSelector';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MultiplePackageLabels } from './MultiplePackageLabels';
 
 interface Package {
@@ -13,6 +12,8 @@ interface Package {
   created_at: string;
   description: string;
   weight: number | null;
+  amount_to_collect?: number | null;
+  currency?: string;
   customers?: {
     name: string;
     email: string;
@@ -23,78 +24,46 @@ interface MultipleLabelsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   packages: Package[];
+  isReprint?: boolean;
 }
 
-export function MultipleLabelsDialog({ open, onOpenChange, packages }: MultipleLabelsDialogProps) {
-  const [selectedPackages, setSelectedPackages] = useState<Package[]>([]);
-  const [showLabels, setShowLabels] = useState(false);
+export function MultipleLabelsDialog({ 
+  open, 
+  onOpenChange, 
+  packages,
+  isReprint = false
+}: MultipleLabelsDialogProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  console.log('MultipleLabelsDialog - Total packages received:', packages.length);
-  console.log('MultipleLabelsDialog - Selected packages:', selectedPackages.length);
-  console.log('MultipleLabelsDialog - Show labels:', showLabels);
-
-  // Si ya hay paquetes pre-seleccionados, ir directamente a las etiquetas
   useEffect(() => {
     if (open && packages.length > 0) {
-      console.log('MultipleLabelsDialog - Auto-selecting pre-selected packages:', packages.length);
-      setSelectedPackages(packages);
-      setShowLabels(true);
+      console.log('🏷️ MultipleLabelsDialog abierto con:', packages.length, 'paquetes');
+      console.log('🔄 Es reimpresión:', isReprint);
+      packages.forEach(pkg => {
+        console.log(`   - ${pkg.tracking_number}: ${pkg.status}`);
+      });
     }
-  }, [open, packages]);
+  }, [open, packages, isReprint]);
 
-  const handlePrintSelected = (packages: Package[]) => {
-    console.log('MultipleLabelsDialog - handlePrintSelected called with packages:', packages.length);
-    setSelectedPackages(packages);
-    setShowLabels(true);
-  };
-
-  const handleBackToSelection = () => {
-    setShowLabels(false);
-    setSelectedPackages([]);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    if (!open) {
-      setShowLabels(false);
-      setSelectedPackages([]);
-    }
-    onOpenChange(open);
-  };
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>
-            {showLabels ? 'Etiquetas para Imprimir' : 'Seleccionar Etiquetas'}
+            {isReprint ? 'Reimprimir' : 'Imprimir'} Etiquetas Múltiples ({packages.length} paquetes)
           </DialogTitle>
-          <DialogDescription>
-            {showLabels 
-              ? `Vista previa de ${selectedPackages.length} etiqueta${selectedPackages.length !== 1 ? 's' : ''} seleccionada${selectedPackages.length !== 1 ? 's' : ''}`
-              : 'Selecciona las encomiendas para las que deseas imprimir etiquetas'
-            }
-          </DialogDescription>
         </DialogHeader>
         
-        {showLabels ? (
-          <div>
-            {/* Solo mostrar el botón de volver si no hay paquetes pre-seleccionados */}
-            {packages.length === 0 && (
-              <button
-                onClick={handleBackToSelection}
-                className="mb-4 text-blue-600 hover:text-blue-800 underline"
-              >
-                ← Volver a la selección
-              </button>
-            )}
-            <MultiplePackageLabels packages={selectedPackages} />
-          </div>
-        ) : (
-          <MultiplePackageSelector 
-            packages={packages}
-            onPrintSelected={handlePrintSelected}
+        <div className="flex-1 overflow-auto">
+          <MultiplePackageLabels 
+            packages={packages} 
+            isGenerating={isGenerating}
+            setIsGenerating={setIsGenerating}
+            isReprint={isReprint}
           />
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

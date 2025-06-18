@@ -172,6 +172,7 @@ export function PackageLabelsDialog({ open, onOpenChange, tripDate, trips }: Pac
         open={state.multipleLabelOpen}
         onOpenChange={(open) => setState(prev => ({ ...prev, multipleLabelOpen: open }))}
         packages={state.packagesForMultipleLabels}
+        isReprint={state.packagesForMultipleLabels.some(pkg => pkg.status !== 'recibido')}
       />
     </>
   );

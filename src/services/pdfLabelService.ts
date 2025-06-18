@@ -44,7 +44,7 @@ export class PDFLabelService {
       const pdf = await this.generatePDF(packages, labelsData);
       await PDFPrintService.printPDF(pdf);
       
-      // Llamar al callback de éxito con los IDs de los paquetes
+      // Solo llamar al callback si se proporciona (para impresiones iniciales, no reimpresiones)
       if (onPrintSuccess) {
         const packageIds = packages.map(pkg => pkg.id);
         console.log('📋 Calling onPrintSuccess with package IDs:', packageIds);

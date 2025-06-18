@@ -54,7 +54,12 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       setIsPrinting(true);
       const labelsData = new Map<string, LabelData>();
       labelsData.set(pkg.id, labelData);
-      await printMultipleLabelsAsPDF([pkg], labelsData);
+      
+      // Determinar si es una reimpresión basándose en el estado del paquete
+      const isReprint = pkg.status !== 'recibido';
+      console.log('🔄 Imprimiendo etiqueta - Es reimpresión:', isReprint, 'Estado:', pkg.status);
+      
+      await printMultipleLabelsAsPDF([pkg], labelsData, isReprint);
     } catch (error) {
       console.error('Error printing label:', error);
     } finally {

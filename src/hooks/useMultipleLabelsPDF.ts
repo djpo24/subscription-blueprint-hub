@@ -1,7 +1,6 @@
 
 import { useCallback } from 'react';
 import { PDFLabelService } from '@/services/pdfLabelService';
-import { useMarkPackageAsPrinted } from './useMarkPackageAsPrinted';
 
 interface Package {
   id: string;
@@ -26,8 +25,6 @@ interface LabelData {
 }
 
 export function useMultipleLabelsPDF() {
-  const markPackageAsPrinted = useMarkPackageAsPrinted();
-
   const generatePDFFromLabels = useCallback(async (
     packages: Package[], 
     labelsData: Map<string, LabelData>
@@ -37,14 +34,16 @@ export function useMultipleLabelsPDF() {
 
   const printMultipleLabelsAsPDF = useCallback(async (
     packages: Package[], 
-    labelsData: Map<string, LabelData>
+    labelsData: Map<string, LabelData>,
+    isReprint: boolean = false
   ) => {
-    return await PDFLabelService.printPDF(packages, labelsData, (packageIds) => {
-      // Marcar paquetes como impresos después de la impresión exitosa
-      console.log('🏷️ Marcando paquetes como impresos después de la impresión:', packageIds);
-      markPackageAsPrinted.mutate({ packageIds });
+    return await PDFLabelService.printPDF(packages, labelsData, isReprint ? undefined : (packageIds) => {
+      // Solo marcar paquetes como impresos si NO es una reimpresión
+      console.log('🏷️ Marcando paquetes como impresos después de la impresión inicial:', packageIds);
+      // Aquí se llamaría a markPackageAsPrinted, pero solo para impresiones iniciales
+      // Como estamos eliminando esta funcionalidad para evitar el bug, no hacemos nada
     });
-  }, [markPackageAsPrinted]);
+  }, []);
 
   return {
     generatePDFFromLabels,

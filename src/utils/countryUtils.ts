@@ -1,5 +1,4 @@
 
-
 export const getCountryFlagByPhone = (phone: string): string => {
   if (!phone) return '';
   
@@ -8,6 +7,8 @@ export const getCountryFlagByPhone = (phone: string): string => {
   
   if (normalizedPhone.startsWith('+57')) {
     return '🇨🇴'; // Colombia
+  } else if (normalizedPhone.startsWith('+5997')) {
+    return '🇧🇶'; // Bonaire
   } else if (normalizedPhone.startsWith('+599')) {
     return '🇨🇼'; // Curaçao
   } else if (normalizedPhone.startsWith('+52')) {
@@ -28,6 +29,8 @@ export const getCountryCodeFromPhone = (phone: string): string => {
   
   if (normalizedPhone.startsWith('+57')) {
     return '+57';
+  } else if (normalizedPhone.startsWith('+5997')) {
+    return '+5997';
   } else if (normalizedPhone.startsWith('+599')) {
     return '+599';
   } else if (normalizedPhone.startsWith('+52')) {
@@ -40,4 +43,3 @@ export const getCountryCodeFromPhone = (phone: string): string => {
   
   return '';
 };
-

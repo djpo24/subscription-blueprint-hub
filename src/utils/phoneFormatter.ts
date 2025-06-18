@@ -4,6 +4,8 @@ export const getMaxPhoneLength = (countryCode: string): number => {
     return 10; // Cambiado de 7 a 10
   } else if (countryCode === '+599') { // Curaçao
     return 8;
+  } else if (countryCode === '+5997') { // Bonaire
+    return 8;
   } else if (countryCode === '+52') { // México
     return 10; // Cambiado de 8 a 10
   } else if (countryCode === '+1') { // Estados Unidos
@@ -31,6 +33,10 @@ export const formatPhoneNumber = (phone: string, countryCode: string): string =>
     if (limitedNumbers.length <= 6) return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3)}`;
     return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 6)} ${limitedNumbers.slice(6, 10)}`;
   } else if (countryCode === '+599') { // Curaçao
+    // Format: XXX XXXXX (max 8 digits)
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 8)}`;
+  } else if (countryCode === '+5997') { // Bonaire
     // Format: XXX XXXXX (max 8 digits)
     if (limitedNumbers.length <= 3) return limitedNumbers;
     return `${limitedNumbers.slice(0, 3)} ${limitedNumbers.slice(3, 8)}`;
@@ -68,6 +74,8 @@ export const validatePhoneNumber = (phone: string, countryCode: string): boolean
   if (countryCode === '+57') { // Colombia
     return numbers.length === 10; // Cambiado de 7 a 10
   } else if (countryCode === '+599') { // Curaçao
+    return numbers.length === 7 || numbers.length === 8; // Allow 7 or 8 digits
+  } else if (countryCode === '+5997') { // Bonaire
     return numbers.length === 7 || numbers.length === 8; // Allow 7 or 8 digits
   } else if (countryCode === '+52') { // México
     return numbers.length === 10; // Cambiado de 8 a 10

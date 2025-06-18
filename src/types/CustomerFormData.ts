@@ -1,5 +1,4 @@
 
-
 export interface CustomerFormData {
   firstName: string;
   lastName: string;
@@ -23,8 +22,8 @@ export const initialCustomerFormData: CustomerFormData = {
 export const countryCodes = [
   { code: '+57', flag: '🇨🇴', name: 'Colombia' },
   { code: '+599', flag: '🇨🇼', name: 'Curaçao' },
+  { code: '+5997', flag: '🇧🇶', name: 'Bonaire' },
   { code: '+52', flag: '🇲🇽', name: 'México' },
   { code: '+1', flag: '🇺🇸', name: 'Estados Unidos' },
   { code: '+501', flag: '🇧🇿', name: 'Belice' }
 ];
-

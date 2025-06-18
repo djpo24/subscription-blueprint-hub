@@ -65,6 +65,8 @@ export function PhoneNumberInput({
       return 'XXX XXX XXXX (10 dígitos)';
     } else if (countryCode === '+599') {
       return 'XXX XXXXX (7-8 dígitos)';
+    } else if (countryCode === '+5997') {
+      return 'XXX XXXXX (7-8 dígitos)';
     } else if (countryCode === '+52') {
       return 'XXX XXX XXXX (10 dígitos)';
     } else if (countryCode === '+1') {

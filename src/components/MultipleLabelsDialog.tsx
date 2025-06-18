@@ -33,8 +33,6 @@ export function MultipleLabelsDialog({
   packages,
   isReprint = false
 }: MultipleLabelsDialogProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-
   useEffect(() => {
     if (open && packages.length > 0) {
       console.log('🏷️ MultipleLabelsDialog abierto con:', packages.length, 'paquetes');
@@ -59,8 +57,6 @@ export function MultipleLabelsDialog({
         <div className="flex-1 overflow-auto">
           <MultiplePackageLabels 
             packages={packages} 
-            isGenerating={isGenerating}
-            setIsGenerating={setIsGenerating}
             isReprint={isReprint}
           />
         </div>

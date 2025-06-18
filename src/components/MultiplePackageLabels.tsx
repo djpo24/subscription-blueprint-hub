@@ -23,9 +23,10 @@ interface Package {
 
 interface MultiplePackageLabelsProps {
   packages: Package[];
+  isReprint?: boolean;
 }
 
-export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) {
+export function MultiplePackageLabels({ packages, isReprint = false }: MultiplePackageLabelsProps) {
   const [labelsData, setLabelsData] = useState<Map<string, LabelData>>(new Map());
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(true);
   const [isPrintingPDF, setIsPrintingPDF] = useState(false);
@@ -34,6 +35,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
 
   console.log('🏷️ MultiplePackageLabels - Packages received:', packages.length);
   console.log('🏷️ MultiplePackageLabels - Package IDs:', packages.map(p => p.id));
+  console.log('🔄 MultiplePackageLabels - Is reprint:', isReprint);
 
   useEffect(() => {
     const generateLabelsData = async () => {
@@ -59,6 +61,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
 
   const handlePrintPDF = async () => {
     console.log('🖨️ Starting PDF print process for', packages.length, 'labels');
+    console.log('🔄 Is reprint:', isReprint);
     
     if (isGeneratingCodes) {
       console.log('⏳ Still generating codes, waiting...');
@@ -78,7 +81,7 @@ export function MultiplePackageLabels({ packages }: MultiplePackageLabelsProps) 
 
     try {
       setIsPrintingPDF(true);
-      await printMultipleLabelsAsPDF(packages, labelsData);
+      await printMultipleLabelsAsPDF(packages, labelsData, isReprint);
       console.log('✅ PDF print process completed');
     } catch (error) {
       console.error('❌ Error printing PDF:', error);

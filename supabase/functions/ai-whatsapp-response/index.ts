@@ -14,6 +14,7 @@ import { getActiveFreightRates } from './freightRatesService.ts';
 import { getUpcomingTripsByDestination, formatTripsForPrompt, shouldQueryTrips } from './tripScheduleService.ts';
 import { getDestinationAddresses, formatAddressesForPrompt } from './destinationAddressService.ts';
 import { verifyAndImproveResponse } from './responseVerificationService.ts';
+import { getCurrentDateContext, getNextBusinessDay, formatPickupDateResponse } from './dateContextService.ts';
 import { AIResponseResult } from './types.ts';
 
 const corsHeaders = {
@@ -29,7 +30,7 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🤖 BOT CON VERIFICACIÓN - Sistema activado:', { 
+    console.log('🤖 BOT CON VERIFICACIÓN Y FECHA ACTUAL - Sistema activado:', { 
       message: message?.substring(0, 50) + '...', 
       customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
       customerId: customerId || 'not_provided'
@@ -57,8 +58,13 @@ serve(async (req) => {
     console.log('🤖 INFORMACIÓN DEL CLIENTE:', {
       customerFound: customerInfo.customerFound,
       packagesCount: customerInfo.packagesCount,
-      verificationEnabled: true
+      verificationEnabled: true,
+      dateContextEnabled: true
     });
+
+    // Get current date context - CRÍTICO PARA FECHAS FUTURAS
+    const currentDateContext = getCurrentDateContext();
+    console.log('📅 Contexto de fecha actual agregado al sistema');
 
     // Get destination addresses for shipping inquiries
     const destinationAddresses = await getDestinationAddresses(supabase);
@@ -93,7 +99,8 @@ serve(async (req) => {
               isContextualIntelligentResponse: true,
               contextType: contextualAnalysis.contextType,
               verificationEnabled: true,
-              verificationPassed: true
+              verificationPassed: true,
+              dateContextEnabled: true
             },
             response_time_ms: responseTime,
             was_fallback: false
@@ -638,10 +645,18 @@ serve(async (req) => {
     const learningContext = buildLearningContext(customerInfo);
     const addressesContext = formatAddressesForPrompt(destinationAddresses);
 
-    // Crear prompt para el bot
+    // Crear prompt para el bot CON CONTEXTO DE FECHA ACTUAL
     const basePrompt = buildSystemPrompt(customerInfo, freightRates, tripsContext, addressesContext);
     const conversationContext = buildConversationContext(recentMessages, customerInfo.customerFirstName);
-    const enhancedPrompt = enhancePromptWithLearning(basePrompt + conversationContext, learningContext);
+    
+    // AGREGAR CONTEXTO DE FECHA ACTUAL AL PROMPT
+    const enhancedPromptWithDate = `${basePrompt}
+
+${currentDateContext}
+
+${conversationContext}`;
+    
+    const finalPrompt = enhancePromptWithLearning(enhancedPromptWithDate, learningContext);
 
     const businessInsight = generateBusinessIntelligentResponse(customerInfo);
     const contextualMessage = businessInsight ? `${message}\n\nContexto específico del cliente: ${businessInsight}` : message;
@@ -653,8 +668,8 @@ serve(async (req) => {
     let interactionId: string | null = null;
     
     try {
-      console.log('🤖 PASO 1: Generando respuesta inicial con OpenAI...');
-      const initialResponse = await callOpenAI(enhancedPrompt, contextualMessage, openAIApiKey);
+      console.log('🤖 PASO 1: Generando respuesta inicial con OpenAI (incluye contexto de fecha actual)...');
+      const initialResponse = await callOpenAI(finalPrompt, contextualMessage, openAIApiKey);
       
       console.log('🔍 PASO 2: Verificando respuesta generada...');
       verificationResult = await verifyAndImproveResponse(
@@ -680,7 +695,7 @@ serve(async (req) => {
         finalResponse = `${validationResult.message}\n\n${finalResponse}`;
       }
 
-      console.log('✅ Respuesta final lista después de verificación');
+      console.log('✅ Respuesta final lista después de verificación con contexto de fecha actual');
       
     } catch (error) {
       console.error('❌ Error en generación/verificación - Usando respuesta de emergencia:', error.message);
@@ -709,6 +724,7 @@ serve(async (req) => {
             packagesCount: customerInfo.packagesCount,
             wasEscalated: false, // NUNCA escalado
             verificationEnabled: true,
+            dateContextEnabled: true, // NUEVO: contexto de fecha habilitado
             verificationResult: wasVerified ? {
               approved: verificationResult?.isApproved,
               confidence: verificationResult?.confidence,
@@ -751,12 +767,13 @@ serve(async (req) => {
       wasEscalated: false // NUNCA escalado
     };
 
-    console.log('🤖 RESPUESTA ENTREGADA CON VERIFICACIÓN:', {
+    console.log('🤖 RESPUESTA ENTREGADA CON VERIFICACIÓN Y CONTEXTO DE FECHA:', {
       wasEscalated: false,
       wasVerified: wasVerified,
       verificationApproved: verificationResult?.isApproved,
       verificationConfidence: verificationResult?.confidence,
       responseTime: responseTime + 'ms',
+      dateContextEnabled: true,
       escalationSystemDisabled: true
     });
 

@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Package } from 'lucide-react';
 import { CustomersTableRow } from './CustomersTableRow';
 import { CustomersStatsSection } from './CustomersStatsSection';
+import { CustomersPagination } from './CustomersPagination';
 
 interface Customer {
   id: string;
@@ -18,21 +19,36 @@ interface Customer {
 interface CustomersTableProps {
   customers: Customer[];
   filteredCustomers: Customer[];
+  paginatedCustomers: Customer[];
   searchCustomerId: string | null;
   onChatClick: (customerId: string) => void;
   onEditClick: (customerId: string) => void;
   onDeleteClick: (customerId: string) => void;
   canDelete?: boolean;
+  // Pagination props
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
+  pageSize: number;
 }
 
 export function CustomersTable({
   customers,
   filteredCustomers,
+  paginatedCustomers,
   searchCustomerId,
   onChatClick,
   onEditClick,
   onDeleteClick,
-  canDelete = false
+  canDelete = false,
+  currentPage,
+  totalPages,
+  onPageChange,
+  onPreviousPage,
+  onNextPage,
+  pageSize
 }: CustomersTableProps) {
   return (
     <Card>
@@ -63,7 +79,7 @@ export function CustomersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {paginatedCustomers.map((customer) => (
                 <CustomersTableRow
                   key={customer.id}
                   customer={customer}
@@ -73,7 +89,7 @@ export function CustomersTable({
                   canDelete={canDelete}
                 />
               ))}
-              {filteredCustomers.length === 0 && (
+              {paginatedCustomers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-gray-500 py-8">
                     {searchCustomerId ? "No se encontró el cliente buscado" : "No hay clientes registrados"}
@@ -83,6 +99,16 @@ export function CustomersTable({
             </TableBody>
           </Table>
         </div>
+        
+        <CustomersPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          onPreviousPage={onPreviousPage}
+          onNextPage={onNextPage}
+          totalCustomers={filteredCustomers.length}
+          pageSize={pageSize}
+        />
       </CardContent>
     </Card>
   );

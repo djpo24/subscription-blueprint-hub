@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUserRole } from '@/hooks/useCurrentUserRole';
+import { useCustomerPagination } from '@/hooks/useCustomerPagination';
 
 interface Customer {
   id: string;
@@ -103,11 +103,26 @@ export function CustomersList() {
   // Always show all customers - remove search filtering that might be hiding customers
   const filteredCustomers = customers;
 
+  // Add pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedCustomers,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    resetPage,
+    pageSize
+  } = useCustomerPagination({ customers: filteredCustomers, pageSize: 200 });
+
   console.log('📊 Estado de clientes:', {
     total: customers.length,
     isLoading,
     hasError: !!error,
-    filtered: filteredCustomers.length
+    filtered: filteredCustomers.length,
+    currentPage,
+    totalPages,
+    paginatedCount: paginatedCustomers.length
   });
 
   const handleChatClick = (customerId: string) => {
@@ -153,6 +168,7 @@ export function CustomersList() {
   const handleCreateCustomerSuccess = (customerId: string) => {
     refetch();
     setCreateCustomerDialogOpen(false);
+    resetPage(); // Reset to first page when new customer is created
     toast({
       title: "Cliente creado",
       description: "El nuevo cliente ha sido creado exitosamente",
@@ -251,11 +267,18 @@ export function CustomersList() {
       <CustomersTable
         customers={customers}
         filteredCustomers={filteredCustomers}
+        paginatedCustomers={paginatedCustomers}
         searchCustomerId={searchCustomerId}
         onChatClick={handleChatClick}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
         canDelete={canDeleteCustomers}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+        onPreviousPage={goToPreviousPage}
+        onNextPage={goToNextPage}
+        pageSize={pageSize}
       />
 
       {selectedCustomer && (

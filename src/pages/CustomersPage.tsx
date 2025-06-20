@@ -1,5 +1,6 @@
 
 import { CustomersList } from '@/components/customer-list/CustomersList';
+import { DebugCustomersStatus } from '@/components/DebugCustomersStatus';
 
 export default function CustomersPage() {
   return (
@@ -12,6 +13,7 @@ export default function CustomersPage() {
           </p>
         </div>
         
+        <DebugCustomersStatus />
         <CustomersList />
       </div>
     </div>

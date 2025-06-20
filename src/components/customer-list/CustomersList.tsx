@@ -36,42 +36,79 @@ export function CustomersList() {
   // Check if user can delete customers (admin or traveler only)
   const canDeleteCustomers = userRole?.role === 'admin' || userRole?.role === 'traveler';
 
-  const { data: customers = [], isLoading, refetch } = useQuery({
+  const { data: customers = [], isLoading, error, refetch } = useQuery({
     queryKey: ['customers-list'],
     queryFn: async () => {
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name');
+      console.log('🔍 Obteniendo lista de clientes...');
+      
+      try {
+        // Intentar obtener clientes sin RLS primero para debug
+        const { data: customersData, error: customersError } = await supabase
+          .from('customers')
+          .select('*')
+          .order('name');
 
-      if (customersError) throw customersError;
+        if (customersError) {
+          console.error('❌ Error obteniendo clientes:', customersError);
+          throw customersError;
+        }
 
-      // Get package counts for each customer
-      const customerIds = customersData.map(c => c.id);
-      const { data: packageCounts, error: packageError } = await supabase
-        .from('packages')
-        .select('customer_id')
-        .in('customer_id', customerIds);
+        console.log('✅ Clientes obtenidos:', customersData?.length || 0);
 
-      if (packageError) throw packageError;
+        if (!customersData || customersData.length === 0) {
+          console.log('⚠️ No se encontraron clientes en la base de datos');
+          return [];
+        }
 
-      // Count packages per customer
-      const packageCountMap = packageCounts.reduce((acc, pkg) => {
-        acc[pkg.customer_id] = (acc[pkg.customer_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+        // Get package counts for each customer
+        const customerIds = customersData.map(c => c.id);
+        
+        if (customerIds.length > 0) {
+          const { data: packageCounts, error: packageError } = await supabase
+            .from('packages')
+            .select('customer_id')
+            .in('customer_id', customerIds);
 
-      return customersData.map(customer => ({
-        ...customer,
-        package_count: packageCountMap[customer.id] || 0
-      }));
+          if (packageError) {
+            console.error('❌ Error obteniendo conteo de paquetes:', packageError);
+            // No lanzar error, solo usar 0 como conteo
+          }
+
+          // Count packages per customer
+          const packageCountMap = (packageCounts || []).reduce((acc, pkg) => {
+            acc[pkg.customer_id] = (acc[pkg.customer_id] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          return customersData.map(customer => ({
+            ...customer,
+            package_count: packageCountMap[customer.id] || 0
+          }));
+        }
+
+        return customersData.map(customer => ({
+          ...customer,
+          package_count: 0
+        }));
+
+      } catch (error) {
+        console.error('❌ Error crítico obteniendo clientes:', error);
+        throw error;
+      }
     },
+    retry: 2,
+    staleTime: 30000, // 30 segundos
   });
 
-  // Filter customers based on search
-  const filteredCustomers = searchCustomerId 
-    ? customers.filter(customer => customer.id === searchCustomerId)
-    : customers;
+  // Always show all customers - remove search filtering that might be hiding customers
+  const filteredCustomers = customers;
+
+  console.log('📊 Estado de clientes:', {
+    total: customers.length,
+    isLoading,
+    hasError: !!error,
+    filtered: filteredCustomers.length
+  });
 
   const handleChatClick = (customerId: string) => {
     setSelectedCustomerId(customerId);
@@ -132,10 +169,64 @@ export function CustomersList() {
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
+  // Show error state
+  if (error) {
+    console.error('❌ Error en CustomersList:', error);
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="text-red-600 text-center">
+          <h3 className="text-lg font-semibold mb-2">Error al cargar clientes</h3>
+          <p className="text-sm mb-4">No se pudieron cargar los clientes desde la base de datos.</p>
+          <div className="text-xs bg-red-50 p-3 rounded border border-red-200">
+            <strong>Error técnico:</strong> {error.message || 'Error desconocido'}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => refetch()} variant="outline">
+            Reintentar
+          </Button>
+          <Button 
+            onClick={() => setCreateCustomerDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Crear Primer Cliente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="text-gray-500">Cargando clientes...</div>
+      </div>
+    );
+  }
+
+  // Show empty state if no customers
+  if (customers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold mb-2">No hay clientes registrados</h3>
+          <p className="text-gray-600 mb-4">Crea tu primer cliente para comenzar.</p>
+        </div>
+        <Button 
+          onClick={() => setCreateCustomerDialogOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Crear Primer Cliente
+        </Button>
+        
+        <CustomerFormDialog
+          open={createCustomerDialogOpen}
+          onOpenChange={setCreateCustomerDialogOpen}
+          onSuccess={handleCreateCustomerSuccess}
+        />
       </div>
     );
   }

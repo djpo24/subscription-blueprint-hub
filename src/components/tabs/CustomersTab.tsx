@@ -1,6 +1,7 @@
 
 import { TabsContent } from '@/components/ui/tabs';
 import { CustomersList } from '@/components/customer-list/CustomersList';
+import { DebugCustomersStatus } from '@/components/DebugCustomersStatus';
 
 export function CustomersTab() {
   return (
@@ -15,6 +16,7 @@ export function CustomersTab() {
           </div>
         </div>
         
+        <DebugCustomersStatus />
         <CustomersList />
       </div>
     </TabsContent>

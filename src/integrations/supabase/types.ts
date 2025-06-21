@@ -950,6 +950,122 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_notification_log: {
+        Row: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          error_message: string | null
+          id: string
+          personalized_message: string
+          sent_at: string | null
+          status: string
+          trip_notification_id: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          error_message?: string | null
+          id?: string
+          personalized_message: string
+          sent_at?: string | null
+          status?: string
+          trip_notification_id: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          error_message?: string | null
+          id?: string
+          personalized_message?: string
+          sent_at?: string | null
+          status?: string
+          trip_notification_id?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_notification_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_notification_log_trip_notification_id_fkey"
+            columns: ["trip_notification_id"]
+            isOneToOne: false
+            referencedRelation: "trip_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deadline_date: string
+          deadline_time: string
+          failed_count: number | null
+          id: string
+          message_template: string
+          outbound_trip_id: string
+          return_trip_id: string
+          sent_at: string | null
+          status: string
+          success_count: number | null
+          total_customers_sent: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deadline_date: string
+          deadline_time?: string
+          failed_count?: number | null
+          id?: string
+          message_template: string
+          outbound_trip_id: string
+          return_trip_id: string
+          sent_at?: string | null
+          status?: string
+          success_count?: number | null
+          total_customers_sent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deadline_date?: string
+          deadline_time?: string
+          failed_count?: number | null
+          id?: string
+          message_template?: string
+          outbound_trip_id?: string
+          return_trip_id?: string
+          sent_at?: string | null
+          status?: string
+          success_count?: number | null
+          total_customers_sent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_notifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           arrival_date: string | null
@@ -1133,6 +1249,16 @@ export type Database = {
           template_param: string
           start_date: string
           end_date: string
+        }
+        Returns: string
+      }
+      generate_trip_notification_message: {
+        Args: {
+          customer_name_param: string
+          template_param: string
+          outbound_date: string
+          return_date: string
+          deadline_date: string
         }
         Returns: string
       }

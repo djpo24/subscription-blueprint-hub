@@ -7,7 +7,8 @@ import { MarketingContacts } from './MarketingContacts';
 import { MarketingCampaigns } from './MarketingCampaigns';
 import { MarketingStats } from './MarketingStats';
 import { FreightRatesManager } from './FreightRatesManager';
-import { Send, Settings, Users, BarChart3, DollarSign } from 'lucide-react';
+import { TripNotificationsManager } from './TripNotificationsManager';
+import { Send, Settings, Users, BarChart3, DollarSign, Plane } from 'lucide-react';
 
 export function MarketingPanel() {
   return (
@@ -24,10 +25,14 @@ export function MarketingPanel() {
       <MarketingStats />
 
       <Tabs defaultValue="campaigns" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Campañas
+          </TabsTrigger>
+          <TabsTrigger value="trip-notifications" className="flex items-center gap-2">
+            <Plane className="h-4 w-4" />
+            Viajes
           </TabsTrigger>
           <TabsTrigger value="contacts" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -49,6 +54,10 @@ export function MarketingPanel() {
 
         <TabsContent value="campaigns" className="space-y-6">
           <MarketingCampaigns />
+        </TabsContent>
+
+        <TabsContent value="trip-notifications" className="space-y-6">
+          <TripNotificationsManager />
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">

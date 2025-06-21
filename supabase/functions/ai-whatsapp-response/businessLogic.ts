@@ -71,13 +71,26 @@ export function detectTripScheduleInquiry(message: string): {
 } {
   const messageLower = message.toLowerCase().trim();
   
-  // Palabras clave que indican consulta de fechas/envíos
+  // EXPANDIDO: Palabras clave que indican consulta de fechas/envíos - INCLUYE TODAS LAS VARIACIONES
   const tripKeywords = [
+    // Variaciones básicas de viaje
     'cuando viajan', 'cuándo viajan', 'cuando vuelan', 'cuándo vuelan',
+    'cuando van', 'cuándo van', 'cuando va', 'cuándo va',
+    'cuando se van', 'cuándo se van', 'cuando van a', 'cuándo van a',
+    'cuando van a viajar', 'cuándo van a viajar', 'cuando viajan a', 'cuándo viajan a',
+    'cuando se van para', 'cuándo se van para', 'cuando va para', 'cuándo va para',
+    'cuando va a', 'cuándo va a', 'cuando van para', 'cuándo van para',
+    
+    // Palabras de tiempo y programación
     'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
     'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
     'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'viaje', 'viajes',
-    'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen'
+    'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen',
+    
+    // Variaciones específicas
+    'cuando hay viaje', 'cuándo hay viaje', 'cuando hay envío', 'cuándo hay envío',
+    'hay viaje', 'hay envío', 'próximo viaje', 'proximo viaje',
+    'próximo envío', 'proximo envío', 'llevar', 'encomienda'
   ];
   
   const isTripInquiry = tripKeywords.some(keyword => messageLower.includes(keyword));
@@ -86,16 +99,24 @@ export function detectTripScheduleInquiry(message: string): {
     return { isTripInquiry: false, needsDestination: false, hasDestination: false };
   }
   
+  console.log(`🛫 [TripInquiry] Consulta de viaje detectada: "${message}"`);
+  
   // Detectar destino mencionado
   let destination: string | undefined;
   let hasDestination = false;
   
-  if (messageLower.includes('curacao') || messageLower.includes('curazao')) {
+  if (messageLower.includes('curacao') || messageLower.includes('curazao') ||
+      messageLower.includes('hacia curazao') || messageLower.includes('para curazao') ||
+      messageLower.includes('a curazao')) {
     destination = 'Curazao';
     hasDestination = true;
-  } else if (messageLower.includes('barranquilla') || messageLower.includes('colombia')) {
+    console.log(`🎯 [TripInquiry] Destino detectado: ${destination}`);
+  } else if (messageLower.includes('barranquilla') || messageLower.includes('colombia') ||
+             messageLower.includes('hacia barranquilla') || messageLower.includes('para barranquilla') ||
+             messageLower.includes('a barranquilla')) {
     destination = 'Barranquilla';
     hasDestination = true;
+    console.log(`🎯 [TripInquiry] Destino detectado: ${destination}`);
   }
   
   // Si es una consulta de viajes pero no tiene destino, necesita preguntar
@@ -144,6 +165,8 @@ export function detectDestinationResponseAfterTripInquiry(message: string, conve
   } else if (messageLower.includes('barranquilla') || messageLower.includes('colombia')) {
     destination = 'Barranquilla';
   }
+
+  console.log(`🔄 [DestinationResponse] ${isShortDestinationResponse ? 'Sí' : 'No'} es respuesta de destino, ${wasTripDestinationQuestion ? 'Sí' : 'No'} había pregunta previa`);
 
   return {
     isDestinationResponse: isShortDestinationResponse,
@@ -237,6 +260,8 @@ export function generateTripDatesAfterDestinationResponse(
     return null;
   }
 
+  console.log(`📅 [TripDates] Generando fechas para destino: ${destination}`);
+
   // Buscar viajes HACIA el destino solicitado
   const destinationTrips = upcomingTrips.filter(trip => {
     const tripDestination = trip.destination.toLowerCase();
@@ -302,7 +327,7 @@ Darwin te informará sobre las próximas fechas disponibles para ${destination}.
   return response;
 }
 
-// FUNCIÓN NUEVA: Generar respuesta inteligente para consultas de viajes
+// FUNCIÓN PRINCIPAL: Generar respuesta inteligente para consultas de viajes (EVITA DUPLICADOS)
 export function generateTripScheduleResponse(
   customerInfo: CustomerInfo, 
   message: string
@@ -315,8 +340,10 @@ export function generateTripScheduleResponse(
   
   const customerName = customerInfo.customerFirstName || 'Cliente';
   
-  // Si necesita destino, preguntar de forma estructurada
+  // CLAVE: Si necesita destino, preguntar de forma estructurada y TERMINAR AQUÍ
   if (tripInquiry.needsDestination) {
+    console.log(`❓ [TripSchedule] Cliente pregunta sin destino - Solicitando clarificación`);
+    
     return `¡Hola ${customerName}! 👋
 
 Para mostrarte las fechas de los próximos viajes, necesito saber el destino. 🎯
@@ -329,7 +356,8 @@ Para mostrarte las fechas de los próximos viajes, necesito saber el destino. �
 Escribe el destino y te muestro todas las fechas disponibles. ✈️`;
   }
   
-  // Si ya tiene destino, usar el contexto de viajes que se cargará automáticamente
+  // Si ya tiene destino, NO manejar aquí - dejar que el prompt principal maneje con contexto
+  console.log(`🎯 [TripSchedule] Cliente ya especificó destino: ${tripInquiry.destination} - Delegando a prompt principal`);
   return null; // Dejar que el prompt principal maneje la respuesta con el contexto de viajes
 }
 
@@ -358,27 +386,39 @@ export function detectPackageStatusInquiry(message: string): boolean {
     /a.*hora/i
   ];
 
-  // EXCLUIR consultas que claramente son sobre viajes/fechas
+  // MEJORADO: EXCLUIR consultas que claramente son sobre viajes/fechas
   const tripExclusionPatterns = [
     /cuando.*viajan/i,
     /cuándo.*viajan/i,
     /cuando.*vuelan/i,
     /cuándo.*vuelan/i,
+    /cuando.*van/i,
+    /cuándo.*van/i,
+    /cuando.*va/i,
+    /cuándo.*va/i,
     /fechas.*viaje/i,
     /próximo.*viaje/i,
     /cuando.*sale/i,
     /cuándo.*sale/i,
     /quiero.*enviar.*próxima/i,
-    /quiero.*enviar.*proximo/i
+    /quiero.*enviar.*proximo/i,
+    /hay.*viaje/i,
+    /hay.*envío/i
   ];
 
   // Si es una consulta de viajes, NO es una consulta de encomienda
   const isTripQuery = tripExclusionPatterns.some(pattern => pattern.test(message));
   if (isTripQuery) {
+    console.log(`🚫 [PackageDetection] Excluida como consulta de viaje: "${message}"`);
     return false;
   }
 
-  return packageInquiryPatterns.some(pattern => pattern.test(message));
+  const isPackageQuery = packageInquiryPatterns.some(pattern => pattern.test(message));
+  if (isPackageQuery) {
+    console.log(`📦 [PackageDetection] Consulta de encomienda detectada: "${message}"`);
+  }
+
+  return isPackageQuery;
 }
 
 // FUNCIÓN MEJORADA: Respuestas directas usando el nuevo servicio de flujo

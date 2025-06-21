@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -30,7 +29,7 @@ serve(async (req) => {
   try {
     const { message, customerPhone, customerId } = await req.json();
     
-    console.log('🤖 BOT CON VERIFICACIÓN Y FECHA ACTUAL - Sistema activado:', { 
+    console.log('🤖 BOT ANTI-DUPLICADO CON VERIFICACIÓN Y FECHA ACTUAL - Sistema activado:', { 
       message: message?.substring(0, 50) + '...', 
       customerPhone: customerPhone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
       customerId: customerId || 'not_provided'
@@ -59,7 +58,8 @@ serve(async (req) => {
       customerFound: customerInfo.customerFound,
       packagesCount: customerInfo.packagesCount,
       verificationEnabled: true,
-      dateContextEnabled: true
+      dateContextEnabled: true,
+      antiDuplicateSystem: true
     });
 
     // Get current date context - CRÍTICO PARA FECHAS FUTURAS
@@ -75,67 +75,23 @@ serve(async (req) => {
     // Get conversation history for context
     const recentMessages = await getSecureConversationHistory(supabase, customerPhone, actualCustomerId);
 
+    // 🔥 SISTEMA ANTI-DUPLICADO: Cada consulta debe procesarse UNA SOLA VEZ en orden de prioridad
+
     // 🎯 PRIMERA PRIORIDAD: Analizar contexto de conversación para respuestas inteligentes
     const contextualAnalysis = analyzeConversationContext(message, recentMessages);
     if (contextualAnalysis.isContextualResponse && contextualAnalysis.suggestedResponse) {
-      console.log('🧠 RESPUESTA CONTEXTUAL INTELIGENTE detectada - Analizando contexto de conversación');
+      console.log('🧠 [PRIORITY-1] RESPUESTA CONTEXTUAL INTELIGENTE detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let contextualInteractionId: string | null = null;
-      try {
-        const { data: contextualInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: contextualAnalysis.suggestedResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isContextualIntelligentResponse: true,
-              contextType: contextualAnalysis.contextType,
-              verificationEnabled: true,
-              verificationPassed: true,
-              dateContextEnabled: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && contextualInteractionData) {
-          contextualInteractionId = contextualInteractionData.id;
-          await updateLearningModel(supabase, contextualInteractionId, customerPhone, message, contextualAnalysis.suggestedResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: contextualAnalysis.suggestedResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: contextualInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('🧠 RESPUESTA CONTEXTUAL INTELIGENTE ENVIADA - Contexto analizado correctamente');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        contextualAnalysis.suggestedResponse,
+        customerInfo,
+        startTime,
+        'contextual_intelligent_response'
+      );
     }
 
     // 🎯 SEGUNDA PRIORIDAD: Detectar respuesta de destino después de consulta de fechas de viajes
@@ -143,491 +99,142 @@ serve(async (req) => {
     if (destinationResponseCheck.isDestinationResponse && destinationResponseCheck.shouldShowTripDates) {
       const tripDatesResponse = generateTripDatesAfterDestinationResponse(customerInfo, message, allUpcomingTrips);
       if (tripDatesResponse) {
-        console.log('📅 RESPUESTA DE DESTINO CON FECHAS detectada - Mostrando fechas de viajes');
+        console.log('📅 [PRIORITY-2] RESPUESTA DE DESTINO CON FECHAS detectada - UNA SOLA RESPUESTA');
         
-        const responseTime = Date.now() - startTime;
-
-        // Store interaction
-        let destinationTripInteractionId: string | null = null;
-        try {
-          const { data: destinationTripInteractionData, error: insertError } = await supabase
-            .from('ai_chat_interactions')
-            .insert({
-              customer_id: actualCustomerId || null,
-              customer_phone: customerPhone,
-              user_message: message,
-              ai_response: tripDatesResponse,
-              context_info: {
-                customerFound: customerInfo.customerFound,
-                packagesCount: customerInfo.packagesCount,
-                wasEscalated: false,
-                isDestinationResponseWithTripDates: true,
-                verificationEnabled: true,
-                verificationPassed: true
-              },
-              response_time_ms: responseTime,
-              was_fallback: false
-            })
-            .select()
-            .single();
-
-          if (!insertError && destinationTripInteractionData) {
-            destinationTripInteractionId = destinationTripInteractionData.id;
-            await updateLearningModel(supabase, destinationTripInteractionId, customerPhone, message, tripDatesResponse);
-          }
-        } catch (storeError) {
-          console.error('❌ Error storing interaction:', storeError);
-        }
-
-        const result: AIResponseResult = {
-          response: tripDatesResponse,
-          hasPackageInfo: customerInfo.packagesCount > 0,
-          isFromFallback: false,
-          customerInfo: {
-            found: customerInfo.customerFound,
-            name: customerInfo.customerFirstName,
-            pendingAmount: customerInfo.totalPending,
-            pendingPackages: customerInfo.pendingPaymentPackages.length,
-            transitPackages: customerInfo.pendingDeliveryPackages.length
-          },
-          interactionId: destinationTripInteractionId,
-          wasEscalated: false
-        };
-
-        console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Fechas mostradas correctamente');
-        
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return await generateSingleResponse(
+          supabase, 
+          actualCustomerId, 
+          customerPhone, 
+          message, 
+          tripDatesResponse,
+          customerInfo,
+          startTime,
+          'destination_response_with_trip_dates'
+        );
       }
     }
 
     // 🎯 TERCERA PRIORIDAD: Detectar consultas sobre fechas de viajes (ANTES que encomiendas)
     const tripScheduleResponse = generateTripScheduleResponse(customerInfo, message);
     if (tripScheduleResponse) {
-      console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando información inteligente sobre viajes');
+      console.log('📅 [PRIORITY-3] CONSULTA DE FECHAS DE VIAJES detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let tripInteractionId: string | null = null;
-      try {
-        const { data: tripInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: tripScheduleResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isTripScheduleInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && tripInteractionData) {
-          tripInteractionId = tripInteractionData.id;
-          await updateLearningModel(supabase, tripInteractionId, customerPhone, message, tripScheduleResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: tripScheduleResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: tripInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Pregunta inteligente sobre destino');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        tripScheduleResponse,
+        customerInfo,
+        startTime,
+        'trip_schedule_inquiry'
+      );
     }
 
     // 🎯 CUARTA PRIORIDAD: Detectar consultas sobre encomiendas específicas - ANÁLISIS INTELIGENTE
     const packageClarificationResponse = generatePackageOriginClarificationResponse(customerInfo, message);
     if (packageClarificationResponse) {
-      console.log('📦 CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - Proporcionando información contextual inteligente');
+      console.log('📦 [PRIORITY-4] CONSULTA DE ENCOMIENDA ESPECÍFICA detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let clarificationInteractionId: string | null = null;
-      try {
-        const { data: clarificationInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: packageClarificationResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isIntelligentPackageInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && clarificationInteractionData) {
-          clarificationInteractionId = clarificationInteractionData.id;
-          await updateLearningModel(supabase, clarificationInteractionId, customerPhone, message, packageClarificationResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: packageClarificationResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: clarificationInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('📦 RESPUESTA INTELIGENTE ENVIADA - Información contextual basada en datos del cliente');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        packageClarificationResponse,
+        customerInfo,
+        startTime,
+        'intelligent_package_inquiry'
+      );
     }
 
-    // 🎯 CUARTA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
+    // 🎯 QUINTA PRIORIDAD: Detectar consultas integradas con múltiples preguntas
     const integratedResponse = generateIntegratedPackageResponse(customerInfo, message, allUpcomingTrips, destinationAddresses);
     if (integratedResponse) {
-      console.log('🎯 CONSULTA MÚLTIPLE INTEGRADA detectada - Proporcionando respuesta completa');
+      console.log('🎯 [PRIORITY-5] CONSULTA MÚLTIPLE INTEGRADA detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let integratedInteractionId: string | null = null;
-      try {
-        const { data: integratedInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: integratedResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isIntegratedMultipleInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && integratedInteractionData) {
-          integratedInteractionId = integratedInteractionData.id;
-          await updateLearningModel(supabase, integratedInteractionId, customerPhone, message, integratedResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: integratedResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: integratedInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('🎯 RESPUESTA INTEGRADA ENVIADA - Todas las preguntas respondidas correctamente');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        integratedResponse,
+        customerInfo,
+        startTime,
+        'integrated_multiple_inquiry'
+      );
     }
 
-    // 📅 QUINTA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
+    // 📅 SEXTA PRIORIDAD: Detectar consultas específicas sobre fechas de viajes
     const tripDateResponse = generateTripDateResponse(customerInfo, message, allUpcomingTrips);
     if (tripDateResponse) {
-      console.log('📅 CONSULTA DE FECHAS DE VIAJES detectada - Proporcionando fechas reales de próximos viajes');
+      console.log('📅 [PRIORITY-6] CONSULTA DE FECHAS DE VIAJES detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let tripDateInteractionId: string | null = null;
-      try {
-        const { data: tripDateInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: tripDateResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isTripDateInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && tripDateInteractionData) {
-          tripDateInteractionId = tripDateInteractionData.id;
-          await updateLearningModel(supabase, tripDateInteractionId, customerPhone, message, tripDateResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: tripDateResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: tripDateInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('📅 RESPUESTA DE FECHAS DE VIAJES ENVIADA - Información real de próximos viajes proporcionada');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        tripDateResponse,
+        customerInfo,
+        startTime,
+        'trip_date_inquiry'
+      );
     }
 
-    // 🚨 SEXTA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
+    // 🚨 SÉPTIMA PRIORIDAD: Detectar consultas sobre plazos de entrega de paquetes (solo si no es múltiple)
     const packageDeadlineResponse = generatePackageDeliveryDeadlineResponse(customerInfo, message, allUpcomingTrips);
     if (packageDeadlineResponse) {
-      console.log('⏰ CONSULTA DE PLAZO DE ENTREGA detectada - Proporcionando información de deadline');
+      console.log('⏰ [PRIORITY-7] CONSULTA DE PLAZO DE ENTREGA detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let deadlineInteractionId: string | null = null;
-      try {
-        const { data: deadlineInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: packageDeadlineResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isPackageDeadlineInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && deadlineInteractionData) {
-          deadlineInteractionId = deadlineInteractionData.id;
-          await updateLearningModel(supabase, deadlineInteractionId, customerPhone, message, packageDeadlineResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: packageDeadlineResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: deadlineInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('⏰ RESPUESTA DE PLAZO DE ENTREGA ENVIADA - Información completa proporcionada');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        packageDeadlineResponse,
+        customerInfo,
+        startTime,
+        'package_deadline_inquiry'
+      );
     }
 
-    // 📦 SEPTIMA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
+    // 📦 OCTAVA PRIORIDAD: Detectar consultas sobre dónde enviar paquetes (solo si no es múltiple)
     const packageShippingResponse = generatePackageShippingResponse(customerInfo, message, destinationAddresses);
     if (packageShippingResponse) {
-      console.log('📦 CONSULTA/RESPUESTA DE ENVÍO detectada - Proporcionando información contextual');
+      console.log('📦 [PRIORITY-8] CONSULTA/RESPUESTA DE ENVÍO detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let packageShippingInteractionId: string | null = null;
-      try {
-        const { data: packageShippingInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: packageShippingResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isPackageShippingInquiry: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && packageShippingInteractionData) {
-          packageShippingInteractionId = packageShippingInteractionData.id;
-          await updateLearningModel(supabase, packageShippingInteractionId, customerPhone, message, packageShippingResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: packageShippingResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: packageShippingInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('📦 RESPUESTA DE ENVÍO ENVIADA - Información contextual proporcionada');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        packageShippingResponse,
+        customerInfo,
+        startTime,
+        'package_shipping_inquiry'
+      );
     }
 
-    // 🏠 OCTAVA PRIORIDAD: Detectar solicitudes de entrega a domicilio
+    // 🏠 NOVENA PRIORIDAD: Detectar solicitudes de entrega a domicilio
     const homeDeliveryResponse = generateHomeDeliveryResponse(customerInfo, message);
     if (homeDeliveryResponse) {
-      console.log('🏠 ENTREGA A DOMICILIO detectada - Transfiriendo a Josefa');
+      console.log('🏠 [PRIORITY-9] ENTREGA A DOMICILIO detectada - UNA SOLA RESPUESTA');
       
-      const responseTime = Date.now() - startTime;
-
-      // Store interaction
-      let homeDeliveryInteractionId: string | null = null;
-      try {
-        const { data: homeDeliveryInteractionData, error: insertError } = await supabase
-          .from('ai_chat_interactions')
-          .insert({
-            customer_id: actualCustomerId || null,
-            customer_phone: customerPhone,
-            user_message: message,
-            ai_response: homeDeliveryResponse,
-            context_info: {
-              customerFound: customerInfo.customerFound,
-              packagesCount: customerInfo.packagesCount,
-              wasEscalated: false,
-              isHomeDeliveryRequest: true,
-              verificationEnabled: true,
-              verificationPassed: true
-            },
-            response_time_ms: responseTime,
-            was_fallback: false
-          })
-          .select()
-          .single();
-
-        if (!insertError && homeDeliveryInteractionData) {
-          homeDeliveryInteractionId = homeDeliveryInteractionData.id;
-          await updateLearningModel(supabase, homeDeliveryInteractionId, customerPhone, message, homeDeliveryResponse);
-        }
-      } catch (storeError) {
-        console.error('❌ Error storing interaction:', storeError);
-      }
-
-      const result: AIResponseResult = {
-        response: homeDeliveryResponse,
-        hasPackageInfo: customerInfo.packagesCount > 0,
-        isFromFallback: false,
-        customerInfo: {
-          found: customerInfo.customerFound,
-          name: customerInfo.customerFirstName,
-          pendingAmount: customerInfo.totalPending,
-          pendingPackages: customerInfo.pendingPaymentPackages.length,
-          transitPackages: customerInfo.pendingDeliveryPackages.length
-        },
-        interactionId: homeDeliveryInteractionId,
-        wasEscalated: false
-      };
-
-      console.log('🏠 RESPUESTA DE ENTREGA A DOMICILIO ENVIADA - Josefa coordinará');
-      
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await generateSingleResponse(
+        supabase, 
+        actualCustomerId, 
+        customerPhone, 
+        message, 
+        homeDeliveryResponse,
+        customerInfo,
+        startTime,
+        'home_delivery_request'
+      );
     }
+
+    // 🤖 ÚLTIMA PRIORIDAD: Si ninguna regla específica aplica, usar IA general
+    console.log('🤖 [PRIORITY-FINAL] Ninguna regla específica aplicó - Procesando con IA general');
 
     // Get additional context data
     const freightRates = await getActiveFreightRates(supabase);
@@ -725,6 +332,7 @@ ${conversationContext}`;
             wasEscalated: false, // NUNCA escalado
             verificationEnabled: true,
             dateContextEnabled: true, // NUEVO: contexto de fecha habilitado
+            antiDuplicateSystem: true, // NUEVO: sistema anti-duplicado
             verificationResult: wasVerified ? {
               approved: verificationResult?.isApproved,
               confidence: verificationResult?.confidence,
@@ -767,13 +375,14 @@ ${conversationContext}`;
       wasEscalated: false // NUNCA escalado
     };
 
-    console.log('🤖 RESPUESTA ENTREGADA CON VERIFICACIÓN Y CONTEXTO DE FECHA:', {
+    console.log('🤖 RESPUESTA ÚNICA ENTREGADA CON VERIFICACIÓN Y CONTEXTO DE FECHA:', {
       wasEscalated: false,
       wasVerified: wasVerified,
       verificationApproved: verificationResult?.isApproved,
       verificationConfidence: verificationResult?.confidence,
       responseTime: responseTime + 'ms',
       dateContextEnabled: true,
+      antiDuplicateSystemEnabled: true,
       escalationSystemDisabled: true
     });
 
@@ -809,6 +418,76 @@ Por favor, intenta tu consulta nuevamente en unos momentos o contáctanos direct
   }
 });
 
+// FUNCIÓN HELPER ANTI-DUPLICADO: Generar una sola respuesta y terminar
+async function generateSingleResponse(
+  supabase: any,
+  actualCustomerId: string | null,
+  customerPhone: string,
+  message: string,
+  response: string,
+  customerInfo: any,
+  startTime: number,
+  responseType: string
+): Promise<Response> {
+  const responseTime = Date.now() - startTime;
+
+  // Store interaction
+  let interactionId: string | null = null;
+  try {
+    const { data: interactionData, error: insertError } = await supabase
+      .from('ai_chat_interactions')
+      .insert({
+        customer_id: actualCustomerId || null,
+        customer_phone: customerPhone,
+        user_message: message,
+        ai_response: response,
+        context_info: {
+          customerFound: customerInfo.customerFound,
+          packagesCount: customerInfo.packagesCount,
+          wasEscalated: false,
+          responseType: responseType,
+          verificationEnabled: true,
+          verificationPassed: true,
+          dateContextEnabled: true,
+          antiDuplicateSystem: true
+        },
+        response_time_ms: responseTime,
+        was_fallback: false
+      })
+      .select()
+      .single();
+
+    if (!insertError && interactionData) {
+      interactionId = interactionData.id;
+      await updateLearningModel(supabase, interactionId, customerPhone, message, response);
+    }
+  } catch (storeError) {
+    console.error('❌ Error storing interaction:', storeError);
+  }
+
+  const result: AIResponseResult = {
+    response: response,
+    hasPackageInfo: customerInfo.packagesCount > 0,
+    isFromFallback: false,
+    customerInfo: {
+      found: customerInfo.customerFound,
+      name: customerInfo.customerFirstName,
+      pendingAmount: customerInfo.totalPending,
+      pendingPackages: customerInfo.pendingPaymentPackages.length,
+      transitPackages: customerInfo.pendingDeliveryPackages.length
+    },
+    interactionId: interactionId,
+    wasEscalated: false
+  };
+
+  console.log(`✅ [${responseType.toUpperCase()}] RESPUESTA ÚNICA ENVIADA - Sistema anti-duplicado funcionando`);
+  
+  return new Response(JSON.stringify(result), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+// ... keep existing code (getSecureConversationHistory function)
 async function getSecureConversationHistory(supabase: any, customerPhone: string, customerId?: string) {
   try {
     // 🔒 ONLY get messages for this specific customer phone number - increased limit

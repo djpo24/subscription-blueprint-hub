@@ -145,35 +145,57 @@ Respuesta: Mostrar fechas sin preguntar destino (FALTA INTELIGENCIA)`;
 }
 
 export function shouldQueryTrips(message: string): { shouldQuery: boolean; destination?: string } {
-  const messageLower = message.toLowerCase();
+  const messageLower = message.toLowerCase().trim();
   
-  // Palabras clave que indican consulta de fechas/envíos de encomiendas
+  // MEJORADO: Palabras clave expandidas para detectar ALL las formas de preguntar sobre viajes
   const tripKeywords = [
+    // Variaciones de "cuando viajan"
     'cuando viajan', 'cuándo viajan', 'cuando vuelan', 'cuándo vuelan',
+    'cuando van', 'cuándo van', 'cuando va', 'cuándo va',
+    'cuando se van', 'cuándo se van', 'cuando van a', 'cuándo van a',
+    'cuando van a viajar', 'cuándo van a viajar', 'cuando viajan a', 'cuándo viajan a',
+    'cuando se van para', 'cuándo se van para', 'cuando va para', 'cuándo va para',
+    'cuando va a', 'cuándo va a', 'cuando van para', 'cuándo van para',
+    
+    // Palabras relacionadas con fechas y envíos
     'fecha', 'fechas', 'envío', 'envios', 'enviar', 'próximo', 'próximos',
     'cuándo', 'cuando', 'horario', 'horarios', 'programado', 'programados',
     'salida', 'salidas', 'vuelo', 'vuelos', 'itinerario', 'llevar', 'encomienda',
-    'viaje', 'viajes', 'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen'
+    'viaje', 'viajes', 'cuando sale', 'cuándo sale', 'cuando salen', 'cuándo salen',
+    
+    // Variaciones específicas detectadas en logs
+    'cuando hay viaje', 'cuándo hay viaje', 'cuando hay envío', 'cuándo hay envío',
+    'hay viaje', 'hay envío', 'próximo viaje', 'proximo viaje',
+    'próximo envío', 'proximo envío'
   ];
   
   const hasKeyword = tripKeywords.some(keyword => messageLower.includes(keyword));
   
   if (!hasKeyword) {
+    console.log(`🔍 [TripDetection] No se detectaron palabras clave de viaje en: "${message}"`);
     return { shouldQuery: false };
   }
+  
+  console.log(`✅ [TripDetection] Consulta de viaje detectada: "${message}"`);
   
   // Detectar destino mencionado con lógica mejorada
   let destination: string | undefined;
   
-  // Detectar intención hacia Curazao
+  // Detectar intención hacia Curazao (múltiples variaciones)
   if (messageLower.includes('curacao') || messageLower.includes('curazao') || 
-      messageLower.includes('hacia curazao') || messageLower.includes('para curazao')) {
+      messageLower.includes('hacia curazao') || messageLower.includes('para curazao') ||
+      messageLower.includes('a curazao') || messageLower.includes('de curazao')) {
     destination = 'Curazao';
+    console.log(`🎯 [TripDetection] Destino detectado: ${destination}`);
   } 
-  // Detectar intención hacia Barranquilla
+  // Detectar intención hacia Barranquilla (múltiples variaciones)
   else if (messageLower.includes('barranquilla') || messageLower.includes('colombia') ||
-           messageLower.includes('hacia barranquilla') || messageLower.includes('para barranquilla')) {
+           messageLower.includes('hacia barranquilla') || messageLower.includes('para barranquilla') ||
+           messageLower.includes('a barranquilla') || messageLower.includes('de barranquilla')) {
     destination = 'Barranquilla';
+    console.log(`🎯 [TripDetection] Destino detectado: ${destination}`);
+  } else {
+    console.log(`❓ [TripDetection] No se detectó destino específico en: "${message}"`);
   }
   
   return { shouldQuery: true, destination };

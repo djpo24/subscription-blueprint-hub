@@ -34,6 +34,17 @@ export interface TripNotification {
   };
 }
 
+interface CreateTripNotificationInput {
+  outbound_trip_id: string;
+  return_trip_id: string;
+  deadline_date: string;
+  deadline_time: string;
+  message_template: string;
+  template_name?: string;
+  template_language?: string;
+  created_by: string | null;
+}
+
 export function useTripNotifications() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -95,12 +106,46 @@ export function useTripNotifications() {
   });
 
   const createNotificationMutation = useMutation({
-    mutationFn: async (notification: Omit<TripNotification, 'id' | 'created_at' | 'updated_at' | 'sent_at' | 'total_customers_sent' | 'success_count' | 'failed_count' | 'status'>) => {
-      console.log('Creating trip notification:', notification);
+    mutationFn: async (notification: CreateTripNotificationInput) => {
+      console.log('Creating trip notification with data:', notification);
       
+      // Validate required fields
+      if (!notification.outbound_trip_id || !notification.return_trip_id) {
+        throw new Error('Debe seleccionar viajes de ida y retorno');
+      }
+      
+      if (!notification.deadline_date) {
+        throw new Error('Debe especificar la fecha límite');
+      }
+      
+      if (!notification.template_name) {
+        throw new Error('Debe seleccionar una plantilla de WhatsApp');
+      }
+      
+      if (!notification.template_language) {
+        throw new Error('Debe seleccionar el idioma de la plantilla');
+      }
+
+      // Prepare the data for insertion
+      const insertData = {
+        outbound_trip_id: notification.outbound_trip_id,
+        return_trip_id: notification.return_trip_id,
+        deadline_date: notification.deadline_date,
+        deadline_time: notification.deadline_time,
+        message_template: notification.message_template || '',
+        template_name: notification.template_name,
+        template_language: notification.template_language,
+        status: 'draft',
+        total_customers_sent: 0,
+        success_count: 0,
+        failed_count: 0
+      };
+
+      console.log('Inserting trip notification with data:', insertData);
+
       const { data, error } = await supabase
         .from('trip_notifications')
-        .insert(notification)
+        .insert(insertData)
         .select()
         .single();
 
@@ -109,6 +154,7 @@ export function useTripNotifications() {
         throw error;
       }
 
+      console.log('Trip notification created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -122,7 +168,7 @@ export function useTripNotifications() {
       console.error('Error creating trip notification:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear la notificación",
+        description: error.message || "No se pudo crear la notificación",
         variant: "destructive"
       });
     }

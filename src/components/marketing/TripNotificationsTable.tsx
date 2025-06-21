@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTripNotifications, TripNotification } from '@/hooks/useTripNotifications';
+import { TripNotificationPanel } from './TripNotificationPanel';
 import { Send, Eye, Calendar, Users, Clock } from 'lucide-react';
 
 interface TripNotificationsTableProps {
@@ -15,11 +16,18 @@ interface TripNotificationsTableProps {
 export function TripNotificationsTable({ notifications, isLoading }: TripNotificationsTableProps) {
   const [selectedNotification, setSelectedNotification] = useState<TripNotification | null>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
+  const [viewNotification, setViewNotification] = useState<TripNotification | null>(null);
+  const [showViewPanel, setShowViewPanel] = useState(false);
   const { sendNotification, isSending } = useTripNotifications();
 
   const handleSendClick = (notification: TripNotification) => {
     setSelectedNotification(notification);
     setShowSendDialog(true);
+  };
+
+  const handleViewClick = (notification: TripNotification) => {
+    setViewNotification(notification);
+    setShowViewPanel(true);
   };
 
   const handleConfirmSend = async () => {
@@ -175,6 +183,7 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
                         size="sm"
                         variant="outline"
                         className="flex items-center gap-1"
+                        onClick={() => handleViewClick(notification)}
                       >
                         <Eye className="h-3 w-3" />
                         Ver
@@ -188,6 +197,7 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
         </Table>
       </div>
 
+      {/* Dialog de confirmación para envío directo */}
       <AlertDialog open={showSendDialog} onOpenChange={setShowSendDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -215,6 +225,15 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Panel de visualización y envío controlado */}
+      {viewNotification && (
+        <TripNotificationPanel
+          notification={viewNotification}
+          isOpen={showViewPanel}
+          onOpenChange={setShowViewPanel}
+        />
+      )}
     </>
   );
 }

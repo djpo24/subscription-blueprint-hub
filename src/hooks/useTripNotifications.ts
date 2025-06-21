@@ -55,7 +55,11 @@ export function useTripNotifications() {
         throw error;
       }
 
-      return data || [];
+      // Type assertion to ensure the data matches our interface
+      return (data || []).map(item => ({
+        ...item,
+        status: item.status as 'draft' | 'sent'
+      })) as TripNotification[];
     }
   });
 

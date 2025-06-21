@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTripNotificationDetails } from '@/hooks/useTripNotificationDetails';
 import { Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2, Plane } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';

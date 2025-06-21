@@ -65,7 +65,9 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     id: notification.id,
     outbound: notification.outbound_trip?.trip_date,
     return: notification.return_trip?.trip_date,
-    deadline: notification.deadline_date
+    deadline: notification.deadline_date,
+    template_name: notification.template_name,
+    template_language: notification.template_language
   });
 
   // Get all customers with fresh data
@@ -115,6 +117,8 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
           customer_phone: phone,
           customer_name: customer.name,
           personalized_message: messageResult,
+          template_name: notification.template_name || 'proximos_viajes',
+          template_language: notification.template_language || 'es_CO',
           status: 'prepared'
         }, {
           onConflict: 'trip_notification_id,customer_id'
@@ -126,7 +130,7 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
       }
 
       prepared++;
-      console.log(`✅ Prepared notification for ${customer.name}`);
+      console.log(`✅ Prepared notification for ${customer.name} with template ${notification.template_name}`);
 
     } catch (error) {
       console.error(`❌ Error preparing notification for customer ${customer.name}:`, error);
@@ -166,13 +170,16 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
   // Process each prepared notification
   for (const log of preparedLogs || []) {
     try {
-      // Send WhatsApp message
+      // Send WhatsApp message with template configuration
       const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: log.id,
           phone: log.customer_phone,
           message: log.personalized_message,
-          customerId: log.customer_id
+          customerId: log.customer_id,
+          useTemplate: true,
+          templateName: log.template_name || 'proximos_viajes',
+          templateLanguage: log.template_language || 'es_CO'
         }
       });
 
@@ -200,7 +207,7 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
           .eq('id', log.id);
         
         executed++;
-        console.log(`✅ Successfully sent to ${log.customer_name}`);
+        console.log(`✅ Successfully sent to ${log.customer_name} using template ${log.template_name}`);
       }
 
     } catch (error) {

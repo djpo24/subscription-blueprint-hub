@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { useTripNotifications } from '@/hooks/useTripNotifications';
 import { formatDispatchDate } from '@/utils/dateUtils';
-import { Calendar, Plane, Clock } from 'lucide-react';
+import { Calendar, Plane, Clock, MessageSquare, Globe } from 'lucide-react';
 
 interface Trip {
   id: string;
@@ -53,6 +53,8 @@ export function CreateTripNotificationDialog({
   const [deadlineDate, setDeadlineDate] = useState<string>('');
   const [deadlineTime, setDeadlineTime] = useState<string>('15:00');
   const [messageTemplate, setMessageTemplate] = useState<string>(DEFAULT_TEMPLATE);
+  const [templateName, setTemplateName] = useState<string>('proximos_viajes');
+  const [templateLanguage, setTemplateLanguage] = useState<string>('es_CO');
   
   const { createNotification, isCreating } = useTripNotifications();
 
@@ -84,7 +86,7 @@ export function CreateTripNotificationDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!outboundTripId || !returnTripId || !deadlineDate) {
+    if (!outboundTripId || !returnTripId || !deadlineDate || !templateName || !templateLanguage) {
       return;
     }
 
@@ -95,6 +97,8 @@ export function CreateTripNotificationDialog({
         deadline_date: deadlineDate,
         deadline_time: deadlineTime,
         message_template: messageTemplate,
+        template_name: templateName,
+        template_language: templateLanguage,
         created_by: null // Will be set by RLS
       });
       
@@ -104,6 +108,8 @@ export function CreateTripNotificationDialog({
       setDeadlineDate('');
       setDeadlineTime('15:00');
       setMessageTemplate(DEFAULT_TEMPLATE);
+      setTemplateName('proximos_viajes');
+      setTemplateLanguage('es_CO');
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating notification:', error);
@@ -219,16 +225,61 @@ export function CreateTripNotificationDialog({
             </div>
           </div>
 
+          {/* Template Configuration */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Template Name */}
+            <div className="space-y-2">
+              <Label htmlFor="template-name" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Nombre de la Plantilla
+              </Label>
+              <Select value={templateName} onValueChange={setTemplateName}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar plantilla" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="proximos_viajes">Próximos Viajes</SelectItem>
+                  <SelectItem value="customer_service_followup">Seguimiento al Cliente</SelectItem>
+                  <SelectItem value="package_arrival_notification">Notificación de Llegada</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-500">
+                Plantilla de WhatsApp a utilizar para el envío
+              </p>
+            </div>
+
+            {/* Template Language */}
+            <div className="space-y-2">
+              <Label htmlFor="template-language" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Idioma de la Plantilla
+              </Label>
+              <Select value={templateLanguage} onValueChange={setTemplateLanguage}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar idioma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="es_CO">Español (Colombia)</SelectItem>
+                  <SelectItem value="es">Español</SelectItem>
+                  <SelectItem value="en_US">English (US)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-500">
+                Idioma configurado en la plantilla de WhatsApp
+              </p>
+            </div>
+          </div>
+
           {/* Message Template */}
           <div className="space-y-2">
             <Label htmlFor="message-template">
-              Plantilla del Mensaje
+              Plantilla del Mensaje (Fallback)
             </Label>
             <Textarea
               id="message-template"
               value={messageTemplate}
               onChange={(e) => setMessageTemplate(e.target.value)}
-              rows={15}
+              rows={12}
               className="font-mono text-sm"
               placeholder="Escribe la plantilla del mensaje..."
               required
@@ -241,6 +292,9 @@ export function CreateTripNotificationDialog({
                 <li><code>{'{{fecha_retorno_cur}}'}</code> - Fecha del viaje de retorno</li>
                 <li><code>{'{{fecha_limite_entrega}}'}</code> - Fecha límite de entrega</li>
               </ul>
+              <p className="text-orange-600 font-medium">
+                Nota: Se usará la plantilla de WhatsApp configurada. Este mensaje es solo como respaldo.
+              </p>
             </div>
           </div>
 
@@ -254,7 +308,7 @@ export function CreateTripNotificationDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={isCreating || !outboundTripId || !returnTripId}
+              disabled={isCreating || !outboundTripId || !returnTripId || !templateName || !templateLanguage}
             >
               {isCreating ? 'Creando...' : 'Crear Notificación'}
             </Button>

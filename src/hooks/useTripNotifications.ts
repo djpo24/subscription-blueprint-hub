@@ -10,6 +10,8 @@ export interface TripNotification {
   deadline_date: string;
   deadline_time: string;
   message_template: string;
+  template_name?: string;
+  template_language?: string;
   total_customers_sent: number;
   success_count: number;
   failed_count: number;

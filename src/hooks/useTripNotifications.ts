@@ -41,25 +41,54 @@ export function useTripNotifications() {
     queryFn: async (): Promise<TripNotification[]> => {
       console.log('Fetching trip notifications...');
       
-      const { data, error } = await supabase
+      // First, fetch the trip notifications
+      const { data: notificationData, error: notificationError } = await supabase
         .from('trip_notifications')
-        .select(`
-          *,
-          outbound_trip:outbound_trip_id(trip_date, origin, destination, flight_number),
-          return_trip:return_trip_id(trip_date, origin, destination, flight_number)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching trip notifications:', error);
-        throw error;
+      if (notificationError) {
+        console.error('Error fetching trip notifications:', notificationError);
+        throw notificationError;
       }
 
-      // Type assertion to ensure the data matches our interface
-      return (data || []).map(item => ({
-        ...item,
-        status: item.status as 'draft' | 'sent'
-      })) as TripNotification[];
+      if (!notificationData || notificationData.length === 0) {
+        return [];
+      }
+
+      // Get all unique trip IDs
+      const tripIds = new Set<string>();
+      notificationData.forEach(notification => {
+        tripIds.add(notification.outbound_trip_id);
+        tripIds.add(notification.return_trip_id);
+      });
+
+      // Fetch all related trips
+      const { data: tripsData, error: tripsError } = await supabase
+        .from('trips')
+        .select('id, trip_date, origin, destination, flight_number')
+        .in('id', Array.from(tripIds));
+
+      if (tripsError) {
+        console.error('Error fetching trips:', tripsError);
+        throw tripsError;
+      }
+
+      // Create a map of trips by ID for easy lookup
+      const tripsMap = new Map();
+      tripsData?.forEach(trip => {
+        tripsMap.set(trip.id, trip);
+      });
+
+      // Combine the data
+      const result: TripNotification[] = notificationData.map(notification => ({
+        ...notification,
+        status: notification.status as 'draft' | 'sent',
+        outbound_trip: tripsMap.get(notification.outbound_trip_id) || undefined,
+        return_trip: tripsMap.get(notification.return_trip_id) || undefined,
+      }));
+
+      return result;
     }
   });
 

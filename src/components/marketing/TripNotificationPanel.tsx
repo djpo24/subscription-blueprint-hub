@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTripNotificationDetails } from '@/hooks/useTripNotificationDetails';
+import { formatDispatchDate } from '@/utils/dateUtils';
 import { Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2, Plane } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -83,7 +83,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                 <div className="space-y-2">
                   <h4 className="font-medium text-blue-800">Viaje de Ida</h4>
                   <p className="text-sm">
-                    <strong>Fecha:</strong> {new Date(notification.outbound_trip?.trip_date || '').toLocaleDateString('es-ES')}
+                    <strong>Fecha:</strong> {formatDispatchDate(notification.outbound_trip?.trip_date || '')}
                   </p>
                   <p className="text-sm">
                     <strong>Ruta:</strong> {notification.outbound_trip?.origin} → {notification.outbound_trip?.destination}
@@ -97,7 +97,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                 <div className="space-y-2">
                   <h4 className="font-medium text-blue-800">Viaje de Retorno</h4>
                   <p className="text-sm">
-                    <strong>Fecha:</strong> {new Date(notification.return_trip?.trip_date || '').toLocaleDateString('es-ES')}
+                    <strong>Fecha:</strong> {formatDispatchDate(notification.return_trip?.trip_date || '')}
                   </p>
                   <p className="text-sm">
                     <strong>Ruta:</strong> {notification.return_trip?.origin} → {notification.return_trip?.destination}
@@ -111,7 +111,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
               </div>
               <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
                 <p className="text-sm">
-                  <strong>Fecha límite de entrega:</strong> {new Date(notification.deadline_date).toLocaleDateString('es-ES')} a las {notification.deadline_time}
+                  <strong>Fecha límite de entrega:</strong> {formatDispatchDate(notification.deadline_date)} a las {notification.deadline_time}
                 </p>
               </div>
             </CardContent>

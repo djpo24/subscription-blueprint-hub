@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useTripNotifications } from '@/hooks/useTripNotifications';
+import { formatDispatchDate } from '@/utils/dateUtils';
 import { Calendar, Plane, Clock } from 'lucide-react';
 
 interface Trip {
@@ -73,7 +74,7 @@ export function CreateTripNotificationDialog({
     if (outboundTripId) {
       const selectedTrip = outboundTrips.find(trip => trip.id === outboundTripId);
       if (selectedTrip) {
-        const tripDate = new Date(selectedTrip.trip_date);
+        const tripDate = new Date(selectedTrip.trip_date + 'T00:00:00');
         tripDate.setDate(tripDate.getDate() - 1); // One day before
         setDeadlineDate(tripDate.toISOString().split('T')[0]);
       }
@@ -110,13 +111,15 @@ export function CreateTripNotificationDialog({
   };
 
   const formatTripDisplay = (trip: Trip) => {
-    const date = new Date(trip.trip_date).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    return `${date} - ${trip.origin} → ${trip.destination}${trip.flight_number ? ` (${trip.flight_number})` : ''}`;
+    // Usar formatDispatchDate para evitar problemas de zona horaria
+    const formattedDate = formatDispatchDate(trip.trip_date);
+    
+    // Obtener el día de la semana manualmente sin conversión de zona horaria
+    const dateParts = trip.trip_date.split('-');
+    const tripDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+    const weekday = tripDate.toLocaleDateString('es-ES', { weekday: 'long' });
+    
+    return `${weekday}, ${formattedDate} - ${trip.origin} → ${trip.destination}${trip.flight_number ? ` (${trip.flight_number})` : ''}`;
   };
 
   return (

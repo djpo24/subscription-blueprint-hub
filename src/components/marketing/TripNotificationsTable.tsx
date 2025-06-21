@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTripNotifications, TripNotification } from '@/hooks/useTripNotifications';
 import { TripNotificationPanel } from './TripNotificationPanel';
+import { formatDispatchDate, formatDateTime } from '@/utils/dateUtils';
 import { Send, Eye, Calendar, Users, Clock } from 'lucide-react';
 
 interface TripNotificationsTableProps {
@@ -42,24 +43,6 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (isLoading) {
     return <div>Cargando notificaciones...</div>;
   }
@@ -92,13 +75,13 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      {formatDate(notification.created_at)}
+                      {formatDispatchDate(notification.created_at)}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-medium">
-                        {formatDate(notification.outbound_trip?.trip_date || '')}
+                        {formatDispatchDate(notification.outbound_trip?.trip_date || '')}
                       </div>
                       <div className="text-sm text-gray-500">
                         {notification.outbound_trip?.origin} → {notification.outbound_trip?.destination}
@@ -113,7 +96,7 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-medium">
-                        {formatDate(notification.return_trip?.trip_date || '')}
+                        {formatDispatchDate(notification.return_trip?.trip_date || '')}
                       </div>
                       <div className="text-sm text-gray-500">
                         {notification.return_trip?.origin} → {notification.return_trip?.destination}
@@ -130,7 +113,7 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
                       <Clock className="h-4 w-4 text-orange-500" />
                       <div>
                         <div className="font-medium">
-                          {formatDate(notification.deadline_date)}
+                          {formatDispatchDate(notification.deadline_date)}
                         </div>
                         <div className="text-sm text-gray-500">
                           {notification.deadline_time}
@@ -206,9 +189,9 @@ export function TripNotificationsTable({ notifications, isLoading }: TripNotific
               ¿Estás seguro de que quieres enviar esta notificación de viaje a todos los clientes?
               {selectedNotification && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
-                  <div><strong>Viaje de ida:</strong> {formatDate(selectedNotification.outbound_trip?.trip_date || '')}</div>
-                  <div><strong>Viaje de retorno:</strong> {formatDate(selectedNotification.return_trip?.trip_date || '')}</div>
-                  <div><strong>Fecha límite:</strong> {formatDate(selectedNotification.deadline_date)} a las {selectedNotification.deadline_time}</div>
+                  <div><strong>Viaje de ida:</strong> {formatDispatchDate(selectedNotification.outbound_trip?.trip_date || '')}</div>
+                  <div><strong>Viaje de retorno:</strong> {formatDispatchDate(selectedNotification.return_trip?.trip_date || '')}</div>
+                  <div><strong>Fecha límite:</strong> {formatDispatchDate(selectedNotification.deadline_date)} a las {selectedNotification.deadline_time}</div>
                 </div>
               )}
               Esta acción no se puede deshacer.

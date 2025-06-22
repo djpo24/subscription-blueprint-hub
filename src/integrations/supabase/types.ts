@@ -961,6 +961,8 @@ export type Database = {
           personalized_message: string
           sent_at: string | null
           status: string
+          template_language: string | null
+          template_name: string | null
           trip_notification_id: string
           whatsapp_message_id: string | null
         }
@@ -974,6 +976,8 @@ export type Database = {
           personalized_message: string
           sent_at?: string | null
           status?: string
+          template_language?: string | null
+          template_name?: string | null
           trip_notification_id: string
           whatsapp_message_id?: string | null
         }
@@ -987,6 +991,8 @@ export type Database = {
           personalized_message?: string
           sent_at?: string | null
           status?: string
+          template_language?: string | null
+          template_name?: string | null
           trip_notification_id?: string
           whatsapp_message_id?: string | null
         }
@@ -1021,6 +1027,8 @@ export type Database = {
           sent_at: string | null
           status: string
           success_count: number | null
+          template_language: string | null
+          template_name: string | null
           total_customers_sent: number | null
           updated_at: string
         }
@@ -1037,6 +1045,8 @@ export type Database = {
           sent_at?: string | null
           status?: string
           success_count?: number | null
+          template_language?: string | null
+          template_name?: string | null
           total_customers_sent?: number | null
           updated_at?: string
         }
@@ -1053,6 +1063,8 @@ export type Database = {
           sent_at?: string | null
           status?: string
           success_count?: number | null
+          template_language?: string | null
+          template_name?: string | null
           total_customers_sent?: number | null
           updated_at?: string
         }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -86,7 +85,15 @@ export function CreateTripNotificationDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Enhanced validation to ensure template fields are provided
     if (!outboundTripId || !returnTripId || !deadlineDate || !templateName || !templateLanguage) {
+      console.error('Missing required fields:', {
+        outboundTripId,
+        returnTripId,
+        deadlineDate,
+        templateName,
+        templateLanguage
+      });
       return;
     }
 
@@ -97,8 +104,8 @@ export function CreateTripNotificationDialog({
         deadline_date: deadlineDate,
         deadline_time: deadlineTime,
         message_template: messageTemplate,
-        template_name: templateName,
-        template_language: templateLanguage,
+        template_name: templateName, // Ensure these are always provided
+        template_language: templateLanguage, // Ensure these are always provided
         created_by: null // Will be set by RLS
       });
       
@@ -225,15 +232,15 @@ export function CreateTripNotificationDialog({
             </div>
           </div>
 
-          {/* Template Configuration */}
+          {/* Template Configuration - Enhanced validation and user feedback */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Template Name */}
             <div className="space-y-2">
               <Label htmlFor="template-name" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Nombre de la Plantilla
+                Nombre de la Plantilla *
               </Label>
-              <Select value={templateName} onValueChange={setTemplateName}>
+              <Select value={templateName} onValueChange={setTemplateName} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar plantilla" />
                 </SelectTrigger>
@@ -252,9 +259,9 @@ export function CreateTripNotificationDialog({
             <div className="space-y-2">
               <Label htmlFor="template-language" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                Idioma de la Plantilla
+                Idioma de la Plantilla *
               </Label>
-              <Select value={templateLanguage} onValueChange={setTemplateLanguage}>
+              <Select value={templateLanguage} onValueChange={setTemplateLanguage} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar idioma" />
                 </SelectTrigger>

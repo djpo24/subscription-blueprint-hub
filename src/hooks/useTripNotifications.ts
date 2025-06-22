@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,8 +39,8 @@ interface CreateTripNotificationInput {
   deadline_date: string;
   deadline_time: string;
   message_template: string;
-  template_name?: string;
-  template_language?: string;
+  template_name: string; // Now required
+  template_language: string; // Now required
   created_by: string | null;
 }
 
@@ -54,7 +53,7 @@ export function useTripNotifications() {
     queryFn: async (): Promise<TripNotification[]> => {
       console.log('Fetching trip notifications...');
       
-      // First, fetch the trip notifications
+      // First, fetch the trip notifications with template fields
       const { data: notificationData, error: notificationError } = await supabase
         .from('trip_notifications')
         .select('*')
@@ -109,7 +108,7 @@ export function useTripNotifications() {
     mutationFn: async (notification: CreateTripNotificationInput) => {
       console.log('Creating trip notification with data:', notification);
       
-      // Validate required fields
+      // Validate required fields - now including template fields
       if (!notification.outbound_trip_id || !notification.return_trip_id) {
         throw new Error('Debe seleccionar viajes de ida y retorno');
       }
@@ -126,15 +125,15 @@ export function useTripNotifications() {
         throw new Error('Debe seleccionar el idioma de la plantilla');
       }
 
-      // Prepare the data for insertion
+      // Prepare the data for insertion - now including template fields
       const insertData = {
         outbound_trip_id: notification.outbound_trip_id,
         return_trip_id: notification.return_trip_id,
         deadline_date: notification.deadline_date,
         deadline_time: notification.deadline_time,
         message_template: notification.message_template || '',
-        template_name: notification.template_name,
-        template_language: notification.template_language,
+        template_name: notification.template_name, // Now properly included
+        template_language: notification.template_language, // Now properly included
         status: 'draft',
         total_customers_sent: 0,
         success_count: 0,

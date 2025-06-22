@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -46,7 +45,7 @@ serve(async (req) => {
 async function prepareTripNotifications(supabase: any, tripNotificationId: string) {
   console.log('📋 Preparando notificaciones de viaje para:', tripNotificationId);
 
-  // Get notification details
+  // Get notification details with enhanced error handling
   const { data: notification, error: notificationError } = await supabase
     .from('trip_notifications')
     .select(`
@@ -57,7 +56,13 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     .eq('id', tripNotificationId)
     .single();
 
-  if (notificationError || !notification) {
+  if (notificationError) {
+    console.error('❌ Error fetching notification:', notificationError);
+    throw new Error(`Notification not found: ${notificationError.message}`);
+  }
+
+  if (!notification) {
+    console.error('❌ Notification is null for ID:', tripNotificationId);
     throw new Error('Notification not found');
   }
 
@@ -66,8 +71,8 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     outbound: notification.outbound_trip?.trip_date,
     return: notification.return_trip?.trip_date,
     deadline: notification.deadline_date,
-    template_name: notification.template_name,
-    template_language: notification.template_language
+    template_name: notification.template_name || 'proximos_viajes',
+    template_language: notification.template_language || 'es_CO'
   });
 
   // Get all customers with fresh data
@@ -105,6 +110,7 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
         });
 
       if (messageError) {
+        console.error('❌ Error generating message:', messageError);
         throw new Error('Error generating message: ' + messageError.message);
       }
 
@@ -125,12 +131,12 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
         });
 
       if (logError) {
-        console.error('Error creating/updating log entry:', logError);
+        console.error('❌ Error creating/updating log entry:', logError);
         continue;
       }
 
       prepared++;
-      console.log(`✅ Prepared notification for ${customer.name} with template ${notification.template_name}`);
+      console.log(`✅ Prepared notification for ${customer.name} with template ${notification.template_name || 'proximos_viajes'}`);
 
     } catch (error) {
       console.error(`❌ Error preparing notification for customer ${customer.name}:`, error);
@@ -207,7 +213,7 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
           .eq('id', log.id);
         
         executed++;
-        console.log(`✅ Successfully sent to ${log.customer_name} using template ${log.template_name}`);
+        console.log(`✅ Successfully sent to ${log.customer_name} using template ${log.template_name || 'proximos_viajes'}`);
       }
 
     } catch (error) {

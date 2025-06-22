@@ -44,7 +44,7 @@ serve(async (req) => {
 });
 
 async function prepareTripNotifications(supabase: any, tripNotificationId: string) {
-  console.log('📋 Preparando notificaciones de viaje para:', tripNotificationId);
+  console.log('📋 PREPARANDO notificaciones de viaje usando números DIRECTOS del perfil para:', tripNotificationId);
 
   // Get notification details first
   const { data: notification, error: notificationError } = await supabase
@@ -96,7 +96,7 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     template_language: notification.template_language || 'es_CO'
   });
 
-  // Get all customers with fresh data
+  // Get all customers with fresh data - EXACTAMENTE IGUAL QUE EN ARRIVAL NOTIFICATIONS
   const { data: customers, error: customersError } = await supabase
     .from('customers')
     .select('id, name, phone, whatsapp_number')
@@ -106,19 +106,22 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     throw new Error('Error fetching customers: ' + customersError.message);
   }
 
-  console.log(`👥 Found ${customers?.length || 0} customers to prepare`);
+  console.log(`👥 Found ${customers?.length || 0} customers to prepare with DIRECT profile numbers`);
 
   let prepared = 0;
 
-  // Process each customer
+  // Process each customer - REPLICANDO EL FLUJO DE ARRIVAL NOTIFICATIONS
   for (const customer of customers || []) {
     try {
-      const phone = customer.whatsapp_number || customer.phone;
+      // Determinar el número de teléfono ACTUAL del perfil - IGUAL QUE ARRIVAL NOTIFICATIONS
+      const currentPhoneNumber = customer.whatsapp_number || customer.phone;
       
-      if (!phone) {
-        console.log(`⚠️ Skipping customer ${customer.name} - no phone number`);
+      if (!currentPhoneNumber || currentPhoneNumber.trim() === '') {
+        console.warn(`⚠️ Cliente ${customer.name} (${customer.id}) NO tiene número de teléfono válido en su perfil`);
         continue;
       }
+
+      console.log(`📱 PERFIL DIRECTO: ${customer.name} - Teléfono: "${currentPhoneNumber}"`);
 
       // Generate personalized message using the database function
       const { data: messageResult, error: messageError } = await supabase
@@ -135,13 +138,13 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
         throw new Error('Error generating message: ' + messageError.message);
       }
 
-      // Create or update log entry with prepared status
+      // Create or update log entry with prepared status - IGUAL QUE ARRIVAL NOTIFICATIONS
       const { error: logError } = await supabase
         .from('trip_notification_log')
         .upsert({
           trip_notification_id: tripNotificationId,
           customer_id: customer.id,
-          customer_phone: phone,
+          customer_phone: currentPhoneNumber, // Número DIRECTO del perfil
           customer_name: customer.name,
           personalized_message: messageResult,
           template_name: notification.template_name || 'proximos_viajes',
@@ -157,14 +160,14 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
       }
 
       prepared++;
-      console.log(`✅ Prepared notification for ${customer.name} with template ${notification.template_name || 'proximos_viajes'}`);
+      console.log(`✅ Prepared notification for ${customer.name} with DIRECT phone: "${currentPhoneNumber}" using template ${notification.template_name || 'proximos_viajes'}`);
 
     } catch (error) {
       console.error(`❌ Error preparing notification for customer ${customer.name}:`, error);
     }
   }
 
-  console.log('📊 Trip notification preparation completed:', { prepared });
+  console.log('📊 Trip notification preparation completed with DIRECT profile numbers:', { prepared });
 
   return new Response(JSON.stringify({
     success: true,
@@ -176,7 +179,7 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
 }
 
 async function executeTripNotifications(supabase: any, tripNotificationId: string) {
-  console.log('🚀 Ejecutando notificaciones de viaje preparadas para:', tripNotificationId);
+  console.log('🚀 EJECUTANDO notificaciones de viaje preparadas con números DIRECTOS del perfil para:', tripNotificationId);
 
   // Get prepared notifications
   const { data: preparedLogs, error: logsError } = await supabase
@@ -189,19 +192,21 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
     throw new Error('Error fetching prepared logs: ' + logsError.message);
   }
 
-  console.log(`📤 Found ${preparedLogs?.length || 0} prepared notifications to execute`);
+  console.log(`📤 Found ${preparedLogs?.length || 0} prepared notifications to execute with DIRECT phone numbers`);
 
   let executed = 0;
   let failed = 0;
 
-  // Process each prepared notification
+  // Process each prepared notification - IGUAL QUE ARRIVAL NOTIFICATIONS
   for (const log of preparedLogs || []) {
     try {
-      // Send WhatsApp message with template configuration
+      console.log(`📱 Sending to ${log.customer_name} at DIRECT phone: "${log.customer_phone}"`);
+
+      // Send WhatsApp message with template configuration - IGUAL QUE ARRIVAL NOTIFICATIONS
       const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: log.id,
-          phone: log.customer_phone,
+          phone: log.customer_phone, // Número DIRECTO del perfil
           message: log.personalized_message,
           customerId: log.customer_id,
           useTemplate: true,
@@ -221,7 +226,7 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
           .eq('id', log.id);
         
         failed++;
-        console.error(`❌ Failed to send to ${log.customer_name}: ${whatsappError.message}`);
+        console.error(`❌ Failed to send to ${log.customer_name} at "${log.customer_phone}": ${whatsappError.message}`);
       } else {
         // Update log with success
         await supabase
@@ -234,7 +239,7 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
           .eq('id', log.id);
         
         executed++;
-        console.log(`✅ Successfully sent to ${log.customer_name} using template ${log.template_name || 'proximos_viajes'}`);
+        console.log(`✅ Successfully sent to ${log.customer_name} at DIRECT phone "${log.customer_phone}" using template ${log.template_name || 'proximos_viajes'}`);
       }
 
     } catch (error) {
@@ -252,7 +257,7 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
     }
   }
 
-  console.log('📊 Trip notification execution completed:', { executed, failed });
+  console.log('📊 Trip notification execution completed with DIRECT profile numbers:', { executed, failed });
 
   return new Response(JSON.stringify({
     success: true,

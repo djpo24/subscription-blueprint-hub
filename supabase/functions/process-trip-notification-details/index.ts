@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -45,14 +46,10 @@ serve(async (req) => {
 async function prepareTripNotifications(supabase: any, tripNotificationId: string) {
   console.log('📋 Preparando notificaciones de viaje para:', tripNotificationId);
 
-  // Get notification details with enhanced error handling
+  // Get notification details first
   const { data: notification, error: notificationError } = await supabase
     .from('trip_notifications')
-    .select(`
-      *,
-      outbound_trip:outbound_trip_id(trip_date, origin, destination, flight_number),
-      return_trip:return_trip_id(trip_date, origin, destination, flight_number)
-    `)
+    .select('*')
     .eq('id', tripNotificationId)
     .single();
 
@@ -66,10 +63,34 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
     throw new Error('Notification not found');
   }
 
+  // Get outbound trip details
+  const { data: outboundTrip, error: outboundError } = await supabase
+    .from('trips')
+    .select('trip_date, origin, destination, flight_number')
+    .eq('id', notification.outbound_trip_id)
+    .single();
+
+  if (outboundError) {
+    console.error('❌ Error fetching outbound trip:', outboundError);
+    throw new Error(`Outbound trip not found: ${outboundError.message}`);
+  }
+
+  // Get return trip details
+  const { data: returnTrip, error: returnError } = await supabase
+    .from('trips')
+    .select('trip_date, origin, destination, flight_number')
+    .eq('id', notification.return_trip_id)
+    .single();
+
+  if (returnError) {
+    console.error('❌ Error fetching return trip:', returnError);
+    throw new Error(`Return trip not found: ${returnError.message}`);
+  }
+
   console.log('📋 Notification details:', {
     id: notification.id,
-    outbound: notification.outbound_trip?.trip_date,
-    return: notification.return_trip?.trip_date,
+    outbound: outboundTrip?.trip_date,
+    return: returnTrip?.trip_date,
     deadline: notification.deadline_date,
     template_name: notification.template_name || 'proximos_viajes',
     template_language: notification.template_language || 'es_CO'
@@ -104,8 +125,8 @@ async function prepareTripNotifications(supabase: any, tripNotificationId: strin
         .rpc('generate_trip_notification_message', {
           customer_name_param: customer.name,
           template_param: notification.message_template,
-          outbound_date: notification.outbound_trip.trip_date,
-          return_date: notification.return_trip.trip_date,
+          outbound_date: outboundTrip.trip_date,
+          return_date: returnTrip.trip_date,
           deadline_date: notification.deadline_date
         });
 

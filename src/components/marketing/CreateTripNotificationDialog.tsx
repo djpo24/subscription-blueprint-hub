@@ -24,23 +24,23 @@ interface CreateTripNotificationDialogProps {
   trips: Trip[];
 }
 
-const DEFAULT_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
+const DEFAULT_TEMPLATE = `📦 ¡Hola {{nombre_cliente}}!
 
-🛫 **IMPORTANTE: Próximo viaje programado**
+Desde Envíos Ojito queremos informarte que el próximo viaje de encomiendas será:
 
-Te informamos que tenemos un viaje programado próximamente:
+🛫 Salida desde Barranquilla a Curazao: {{fecha_salida_baq}}
+🛬 Retorno desde Curazao a Barranquilla: {{fecha_retorno_cur}}
 
-📅 **Salida desde Barranquilla:** {{fecha_salida_baq}}
-📅 **Retorno desde Curazao:** {{fecha_retorno_cur}}
+📥 Recibimos encomiendas hasta el {{fecha_limite_entrega}} a las 3:00 pm
 
-⏰ **FECHA LÍMITE para entrega de encomiendas:**
-🗓️ **{{fecha_limite_entrega}} antes de las 3:00 PM**
+🏢 Punto de acopio en Barranquilla:
+Calle 45b # 22 - 124
 
-📦 Si tienes alguna encomienda para enviar, por favor asegúrate de entregarla antes de la fecha límite.
+📞 Contáctanos por WhatsApp:
+🇨🇴 Colombia: +57 312 727 17 46
+🇨🇼 Curazao: +599 9 696 43 06
 
-📞 Para coordinar la entrega o resolver dudas, contáctanos.
-
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+✈️ Envíos Ojito – Conectando Barranquilla y Curazao`;
 
 export function CreateTripNotificationDialog({ 
   isOpen, 

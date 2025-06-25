@@ -56,8 +56,10 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       labelsData.set(pkg.id, labelData);
       
       // Determinar si es una reimpresión basándose en el estado del paquete
+      // Si el paquete está en "recibido" es una impresión inicial
+      // Si está en cualquier otro estado posterior, es una reimpresión
       const isReprint = pkg.status !== 'recibido';
-      console.log('🔄 Imprimiendo etiqueta - Es reimpresión:', isReprint, 'Estado:', pkg.status);
+      console.log('🔄 [PackageLabel] Imprimiendo etiqueta - Es reimpresión:', isReprint, 'Estado:', pkg.status);
       
       await printMultipleLabelsAsPDF([pkg], labelsData, isReprint);
     } catch (error) {

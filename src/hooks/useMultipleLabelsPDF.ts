@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { PDFLabelService } from '@/services/pdfLabelService';
+import { useMarkPackageAsPrinted } from './useMarkPackageAsPrinted';
 
 interface Package {
   id: string;
@@ -25,6 +26,8 @@ interface LabelData {
 }
 
 export function useMultipleLabelsPDF() {
+  const { mutateAsync: markPackageAsPrinted } = useMarkPackageAsPrinted();
+
   const generatePDFFromLabels = useCallback(async (
     packages: Package[], 
     labelsData: Map<string, LabelData>
@@ -37,13 +40,28 @@ export function useMultipleLabelsPDF() {
     labelsData: Map<string, LabelData>,
     isReprint: boolean = false
   ) => {
-    return await PDFLabelService.printPDF(packages, labelsData, isReprint ? undefined : (packageIds) => {
-      // Solo marcar paquetes como impresos si NO es una reimpresión
-      console.log('🏷️ Marcando paquetes como impresos después de la impresión inicial:', packageIds);
-      // Aquí se llamaría a markPackageAsPrinted, pero solo para impresiones iniciales
-      // Como estamos eliminando esta funcionalidad para evitar el bug, no hacemos nada
-    });
-  }, []);
+    console.log('🖨️ [useMultipleLabelsPDF] Iniciando impresión - Es reimpresión:', isReprint);
+    
+    try {
+      // Generar e imprimir el PDF
+      await PDFLabelService.printPDF(packages, labelsData);
+      
+      // Solo marcar como impresos si NO es una reimpresión
+      if (!isReprint) {
+        const packageIds = packages.map(pkg => pkg.id);
+        console.log('🏷️ [useMultipleLabelsPDF] Marcando paquetes como impresos:', packageIds);
+        
+        await markPackageAsPrinted({ packageIds });
+        console.log('✅ [useMultipleLabelsPDF] Paquetes marcados como impresos exitosamente');
+      } else {
+        console.log('🔄 [useMultipleLabelsPDF] Saltando marcado como impreso porque es una reimpresión');
+      }
+      
+    } catch (error) {
+      console.error('❌ [useMultipleLabelsPDF] Error en el proceso de impresión:', error);
+      throw error;
+    }
+  }, [markPackageAsPrinted]);
 
   return {
     generatePDFFromLabels,

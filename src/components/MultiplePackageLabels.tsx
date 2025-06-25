@@ -60,8 +60,8 @@ export function MultiplePackageLabels({ packages, isReprint = false }: MultipleP
   }, [packages]);
 
   const handlePrintPDF = async () => {
-    console.log('🖨️ Starting PDF print process for', packages.length, 'labels');
-    console.log('🔄 Is reprint:', isReprint);
+    console.log('🖨️ [MultiplePackageLabels] Starting PDF print process for', packages.length, 'labels');
+    console.log('🔄 [MultiplePackageLabels] Is reprint:', isReprint);
     
     if (isGeneratingCodes) {
       console.log('⏳ Still generating codes, waiting...');
@@ -82,9 +82,9 @@ export function MultiplePackageLabels({ packages, isReprint = false }: MultipleP
     try {
       setIsPrintingPDF(true);
       await printMultipleLabelsAsPDF(packages, labelsData, isReprint);
-      console.log('✅ PDF print process completed');
+      console.log('✅ [MultiplePackageLabels] PDF print process completed');
     } catch (error) {
-      console.error('❌ Error printing PDF:', error);
+      console.error('❌ [MultiplePackageLabels] Error printing PDF:', error);
     } finally {
       setIsPrintingPDF(false);
     }

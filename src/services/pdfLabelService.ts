@@ -33,27 +33,16 @@ export class PDFLabelService {
     return pdf;
   }
 
-  static async printPDF(
-    packages: Package[], 
-    labelsData: Map<string, LabelData>,
-    onPrintSuccess?: (packageIds: string[]) => void
-  ): Promise<void> {
+  static async printPDF(packages: Package[], labelsData: Map<string, LabelData>): Promise<void> {
     try {
-      console.log('🖨️ Iniciando impresión de PDF con', packages.length, 'etiquetas');
+      console.log('🖨️ [PDFLabelService] Iniciando impresión de PDF con', packages.length, 'etiquetas');
       
       const pdf = await this.generatePDF(packages, labelsData);
       await PDFPrintService.printPDF(pdf);
       
-      // Solo llamar al callback si se proporciona (para impresiones iniciales, no reimpresiones)
-      if (onPrintSuccess) {
-        const packageIds = packages.map(pkg => pkg.id);
-        console.log('📋 Calling onPrintSuccess with package IDs:', packageIds);
-        onPrintSuccess(packageIds);
-      }
-      
-      console.log('✅ PDF print process completed');
+      console.log('✅ [PDFLabelService] PDF print process completed');
     } catch (error) {
-      console.error('❌ Error al generar PDF para impresión:', error);
+      console.error('❌ [PDFLabelService] Error al generar PDF para impresión:', error);
       throw error;
     }
   }

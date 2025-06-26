@@ -50,7 +50,7 @@ export function PhoneNumberInput({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Only allow numeric input
+    // Allow numeric input, spaces, and control keys
     if (!/[\d\s]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
       e.preventDefault();
     }
@@ -103,8 +103,8 @@ export function PhoneNumberInput({
           className={`flex-1 ${className || ''}`}
           required={required}
           inputMode="numeric"
-          pattern="[0-9\s]*"
           readOnly={isReadOnly}
+          type="text"
         />
       </div>
     </div>

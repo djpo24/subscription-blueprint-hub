@@ -13,6 +13,7 @@ import { CustomersTab } from '@/components/tabs/CustomersTab';
 import { DeveloperTab } from '@/components/tabs/DeveloperTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { MarketingTab } from '@/components/tabs/MarketingTab';
+import { AdminInvestigationTab } from '@/components/tabs/AdminInvestigationTab';
 import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -168,6 +169,7 @@ export default function Index() {
               <NotificationsTab />
               <CustomersTab />
               <UsersTab />
+              <AdminInvestigationTab />
               <SettingsTab />
               <DeveloperTab />
             </Tabs>

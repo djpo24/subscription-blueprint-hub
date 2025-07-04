@@ -27,6 +27,54 @@ export function useDeliveryErrors() {
     console.log('🔍 Iniciando búsqueda de errores de entrega...');
     
     try {
+      // Primero verificar si las tablas existen y tienen datos
+      console.log('📊 Verificando existencia de tablas y datos...');
+      
+      // Verificar notification_log
+      const { data: allNotifications, error: allNotificationsError } = await supabase
+        .from('notification_log')
+        .select('id, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (allNotificationsError) {
+        console.error('❌ Error al acceder a notification_log:', allNotificationsError);
+      } else {
+        console.log(`📋 Total registros en notification_log: ${allNotifications?.length || 0}`);
+        console.log('📋 Últimas notificaciones:', allNotifications);
+      }
+
+      // Verificar trip_notification_log
+      const { data: allTripNotifications, error: allTripNotificationsError } = await supabase
+        .from('trip_notification_log')
+        .select('id, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (allTripNotificationsError) {
+        console.error('❌ Error al acceder a trip_notification_log:', allTripNotificationsError);
+      } else {
+        console.log(`🚗 Total registros en trip_notification_log: ${allTripNotifications?.length || 0}`);
+        console.log('🚗 Últimas notificaciones de viaje:', allTripNotifications);
+      }
+
+      // Verificar marketing_message_log
+      const { data: allMarketingMessages, error: allMarketingMessagesError } = await supabase
+        .from('marketing_message_log')
+        .select('id, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (allMarketingMessagesError) {
+        console.error('❌ Error al acceder a marketing_message_log:', allMarketingMessagesError);
+      } else {
+        console.log(`📢 Total registros en marketing_message_log: ${allMarketingMessages?.length || 0}`);
+        console.log('📢 Últimos mensajes de marketing:', allMarketingMessages);
+      }
+
+      // Ahora buscar específicamente errores
+      console.log('🔍 Buscando registros con status = "failed"...');
+
       // Obtener notificaciones fallidas desde notification_log
       const { data: failedNotifications, error: notificationError } = await supabase
         .from('notification_log')
@@ -35,11 +83,14 @@ export function useDeliveryErrors() {
         .order('created_at', { ascending: false });
 
       if (notificationError) {
-        console.error('Error al obtener notification_log:', notificationError);
+        console.error('❌ Error al obtener notification_log fallidas:', notificationError);
         throw notificationError;
       }
 
       console.log(`📋 Encontradas ${failedNotifications?.length || 0} notificaciones fallidas`);
+      if (failedNotifications && failedNotifications.length > 0) {
+        console.log('📋 Ejemplos de notificaciones fallidas:', failedNotifications.slice(0, 3));
+      }
 
       // Obtener errores de trip notifications
       const { data: failedTripNotifications, error: tripError } = await supabase
@@ -49,11 +100,14 @@ export function useDeliveryErrors() {
         .order('created_at', { ascending: false });
 
       if (tripError) {
-        console.error('Error al obtener trip_notification_log:', tripError);
+        console.error('❌ Error al obtener trip_notification_log fallidas:', tripError);
         throw tripError;
       }
 
       console.log(`🚗 Encontradas ${failedTripNotifications?.length || 0} notificaciones de viaje fallidas`);
+      if (failedTripNotifications && failedTripNotifications.length > 0) {
+        console.log('🚗 Ejemplos de notificaciones de viaje fallidas:', failedTripNotifications.slice(0, 3));
+      }
 
       // Obtener errores de marketing campaigns
       const { data: failedMarketingMessages, error: marketingError } = await supabase
@@ -63,18 +117,24 @@ export function useDeliveryErrors() {
         .order('created_at', { ascending: false });
 
       if (marketingError) {
-        console.error('Error al obtener marketing_message_log:', marketingError);
+        console.error('❌ Error al obtener marketing_message_log fallidos:', marketingError);
         throw marketingError;
       }
 
       console.log(`📢 Encontrados ${failedMarketingMessages?.length || 0} mensajes de marketing fallidos`);
+      if (failedMarketingMessages && failedMarketingMessages.length > 0) {
+        console.log('📢 Ejemplos de mensajes de marketing fallidos:', failedMarketingMessages.slice(0, 3));
+      }
 
       // Procesar y consolidar errores
       const customerErrorsMap = new Map<string, DeliveryErrorCustomer>();
+      let totalProcessed = 0;
 
       // Procesar notificaciones fallidas
       if (failedNotifications && failedNotifications.length > 0) {
+        console.log('🔄 Procesando notificaciones fallidas...');
         for (const notification of failedNotifications) {
+          totalProcessed++;
           const customerId = notification.customer_id || 'unknown';
           let customerName = 'Cliente desconocido';
           let customerPhone = 'N/A';
@@ -204,19 +264,30 @@ export function useDeliveryErrors() {
       const errorsList = Array.from(customerErrorsMap.values())
         .sort((a, b) => new Date(b.last_error_date).getTime() - new Date(a.last_error_date).getTime());
 
+      console.log(`📊 Resumen de procesamiento:`);
+      console.log(`   - Total registros procesados: ${totalProcessed}`);
+      console.log(`   - Clientes únicos con errores: ${errorsList.length}`);
+      console.log(`   - Mapa de errores generado:`, customerErrorsMap);
+
       setErrorCustomers(errorsList);
 
-      console.log(`📊 Procesados ${errorsList.length} clientes con errores de entrega`);
-      
       if (errorsList.length === 0) {
+        console.log('✅ No se encontraron errores de entrega - esto podría ser correcto');
         toast({
           title: "Sin errores",
           description: "No se encontraron errores de entrega en el sistema",
+        });
+      } else {
+        console.log(`✅ Se encontraron ${errorsList.length} clientes con errores de entrega`);
+        toast({
+          title: "Errores encontrados",
+          description: `Se encontraron ${errorsList.length} clientes con errores de entrega`,
         });
       }
       
     } catch (error) {
       console.error('❌ Error completo al obtener errores de entrega:', error);
+      console.error('❌ Stack trace:', error.stack);
       toast({
         title: "Error",
         description: `No se pudieron cargar los errores de entrega: ${error.message}`,

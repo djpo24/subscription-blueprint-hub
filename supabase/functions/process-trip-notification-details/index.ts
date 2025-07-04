@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -27,8 +26,10 @@ serve(async (req) => {
       return await prepareTripNotifications(supabase, tripNotificationId);
     } else if (mode === 'execute') {
       return await executeTripNotifications(supabase, tripNotificationId);
+    } else if (mode === 'retry_failed') {
+      return await retryFailedNotifications(supabase, tripNotificationId);
     } else {
-      throw new Error('Invalid mode. Use "prepare" or "execute"');
+      throw new Error('Invalid mode. Use "prepare", "execute", or "retry_failed"');
     }
 
   } catch (error) {
@@ -264,6 +265,121 @@ async function executeTripNotifications(supabase: any, tripNotificationId: strin
     executed,
     failed,
     mode: 'execute'
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+async function retryFailedNotifications(supabase: any, tripNotificationId: string) {
+  console.log('🔄 REINTENTANDO notificaciones de viaje fallidas para:', tripNotificationId);
+
+  // Get failed notifications
+  const { data: failedLogs, error: logsError } = await supabase
+    .from('trip_notification_log')
+    .select('*')
+    .eq('trip_notification_id', tripNotificationId)
+    .eq('status', 'failed');
+
+  if (logsError) {
+    throw new Error('Error fetching failed logs: ' + logsError.message);
+  }
+
+  console.log(`🔄 Found ${failedLogs?.length || 0} failed notifications to retry`);
+
+  if (!failedLogs || failedLogs.length === 0) {
+    return new Response(JSON.stringify({
+      success: true,
+      retried: 0,
+      executed: 0,
+      failed: 0,
+      mode: 'retry_failed',
+      message: 'No hay mensajes fallidos para reintentar'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  let executed = 0;
+  let failed = 0;
+
+  // Retry each failed notification
+  for (const log of failedLogs) {
+    try {
+      console.log(`🔄 Retrying ${log.customer_name} at phone: "${log.customer_phone}"`);
+
+      // Reset status to prepared before retrying
+      await supabase
+        .from('trip_notification_log')
+        .update({
+          status: 'prepared',
+          error_message: null
+        })
+        .eq('id', log.id);
+
+      // Send WhatsApp message with template configuration
+      const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          notificationId: log.id,
+          phone: log.customer_phone,
+          message: log.personalized_message,
+          customerId: log.customer_id,
+          useTemplate: true,
+          templateName: log.template_name || 'proximos_viajes',
+          templateLanguage: log.template_language || 'es_CO'
+        }
+      });
+
+      if (whatsappError) {
+        // Update log with error again
+        await supabase
+          .from('trip_notification_log')
+          .update({
+            status: 'failed',
+            error_message: `RETRY FAILED: ${whatsappError.message}`
+          })
+          .eq('id', log.id);
+        
+        failed++;
+        console.error(`❌ Retry failed for ${log.customer_name} at "${log.customer_phone}": ${whatsappError.message}`);
+      } else {
+        // Update log with success
+        await supabase
+          .from('trip_notification_log')
+          .update({
+            status: 'sent',
+            whatsapp_message_id: whatsappResult?.whatsapp_message_id,
+            sent_at: new Date().toISOString(),
+            error_message: null
+          })
+          .eq('id', log.id);
+        
+        executed++;
+        console.log(`✅ Successfully retried ${log.customer_name} at phone "${log.customer_phone}"`);
+      }
+
+    } catch (error) {
+      failed++;
+      console.error(`❌ Error retrying notification for ${log.customer_name}:`, error);
+      
+      // Update log with error
+      await supabase
+        .from('trip_notification_log')
+        .update({
+          status: 'failed',
+          error_message: `RETRY ERROR: ${error.message}`
+        })
+        .eq('id', log.id);
+    }
+  }
+
+  console.log('📊 Trip notification retry completed:', { retried: failedLogs.length, executed, failed });
+
+  return new Response(JSON.stringify({
+    success: true,
+    retried: failedLogs.length,
+    executed,
+    failed,
+    mode: 'retry_failed'
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

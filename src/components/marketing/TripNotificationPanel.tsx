@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTripNotificationDetails } from '@/hooks/useTripNotificationDetails';
 import { formatDispatchDate } from '@/utils/dateUtils';
-import { Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2, Plane } from 'lucide-react';
+import { Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2, Plane, RefreshCw, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { TripNotification } from '@/hooks/useTripNotifications';
@@ -20,13 +21,16 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
   const {
     pendingNotifications,
     preparedNotifications,
+    failedNotifications,
     isLoading,
     prepareNotifications,
     executeNotifications,
+    retryFailedNotifications,
     clearPreparedNotifications,
     clearPendingNotifications,
     isPreparing,
     isExecuting,
+    isRetrying,
     isClearing,
     isClearingPending
   } = useTripNotificationDetails(notification.id, isOpen);
@@ -49,7 +53,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
     );
   }
 
-  const totalNotifications = pendingNotifications.length + preparedNotifications.length;
+  const totalNotifications = pendingNotifications.length + preparedNotifications.length + failedNotifications.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -139,13 +143,13 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Panel de Notificaciones Pendientes */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-blue-800 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  Pendientes de Preparar
+                  Pendientes
                   {pendingNotifications.length > 0 && (
                     <Badge variant="outline" className="text-orange-600 border-orange-300">
                       {pendingNotifications.length}
@@ -162,8 +166,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                         variant="outline"
                         className="text-red-600 border-red-300 hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {isClearingPending ? 'Limpiando...' : 'Limpiar'}
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                       <Button
                         onClick={() => prepareNotifications()}
@@ -172,8 +175,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                         variant="outline"
                         className="text-orange-600 border-orange-300 hover:bg-orange-50"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {isPreparing ? 'Preparando...' : 'Preparar para Revisión'}
+                        <Eye className="h-3 w-3" />
                       </Button>
                     </>
                   )}
@@ -185,35 +187,17 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                   {pendingNotifications.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 bg-orange-50 rounded border border-orange-200"
+                      className="p-2 bg-orange-50 rounded border border-orange-200 text-xs"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-orange-600" />
-                            <span className="font-medium text-sm">
-                              {item.customer_name}
-                            </span>
-                          </div>
-                          <p className="text-xs text-green-600 font-medium">
-                            📱 {item.customer_phone}
-                          </p>
-                        </div>
-                        <Badge variant="secondary" className="text-orange-600">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {formatDistanceToNow(new Date(item.created_at), { 
-                            addSuffix: true, 
-                            locale: es 
-                          })}
-                        </Badge>
-                      </div>
+                      <div className="font-medium">{item.customer_name}</div>
+                      <div className="text-green-600">📱 {item.customer_phone}</div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-4 text-orange-600">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No hay notificaciones pendientes de preparar</p>
+                  <Package className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Sin pendientes</p>
                 </div>
               )}
             </div>
@@ -223,7 +207,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-green-800 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
-                  Preparadas para Envío
+                  Preparadas
                   {preparedNotifications.length > 0 && (
                     <Badge variant="outline" className="text-green-600 border-green-300">
                       {preparedNotifications.length}
@@ -240,8 +224,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                         variant="outline"
                         className="text-red-600 border-red-300 hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {isClearing ? 'Limpiando...' : 'Limpiar'}
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                       <Button
                         onClick={() => executeNotifications()}
@@ -249,8 +232,7 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
                       >
-                        <Send className="h-4 w-4 mr-2" />
-                        {isExecuting ? 'Enviando...' : 'Ejecutar Envío'}
+                        <Send className="h-3 w-3" />
                       </Button>
                     </>
                   )}
@@ -262,40 +244,79 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                   {preparedNotifications.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 bg-green-50 rounded border border-green-200"
+                      className="p-2 bg-green-50 rounded border border-green-200 text-xs"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-sm">
-                              {item.customer_name}
-                            </span>
-                          </div>
-                          <p className="text-xs text-green-600 font-medium">
-                            📱 {item.customer_phone}
-                          </p>
-                          {item.personalized_message && (
-                            <div className="mt-2 p-2 bg-white rounded text-xs border">
-                              <strong>Mensaje:</strong>
-                              <div className="mt-1 text-gray-700 whitespace-pre-line">
-                                {item.personalized_message}
-                              </div>
-                            </div>
-                          )}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{item.customer_name}</div>
+                          <div className="text-green-600">📱 {item.customer_phone}</div>
                         </div>
-                        <Badge variant="secondary" className="text-green-600">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Listo
-                        </Badge>
+                        <CheckCircle className="h-3 w-3 text-green-600" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-4 text-green-600">
-                  <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No hay notificaciones preparadas para envío</p>
+                  <CheckCircle className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Sin preparadas</p>
+                </div>
+              )}
+            </div>
+
+            {/* Panel de Notificaciones Fallidas */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-red-800 flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  Fallidas
+                  {failedNotifications.length > 0 && (
+                    <Badge variant="outline" className="text-red-600 border-red-300">
+                      {failedNotifications.length}
+                    </Badge>
+                  )}
+                </h4>
+                <div className="flex gap-2">
+                  {failedNotifications.length > 0 && (
+                    <Button
+                      onClick={() => retryFailedNotifications()}
+                      disabled={isRetrying}
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      {isRetrying ? 'Reintentando...' : 'Reintentar'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {failedNotifications.length > 0 ? (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {failedNotifications.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-2 bg-red-50 rounded border border-red-200 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{item.customer_name}</div>
+                          <div className="text-green-600">📱 {item.customer_phone}</div>
+                          {item.error_message && (
+                            <div className="text-red-600 mt-1 text-xs truncate">
+                              {item.error_message}
+                            </div>
+                          )}
+                        </div>
+                        <XCircle className="h-3 w-3 text-red-600" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-red-600">
+                  <XCircle className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Sin fallidas</p>
                 </div>
               )}
             </div>
@@ -331,6 +352,15 @@ export function TripNotificationPanel({ notification, isOpen, onOpenChange }: Tr
                   <p className="font-medium">3. Envío controlado</p>
                   <p className="text-blue-600">
                     Los mensajes se envían de forma controlada al número actualizado de cada cliente.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <RefreshCw className="h-4 w-4 mt-0.5 text-blue-600" />
+                <div>
+                  <p className="font-medium">4. Reintento de fallidas</p>
+                  <p className="text-blue-600">
+                    Los mensajes que fallaron por errores de Facebook/WhatsApp pueden ser reenviados.
                   </p>
                 </div>
               </div>

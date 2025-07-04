@@ -11,7 +11,8 @@ import {
   Eye,
   UserCheck,
   Megaphone,
-  AlertTriangle
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -67,6 +68,8 @@ export const createMenuItems = (
 
   if (showUsersTab) {
     items.push({ value: 'users', title: 'Usuarios', icon: Users });
+    // Add Investigation tab for admins
+    items.push({ value: 'admin-investigation', title: 'Investigación', icon: Search });
   }
 
   if (showSettingsTab) {

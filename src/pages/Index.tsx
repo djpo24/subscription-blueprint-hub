@@ -132,6 +132,7 @@ export default function Index() {
                 {activeTab === 'settings' && 'Configuración'}
                 {activeTab === 'developer' && 'Preview'}
                 {activeTab === 'marketing' && 'Marketing'}
+                {activeTab === 'admin-investigation' && 'Investigación'}
               </h2>
             </div>
 

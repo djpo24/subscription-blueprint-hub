@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -65,6 +66,62 @@ function cleanAndFormatPhoneNumber(phone: string): string {
 // Helper function to get API-ready phone number (without +)
 function getApiReadyPhoneNumber(formattedPhone: string): string {
   return formattedPhone.replace(/^\+/, '');
+}
+
+// Helper function to log detailed WhatsApp errors
+async function logWhatsAppError(supabaseClient: any, notificationId: string, errorData: any, phone: string, context: string) {
+  console.log(`🚨 [${context}] Logging WhatsApp error for phone ${phone}:`, errorData);
+  
+  const errorDetails = {
+    context: context,
+    phone: phone,
+    error_code: errorData?.error?.code || errorData?.code || 'UNKNOWN',
+    error_message: errorData?.error?.message || errorData?.message || 'Unknown error',
+    error_type: errorData?.error?.type || errorData?.type || 'api_error',
+    error_subcode: errorData?.error?.error_subcode || errorData?.error_subcode || null,
+    error_user_title: errorData?.error?.error_user_title || null,
+    error_user_msg: errorData?.error?.error_user_msg || null,
+    fbtrace_id: errorData?.error?.fbtrace_id || null,
+    full_error_data: errorData,
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    // Update notification log with detailed error
+    await supabaseClient
+      .from('notification_log')
+      .update({ 
+        status: 'failed',
+        error_message: `[${context}] ${errorDetails.error_message} (Code: ${errorDetails.error_code})`
+      })
+      .eq('id', notificationId);
+
+    // Log to console for immediate debugging
+    console.error(`🚨 [${context}] WhatsApp Error Details:`, {
+      phone: phone,
+      code: errorDetails.error_code,
+      message: errorDetails.error_message,
+      type: errorDetails.error_type,
+      subcode: errorDetails.error_subcode,
+      fbtrace_id: errorDetails.fbtrace_id
+    });
+
+    // Additional logging for specific error types
+    if (errorDetails.error_code === 131047) {
+      console.error('🚨 24-hour window violation detected for phone:', phone);
+    } else if (errorDetails.error_code === 131056) {
+      console.error('🚨 Phone number not registered on WhatsApp:', phone);
+    } else if (errorDetails.error_code === 100) {
+      console.error('🚨 Invalid phone number format:', phone);
+    } else if (errorDetails.error_code === 190) {
+      console.error('🚨 Access token expired or invalid');
+    } else if (errorDetails.error_code === 133016) {
+      console.error('🚨 Rate limit exceeded');
+    }
+
+  } catch (logError) {
+    console.error('❌ Failed to log WhatsApp error to database:', logError);
+  }
 }
 
 serve(async (req) => {
@@ -308,7 +365,8 @@ serve(async (req) => {
       status: whatsappResponse.status, 
       ok: whatsappResponse.ok,
       hasMessages: !!whatsappResult.messages,
-      phone: apiPhone
+      phone: apiPhone,
+      result: whatsappResult
     })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
@@ -343,9 +401,11 @@ serve(async (req) => {
         }
       )
     } else {
-      // Handle WhatsApp API error
-      const errorMessage = whatsappResult.error?.message || 'Error enviando mensaje WhatsApp'
+      // Handle WhatsApp API error with detailed logging
       console.error('❌ WhatsApp API error for phone:', apiPhone, whatsappResult)
+      
+      // Log detailed error information
+      await logWhatsAppError(supabaseClient, notificationId, whatsappResult, formattedPhone, 'INITIAL_SEND');
 
       // Check if it's a 24-hour window error
       if (whatsappResult.error?.code === 131047 || 
@@ -392,7 +452,11 @@ serve(async (req) => {
           )
 
           const retryResult = await retryResponse.json()
-          console.log('🔄 Template retry response for phone:', apiPhone, retryResponse.status, retryResponse.ok)
+          console.log('🔄 Template retry response for phone:', apiPhone, {
+            status: retryResponse.status, 
+            ok: retryResponse.ok,
+            result: retryResult
+          })
 
           if (retryResponse.ok && retryResult.messages) {
             await supabaseClient
@@ -419,23 +483,22 @@ serve(async (req) => {
                 status: 200 
               }
             )
+          } else {
+            // Log retry error too
+            await logWhatsAppError(supabaseClient, notificationId, retryResult, formattedPhone, 'TEMPLATE_RETRY');
           }
         }
       }
 
-      // Update notification status to failed
-      await supabaseClient
-        .from('notification_log')
-        .update({ 
-          status: 'failed',
-          error_message: errorMessage + ` (Phone: ${formattedPhone})`
-        })
-        .eq('id', notificationId)
-
+      // Return error response with detailed information
+      const errorMessage = whatsappResult.error?.message || 'Error enviando mensaje WhatsApp'
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: errorMessage,
+          error_code: whatsappResult.error?.code || 'UNKNOWN',
+          error_type: whatsappResult.error?.type || 'api_error',
           details: whatsappResult,
           suggestTemplate: whatsappResult.error?.code === 131047,
           formattedPhone: formattedPhone
@@ -451,7 +514,10 @@ serve(async (req) => {
     console.error('❌ Error in send-whatsapp-notification:', error)
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 

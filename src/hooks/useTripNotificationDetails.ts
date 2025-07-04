@@ -44,9 +44,14 @@ export function useTripNotificationDetails(tripNotificationId: string, isOpen: b
       if (error) throw error;
 
       const logs = data || [];
-      setPendingNotifications(logs.filter(log => log.status === 'pending'));
-      setPreparedNotifications(logs.filter(log => log.status === 'prepared'));
-      setFailedNotifications(logs.filter(log => log.status === 'failed'));
+      
+      // Type-safe filtering with proper type assertion
+      const validStatuses = ['pending', 'prepared', 'sent', 'failed'];
+      const typedLogs = logs.filter(log => validStatuses.includes(log.status)) as TripNotificationLog[];
+      
+      setPendingNotifications(typedLogs.filter(log => log.status === 'pending'));
+      setPreparedNotifications(typedLogs.filter(log => log.status === 'prepared'));
+      setFailedNotifications(typedLogs.filter(log => log.status === 'failed'));
       
     } catch (error) {
       console.error('Error fetching notification details:', error);

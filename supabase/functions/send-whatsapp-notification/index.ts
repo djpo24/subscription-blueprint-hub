@@ -1,10 +1,70 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Helper function to clean and format phone numbers correctly
+function cleanAndFormatPhoneNumber(phone: string): string {
+  console.log('📞 Original phone number:', phone);
+  
+  // Remove all non-digit characters except the + at the beginning
+  let cleaned = phone.replace(/[^\d+]/g, '');
+  
+  // If it starts with +, keep it, otherwise remove any + characters
+  if (cleaned.startsWith('+')) {
+    // Keep the first + and remove any others
+    cleaned = '+' + cleaned.substring(1).replace(/\+/g, '');
+  } else {
+    // Remove all + characters
+    cleaned = cleaned.replace(/\+/g, '');
+  }
+  
+  console.log('📞 After cleaning:', cleaned);
+  
+  // If it already has a country code (starts with + or is longer than 10 digits)
+  if (cleaned.startsWith('+')) {
+    console.log('📞 Already has country code');
+    return cleaned;
+  }
+  
+  // If it's a long number without +, it might already include country code
+  if (cleaned.length > 10) {
+    // Check if it starts with known country codes
+    if (cleaned.startsWith('599') || cleaned.startsWith('5997') || cleaned.startsWith('57') || cleaned.startsWith('52') || cleaned.startsWith('1') || cleaned.startsWith('501')) {
+      console.log('📞 Adding + to existing country code');
+      return '+' + cleaned;
+    }
+  }
+  
+  // Colombian mobile numbers (start with 3)
+  if (cleaned.startsWith('3') && cleaned.length === 10) {
+    console.log('📞 Adding Colombia country code');
+    return '+57' + cleaned;
+  }
+  
+  // If it's exactly 10 digits and starts with other digits, assume Colombia
+  if (cleaned.length === 10) {
+    console.log('📞 Adding Colombia country code to 10-digit number');
+    return '+57' + cleaned;
+  }
+  
+  // For shorter numbers, assume Colombia
+  if (cleaned.length < 10) {
+    console.log('📞 Adding Colombia country code to short number');
+    return '+57' + cleaned;
+  }
+  
+  // Default case - add Colombia code
+  console.log('📞 Default: Adding Colombia country code');
+  return '+57' + cleaned;
+}
+
+// Helper function to get API-ready phone number (without +)
+function getApiReadyPhoneNumber(formattedPhone: string): string {
+  return formattedPhone.replace(/^\+/, '');
 }
 
 serve(async (req) => {
@@ -74,25 +134,15 @@ serve(async (req) => {
       throw new Error('WhatsApp API credentials not configured')
     }
 
-    // Clean phone number (remove spaces, dashes, etc.)
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
-    
-    // Ensure phone number starts with country code (assume +57 for Colombia if not present)
-    let formattedPhone = cleanPhone
-    if (!formattedPhone.startsWith('+')) {
-      if (formattedPhone.startsWith('57')) {
-        formattedPhone = '+' + formattedPhone
-      } else if (formattedPhone.startsWith('3')) {
-        formattedPhone = '+57' + formattedPhone
-      } else {
-        formattedPhone = '+57' + formattedPhone
-      }
-    }
+    // Clean and format phone number properly
+    const formattedPhone = cleanAndFormatPhoneNumber(phone);
+    const apiPhone = getApiReadyPhoneNumber(formattedPhone);
 
-    // Remove the '+' for the API call
-    const apiPhone = formattedPhone.replace('+', '')
-
-    console.log('📞 Phone formatting:', { original: phone, formatted: apiPhone })
+    console.log('📞 Phone formatting completed:', { 
+      original: phone, 
+      formatted: formattedPhone,
+      apiReady: apiPhone 
+    });
 
     // AUTO-DETECT: Check if we need to use a template
     let shouldUseTemplate = useTemplate
@@ -238,7 +288,7 @@ serve(async (req) => {
       console.log('💬 Sending text message')
     }
 
-    console.log('📤 Final WhatsApp payload prepared')
+    console.log('📤 Final WhatsApp payload prepared for phone:', apiPhone)
 
     // Send message via WhatsApp Business API
     const whatsappResponse = await fetch(
@@ -257,7 +307,8 @@ serve(async (req) => {
     console.log('📱 WhatsApp API response:', { 
       status: whatsappResponse.status, 
       ok: whatsappResponse.ok,
-      hasMessages: !!whatsappResult.messages 
+      hasMessages: !!whatsappResult.messages,
+      phone: apiPhone
     })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
@@ -274,7 +325,7 @@ serve(async (req) => {
         console.error('❌ Error updating notification status:', updateError)
       }
 
-      console.log('✅ WhatsApp message sent successfully')
+      console.log('✅ WhatsApp message sent successfully to:', apiPhone)
 
       return new Response(
         JSON.stringify({ 
@@ -283,7 +334,8 @@ serve(async (req) => {
           whatsappMessageId: whatsappResult.messages[0].id,
           messageType: shouldUseTemplate ? 'template' : (imageUrl ? 'image' : 'text'),
           templateUsed: shouldUseTemplate ? autoSelectedTemplate : null,
-          autoDetected: shouldUseTemplate && !useTemplate
+          autoDetected: shouldUseTemplate && !useTemplate,
+          formattedPhone: formattedPhone
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -293,7 +345,7 @@ serve(async (req) => {
     } else {
       // Handle WhatsApp API error
       const errorMessage = whatsappResult.error?.message || 'Error enviando mensaje WhatsApp'
-      console.error('❌ WhatsApp API error:', whatsappResult)
+      console.error('❌ WhatsApp API error for phone:', apiPhone, whatsappResult)
 
       // Check if it's a 24-hour window error
       if (whatsappResult.error?.code === 131047 || 
@@ -340,7 +392,7 @@ serve(async (req) => {
           )
 
           const retryResult = await retryResponse.json()
-          console.log('🔄 Template retry response:', retryResponse.status, retryResponse.ok)
+          console.log('🔄 Template retry response for phone:', apiPhone, retryResponse.status, retryResponse.ok)
 
           if (retryResponse.ok && retryResult.messages) {
             await supabaseClient
@@ -359,7 +411,8 @@ serve(async (req) => {
                 messageType: 'template',
                 templateUsed: 'customer_service_followup',
                 autoDetected: true,
-                retried: true
+                retried: true,
+                formattedPhone: formattedPhone
               }),
               { 
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -375,7 +428,7 @@ serve(async (req) => {
         .from('notification_log')
         .update({ 
           status: 'failed',
-          error_message: errorMessage
+          error_message: errorMessage + ` (Phone: ${formattedPhone})`
         })
         .eq('id', notificationId)
 
@@ -384,7 +437,8 @@ serve(async (req) => {
           success: false, 
           error: errorMessage,
           details: whatsappResult,
-          suggestTemplate: whatsappResult.error?.code === 131047
+          suggestTemplate: whatsappResult.error?.code === 131047,
+          formattedPhone: formattedPhone
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

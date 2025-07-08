@@ -147,6 +147,7 @@ serve(async (req) => {
       message: message?.substring(0, 50) + '...', 
       useTemplate,
       templateName,
+      templateParameters,
       customerId
     });
 
@@ -242,6 +243,7 @@ serve(async (req) => {
 
     if (shouldUseTemplate && autoSelectedTemplate) {
       console.log('📋 Using WhatsApp template:', autoSelectedTemplate, 'with language:', autoSelectedLanguage);
+      console.log('📋 Template parameters received:', templateParameters);
       
       // Use template message
       const templatePayload = {
@@ -305,45 +307,54 @@ serve(async (req) => {
             ]
           }
         ]
-      } else if (autoSelectedTemplate === 'proximos_viajes' && templateParameters) {
-        // For trip notifications, use structured parameters like arrival notifications
-        console.log('✅ Using proximos_viajes template with parameters');
-        console.log('📋 Template parameters recibidos:', templateParameters);
-
-        const customerName = templateParameters.customerName || 'Cliente'
-        const outboundDate = templateParameters.outboundDate || 'N/A'
-        const returnDate = templateParameters.returnDate || 'N/A'
-        const deadlineDate = templateParameters.deadlineDate || 'N/A'
-
-        templatePayload.template.components = [
-          {
-            type: 'body',
-            parameters: [
-              { type: 'text', text: customerName },
-              { type: 'text', text: outboundDate },
-              { type: 'text', text: returnDate },
-              { type: 'text', text: deadlineDate }
-            ]
-          }
-        ]
-
-        console.log('✅ Proximos viajes template configurado con parámetros estructurados')
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        // Fallback for trip notifications without structured parameters
-        console.log('⚠️ Using proximos_viajes template without templateParameters - using message as single parameter');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES');
+        console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
-        if (message) {
+        if (templateParameters) {
+          // Usar parámetros estructurados
+          const customerName = templateParameters.customerName || 'Cliente'
+          const outboundDate = templateParameters.outboundDate || 'N/A'
+          const returnDate = templateParameters.returnDate || 'N/A'
+          const deadlineDate = templateParameters.deadlineDate || 'N/A'
+
+          console.log('📋 Parámetros que se enviarán a WhatsApp:', {
+            customerName,
+            outboundDate,
+            returnDate,
+            deadlineDate
+          });
+
           templatePayload.template.components = [
             {
               type: 'body',
               parameters: [
-                {
-                  type: 'text',
-                  text: message
-                }
+                { type: 'text', text: customerName },
+                { type: 'text', text: outboundDate },
+                { type: 'text', text: returnDate },
+                { type: 'text', text: deadlineDate }
               ]
             }
-          ];
+          ]
+
+          console.log('✅ Proximos viajes template configurado con 4 parámetros estructurados')
+        } else {
+          // Fallback: usar el mensaje como un solo parámetro
+          console.log('⚠️ No templateParameters - usando mensaje como parámetro único');
+          
+          if (message) {
+            templatePayload.template.components = [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: message
+                  }
+                ]
+              }
+            ];
+          }
         }
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
@@ -360,6 +371,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
+      console.log('📤 Payload final para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -385,9 +397,8 @@ serve(async (req) => {
       console.log('💬 Sending text message')
     }
 
-    console.log('📤 Final WhatsApp payload prepared for phone:', apiPhone, 'payload:', JSON.stringify(whatsappPayload, null, 2))
-
     // Send message via WhatsApp Business API
+    console.log('🚀 Enviando a WhatsApp Business API...');
     const whatsappResponse = await fetch(
       `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
       {
@@ -401,12 +412,12 @@ serve(async (req) => {
     )
 
     const whatsappResult = await whatsappResponse.json()
-    console.log('📱 WhatsApp API response:', { 
+    console.log('📱 WhatsApp API response completa:', { 
       status: whatsappResponse.status, 
       ok: whatsappResponse.ok,
-      hasMessages: !!whatsappResult.messages,
-      phone: apiPhone,
-      result: whatsappResult
+      statusText: whatsappResponse.statusText,
+      headers: Object.fromEntries(whatsappResponse.headers.entries()),
+      result: JSON.stringify(whatsappResult, null, 2)
     })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
@@ -442,10 +453,16 @@ serve(async (req) => {
       )
     } else {
       // Handle WhatsApp API error with detailed logging
-      console.error('❌ WhatsApp API error for phone:', apiPhone, whatsappResult)
+      console.error('❌ WhatsApp API ERROR COMPLETO:', {
+        status: whatsappResponse.status,
+        statusText: whatsappResponse.statusText,
+        phone: apiPhone,
+        template: autoSelectedTemplate,
+        responseBody: JSON.stringify(whatsappResult, null, 2)
+      });
       
       // Log detailed error information
-      await logWhatsAppError(supabaseClient, notificationId, whatsappResult, formattedPhone, 'INITIAL_SEND');
+      await logWhatsAppError(supabaseClient, notificationId, whatsappResult, formattedPhone, 'TEMPLATE_ERROR');
 
       // Check if it's a 24-hour window error
       if (whatsappResult.error?.code === 131047 || 
@@ -541,7 +558,12 @@ serve(async (req) => {
           error_type: whatsappResult.error?.type || 'api_error',
           details: whatsappResult,
           suggestTemplate: whatsappResult.error?.code === 131047,
-          formattedPhone: formattedPhone
+          formattedPhone: formattedPhone,
+          debug: {
+            templateUsed: autoSelectedTemplate,
+            templateParameters: templateParameters,
+            payload: whatsappPayload
+          }
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

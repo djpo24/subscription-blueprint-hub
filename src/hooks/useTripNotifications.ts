@@ -176,31 +176,82 @@ export function useTripNotifications() {
     mutationFn: async (tripNotificationId: string) => {
       console.log('📤 Sending trip notification:', tripNotificationId);
       
-      const { data, error } = await supabase.functions.invoke('send-trip-notifications', {
-        body: { tripNotificationId }
-      });
-
-      if (error) {
-        console.error('❌ Error sending trip notification:', error);
-        throw error;
+      if (!tripNotificationId) {
+        throw new Error('ID de notificación requerido');
       }
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('send-trip-notifications', {
+          body: { tripNotificationId }
+        });
 
-      console.log('✅ Trip notification sent successfully:', data);
-      return data;
+        console.log('📤 Edge function response:', { data, error });
+
+        if (error) {
+          console.error('❌ Edge function error:', error);
+          // Intentar extraer el mensaje de error más específico
+          let errorMessage = 'Error al enviar las notificaciones';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (typeof error === 'string') {
+            errorMessage = error;
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        if (!data) {
+          throw new Error('No se recibió respuesta de la función de envío');
+        }
+
+        if (!data.success) {
+          throw new Error(data.error || 'Error desconocido al enviar notificaciones');
+        }
+
+        console.log('✅ Trip notification sent successfully:', data);
+        return data;
+      } catch (functionError) {
+        console.error('❌ Complete function error:', functionError);
+        
+        // Mejorar el manejo de errores para mostrar información más útil
+        if (functionError.message && functionError.message.includes('Edge Function returned a non-2xx status code')) {
+          throw new Error('Error del servidor: Verifique los logs de la función Edge o contacte al administrador');
+        }
+        
+        throw functionError;
+      }
     },
     onSuccess: (data) => {
       const templateInfo = data.templateUsed ? ` usando plantilla ${data.templateUsed}` : '';
+      const successMessage = data.successCount > 0 
+        ? `Se enviaron ${data.successCount} notificaciones exitosamente${templateInfo}.`
+        : 'No se enviaron notificaciones.';
+      
+      const failureMessage = data.failedCount > 0 
+        ? ` ${data.failedCount} fallaron.`
+        : '';
+
       toast({
-        title: "Notificaciones enviadas",
-        description: `Se enviaron ${data.successCount} notificaciones exitosamente${templateInfo}. ${data.failedCount} fallaron.`,
+        title: "✅ Proceso completado",
+        description: successMessage + failureMessage,
+        variant: data.successCount > 0 ? "default" : "destructive"
       });
+      
       queryClient.invalidateQueries({ queryKey: ['trip-notifications'] });
     },
     onError: (error: any) => {
-      console.error('❌ Error sending trip notification:', error);
+      console.error('❌ Send notification mutation error:', error);
+      
+      let errorMessage = "No se pudieron enviar las notificaciones";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: "No se pudieron enviar las notificaciones",
+        title: "❌ Error",
+        description: errorMessage,
         variant: "destructive"
       });
     }

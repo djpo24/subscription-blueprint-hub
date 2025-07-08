@@ -18,12 +18,36 @@ serve(async (req) => {
     
     console.log('🚀 Starting trip notification sending process:', tripNotificationId);
 
+    if (!tripNotificationId) {
+      console.error('❌ No tripNotificationId provided');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'tripNotificationId is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase credentials');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Supabase credentials not configured' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get notification details with trip information
+    console.log('📋 Fetching notification details...');
     const { data: notification, error: notificationError } = await supabase
       .from('trip_notifications')
       .select(`
@@ -34,13 +58,37 @@ serve(async (req) => {
       .eq('id', tripNotificationId)
       .single();
 
-    if (notificationError || !notification) {
+    if (notificationError) {
       console.error('❌ Error fetching notification:', notificationError);
-      throw new Error('Notification not found: ' + (notificationError?.message || 'Unknown error'));
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Notification not found: ' + notificationError.message 
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!notification) {
+      console.error('❌ Notification not found');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Notification not found' 
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (notification.status !== 'draft') {
-      throw new Error('Notification has already been sent');
+      console.error('❌ Notification already sent:', notification.status);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Notification has already been sent' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('📋 Notification details:', {
@@ -52,13 +100,20 @@ serve(async (req) => {
       deadline: notification.deadline_date
     });
 
-    // Validate that we have template configuration
+    // Validate template configuration
     if (!notification.template_name) {
       console.error('❌ No template name configured');
-      throw new Error('Template name is required for WhatsApp notifications');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Template name is required for WhatsApp notifications' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Get all customers
+    console.log('👥 Fetching customers...');
     const { data: customers, error: customersError } = await supabase
       .from('customers')
       .select('id, name, phone, whatsapp_number')
@@ -66,17 +121,38 @@ serve(async (req) => {
 
     if (customersError) {
       console.error('❌ Error fetching customers:', customersError);
-      throw new Error('Error fetching customers: ' + customersError.message);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Error fetching customers: ' + customersError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log(`👥 Found ${customers?.length || 0} customers to notify`);
+    if (!customers || customers.length === 0) {
+      console.log('⚠️ No customers found');
+      return new Response(JSON.stringify({ 
+        success: true,
+        totalSent: 0,
+        successCount: 0,
+        failedCount: 0,
+        templateUsed: notification.template_name,
+        logs: [],
+        message: 'No customers found to notify'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`👥 Found ${customers.length} customers to notify`);
 
     let successCount = 0;
     let failedCount = 0;
     const logs = [];
 
     // Process each customer
-    for (const customer of customers || []) {
+    for (const customer of customers) {
       try {
         const phone = customer.whatsapp_number || customer.phone;
         
@@ -88,46 +164,60 @@ serve(async (req) => {
         console.log(`📱 Processing customer ${customer.name} with phone: ${phone}`);
 
         // Generate personalized message using the database function
+        console.log('📝 Generating personalized message...');
         const { data: messageResult, error: messageError } = await supabase
           .rpc('generate_trip_notification_message', {
             customer_name_param: customer.name,
-            template_param: notification.message_template,
-            outbound_date: notification.outbound_trip?.trip_date,
-            return_date: notification.return_trip?.trip_date,
-            deadline_date: notification.deadline_date
+            template_param: notification.message_template || '',
+            outbound_date: notification.outbound_trip?.trip_date || null,
+            return_date: notification.return_trip?.trip_date || null,
+            deadline_date: notification.deadline_date || null
           });
 
         if (messageError) {
-          console.error('❌ Error generating message:', messageError);
-          throw new Error('Error generating message: ' + messageError.message);
+          console.error('❌ Error generating message for', customer.name, ':', messageError);
+          failedCount++;
+          logs.push({
+            customer: customer.name,
+            phone: phone,
+            status: 'failed',
+            error: 'Error generating message: ' + messageError.message
+          });
+          continue;
         }
 
-        console.log(`📝 Generated message for ${customer.name}: ${messageResult?.substring(0, 100)}...`);
+        console.log(`📝 Generated message for ${customer.name}`);
 
-        // Create log entry
+        // Create log entry BEFORE sending WhatsApp message
+        console.log('📋 Creating notification log entry...');
         const { data: logEntry, error: logError } = await supabase
-          .from('trip_notification_log')
+          .from('notification_log')
           .insert({
-            trip_notification_id: tripNotificationId,
+            package_id: null,
             customer_id: customer.id,
-            customer_phone: phone,
-            customer_name: customer.name,
-            personalized_message: messageResult,
-            template_name: notification.template_name,
-            template_language: notification.template_language || 'es_CO',
+            notification_type: 'trip_notification',
+            message: messageResult || 'Generated message',
             status: 'pending'
           })
           .select()
           .single();
 
         if (logError) {
-          console.error('❌ Error creating log entry:', logError);
+          console.error('❌ Error creating notification log for', customer.name, ':', logError);
+          failedCount++;
+          logs.push({
+            customer: customer.name,
+            phone: phone,
+            status: 'failed',
+            error: 'Error creating log: ' + logError.message
+          });
           continue;
         }
 
-        console.log(`📋 Created log entry for ${customer.name}: ${logEntry.id}`);
+        console.log(`📋 Created notification log entry: ${logEntry.id}`);
 
         // Send WhatsApp message with template configuration
+        console.log('📤 Sending WhatsApp message...');
         const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: logEntry.id,
@@ -147,9 +237,11 @@ serve(async (req) => {
         });
 
         if (whatsappError) {
-          // Update log with error
+          console.error(`❌ Failed to send WhatsApp to ${customer.name}:`, whatsappError);
+          
+          // Update notification log with error
           await supabase
-            .from('trip_notification_log')
+            .from('notification_log')
             .update({
               status: 'failed',
               error_message: whatsappError.message
@@ -157,28 +249,44 @@ serve(async (req) => {
             .eq('id', logEntry.id);
           
           failedCount++;
-          console.error(`❌ Failed to send to ${customer.name}: ${whatsappError.message}`);
-          
           logs.push({
             customer: customer.name,
             phone: phone,
             status: 'failed',
             error: whatsappError.message
           });
-        } else {
-          // Update log with success
+        } else if (whatsappResult?.error) {
+          console.error(`❌ WhatsApp API error for ${customer.name}:`, whatsappResult.error);
+          
+          // Update notification log with API error
           await supabase
-            .from('trip_notification_log')
+            .from('notification_log')
+            .update({
+              status: 'failed',
+              error_message: whatsappResult.error
+            })
+            .eq('id', logEntry.id);
+          
+          failedCount++;
+          logs.push({
+            customer: customer.name,
+            phone: phone,
+            status: 'failed',
+            error: whatsappResult.error
+          });
+        } else {
+          console.log(`✅ Successfully sent to ${customer.name} using template ${notification.template_name}`);
+          
+          // Update notification log with success
+          await supabase
+            .from('notification_log')
             .update({
               status: 'sent',
-              whatsapp_message_id: whatsappResult?.whatsappMessageId,
               sent_at: new Date().toISOString()
             })
             .eq('id', logEntry.id);
           
           successCount++;
-          console.log(`✅ Successfully sent to ${customer.name} using template ${notification.template_name}`);
-          
           logs.push({
             customer: customer.name,
             phone: phone,
@@ -188,9 +296,8 @@ serve(async (req) => {
         }
 
       } catch (error) {
-        failedCount++;
         console.error(`❌ Error processing customer ${customer.name}:`, error);
-        
+        failedCount++;
         logs.push({
           customer: customer.name,
           phone: customer.phone,
@@ -201,7 +308,8 @@ serve(async (req) => {
     }
 
     // Update notification status
-    await supabase
+    console.log('📊 Updating notification status...');
+    const { error: updateError } = await supabase
       .from('trip_notifications')
       .update({
         status: 'sent',
@@ -211,6 +319,10 @@ serve(async (req) => {
         sent_at: new Date().toISOString()
       })
       .eq('id', tripNotificationId);
+
+    if (updateError) {
+      console.error('❌ Error updating notification status:', updateError);
+    }
 
     console.log('📊 Trip notification sending completed:', {
       template_name: notification.template_name,
@@ -235,7 +347,8 @@ serve(async (req) => {
     console.error('❌ Error in send-trip-notifications function:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error.message,
+      stack: error.stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

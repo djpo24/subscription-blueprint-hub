@@ -25,11 +25,16 @@ export function TripNotificationTestDialog({
   const [templateName, setTemplateName] = useState('proximos_viajes');
   const [templateLanguage, setTemplateLanguage] = useState('es_CO');
   const [testMessage, setTestMessage] = useState(
-    'Hola {{nombre_cliente}}! 📅 Te recordamos nuestros próximos viajes:\n\n' +
-    '✈️ Salida desde Barranquilla: {{fecha_salida_baq}}\n' +
-    '🔄 Retorno desde Curazao: {{fecha_retorno_cur}}\n' +
-    '⏰ Fecha límite para entrega: {{fecha_limite_entrega}}\n\n' +
-    '¡Reserva tu espacio ahora! 📦'
+    '¡Hola {{nombre_cliente}}! 👋\n\n' +
+    '🛫 **IMPORTANTE: Próximo viaje programado**\n\n' +
+    'Te informamos que tenemos un viaje programado próximamente:\n\n' +
+    '📅 **Salida desde Barranquilla:** {{fecha_salida_baq}}\n' +
+    '📅 **Retorno desde Curazao:** {{fecha_retorno_cur}}\n\n' +
+    '⏰ **FECHA LÍMITE para entrega de encomiendas:**\n' +
+    '🗓️ **{{fecha_limite_entrega}} antes de las 3:00 PM**\n\n' +
+    '📦 Si tienes alguna encomienda para enviar, por favor asegúrate de entregarla antes de la fecha límite.\n\n' +
+    '📞 Para coordinar la entrega o resolver dudas, contáctanos.\n\n' +
+    '✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao'
   );
   const [isSending, setIsSending] = useState(false);
 
@@ -153,6 +158,19 @@ export function TripNotificationTestDialog({
     }
   };
 
+  // Función para mostrar la vista previa personalizada
+  const getPreviewMessage = () => {
+    const sampleOutboundDate = 'lunes 15 de julio';
+    const sampleReturnDate = 'domingo 21 de julio';
+    const sampleDeadlineDate = 'viernes 12 de julio';
+    
+    return testMessage
+      .replace('{{nombre_cliente}}', testCustomerName || 'Juan Pérez')
+      .replace('{{fecha_salida_baq}}', sampleOutboundDate)
+      .replace('{{fecha_retorno_cur}}', sampleReturnDate)
+      .replace('{{fecha_limite_entrega}}', sampleDeadlineDate);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -223,14 +241,13 @@ export function TripNotificationTestDialog({
           <div className="space-y-2">
             <Label>Vista Previa del Mensaje</Label>
             <Textarea
-              value={testMessage}
-              onChange={(e) => setTestMessage(e.target.value)}
-              rows={6}
+              value={getPreviewMessage()}
+              rows={12}
               className="text-sm bg-gray-50"
               readOnly
             />
             <p className="text-xs text-blue-600">
-              Este mensaje se personalizará automáticamente con fechas de ejemplo
+              Esta es la vista previa con fechas de ejemplo que se enviará usando la plantilla WhatsApp
             </p>
           </div>
 

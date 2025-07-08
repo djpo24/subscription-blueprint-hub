@@ -306,8 +306,22 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        // For trip notifications, we don't need parameters as the message is already personalized
-        console.log('✅ Using proximos_viajes template without parameters');
+        // For trip notifications, the message should be passed as parameter if the template expects it
+        console.log('✅ Using proximos_viajes template');
+        
+        if (message) {
+          templatePayload.template.components = [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: message
+                }
+              ]
+            }
+          ];
+        }
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

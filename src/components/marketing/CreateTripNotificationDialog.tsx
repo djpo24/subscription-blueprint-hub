@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTripNotifications } from '@/hooks/useTripNotifications';
+import { formatTripDate } from '@/utils/dateUtils';
 import { Plane, Calendar, Clock, MessageSquare } from 'lucide-react';
 
 interface Trip {
@@ -81,7 +82,8 @@ export function CreateTripNotificationDialog({
   };
 
   const formatTripOption = (trip: Trip) => {
-    const date = new Date(trip.trip_date).toLocaleDateString('es-CO');
+    // CORRECCIÓN: Usar formatTripDate para evitar desfases de un día
+    const date = formatTripDate(trip.trip_date);
     const flight = trip.flight_number ? ` (${trip.flight_number})` : '';
     return `${date} - ${trip.origin} → ${trip.destination}${flight}`;
   };

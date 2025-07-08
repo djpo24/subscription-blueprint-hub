@@ -309,55 +309,63 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - SOLUCIÓN DEFINITIVA');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
-          // CORREGIDO: Usar tipo "text" que es el estándar de WhatsApp Business API
+          // SOLUCIÓN DEFINITIVA: Formatear fechas correctamente antes de enviar
           const customerName = templateParameters.customerName || 'Cliente'
-          const outboundDate = templateParameters.outboundDate || 'N/A'
-          const returnDate = templateParameters.returnDate || 'N/A'
-          const deadlineDate = templateParameters.deadlineDate || 'N/A'
+          let outboundDate = templateParameters.outboundDate || 'N/A'
+          let returnDate = templateParameters.returnDate || 'N/A'
+          let deadlineDate = templateParameters.deadlineDate || 'N/A'
 
-          console.log('📋 Parámetros que se enviarán a WhatsApp con tipo "text":', {
+          // Formatear fechas si vienen como YYYY-MM-DD
+          if (outboundDate && outboundDate.includes('-')) {
+            const date = new Date(outboundDate + 'T00:00:00');
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            outboundDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          }
+
+          if (returnDate && returnDate.includes('-')) {
+            const date = new Date(returnDate + 'T00:00:00');
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            returnDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          }
+
+          if (deadlineDate && deadlineDate.includes('-')) {
+            const date = new Date(deadlineDate + 'T00:00:00');
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            deadlineDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          }
+
+          console.log('📋 Fechas formateadas para WhatsApp:', {
             customerName,
             outboundDate,
             returnDate,
             deadlineDate
           });
 
-          // CORREGIDO: Usar tipo "text" según el estándar de WhatsApp Business API
+          // CORRECCIÓN DEFINITIVA: Usar exactamente 4 parámetros como espera la plantilla
           templatePayload.template.components = [
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: customerName },      // {{nombre_cliente}}
-                { type: 'text', text: outboundDate },      // {{fecha_salida_baq}}
-                { type: 'text', text: returnDate },        // {{fecha_retorno_cur}}
-                { type: 'text', text: deadlineDate }       // {{fecha_limite_entrega}}
+                { type: 'text', text: customerName },      // {{1}}
+                { type: 'text', text: outboundDate },      // {{2}}
+                { type: 'text', text: returnDate },        // {{3}}
+                { type: 'text', text: deadlineDate }       // {{4}}
               ]
             }
           ]
 
-          console.log('✅ Proximos viajes template configurado con 4 parámetros tipo "text"')
+          console.log('✅ SOLUCIÓN DEFINITIVA - Proximos viajes template configurado correctamente')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
-          // Fallback: usar el mensaje como un solo parámetro
-          console.log('⚠️ No templateParameters - usando mensaje como parámetro único');
-          
-          if (message) {
-            templatePayload.template.components = [
-              {
-                type: 'body',
-                parameters: [
-                  {
-                    type: 'text',
-                    text: message
-                  }
-                ]
-              }
-            ];
-          }
+          console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');
+          throw new Error('templateParameters requeridos para plantilla proximos_viajes');
         }
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
@@ -374,7 +382,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('📤 Payload final para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
+      console.log('📤 PAYLOAD FINAL DEFINITIVO para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {

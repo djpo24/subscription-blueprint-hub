@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -312,32 +313,34 @@ serve(async (req) => {
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
-          // Usar parámetros estructurados
+          // Usar parámetros estructurados con tipo "nombre" según la plantilla exacta del usuario
           const customerName = templateParameters.customerName || 'Cliente'
           const outboundDate = templateParameters.outboundDate || 'N/A'
           const returnDate = templateParameters.returnDate || 'N/A'
           const deadlineDate = templateParameters.deadlineDate || 'N/A'
 
-          console.log('📋 Parámetros que se enviarán a WhatsApp:', {
+          console.log('📋 Parámetros que se enviarán a WhatsApp con tipo "nombre":', {
             customerName,
             outboundDate,
             returnDate,
             deadlineDate
           });
 
+          // CORREGIDO: Usar tipo "nombre" en lugar de "text" según la plantilla del usuario
           templatePayload.template.components = [
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: customerName },
-                { type: 'text', text: outboundDate },
-                { type: 'text', text: returnDate },
-                { type: 'text', text: deadlineDate }
+                { type: 'nombre', nombre: customerName },      // {{nombre_cliente}}
+                { type: 'nombre', nombre: outboundDate },      // {{fecha_salida_baq}}
+                { type: 'nombre', nombre: returnDate },        // {{fecha_retorno_cur}}
+                { type: 'nombre', nombre: deadlineDate }       // {{fecha_limite_entrega}}
               ]
             }
           ]
 
-          console.log('✅ Proximos viajes template configurado con 4 parámetros estructurados')
+          console.log('✅ Proximos viajes template configurado con 4 parámetros tipo "nombre"')
+          console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           // Fallback: usar el mensaje como un solo parámetro
           console.log('⚠️ No templateParameters - usando mensaje como parámetro único');
@@ -348,8 +351,8 @@ serve(async (req) => {
                 type: 'body',
                 parameters: [
                   {
-                    type: 'text',
-                    text: message
+                    type: 'nombre',
+                    nombre: message
                   }
                 ]
               }

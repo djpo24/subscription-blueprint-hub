@@ -102,7 +102,7 @@ export function TripNotificationTestDialog({
 
       console.log('📝 Mensaje personalizado generado:', personalizedMessage);
 
-      // Enviar mensaje usando la plantilla con parámetros estructurados
+      // CORRECCIÓN: Usar exactamente los mismos nombres de parámetros que en el Edge Function
       const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
@@ -113,10 +113,10 @@ export function TripNotificationTestDialog({
           templateLanguage: templateLanguage,
           customerId: null, // No hay customerId para mensajes de prueba
           templateParameters: {
-            customerName: testCustomerName,
-            outboundDate: testOutboundDate.toISOString().split('T')[0],
-            returnDate: testReturnDate.toISOString().split('T')[0],
-            deadlineDate: testDeadlineDate.toISOString().split('T')[0]
+            customerName: testCustomerName,        // Para {{nombre_cliente}}
+            outboundDate: testOutboundDate.toISOString().split('T')[0],   // Para {{fecha_salida_baq}}
+            returnDate: testReturnDate.toISOString().split('T')[0],       // Para {{fecha_retorno_cur}}
+            deadlineDate: testDeadlineDate.toISOString().split('T')[0]    // Para {{fecha_limite_entrega}}
           }
         }
       });
@@ -158,7 +158,7 @@ export function TripNotificationTestDialog({
     }
   };
 
-  // Función para mostrar la vista previa personalizada
+  // CORRECCIÓN: Usar los nombres exactos de la plantilla para la vista previa
   const getPreviewMessage = () => {
     const sampleOutboundDate = 'lunes 15 de julio';
     const sampleReturnDate = 'domingo 21 de julio';

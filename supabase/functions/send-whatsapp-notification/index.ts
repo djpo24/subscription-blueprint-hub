@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -242,6 +241,8 @@ serve(async (req) => {
     let whatsappPayload
 
     if (shouldUseTemplate && autoSelectedTemplate) {
+      console.log('📋 Using WhatsApp template:', autoSelectedTemplate, 'with language:', autoSelectedLanguage);
+      
       // Use template message
       const templatePayload = {
         messaging_product: 'whatsapp',
@@ -304,6 +305,9 @@ serve(async (req) => {
             ]
           }
         ]
+      } else if (autoSelectedTemplate === 'proximos_viajes') {
+        // For trip notifications, we don't need parameters as the message is already personalized
+        console.log('✅ Using proximos_viajes template without parameters');
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {
@@ -319,7 +323,6 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('📋 Using WhatsApp template:', autoSelectedTemplate)
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -345,7 +348,7 @@ serve(async (req) => {
       console.log('💬 Sending text message')
     }
 
-    console.log('📤 Final WhatsApp payload prepared for phone:', apiPhone)
+    console.log('📤 Final WhatsApp payload prepared for phone:', apiPhone, 'payload:', JSON.stringify(whatsappPayload, null, 2))
 
     // Send message via WhatsApp Business API
     const whatsappResponse = await fetch(

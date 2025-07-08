@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,8 +10,8 @@ export interface TripNotification {
   deadline_date: string;
   deadline_time: string;
   message_template: string;
-  template_name?: string;
-  template_language?: string;
+  template_name: string;
+  template_language: string;
   total_customers_sent: number;
   success_count: number;
   failed_count: number;
@@ -39,8 +40,8 @@ interface CreateTripNotificationInput {
   deadline_date: string;
   deadline_time: string;
   message_template: string;
-  template_name: string; // Now required
-  template_language: string; // Now required
+  template_name: string;
+  template_language: string;
   created_by: string | null;
 }
 
@@ -51,22 +52,24 @@ export function useTripNotifications() {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['trip-notifications'],
     queryFn: async (): Promise<TripNotification[]> => {
-      console.log('Fetching trip notifications...');
+      console.log('🔍 Fetching trip notifications...');
       
-      // First, fetch the trip notifications with template fields
       const { data: notificationData, error: notificationError } = await supabase
         .from('trip_notifications')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (notificationError) {
-        console.error('Error fetching trip notifications:', notificationError);
+        console.error('❌ Error fetching trip notifications:', notificationError);
         throw notificationError;
       }
 
       if (!notificationData || notificationData.length === 0) {
+        console.log('📋 No trip notifications found');
         return [];
       }
+
+      console.log(`📋 Found ${notificationData.length} trip notifications`);
 
       // Get all unique trip IDs
       const tripIds = new Set<string>();
@@ -82,7 +85,7 @@ export function useTripNotifications() {
         .in('id', Array.from(tripIds));
 
       if (tripsError) {
-        console.error('Error fetching trips:', tripsError);
+        console.error('❌ Error fetching trips:', tripsError);
         throw tripsError;
       }
 
@@ -92,23 +95,24 @@ export function useTripNotifications() {
         tripsMap.set(trip.id, trip);
       });
 
-      // Combine the data
       const result: TripNotification[] = notificationData.map(notification => ({
         ...notification,
         status: notification.status as 'draft' | 'sent',
+        template_name: notification.template_name || 'proximos_viajes',
+        template_language: notification.template_language || 'es_CO',
         outbound_trip: tripsMap.get(notification.outbound_trip_id) || undefined,
         return_trip: tripsMap.get(notification.return_trip_id) || undefined,
       }));
 
+      console.log(`✅ Processed ${result.length} trip notifications with template info`);
       return result;
     }
   });
 
   const createNotificationMutation = useMutation({
     mutationFn: async (notification: CreateTripNotificationInput) => {
-      console.log('Creating trip notification with data:', notification);
+      console.log('📝 Creating trip notification with data:', notification);
       
-      // Validate required fields - now including template fields
       if (!notification.outbound_trip_id || !notification.return_trip_id) {
         throw new Error('Debe seleccionar viajes de ida y retorno');
       }
@@ -120,27 +124,22 @@ export function useTripNotifications() {
       if (!notification.template_name) {
         throw new Error('Debe seleccionar una plantilla de WhatsApp');
       }
-      
-      if (!notification.template_language) {
-        throw new Error('Debe seleccionar el idioma de la plantilla');
-      }
 
-      // Prepare the data for insertion - now including template fields
       const insertData = {
         outbound_trip_id: notification.outbound_trip_id,
         return_trip_id: notification.return_trip_id,
         deadline_date: notification.deadline_date,
         deadline_time: notification.deadline_time,
         message_template: notification.message_template || '',
-        template_name: notification.template_name, // Now properly included
-        template_language: notification.template_language, // Now properly included
+        template_name: notification.template_name,
+        template_language: notification.template_language || 'es_CO',
         status: 'draft',
         total_customers_sent: 0,
         success_count: 0,
         failed_count: 0
       };
 
-      console.log('Inserting trip notification with data:', insertData);
+      console.log('📋 Inserting trip notification with template data:', insertData);
 
       const { data, error } = await supabase
         .from('trip_notifications')
@@ -149,11 +148,11 @@ export function useTripNotifications() {
         .single();
 
       if (error) {
-        console.error('Error creating trip notification:', error);
+        console.error('❌ Error creating trip notification:', error);
         throw error;
       }
 
-      console.log('Trip notification created successfully:', data);
+      console.log('✅ Trip notification created successfully with template:', data.template_name);
       return data;
     },
     onSuccess: () => {
@@ -164,7 +163,7 @@ export function useTripNotifications() {
       queryClient.invalidateQueries({ queryKey: ['trip-notifications'] });
     },
     onError: (error: any) => {
-      console.error('Error creating trip notification:', error);
+      console.error('❌ Error creating trip notification:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudo crear la notificación",
@@ -175,28 +174,30 @@ export function useTripNotifications() {
 
   const sendNotificationMutation = useMutation({
     mutationFn: async (tripNotificationId: string) => {
-      console.log('Sending trip notification:', tripNotificationId);
+      console.log('📤 Sending trip notification:', tripNotificationId);
       
       const { data, error } = await supabase.functions.invoke('send-trip-notifications', {
         body: { tripNotificationId }
       });
 
       if (error) {
-        console.error('Error sending trip notification:', error);
+        console.error('❌ Error sending trip notification:', error);
         throw error;
       }
 
+      console.log('✅ Trip notification sent successfully:', data);
       return data;
     },
     onSuccess: (data) => {
+      const templateInfo = data.templateUsed ? ` usando plantilla ${data.templateUsed}` : '';
       toast({
         title: "Notificaciones enviadas",
-        description: `Se enviaron ${data.successCount} notificaciones exitosamente. ${data.failedCount} fallaron.`,
+        description: `Se enviaron ${data.successCount} notificaciones exitosamente${templateInfo}. ${data.failedCount} fallaron.`,
       });
       queryClient.invalidateQueries({ queryKey: ['trip-notifications'] });
     },
     onError: (error: any) => {
-      console.error('Error sending trip notification:', error);
+      console.error('❌ Error sending trip notification:', error);
       toast({
         title: "Error",
         description: "No se pudieron enviar las notificaciones",

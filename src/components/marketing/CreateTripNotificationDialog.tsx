@@ -1,21 +1,20 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { useTripNotifications } from '@/hooks/useTripNotifications';
-import { formatDispatchDate } from '@/utils/dateUtils';
-import { Calendar, Plane, Clock, MessageSquare, Globe } from 'lucide-react';
+import { Plane, Calendar, Clock, MessageSquare } from 'lucide-react';
 
 interface Trip {
   id: string;
   trip_date: string;
   origin: string;
   destination: string;
-  flight_number: string | null;
-  status: string;
+  flight_number?: string;
 }
 
 interface CreateTripNotificationDialogProps {
@@ -24,79 +23,30 @@ interface CreateTripNotificationDialogProps {
   trips: Trip[];
 }
 
-const DEFAULT_TEMPLATE = `📦 ¡Hola {{nombre_cliente}}!
-
-Desde Envíos Ojito queremos informarte que el próximo viaje de encomiendas será:
-
-🛫 Salida desde Barranquilla a Curazao: {{fecha_salida_baq}}
-🛬 Retorno desde Curazao a Barranquilla: {{fecha_retorno_cur}}
-
-📥 Recibimos encomiendas hasta el {{fecha_limite_entrega}} a las 3:00 pm
-
-🏢 Punto de acopio en Barranquilla:
-Calle 45b # 22 - 124
-
-📞 Contáctanos por WhatsApp:
-🇨🇴 Colombia: +57 312 727 17 46
-🇨🇼 Curazao: +599 9 696 43 06
-
-✈️ Envíos Ojito – Conectando Barranquilla y Curazao`;
-
 export function CreateTripNotificationDialog({ 
   isOpen, 
   onOpenChange, 
   trips 
 }: CreateTripNotificationDialogProps) {
-  const [outboundTripId, setOutboundTripId] = useState<string>('');
-  const [returnTripId, setReturnTripId] = useState<string>('');
-  const [deadlineDate, setDeadlineDate] = useState<string>('');
-  const [deadlineTime, setDeadlineTime] = useState<string>('15:00');
-  const [messageTemplate, setMessageTemplate] = useState<string>(DEFAULT_TEMPLATE);
-  const [templateName, setTemplateName] = useState<string>('proximos_viajes');
-  const [templateLanguage, setTemplateLanguage] = useState<string>('es_CO');
-  
   const { createNotification, isCreating } = useTripNotifications();
-
-  // Filter trips for outbound (Barranquilla -> Curazao) and return (Curazao -> Barranquilla)
-  const outboundTrips = trips.filter(trip => 
-    trip.origin.toLowerCase().includes('barranquilla') && 
-    trip.destination.toLowerCase().includes('curazao') &&
-    trip.status === 'scheduled'
+  
+  const [outboundTripId, setOutboundTripId] = useState('');
+  const [returnTripId, setReturnTripId] = useState('');
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('15:00');
+  const [messageTemplate, setMessageTemplate] = useState(
+    'Hola {{nombre_cliente}}! 📅 Te recordamos nuestros próximos viajes:\n\n' +
+    '✈️ Salida desde Barranquilla: {{fecha_salida_baq}}\n' +
+    '🔄 Retorno desde Curazao: {{fecha_retorno_cur}}\n' +
+    '⏰ Fecha límite para entrega: {{fecha_limite_entrega}}\n\n' +
+    '¡Reserva tu espacio ahora! 📦'
   );
-
-  const returnTrips = trips.filter(trip => 
-    trip.origin.toLowerCase().includes('curazao') && 
-    trip.destination.toLowerCase().includes('barranquilla') &&
-    trip.status === 'scheduled'
-  );
-
-  // Calculate deadline date when outbound trip is selected
-  useEffect(() => {
-    if (outboundTripId) {
-      const selectedTrip = outboundTrips.find(trip => trip.id === outboundTripId);
-      if (selectedTrip) {
-        const tripDate = new Date(selectedTrip.trip_date + 'T00:00:00');
-        tripDate.setDate(tripDate.getDate() - 1); // One day before
-        setDeadlineDate(tripDate.toISOString().split('T')[0]);
-      }
-    }
-  }, [outboundTripId, outboundTrips]);
+  const [templateName, setTemplateName] = useState('proximos_viajes');
+  const [templateLanguage, setTemplateLanguage] = useState('es_CO');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Enhanced validation to ensure template fields are provided
-    if (!outboundTripId || !returnTripId || !deadlineDate || !templateName || !templateLanguage) {
-      console.error('Missing required fields:', {
-        outboundTripId,
-        returnTripId,
-        deadlineDate,
-        templateName,
-        templateLanguage
-      });
-      return;
-    }
-
     try {
       await createNotification({
         outbound_trip_id: outboundTripId,
@@ -104,9 +54,9 @@ export function CreateTripNotificationDialog({
         deadline_date: deadlineDate,
         deadline_time: deadlineTime,
         message_template: messageTemplate,
-        template_name: templateName, // Ensure these are always provided
-        template_language: templateLanguage, // Ensure these are always provided
-        created_by: null // Will be set by RLS
+        template_name: templateName,
+        template_language: templateLanguage,
+        created_by: null
       });
       
       // Reset form
@@ -114,43 +64,43 @@ export function CreateTripNotificationDialog({
       setReturnTripId('');
       setDeadlineDate('');
       setDeadlineTime('15:00');
-      setMessageTemplate(DEFAULT_TEMPLATE);
+      setMessageTemplate(
+        'Hola {{nombre_cliente}}! 📅 Te recordamos nuestros próximos viajes:\n\n' +
+        '✈️ Salida desde Barranquilla: {{fecha_salida_baq}}\n' +
+        '🔄 Retorno desde Curazao: {{fecha_retorno_cur}}\n' +
+        '⏰ Fecha límite para entrega: {{fecha_limite_entrega}}\n\n' +
+        '¡Reserva tu espacio ahora! 📦'
+      );
       setTemplateName('proximos_viajes');
       setTemplateLanguage('es_CO');
+      
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating notification:', error);
+      console.error('Error creating trip notification:', error);
     }
   };
 
-  const formatTripDisplay = (trip: Trip) => {
-    // Usar formatDispatchDate para evitar problemas de zona horaria
-    const formattedDate = formatDispatchDate(trip.trip_date);
-    
-    // Obtener el día de la semana manualmente sin conversión de zona horaria
-    const dateParts = trip.trip_date.split('-');
-    const tripDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-    const weekday = tripDate.toLocaleDateString('es-ES', { weekday: 'long' });
-    
-    return `${weekday}, ${formattedDate} - ${trip.origin} → ${trip.destination}${trip.flight_number ? ` (${trip.flight_number})` : ''}`;
+  const formatTripOption = (trip: Trip) => {
+    const date = new Date(trip.trip_date).toLocaleDateString('es-CO');
+    const flight = trip.flight_number ? ` (${trip.flight_number})` : '';
+    return `${date} - ${trip.origin} → ${trip.destination}${flight}`;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Plane className="h-5 w-5" />
-            Nueva Notificación de Viaje
+            <MessageSquare className="h-5 w-5" />
+            Nueva Notificación de Viajes
           </DialogTitle>
         </DialogHeader>
-
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Outbound Trip Selection */}
             <div className="space-y-2">
               <Label htmlFor="outbound-trip" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <Plane className="h-4 w-4" />
                 Viaje de Ida (Barranquilla → Curazao)
               </Label>
               <Select value={outboundTripId} onValueChange={setOutboundTripId}>
@@ -158,22 +108,20 @@ export function CreateTripNotificationDialog({
                   <SelectValue placeholder="Seleccionar viaje de ida" />
                 </SelectTrigger>
                 <SelectContent>
-                  {outboundTrips.map((trip) => (
-                    <SelectItem key={trip.id} value={trip.id}>
-                      {formatTripDisplay(trip)}
-                    </SelectItem>
-                  ))}
+                  {trips
+                    .filter(trip => trip.origin.includes('Barranquilla') || trip.origin.includes('BAQ'))
+                    .map(trip => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {formatTripOption(trip)}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
-              {outboundTrips.length === 0 && (
-                <p className="text-sm text-red-500">No hay viajes de ida disponibles</p>
-              )}
             </div>
 
-            {/* Return Trip Selection */}
             <div className="space-y-2">
               <Label htmlFor="return-trip" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <Plane className="h-4 w-4 rotate-180" />
                 Viaje de Retorno (Curazao → Barranquilla)
               </Label>
               <Select value={returnTripId} onValueChange={setReturnTripId}>
@@ -181,21 +129,19 @@ export function CreateTripNotificationDialog({
                   <SelectValue placeholder="Seleccionar viaje de retorno" />
                 </SelectTrigger>
                 <SelectContent>
-                  {returnTrips.map((trip) => (
-                    <SelectItem key={trip.id} value={trip.id}>
-                      {formatTripDisplay(trip)}
-                    </SelectItem>
-                  ))}
+                  {trips
+                    .filter(trip => trip.origin.includes('Curazao') || trip.origin.includes('CUR'))
+                    .map(trip => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {formatTripOption(trip)}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
-              {returnTrips.length === 0 && (
-                <p className="text-sm text-red-500">No hay viajes de retorno disponibles</p>
-              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Deadline Date */}
             <div className="space-y-2">
               <Label htmlFor="deadline-date" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -208,12 +154,8 @@ export function CreateTripNotificationDialog({
                 onChange={(e) => setDeadlineDate(e.target.value)}
                 required
               />
-              <p className="text-sm text-gray-500">
-                Por defecto: un día antes del viaje de ida
-              </p>
             </div>
 
-            {/* Deadline Time */}
             <div className="space-y-2">
               <Label htmlFor="deadline-time" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -226,96 +168,77 @@ export function CreateTripNotificationDialog({
                 onChange={(e) => setDeadlineTime(e.target.value)}
                 required
               />
-              <p className="text-sm text-gray-500">
-                Hora límite para entregar encomiendas
-              </p>
             </div>
           </div>
 
-          {/* Template Configuration - Enhanced validation and user feedback */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Template Name */}
-            <div className="space-y-2">
-              <Label htmlFor="template-name" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Nombre de la Plantilla *
-              </Label>
-              <Select value={templateName} onValueChange={setTemplateName} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar plantilla" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proximos_viajes">Próximos Viajes</SelectItem>
-                  <SelectItem value="customer_service_followup">Seguimiento al Cliente</SelectItem>
-                  <SelectItem value="package_arrival_notification">Notificación de Llegada</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-gray-500">
-                Plantilla de WhatsApp a utilizar para el envío
-              </p>
-            </div>
-
-            {/* Template Language */}
-            <div className="space-y-2">
-              <Label htmlFor="template-language" className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                Idioma de la Plantilla *
-              </Label>
-              <Select value={templateLanguage} onValueChange={setTemplateLanguage} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar idioma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="es_CO">Español (Colombia)</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
-                  <SelectItem value="en_US">English (US)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-gray-500">
-                Idioma configurado en la plantilla de WhatsApp
-              </p>
-            </div>
-          </div>
-
-          {/* Message Template */}
-          <div className="space-y-2">
-            <Label htmlFor="message-template">
-              Plantilla del Mensaje (Fallback)
+          <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
+            <Label className="text-sm font-medium text-blue-800">
+              Configuración de Plantilla WhatsApp
             </Label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-name">Nombre de Plantilla</Label>
+                <Select value={templateName} onValueChange={setTemplateName}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proximos_viajes">proximos_viajes</SelectItem>
+                    <SelectItem value="customer_service_hello">customer_service_hello</SelectItem>
+                    <SelectItem value="customer_service_followup">customer_service_followup</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="template-language">Idioma</Label>
+                <Select value={templateLanguage} onValueChange={setTemplateLanguage}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="es_CO">Español (Colombia)</SelectItem>
+                    <SelectItem value="en_US">English (US)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="message-template">Mensaje Personalizado</Label>
             <Textarea
               id="message-template"
               value={messageTemplate}
               onChange={(e) => setMessageTemplate(e.target.value)}
-              rows={12}
-              className="font-mono text-sm"
-              placeholder="Escribe la plantilla del mensaje..."
-              required
+              rows={8}
+              placeholder="Escriba su mensaje aquí..."
+              className="text-sm"
             />
-            <div className="text-sm text-gray-500 space-y-1">
+            <div className="text-xs text-gray-500 mt-2">
               <p><strong>Variables disponibles:</strong></p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
+              <ul className="list-disc list-inside mt-1">
                 <li><code>{'{{nombre_cliente}}'}</code> - Nombre del cliente</li>
-                <li><code>{'{{fecha_salida_baq}}'}</code> - Fecha del viaje de ida</li>
-                <li><code>{'{{fecha_retorno_cur}}'}</code> - Fecha del viaje de retorno</li>
+                <li><code>{'{{fecha_salida_baq}}'}</code> - Fecha de salida desde Barranquilla</li>
+                <li><code>{'{{fecha_retorno_cur}}'}</code> - Fecha de retorno desde Curazao</li>
                 <li><code>{'{{fecha_limite_entrega}}'}</code> - Fecha límite de entrega</li>
               </ul>
-              <p className="text-orange-600 font-medium">
-                Nota: Se usará la plantilla de WhatsApp configurada. Este mensaje es solo como respaldo.
-              </p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end space-x-2">
             <Button 
               type="button" 
               variant="outline" 
               onClick={() => onOpenChange(false)}
+              disabled={isCreating}
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
-              disabled={isCreating || !outboundTripId || !returnTripId || !templateName || !templateLanguage}
+              disabled={isCreating}
             >
               {isCreating ? 'Creando...' : 'Crear Notificación'}
             </Button>

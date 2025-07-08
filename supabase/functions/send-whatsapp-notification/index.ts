@@ -86,14 +86,33 @@ async function logWhatsAppError(supabaseClient: any, notificationId: string, err
   };
 
   try {
-    // Update notification log with detailed error
-    await supabaseClient
-      .from('notification_log')
-      .update({ 
-        status: 'failed',
-        error_message: `[${context}] ${errorDetails.error_message} (Code: ${errorDetails.error_code})`
-      })
-      .eq('id', notificationId);
+    // Determine which table to update based on notification type
+    // First check if it's a trip notification log
+    const { data: tripLogData } = await supabaseClient
+      .from('trip_notification_log')
+      .select('id')
+      .eq('id', notificationId)
+      .single();
+
+    if (tripLogData) {
+      // Update trip notification log
+      await supabaseClient
+        .from('trip_notification_log')
+        .update({ 
+          status: 'failed',
+          error_message: `[${context}] ${errorDetails.error_message} (Code: ${errorDetails.error_code})`
+        })
+        .eq('id', notificationId);
+    } else {
+      // Update regular notification log
+      await supabaseClient
+        .from('notification_log')
+        .update({ 
+          status: 'failed',
+          error_message: `[${context}] ${errorDetails.error_message} (Code: ${errorDetails.error_code})`
+        })
+        .eq('id', notificationId);
+    }
 
     // Log to console for immediate debugging
     console.error(`🚨 [${context}] WhatsApp Error Details:`, {
@@ -431,17 +450,41 @@ serve(async (req) => {
     })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
-      // Update notification status to sent
-      const { error: updateError } = await supabaseClient
-        .from('notification_log')
-        .update({ 
-          status: 'sent',
-          sent_at: new Date().toISOString()
-        })
+      // Determine which table to update based on notification type
+      // First check if it's a trip notification log
+      const { data: tripLogData } = await supabaseClient
+        .from('trip_notification_log')
+        .select('id')
         .eq('id', notificationId)
+        .single();
 
-      if (updateError) {
-        console.error('❌ Error updating notification status:', updateError)
+      if (tripLogData) {
+        // Update trip notification log status to sent
+        const { error: updateError } = await supabaseClient
+          .from('trip_notification_log')
+          .update({ 
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            whatsapp_message_id: whatsappResult.messages[0].id
+          })
+          .eq('id', notificationId);
+
+        if (updateError) {
+          console.error('❌ Error updating trip notification log status:', updateError);
+        }
+      } else {
+        // Update regular notification log status to sent
+        const { error: updateError } = await supabaseClient
+          .from('notification_log')
+          .update({ 
+            status: 'sent',
+            sent_at: new Date().toISOString()
+          })
+          .eq('id', notificationId);
+
+        if (updateError) {
+          console.error('❌ Error updating notification status:', updateError);
+        }
       }
 
       console.log('✅ WhatsApp message sent successfully to:', apiPhone)
@@ -526,13 +569,31 @@ serve(async (req) => {
           })
 
           if (retryResponse.ok && retryResult.messages) {
-            await supabaseClient
-              .from('notification_log')
-              .update({ 
-                status: 'sent',
-                sent_at: new Date().toISOString()
-              })
+            // Determine which table to update for retry
+            const { data: tripLogData } = await supabaseClient
+              .from('trip_notification_log')
+              .select('id')
               .eq('id', notificationId)
+              .single();
+
+            if (tripLogData) {
+              await supabaseClient
+                .from('trip_notification_log')
+                .update({ 
+                  status: 'sent',
+                  sent_at: new Date().toISOString(),
+                  whatsapp_message_id: retryResult.messages[0].id
+                })
+                .eq('id', notificationId);
+            } else {
+              await supabaseClient
+                .from('notification_log')
+                .update({ 
+                  status: 'sent',
+                  sent_at: new Date().toISOString()
+                })
+                .eq('id', notificationId);
+            }
 
             return new Response(
               JSON.stringify({ 

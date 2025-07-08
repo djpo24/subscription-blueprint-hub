@@ -58,22 +58,11 @@ serve(async (req) => {
       .eq('id', tripNotificationId)
       .single();
 
-    if (notificationError) {
+    if (notificationError || !notification) {
       console.error('❌ Error fetching notification:', notificationError);
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Notification not found: ' + notificationError.message 
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!notification) {
-      console.error('❌ Notification not found');
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Notification not found' 
+        error: 'Notification not found: ' + (notificationError?.message || 'Not found')
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -100,7 +89,6 @@ serve(async (req) => {
       deadline: notification.deadline_date
     });
 
-    // Validate template configuration
     if (!notification.template_name) {
       console.error('❌ No template name configured');
       return new Response(JSON.stringify({ 
@@ -147,11 +135,15 @@ serve(async (req) => {
 
     console.log(`👥 Found ${customers.length} customers to notify`);
 
-    let successCount = 0;
-    let failedCount = 0;
-    const logs = [];
+    // PASO 1: Precargar todos los logs de notificación con mensajes personalizados
+    console.log('📝 Step 1: Pregenerating personalized messages and notification logs...');
+    const notificationLogs: Array<{
+      id: string;
+      customer: any;
+      phone: string;
+      personalizedMessage: string;
+    }> = [];
 
-    // Process each customer
     for (const customer of customers) {
       try {
         const phone = customer.whatsapp_number || customer.phone;
@@ -161,10 +153,9 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`📱 Processing customer ${customer.name} with phone: ${phone}`);
+        console.log(`📝 Pregenerating message for customer ${customer.name} with phone: ${phone}`);
 
         // Generate personalized message using the database function
-        console.log('📝 Generating personalized message...');
         const { data: messageResult, error: messageError } = await supabase
           .rpc('generate_trip_notification_message', {
             customer_name_param: customer.name,
@@ -176,59 +167,84 @@ serve(async (req) => {
 
         if (messageError) {
           console.error('❌ Error generating message for', customer.name, ':', messageError);
-          failedCount++;
-          logs.push({
-            customer: customer.name,
-            phone: phone,
-            status: 'failed',
-            error: 'Error generating message: ' + messageError.message
-          });
           continue;
         }
 
-        console.log(`📝 Generated message for ${customer.name}`);
-
-        // Create log entry BEFORE sending WhatsApp message
-        console.log('📋 Creating notification log entry...');
+        // Create log entry in trip_notification_log table
         const { data: logEntry, error: logError } = await supabase
-          .from('notification_log')
+          .from('trip_notification_log')
           .insert({
-            package_id: null,
+            trip_notification_id: tripNotificationId,
             customer_id: customer.id,
-            notification_type: 'trip_notification',
-            message: messageResult || 'Generated message',
+            customer_name: customer.name,
+            customer_phone: phone,
+            personalized_message: messageResult || 'Generated message',
+            template_name: notification.template_name,
+            template_language: notification.template_language || 'es_CO',
             status: 'pending'
           })
           .select()
           .single();
 
         if (logError) {
-          console.error('❌ Error creating notification log for', customer.name, ':', logError);
-          failedCount++;
-          logs.push({
-            customer: customer.name,
-            phone: phone,
-            status: 'failed',
-            error: 'Error creating log: ' + logError.message
-          });
+          console.error('❌ Error creating trip notification log for', customer.name, ':', logError);
           continue;
         }
 
-        console.log(`📋 Created notification log entry: ${logEntry.id}`);
+        console.log(`✅ Pregenerated notification log entry: ${logEntry.id} for ${customer.name}`);
+
+        notificationLogs.push({
+          id: logEntry.id,
+          customer: customer,
+          phone: phone,
+          personalizedMessage: messageResult || 'Generated message'
+        });
+
+      } catch (error) {
+        console.error(`❌ Error pregenerating for customer ${customer.name}:`, error);
+        continue;
+      }
+    }
+
+    console.log(`📊 Pregenerated ${notificationLogs.length} notification logs`);
+
+    if (notificationLogs.length === 0) {
+      console.log('⚠️ No valid notification logs generated');
+      return new Response(JSON.stringify({ 
+        success: true,
+        totalSent: 0,
+        successCount: 0,
+        failedCount: 0,
+        templateUsed: notification.template_name,
+        logs: [],
+        message: 'No valid customers to notify'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // PASO 2: Enviar todos los mensajes en lote
+    console.log('📤 Step 2: Sending WhatsApp messages in batch...');
+    let successCount = 0;
+    let failedCount = 0;
+    const logs = [];
+
+    for (const notificationLog of notificationLogs) {
+      try {
+        console.log(`📤 Sending WhatsApp message to ${notificationLog.customer.name}...`);
 
         // Send WhatsApp message with template configuration
-        console.log('📤 Sending WhatsApp message...');
         const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
-            notificationId: logEntry.id,
-            phone: phone,
-            message: messageResult,
-            customerId: customer.id,
+            notificationId: notificationLog.id, // Pass the trip_notification_log ID
+            phone: notificationLog.phone,
+            message: notificationLog.personalizedMessage,
+            customerId: notificationLog.customer.id,
             useTemplate: true,
             templateName: notification.template_name,
             templateLanguage: notification.template_language || 'es_CO',
             templateParameters: {
-              customerName: customer.name,
+              customerName: notificationLog.customer.name,
               outboundDate: notification.outbound_trip?.trip_date || 'N/A',
               returnDate: notification.return_trip?.trip_date || 'N/A', 
               deadlineDate: notification.deadline_date || 'N/A'
@@ -237,78 +253,89 @@ serve(async (req) => {
         });
 
         if (whatsappError) {
-          console.error(`❌ Failed to send WhatsApp to ${customer.name}:`, whatsappError);
+          console.error(`❌ Failed to send WhatsApp to ${notificationLog.customer.name}:`, whatsappError);
           
-          // Update notification log with error
+          // Update trip notification log with error
           await supabase
-            .from('notification_log')
+            .from('trip_notification_log')
             .update({
               status: 'failed',
               error_message: whatsappError.message
             })
-            .eq('id', logEntry.id);
+            .eq('id', notificationLog.id);
           
           failedCount++;
           logs.push({
-            customer: customer.name,
-            phone: phone,
+            customer: notificationLog.customer.name,
+            phone: notificationLog.phone,
             status: 'failed',
             error: whatsappError.message
           });
         } else if (whatsappResult?.error) {
-          console.error(`❌ WhatsApp API error for ${customer.name}:`, whatsappResult.error);
+          console.error(`❌ WhatsApp API error for ${notificationLog.customer.name}:`, whatsappResult.error);
           
-          // Update notification log with API error
+          // Update trip notification log with API error
           await supabase
-            .from('notification_log')
+            .from('trip_notification_log')
             .update({
               status: 'failed',
               error_message: whatsappResult.error
             })
-            .eq('id', logEntry.id);
+            .eq('id', notificationLog.id);
           
           failedCount++;
           logs.push({
-            customer: customer.name,
-            phone: phone,
+            customer: notificationLog.customer.name,
+            phone: notificationLog.phone,
             status: 'failed',
             error: whatsappResult.error
           });
         } else {
-          console.log(`✅ Successfully sent to ${customer.name} using template ${notification.template_name}`);
+          console.log(`✅ Successfully sent to ${notificationLog.customer.name} using template ${notification.template_name}`);
           
-          // Update notification log with success
+          // Update trip notification log with success and WhatsApp message ID
           await supabase
-            .from('notification_log')
+            .from('trip_notification_log')
             .update({
               status: 'sent',
-              sent_at: new Date().toISOString()
+              sent_at: new Date().toISOString(),
+              whatsapp_message_id: whatsappResult?.whatsappMessageId || null
             })
-            .eq('id', logEntry.id);
+            .eq('id', notificationLog.id);
           
           successCount++;
           logs.push({
-            customer: customer.name,
-            phone: phone,
+            customer: notificationLog.customer.name,
+            phone: notificationLog.phone,
             status: 'sent',
             template_used: notification.template_name
           });
         }
 
       } catch (error) {
-        console.error(`❌ Error processing customer ${customer.name}:`, error);
+        console.error(`❌ Error processing customer ${notificationLog.customer.name}:`, error);
+        
+        // Update trip notification log with error
+        await supabase
+          .from('trip_notification_log')
+          .update({
+            status: 'failed',
+            error_message: error.message
+          })
+          .eq('id', notificationLog.id);
+        
         failedCount++;
         logs.push({
-          customer: customer.name,
-          phone: customer.phone,
+          customer: notificationLog.customer.name,
+          phone: notificationLog.phone,
           status: 'failed',
           error: error.message
         });
       }
     }
 
-    // Update notification status
-    console.log('📊 Updating notification status...');
+    // PASO 3: Update main notification status
+    console.log('📊 Step 3: Updating main trip notification status...');
     const { error: updateError } = await supabase
       .from('trip_notifications')
       .update({
@@ -321,10 +348,10 @@ serve(async (req) => {
       .eq('id', tripNotificationId);
 
     if (updateError) {
-      console.error('❌ Error updating notification status:', updateError);
+      console.error('❌ Error updating trip notification status:', updateError);
     }
 
-    console.log('📊 Trip notification sending completed:', {
+    console.log('🎉 Trip notification sending completed:', {
       template_name: notification.template_name,
       template_language: notification.template_language,
       total: successCount + failedCount,

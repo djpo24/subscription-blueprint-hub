@@ -313,33 +313,33 @@ serve(async (req) => {
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
-          // Usar parámetros estructurados con tipo "nombre" según la plantilla exacta del usuario
+          // CORREGIDO: Usar tipo "text" que es el estándar de WhatsApp Business API
           const customerName = templateParameters.customerName || 'Cliente'
           const outboundDate = templateParameters.outboundDate || 'N/A'
           const returnDate = templateParameters.returnDate || 'N/A'
           const deadlineDate = templateParameters.deadlineDate || 'N/A'
 
-          console.log('📋 Parámetros que se enviarán a WhatsApp con tipo "nombre":', {
+          console.log('📋 Parámetros que se enviarán a WhatsApp con tipo "text":', {
             customerName,
             outboundDate,
             returnDate,
             deadlineDate
           });
 
-          // CORREGIDO: Usar tipo "nombre" en lugar de "text" según la plantilla del usuario
+          // CORREGIDO: Usar tipo "text" según el estándar de WhatsApp Business API
           templatePayload.template.components = [
             {
               type: 'body',
               parameters: [
-                { type: 'nombre', nombre: customerName },      // {{nombre_cliente}}
-                { type: 'nombre', nombre: outboundDate },      // {{fecha_salida_baq}}
-                { type: 'nombre', nombre: returnDate },        // {{fecha_retorno_cur}}
-                { type: 'nombre', nombre: deadlineDate }       // {{fecha_limite_entrega}}
+                { type: 'text', text: customerName },      // {{nombre_cliente}}
+                { type: 'text', text: outboundDate },      // {{fecha_salida_baq}}
+                { type: 'text', text: returnDate },        // {{fecha_retorno_cur}}
+                { type: 'text', text: deadlineDate }       // {{fecha_limite_entrega}}
               ]
             }
           ]
 
-          console.log('✅ Proximos viajes template configurado con 4 parámetros tipo "nombre"')
+          console.log('✅ Proximos viajes template configurado con 4 parámetros tipo "text"')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           // Fallback: usar el mensaje como un solo parámetro
@@ -351,8 +351,8 @@ serve(async (req) => {
                 type: 'body',
                 parameters: [
                   {
-                    type: 'nombre',
-                    nombre: message
+                    type: 'text',
+                    text: message
                   }
                 ]
               }

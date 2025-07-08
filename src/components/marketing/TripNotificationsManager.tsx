@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { useTrips } from '@/hooks/useTrips';
 import { CreateTripNotificationDialog } from './CreateTripNotificationDialog';
 import { TripNotificationsTable } from './TripNotificationsTable';
 import { TripNotificationTestDialog } from './TripNotificationTestDialog';
-import { Plus, Send, Calendar, Users, TestTube } from 'lucide-react';
+import { Plus, Send, Calendar, Users, TestTube, Eye } from 'lucide-react';
 
 export function TripNotificationsManager() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -25,7 +24,7 @@ export function TripNotificationsManager() {
         <div>
           <h2 className="text-2xl font-bold">Notificaciones de Viajes</h2>
           <p className="text-gray-500">
-            Gestiona notificaciones automáticas para viajes de ida y vuelta
+            Gestiona notificaciones automáticas para viajes de ida y vuelta con control granular
           </p>
         </div>
         <div className="flex gap-2">
@@ -47,15 +46,16 @@ export function TripNotificationsManager() {
         </div>
       </div>
 
-      {/* Test Alert */}
+      {/* Control Instructions */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <TestTube className="h-5 w-5 text-blue-600 mt-0.5" />
+            <Eye className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
-              <h3 className="font-medium text-blue-900">Mensaje de Prueba Recomendado</h3>
+              <h3 className="font-medium text-blue-900">Control Granular de Notificaciones</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Antes de enviar notificaciones masivas, usa el botón "Prueba de Mensaje" para verificar que la plantilla funcione correctamente en un número específico.
+                Ahora puedes preparar, visualizar y controlar el envío de cada notificación individual. 
+                Haz clic en "Ver" para acceder al panel de control detallado de cada notificación.
               </p>
             </div>
           </div>

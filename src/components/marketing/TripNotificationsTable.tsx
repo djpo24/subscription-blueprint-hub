@@ -3,218 +3,177 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useTripNotifications, TripNotification } from '@/hooks/useTripNotifications';
-import { TripNotificationPanel } from './TripNotificationPanel';
-import { formatDispatchDate, formatDateTime } from '@/utils/dateUtils';
-import { Send, Eye, Calendar, Users, Clock } from 'lucide-react';
+import { useTripNotifications } from '@/hooks/useTripNotifications';
+import { TripNotificationDetailsDialog } from './TripNotificationDetailsDialog';
+import { Send, Eye, Trash2, Calendar, Plane } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface TripNotificationsTableProps {
-  notifications: TripNotification[];
+  notifications: any[];
   isLoading: boolean;
 }
 
 export function TripNotificationsTable({ notifications, isLoading }: TripNotificationsTableProps) {
-  const [selectedNotification, setSelectedNotification] = useState<TripNotification | null>(null);
-  const [showSendDialog, setShowSendDialog] = useState(false);
-  const [viewNotification, setViewNotification] = useState<TripNotification | null>(null);
-  const [showViewPanel, setShowViewPanel] = useState(false);
   const { sendNotification, isSending } = useTripNotifications();
+  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  const handleSendClick = (notification: TripNotification) => {
-    setSelectedNotification(notification);
-    setShowSendDialog(true);
-  };
-
-  const handleViewClick = (notification: TripNotification) => {
-    setViewNotification(notification);
-    setShowViewPanel(true);
-  };
-
-  const handleConfirmSend = async () => {
-    if (selectedNotification) {
-      try {
-        await sendNotification(selectedNotification.id);
-        setShowSendDialog(false);
-        setSelectedNotification(null);
-      } catch (error) {
-        console.error('Error sending notification:', error);
-      }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return 'bg-green-100 text-green-800';
+      case 'draft':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return 'Enviado';
+      case 'draft':
+        return 'Borrador';
+      default:
+        return status;
+    }
+  };
+
+  const handleSendNotification = async (notificationId: string) => {
+    try {
+      await sendNotification(notificationId);
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+  };
+
+  const handleViewDetails = (notification: any) => {
+    setSelectedNotification(notification);
+    setDetailsDialogOpen(true);
+  };
+
   if (isLoading) {
-    return <div>Cargando notificaciones...</div>;
+    return (
+      <div className="flex justify-center py-8">
+        <div className="text-gray-500">Cargando notificaciones...</div>
+      </div>
+    );
+  }
+
+  if (notifications.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <p>No hay notificaciones de viajes</p>
+        <p className="text-sm mt-2">Crea tu primera notificación de viajes</p>
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha Creación</TableHead>
-              <TableHead>Viaje Ida</TableHead>
-              <TableHead>Viaje Retorno</TableHead>
-              <TableHead>Fecha Límite</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Estadísticas</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {notifications.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  No hay notificaciones de viaje registradas
-                </TableCell>
-              </TableRow>
-            ) : (
-              notifications.map((notification) => (
-                <TableRow key={notification.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      {formatDispatchDate(notification.created_at)}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Fecha</TableHead>
+            <TableHead>Viajes</TableHead>
+            <TableHead>Plantilla</TableHead>
+            <TableHead>Fecha Límite</TableHead>
+            <TableHead>Enviados</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {notifications.map((notification) => (
+            <TableRow key={notification.id}>
+              <TableCell>
+                {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm')}
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  {notification.outbound_trip && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Plane className="h-3 w-3" />
+                      <span>{notification.outbound_trip.origin} → {notification.outbound_trip.destination}</span>
+                      <span className="text-gray-500">
+                        ({format(new Date(notification.outbound_trip.trip_date), 'dd/MM')})
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium">
-                        {formatDispatchDate(notification.outbound_trip?.trip_date || '')}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {notification.outbound_trip?.origin} → {notification.outbound_trip?.destination}
-                      </div>
-                      {notification.outbound_trip?.flight_number && (
-                        <div className="text-xs text-blue-600">
-                          {notification.outbound_trip.flight_number}
-                        </div>
-                      )}
+                  )}
+                  {notification.return_trip && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Plane className="h-3 w-3 rotate-180" />
+                      <span>{notification.return_trip.origin} → {notification.return_trip.destination}</span>
+                      <span className="text-gray-500">
+                        ({format(new Date(notification.return_trip.trip_date), 'dd/MM')})
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium">
-                        {formatDispatchDate(notification.return_trip?.trip_date || '')}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {notification.return_trip?.origin} → {notification.return_trip?.destination}
-                      </div>
-                      {notification.return_trip?.flight_number && (
-                        <div className="text-xs text-blue-600">
-                          {notification.return_trip.flight_number}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-orange-500" />
-                      <div>
-                        <div className="font-medium">
-                          {formatDispatchDate(notification.deadline_date)}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {notification.deadline_time}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={notification.status === 'sent' ? 'default' : 'secondary'}>
-                      {notification.status === 'sent' ? 'Enviada' : 'Borrador'}
-                    </Badge>
-                    {notification.sent_at && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatDateTime(notification.sent_at)}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {notification.status === 'sent' && (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Users className="h-3 w-3 text-gray-400" />
-                          Total: {notification.total_customers_sent}
-                        </div>
-                        <div className="text-xs text-green-600">
-                          ✓ Exitosos: {notification.success_count}
-                        </div>
-                        {notification.failed_count > 0 && (
-                          <div className="text-xs text-red-600">
-                            ✗ Fallidos: {notification.failed_count}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {notification.status === 'draft' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleSendClick(notification)}
-                          disabled={isSending}
-                          className="flex items-center gap-1"
-                        >
-                          <Send className="h-3 w-3" />
-                          Enviar
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex items-center gap-1"
-                        onClick={() => handleViewClick(notification)}
-                      >
-                        <Eye className="h-3 w-3" />
-                        Ver
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Dialog de confirmación para envío directo */}
-      <AlertDialog open={showSendDialog} onOpenChange={setShowSendDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Envío de Notificaciones</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres enviar esta notificación de viaje a todos los clientes?
-              {selectedNotification && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
-                  <div><strong>Viaje de ida:</strong> {formatDispatchDate(selectedNotification.outbound_trip?.trip_date || '')}</div>
-                  <div><strong>Viaje de retorno:</strong> {formatDispatchDate(selectedNotification.return_trip?.trip_date || '')}</div>
-                  <div><strong>Fecha límite:</strong> {formatDispatchDate(selectedNotification.deadline_date)} a las {selectedNotification.deadline_time}</div>
+                  )}
                 </div>
-              )}
-              Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmSend}
-              disabled={isSending}
-            >
-              {isSending ? 'Enviando...' : 'Confirmar Envío'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  <div className="font-medium">{notification.template_name || 'N/A'}</div>
+                  <div className="text-gray-500">{notification.template_language || 'es_CO'}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  <div>{format(new Date(notification.deadline_date), 'dd/MM/yyyy')}</div>
+                  <div className="text-gray-500">{notification.deadline_time}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  <div className="text-green-600 font-medium">{notification.success_count || 0}</div>
+                  {notification.failed_count > 0 && (
+                    <div className="text-red-600">{notification.failed_count} fallidas</div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(notification.status)}>
+                  {getStatusLabel(notification.status)}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(notification)}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Ver
+                  </Button>
+                  
+                  {notification.status === 'draft' && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleSendNotification(notification.id)}
+                      disabled={isSending}
+                      className="flex items-center gap-1"
+                    >
+                      <Send className="h-4 w-4" />
+                      {isSending ? 'Enviando...' : 'Enviar'}
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-      {/* Panel de visualización y envío controlado */}
-      {viewNotification && (
-        <TripNotificationPanel
-          notification={viewNotification}
-          isOpen={showViewPanel}
-          onOpenChange={setShowViewPanel}
+      {selectedNotification && (
+        <TripNotificationDetailsDialog
+          isOpen={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+          tripNotificationId={selectedNotification.id}
+          tripNotification={selectedNotification}
         />
       )}
     </>

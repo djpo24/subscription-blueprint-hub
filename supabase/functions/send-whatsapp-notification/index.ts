@@ -305,9 +305,32 @@ serve(async (req) => {
             ]
           }
         ]
+      } else if (autoSelectedTemplate === 'proximos_viajes' && templateParameters) {
+        // For trip notifications, use structured parameters like arrival notifications
+        console.log('✅ Using proximos_viajes template with parameters');
+        console.log('📋 Template parameters recibidos:', templateParameters);
+
+        const customerName = templateParameters.customerName || 'Cliente'
+        const outboundDate = templateParameters.outboundDate || 'N/A'
+        const returnDate = templateParameters.returnDate || 'N/A'
+        const deadlineDate = templateParameters.deadlineDate || 'N/A'
+
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: customerName },
+              { type: 'text', text: outboundDate },
+              { type: 'text', text: returnDate },
+              { type: 'text', text: deadlineDate }
+            ]
+          }
+        ]
+
+        console.log('✅ Proximos viajes template configurado con parámetros estructurados')
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        // For trip notifications, the message should be passed as parameter if the template expects it
-        console.log('✅ Using proximos_viajes template');
+        // Fallback for trip notifications without structured parameters
+        console.log('⚠️ Using proximos_viajes template without templateParameters - using message as single parameter');
         
         if (message) {
           templatePayload.template.components = [

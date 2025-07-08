@@ -136,7 +136,13 @@ serve(async (req) => {
             customerId: customer.id,
             useTemplate: true,
             templateName: notification.template_name,
-            templateLanguage: notification.template_language || 'es_CO'
+            templateLanguage: notification.template_language || 'es_CO',
+            templateParameters: {
+              customerName: customer.name,
+              outboundDate: notification.outbound_trip?.trip_date || 'N/A',
+              returnDate: notification.return_trip?.trip_date || 'N/A', 
+              deadlineDate: notification.deadline_date || 'N/A'
+            }
           }
         });
 

@@ -97,7 +97,7 @@ export function TripNotificationTestDialog({
 
       console.log('📝 Mensaje personalizado generado:', personalizedMessage);
 
-      // Enviar mensaje usando la plantilla
+      // Enviar mensaje usando la plantilla con parámetros estructurados
       const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
@@ -106,7 +106,13 @@ export function TripNotificationTestDialog({
           useTemplate: true,
           templateName: templateName,
           templateLanguage: templateLanguage,
-          customerId: null // No hay customerId para mensajes de prueba
+          customerId: null, // No hay customerId para mensajes de prueba
+          templateParameters: {
+            customerName: testCustomerName,
+            outboundDate: testOutboundDate.toISOString().split('T')[0],
+            returnDate: testReturnDate.toISOString().split('T')[0],
+            deadlineDate: testDeadlineDate.toISOString().split('T')[0]
+          }
         }
       });
 

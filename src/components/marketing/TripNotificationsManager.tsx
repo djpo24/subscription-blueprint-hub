@@ -7,10 +7,12 @@ import { useTripNotifications } from '@/hooks/useTripNotifications';
 import { useTrips } from '@/hooks/useTrips';
 import { CreateTripNotificationDialog } from './CreateTripNotificationDialog';
 import { TripNotificationsTable } from './TripNotificationsTable';
-import { Plus, Send, Calendar, Users } from 'lucide-react';
+import { TripNotificationTestDialog } from './TripNotificationTestDialog';
+import { Plus, Send, Calendar, Users, TestTube } from 'lucide-react';
 
 export function TripNotificationsManager() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   const { notifications, isLoading } = useTripNotifications();
   const { data: trips = [] } = useTrips();
 
@@ -26,14 +28,39 @@ export function TripNotificationsManager() {
             Gestiona notificaciones automáticas para viajes de ida y vuelta
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva Notificación
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setIsTestDialogOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <TestTube className="h-4 w-4" />
+            Prueba de Mensaje
+          </Button>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Notificación
+          </Button>
+        </div>
       </div>
+
+      {/* Test Alert */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <TestTube className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-blue-900">Mensaje de Prueba Recomendado</h3>
+              <p className="text-sm text-blue-700 mt-1">
+                Antes de enviar notificaciones masivas, usa el botón "Prueba de Mensaje" para verificar que la plantilla funcione correctamente en un número específico.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -97,6 +124,11 @@ export function TripNotificationsManager() {
         isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         trips={trips}
+      />
+
+      <TripNotificationTestDialog
+        isOpen={isTestDialogOpen}
+        onOpenChange={setIsTestDialogOpen}
       />
     </div>
   );

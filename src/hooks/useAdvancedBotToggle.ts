@@ -26,12 +26,9 @@ export interface BotStates {
 
 export function useAdvancedBotToggle() {
   const [botStates, setBotStates] = useState<BotStates>(() => {
-    const savedAutoResponse = localStorage.getItem('bot-auto-response-enabled');
-    const savedManualResponse = localStorage.getItem('bot-manual-response-enabled');
-    
     return {
-      isAutoResponseEnabled: savedAutoResponse !== null ? JSON.parse(savedAutoResponse) : false,
-      isManualResponseEnabled: savedManualResponse !== null ? JSON.parse(savedManualResponse) : true
+      isAutoResponseEnabled: false, // Desactivado permanentemente
+      isManualResponseEnabled: true
     };
   });
 
@@ -45,10 +42,9 @@ export function useAdvancedBotToggle() {
   }, []);
 
   const toggleAutoResponse = (enabled: boolean) => {
-    const newStates = { ...botStates, isAutoResponseEnabled: enabled };
-    localStorage.setItem('bot-auto-response-enabled', JSON.stringify(enabled));
-    setBotStates(newStates);
-    advancedBotToggleEmitter.emit(newStates);
+    // Respuesta automática desactivada permanentemente
+    console.log('🚫 Respuesta automática desactivada - No se puede activar');
+    return;
   };
 
   const toggleManualResponse = (enabled: boolean) => {

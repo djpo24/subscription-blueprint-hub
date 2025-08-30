@@ -5,19 +5,15 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MarketingNotificationLog {
   id: string;
-  customer_id: string;
-  customer_name: string;
+  campaign_id: string | null;
+  customer_name: string | null;
   customer_phone: string;
-  personalized_message: string;
+  message_content: string;
   status: 'pending' | 'prepared' | 'sent' | 'failed';
-  template_name?: string;
-  template_language?: string;
-  error_message?: string;
+  error_message: string | null;
   created_at: string;
-  sent_at?: string;
-  campaign_name?: string;
-  trip_start_date?: string;
-  trip_end_date?: string;
+  sent_at: string | null;
+  whatsapp_message_id: string | null;
 }
 
 export function useMarketingNotifications() {

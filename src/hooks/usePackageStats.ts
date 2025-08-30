@@ -9,27 +9,22 @@ export function usePackageStats() {
       const { data, error } = await supabase
         .from('packages')
         .select('status');
-
+      
       if (error) throw error;
-
-      const stats = data.reduce((acc, pkg) => {
-        acc.total++;
-        if (pkg.status) {
-          acc[pkg.status] = (acc[pkg.status] || 0) + 1;
-        }
-        return acc;
-      }, {
-        total: 0,
-        recibido: 0,
-        bodega: 0,
-        procesado: 0,
-        transito: 0,
-        en_destino: 0,
-        delivered: 0,
-        pending: 0,
-        inTransit: 0
-      });
-
+      
+      const stats = {
+        total: data.length,
+        recibido: data.filter(p => p.status === 'recibido').length,
+        bodega: data.filter(p => p.status === 'bodega').length,
+        procesado: data.filter(p => p.status === 'procesado').length,
+        transito: data.filter(p => p.status === 'transito').length,
+        en_destino: data.filter(p => p.status === 'en_destino').length,
+        delivered: data.filter(p => p.status === 'delivered').length,
+        // Estados legacy para compatibilidad
+        pending: data.filter(p => p.status === 'pending').length,
+        inTransit: data.filter(p => p.status === 'transito').length, // Corregido: usar 'transito' en lugar de 'in_transit'
+      };
+      
       return stats;
     }
   });

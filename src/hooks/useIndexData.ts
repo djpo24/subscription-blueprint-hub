@@ -1,29 +1,22 @@
 
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
-import { usePackageStats } from '@/hooks/usePackageStats';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
-import { useState } from 'react';
+import { usePackageStats } from '@/hooks/usePackageStats';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 export function useIndexData() {
   const packagesData = usePackages();
-  const tripsData = useTrips();
-  const { data: packageStats, isLoading: isLoadingStats } = usePackageStats();
-  const { data: customersCount, isLoading: isLoadingCustomers } = useCustomersCount();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const refetchUnreadMessages = () => {
-    // Simulate fetching unread messages
-    setTimeout(() => {
-      setUnreadCount(5);
-    }, 1000);
-  };
+  const { data: trips = [], isLoading: tripsLoading, refetch: refetchTrips } = useTrips();
+  const { data: customersCount = 0 } = useCustomersCount();
+  const { data: packageStats } = usePackageStats();
+  const { unreadCount, refetch: refetchUnreadMessages } = useUnreadMessages();
 
   return {
     packagesData,
-    trips: tripsData.trips,
-    tripsLoading: tripsData.tripsLoading,
-    refetchTrips: tripsData.refetch,
+    trips,
+    tripsLoading,
+    refetchTrips,
     customersCount,
     packageStats,
     unreadCount,

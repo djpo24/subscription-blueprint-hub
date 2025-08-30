@@ -1,3 +1,4 @@
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardTab } from './tabs/DashboardTab';
 import { CustomersTab } from './tabs/CustomersTab';
@@ -7,6 +8,7 @@ import { ChatTab } from './tabs/ChatTab';
 import { TripsTab } from './tabs/TripsTab';
 import { NotificationsTab } from './tabs/NotificationsTab';
 import { SettingsTab } from './tabs/SettingsTab';
+import { MarketingTab } from './tabs/MarketingTab';
 import { UsersTab } from './tabs/UsersTab';
 import { DeveloperTab } from './tabs/DeveloperTab';
 import { AdminInvestigationTab } from './tabs/AdminInvestigationTab';
@@ -20,6 +22,7 @@ import {
   MapPin, 
   Bell,
   Settings,
+  Megaphone,
   Shield,
   Code,
   Search
@@ -81,7 +84,7 @@ export function MainTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 xl:grid-cols-11 gap-1 h-auto p-1">
+      <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 xl:grid-cols-12 gap-1 h-auto p-1">
         <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3">
           <BarChart3 className="h-4 w-4" />
           <span className="hidden sm:inline">Panel</span>
@@ -110,6 +113,11 @@ export function MainTabs({
         <TabsTrigger value="trips" className="flex items-center gap-2 py-2 px-3">
           <MapPin className="h-4 w-4" />
           <span className="hidden sm:inline">Viajes</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="marketing" className="flex items-center gap-2 py-2 px-3">
+          <Megaphone className="h-4 w-4" />
+          <span className="hidden sm:inline">Marketing</span>
         </TabsTrigger>
         
         <TabsTrigger value="notifications" className="flex items-center gap-2 py-2 px-3">
@@ -142,44 +150,41 @@ export function MainTabs({
         )}
       </TabsList>
 
-      {activeTab === 'dashboard' && (
-        <DashboardTab
-          packageStats={packageStats}
-          customersCount={customersCount}
-          onNewPackage={onNewPackage}
-          onNewTrip={onNewTrip}
-          onViewNotifications={onViewNotifications}
-          onMobileDelivery={onMobileDelivery}
-          packages={packages}
-          filteredPackages={filteredPackages}
-          isLoading={isLoading}
-          onUpdate={onUpdate}
-          onTabChange={onTabChange}
-        />
-      )}
-      {activeTab === 'customers' && <CustomersTab />}
-      {activeTab === 'finances' && <FinancesTab />}
-      {activeTab === 'dispatches' && <DispatchesTab />}
-      {activeTab === 'chat' && <ChatTab />}
-      {activeTab === 'trips' && (
-        <TripsTab 
-          viewingPackagesByDate={viewingPackagesByDate}
-          trips={trips}
-          tripsLoading={tripsLoading}
-          onAddPackage={onAddPackage}
-          onCreateTrip={onCreateTrip}
-          onViewPackagesByDate={onViewPackagesByDate}
-          onBack={onBack}
-        />
-      )}
-      {activeTab === 'notifications' && <NotificationsTab />}
-      {activeTab === 'settings' && <SettingsTab />}
+      <DashboardTab
+        packageStats={packageStats}
+        customersCount={customersCount}
+        onNewPackage={onNewPackage}
+        onNewTrip={onNewTrip}
+        onViewNotifications={onViewNotifications}
+        onMobileDelivery={onMobileDelivery}
+        packages={packages}
+        filteredPackages={filteredPackages}
+        isLoading={isLoading}
+        onUpdate={onUpdate}
+        onTabChange={onTabChange}
+      />
+      <CustomersTab />
+      <FinancesTab />
+      <DispatchesTab />
+      <ChatTab />
+      <TripsTab 
+        viewingPackagesByDate={viewingPackagesByDate}
+        trips={trips}
+        tripsLoading={tripsLoading}
+        onAddPackage={onAddPackage}
+        onCreateTrip={onCreateTrip}
+        onViewPackagesByDate={onViewPackagesByDate}
+        onBack={onBack}
+      />
+      <MarketingTab />
+      <NotificationsTab />
+      <SettingsTab />
       
       {effectiveRole === 'admin' && (
         <>
-          {activeTab === 'users' && <UsersTab />}
-          {activeTab === 'developer' && <DeveloperTab />}
-          {activeTab === 'admin-investigation' && <AdminInvestigationTab />}
+          <UsersTab />
+          <DeveloperTab />
+          <AdminInvestigationTab />
         </>
       )}
     </Tabs>

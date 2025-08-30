@@ -7,7 +7,7 @@ export function usePackages() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: packages = [], isLoading } = useQuery({
+  const packagesQuery = useQuery({
     queryKey: ['packages'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,10 +38,12 @@ export function usePackages() {
   });
 
   return {
-    packages,
-    filteredPackages: packages, // For now, return all packages as filtered
-    isLoading,
-    updatePackage: updatePackage.mutate,
+    packages: packagesQuery.data || [],
+    filteredPackages: packagesQuery.data || [], // For now, return all packages as filtered
+    isLoading: packagesQuery.isLoading,
+    data: packagesQuery.data || [],
+    refetch: packagesQuery.refetch,
+    updatePackage: (id: string, updates: any) => updatePackage.mutate({ id, updates }),
     disableChat: false // Default value
   };
 }

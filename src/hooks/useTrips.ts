@@ -7,7 +7,7 @@ export function useTrips() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data = [], isLoading: tripsLoading } = useQuery({
+  const tripsQuery = useQuery({
     queryKey: ['trips'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -57,9 +57,11 @@ export function useTrips() {
   });
 
   return {
-    data,
-    trips: data,
-    tripsLoading,
+    data: tripsQuery.data || [],
+    trips: tripsQuery.data || [],
+    tripsLoading: tripsQuery.isLoading,
+    isLoading: tripsQuery.isLoading,
+    refetch: tripsQuery.refetch,
     createTrip: createTripMutation.mutate,
     addPackageToTrip: addPackageToTripMutation.mutate
   };

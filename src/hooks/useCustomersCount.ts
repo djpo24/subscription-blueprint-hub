@@ -8,8 +8,8 @@ export function useCustomersCount() {
     queryFn: async () => {
       const { count, error } = await supabase
         .from('customers')
-        .select('*', { count: 'exact', head: true });
-      
+        .select('*', { count: 'exact' });
+
       if (error) throw error;
       return count || 0;
     }

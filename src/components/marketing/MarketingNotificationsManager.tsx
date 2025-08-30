@@ -293,8 +293,8 @@ export function MarketingNotificationsManager() {
                     </TableCell>
                     <TableCell>{notification.customer_phone}</TableCell>
                     <TableCell className="max-w-xs">
-                      <div className="truncate" title={notification.personalized_message}>
-                        {notification.personalized_message}
+                      <div className="truncate" title={notification.message_content}>
+                        {notification.message_content}
                       </div>
                     </TableCell>
                     <TableCell>

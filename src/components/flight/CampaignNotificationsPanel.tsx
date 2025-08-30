@@ -6,12 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { TripNotificationTestDialog } from '@/components/marketing/TripNotificationTestDialog';
+import { sendWhatsAppMessage } from '@/utils/whatsappSender';
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
 
@@ -36,6 +40,14 @@ interface PreparedMessage {
   message: string;
 }
 
+interface SendingStatus {
+  customerId: string;
+  customerName: string;
+  phone: string;
+  status: 'pending' | 'sending' | 'sent' | 'failed';
+  error?: string;
+}
+
 export function CampaignNotificationsPanel() {
   const [template, setTemplate] = useState(CAMPAIGN_TEMPLATE);
   const [selectedTemplate, setSelectedTemplate] = useState('proximos_viajes');
@@ -48,6 +60,11 @@ export function CampaignNotificationsPanel() {
   const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
   const [availableReturnTrips, setAvailableReturnTrips] = useState<any[]>([]);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
+
+  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
+  const [sendingStatus, setSendingStatus] = useState<SendingStatus[]>([]);
+  const [sentCount, setSentCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
@@ -94,6 +111,20 @@ export function CampaignNotificationsPanel() {
       setAvailableReturnTrips(returnTrips);
     }
   }, [trips]);
+
+  const sendManualNotificationMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { data: result, error } = await supabase.functions.invoke('send-manual-notification', {
+        body: data
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return result;
+    }
+  });
 
   const generatePersonalizedMessage = (customer: any) => {
     const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
@@ -154,6 +185,9 @@ export function CampaignNotificationsPanel() {
   const handleClearMessages = () => {
     setLoadedCustomers([]);
     setPreparedMessages([]);
+    setSendingStatus([]);
+    setSentCount(0);
+    setFailedCount(0);
     toast({
       title: "Mensajes limpiados",
       description: "Se han eliminado todos los mensajes preparados",
@@ -164,7 +198,7 @@ export function CampaignNotificationsPanel() {
     setIsPreview(!isPreview);
   };
 
-  const handleSendCampaign = () => {
+  const handleSendCampaign = async () => {
     if (!selectedOutboundTrip || !selectedReturnTrip || !deadlineDate) {
       toast({
         title: "Error",
@@ -183,9 +217,100 @@ export function CampaignNotificationsPanel() {
       return;
     }
 
+    setIsSendingCampaign(true);
+    setSentCount(0);
+    setFailedCount(0);
+
+    const initialStatus: SendingStatus[] = loadedCustomers.map(customer => ({
+      customerId: customer.id,
+      customerName: customer.name || 'Cliente',
+      phone: customer.whatsapp_number || customer.phone,
+      status: 'pending'
+    }));
+
+    setSendingStatus(initialStatus);
+
+    console.log('🚀 Iniciando envío de campaña a', loadedCustomers.length, 'clientes');
+
+    for (let i = 0; i < preparedMessages.length; i++) {
+      const messageData = preparedMessages[i];
+      const customer = messageData.customer;
+      const phone = customer.whatsapp_number || customer.phone;
+
+      if (!phone) {
+        console.warn(`❌ Cliente ${customer.name} sin número de teléfono válido`);
+        setSendingStatus(prev => prev.map(status => 
+          status.customerId === customer.id 
+            ? { ...status, status: 'failed', error: 'Sin número de teléfono' }
+            : status
+        ));
+        setFailedCount(prev => prev + 1);
+        continue;
+      }
+
+      setSendingStatus(prev => prev.map(status => 
+        status.customerId === customer.id 
+          ? { ...status, status: 'sending' }
+          : status
+      ));
+
+      try {
+        console.log(`📱 Enviando mensaje ${i + 1}/${preparedMessages.length} a ${customer.name} (${phone})`);
+
+        await sendWhatsAppMessage({
+          selectedPhone: phone,
+          customerId: customer.id,
+          message: messageData.message,
+          sendManualNotification: async (data) => {
+            const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
+            const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
+
+            const templateData = {
+              ...data,
+              useTemplate: true,
+              templateName: 'proximos_viajes',
+              templateLanguage: 'es_CO',
+              templateParameters: {
+                customerName: customer.name || 'Cliente',
+                outboundDate: selectedOutboundTripDetails?.trip_date || '',
+                returnDate: selectedReturnTripDetails?.trip_date || '',
+                deadlineDate: deadlineDate || ''
+              }
+            };
+
+            return await sendManualNotificationMutation.mutateAsync(templateData);
+          }
+        });
+
+        setSendingStatus(prev => prev.map(status => 
+          status.customerId === customer.id 
+            ? { ...status, status: 'sent' }
+            : status
+        ));
+        setSentCount(prev => prev + 1);
+
+        console.log(`✅ Mensaje enviado exitosamente a ${customer.name}`);
+
+      } catch (error: any) {
+        console.error(`❌ Error enviando mensaje a ${customer.name}:`, error);
+        
+        setSendingStatus(prev => prev.map(status => 
+          status.customerId === customer.id 
+            ? { ...status, status: 'failed', error: error.message || 'Error desconocido' }
+            : status
+        ));
+        setFailedCount(prev => prev + 1);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    setIsSendingCampaign(false);
+
     toast({
-      title: "Campaña enviada",
-      description: `La campaña de notificación ha sido enviada a ${loadedCustomers.length} clientes`,
+      title: "Campaña completada",
+      description: `Se enviaron ${sentCount} mensajes exitosamente. ${failedCount} fallaron.`,
+      variant: sentCount > failedCount ? "default" : "destructive"
     });
   };
 
@@ -205,6 +330,9 @@ export function CampaignNotificationsPanel() {
     .replace(/{{fecha_salida_baq}}/g, outboundDateForPreview)
     .replace(/{{fecha_retorno_cur}}/g, returnDateForPreview)
     .replace(/{{fecha_limite_entrega}}/g, deadlineDate || '[fecha_limite_entrega]');
+
+  const totalMessages = preparedMessages.length;
+  const progressPercentage = totalMessages > 0 ? ((sentCount + failedCount) / totalMessages) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -293,7 +421,7 @@ export function CampaignNotificationsPanel() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={handleLoadMessages}
-                disabled={loadingCustomers}
+                disabled={loadingCustomers || isSendingCampaign}
                 className="flex items-center gap-2"
                 variant="outline"
               >
@@ -307,7 +435,7 @@ export function CampaignNotificationsPanel() {
                 </div>
               )}
             </div>
-            {preparedMessages.length > 0 && (
+            {preparedMessages.length > 0 && !isSendingCampaign && (
               <Button
                 onClick={handleClearMessages}
                 variant="outline"
@@ -320,7 +448,107 @@ export function CampaignNotificationsPanel() {
             )}
           </div>
 
-          {preparedMessages.length > 0 && (
+          {isSendingCampaign && (
+            <Card className="bg-blue-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-800">
+                  <Clock className="h-5 w-5" />
+                  Enviando Campaña
+                  <Badge variant="outline" className="text-blue-600 border-blue-300">
+                    {sentCount + failedCount} / {totalMessages}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-blue-600">
+                  Enviando mensajes de WhatsApp uno por uno...
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progreso: {sentCount + failedCount} de {totalMessages}</span>
+                      <span>{Math.round(progressPercentage)}%</span>
+                    </div>
+                    <Progress value={progressPercentage} className="w-full" />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold text-green-600">{sentCount}</div>
+                      <div className="text-sm text-green-600">Enviados</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold text-red-600">{failedCount}</div>
+                      <div className="text-sm text-red-600">Fallaron</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold text-gray-600">{totalMessages - sentCount - failedCount}</div>
+                      <div className="text-sm text-gray-600">Pendientes</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {sendingStatus.length > 0 && (
+            <Card className="bg-gray-50 border-gray-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-gray-800">
+                  <MessageSquare className="h-5 w-5" />
+                  Estado de Envío
+                  <Badge variant="outline" className="text-gray-600 border-gray-300">
+                    {sendingStatus.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {sendingStatus.map((status) => (
+                    <div
+                      key={status.customerId}
+                      className="flex items-center justify-between p-3 bg-white rounded border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {status.status === 'pending' && <Clock className="h-4 w-4 text-gray-400" />}
+                          {status.status === 'sending' && <Clock className="h-4 w-4 text-blue-500 animate-spin" />}
+                          {status.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                          {status.status === 'failed' && <XCircle className="h-4 w-4 text-red-500" />}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{status.customerName}</div>
+                          <div className="text-xs text-gray-500">{status.phone}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge 
+                          variant={
+                            status.status === 'sent' ? 'default' : 
+                            status.status === 'failed' ? 'destructive' : 
+                            status.status === 'sending' ? 'secondary' : 'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {status.status === 'pending' && 'Pendiente'}
+                          {status.status === 'sending' && 'Enviando...'}
+                          {status.status === 'sent' && 'Enviado'}
+                          {status.status === 'failed' && 'Falló'}
+                        </Badge>
+                        {status.error && (
+                          <div className="text-xs text-red-500 mt-1 max-w-32 truncate" title={status.error}>
+                            {status.error}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {preparedMessages.length > 0 && !isSendingCampaign && (
             <Card className="bg-green-50 border-green-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
@@ -379,6 +607,7 @@ export function CampaignNotificationsPanel() {
                 size="sm"
                 onClick={handlePreview}
                 className="flex items-center gap-2"
+                disabled={isSendingCampaign}
               >
                 <Eye className="h-4 w-4" />
                 {isPreview ? 'Editar' : 'Vista Previa'}
@@ -399,6 +628,7 @@ export function CampaignNotificationsPanel() {
                 rows={15}
                 placeholder="Escribe tu mensaje aquí..."
                 className="font-mono text-sm"
+                disabled={isSendingCampaign}
               />
             )}
           </div>
@@ -417,9 +647,11 @@ export function CampaignNotificationsPanel() {
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Users className="h-4 w-4" />
               <span>
-                {loadedCustomers.length > 0 
-                  ? `Enviará a ${loadedCustomers.length} clientes cargados`
-                  : 'Primero carga los mensajes con "Cargar Mensajes"'
+                {isSendingCampaign 
+                  ? `Enviando a ${totalMessages} clientes...`
+                  : loadedCustomers.length > 0 
+                    ? `Enviará a ${loadedCustomers.length} clientes cargados`
+                    : 'Primero carga los mensajes con "Cargar Mensajes"'
                 }
               </span>
             </div>
@@ -428,13 +660,18 @@ export function CampaignNotificationsPanel() {
                 variant="outline" 
                 onClick={() => setIsTestDialogOpen(true)} 
                 className="flex items-center gap-2"
+                disabled={isSendingCampaign}
               >
                 <TestTube className="h-4 w-4" />
                 Prueba
               </Button>
-              <Button onClick={handleSendCampaign} className="flex items-center gap-2">
+              <Button 
+                onClick={handleSendCampaign} 
+                className="flex items-center gap-2"
+                disabled={isSendingCampaign || loadedCustomers.length === 0}
+              >
                 <Send className="h-4 w-4" />
-                Enviar Campaña
+                {isSendingCampaign ? 'Enviando...' : 'Enviar Campaña'}
               </Button>
             </div>
           </div>

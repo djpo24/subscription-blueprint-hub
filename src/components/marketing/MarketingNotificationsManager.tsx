@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useMarketingNotifications } from '@/hooks/useMarketingNotifications';
-import { Play, Trash2, RotateCcw, Users, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import { Play, Trash2, Users, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
 
 export function MarketingNotificationsManager() {
   const {
@@ -18,12 +18,10 @@ export function MarketingNotificationsManager() {
     isLoading,
     prepareNotifications,
     executeNotifications,
-    retryFailedNotifications,
     clearPreparedNotifications,
     clearPendingNotifications,
     isPreparing,
     isExecuting,
-    isRetrying,
     isClearing,
     isClearingPending
   } = useMarketingNotifications();
@@ -220,18 +218,6 @@ export function MarketingNotificationsManager() {
           </Button>
         )}
 
-        {failedNotifications.length > 0 && (
-          <Button 
-            onClick={retryFailedNotifications}
-            disabled={isRetrying || isLoading}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            {isRetrying ? 'Reintentando...' : 'Reintentar Fallidas'}
-          </Button>
-        )}
-
         {preparedNotifications.length > 0 && (
           <Button 
             onClick={clearPreparedNotifications}
@@ -260,7 +246,10 @@ export function MarketingNotificationsManager() {
       {/* Notifications Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Notificaciones Individuales</CardTitle>
+          <CardTitle>Vista Previa de Notificaciones Preparadas</CardTitle>
+          <p className="text-sm text-gray-500">
+            Revisa cada mensaje personalizado antes de enviar
+          </p>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -279,7 +268,7 @@ export function MarketingNotificationsManager() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Teléfono</TableHead>
-                  <TableHead>Mensaje</TableHead>
+                  <TableHead>Vista Previa del Mensaje</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Error</TableHead>

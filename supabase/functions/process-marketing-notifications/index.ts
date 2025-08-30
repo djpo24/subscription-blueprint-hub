@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     const { mode, campaign_name, trip_start_date, trip_end_date, message_template } = await req.json();
     
-    console.log('🔄 Processing marketing notifications:', { mode, campaign_name, trip_start_date, trip_end_date });
+    console.log('🔄 Processing marketing notifications:', { mode });
 
     if (!mode) {
       return new Response(JSON.stringify({ 
@@ -45,7 +45,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (mode === 'prepare') {
-      console.log('📋 PREPARE MODE: Generating individual marketing notification messages...');
+      console.log('📋 PREPARE MODE: Generating marketing notifications for each customer...');
       
       if (!campaign_name || !trip_start_date || !trip_end_date || !message_template) {
         return new Response(JSON.stringify({ 
@@ -57,7 +57,7 @@ serve(async (req) => {
         });
       }
 
-      // Get all customers with their phone numbers
+      // Get all customers
       const { data: customers, error: customersError } = await supabase
         .from('customers')
         .select('id, name, phone, whatsapp_number')
@@ -243,91 +243,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
-    } else if (mode === 'retry_failed') {
-      console.log('🔄 RETRY MODE: Retrying failed marketing notifications...');
-      
-      // Get failed notifications
-      const { data: failedNotifications, error: fetchError } = await supabase
-        .from('marketing_message_log')
-        .select('*')
-        .eq('status', 'failed')
-        .order('created_at', { ascending: true });
-
-      if (fetchError) {
-        console.error('❌ Error fetching failed notifications:', fetchError);
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Error fetching failed notifications: ' + fetchError.message 
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log(`📊 Found ${failedNotifications?.length || 0} failed notifications to retry`);
-
-      let retried = 0;
-      let executed = 0;
-      let failed = 0;
-
-      // Retry each failed notification
-      for (const notification of failedNotifications || []) {
-        try {
-          retried++;
-          console.log(`🔄 Retrying WhatsApp message to ${notification.customer_name} (${notification.customer_phone})...`);
-          
-          const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
-            body: {
-              phone: notification.customer_phone,
-              message: notification.message_content,
-              useTemplate: false
-            }
-          });
-
-          if (whatsappError || !whatsappResult?.success) {
-            console.error(`❌ Retry failed for ${notification.customer_name}:`, whatsappError || whatsappResult?.error);
-            failed++;
-          } else {
-            console.log(`✅ Retry successful for ${notification.customer_name}`);
-            
-            // Update status to sent
-            await supabase
-              .from('marketing_message_log')
-              .update({
-                status: 'sent',
-                sent_at: new Date().toISOString(),
-                whatsapp_message_id: whatsappResult.whatsappMessageId || null,
-                error_message: null
-              })
-              .eq('id', notification.id);
-            
-            executed++;
-          }
-
-        } catch (error) {
-          console.error(`❌ Error retrying ${notification.customer_name}:`, error);
-          failed++;
-        }
-
-        // Add a small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      console.log(`✅ Retry completed: ${retried} retried, ${executed} successful, ${failed} failed`);
-
-      return new Response(JSON.stringify({
-        success: true,
-        retried,
-        executed,
-        failed
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
     } else {
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Invalid mode. Use: prepare, execute, or retry_failed' 
+        error: 'Invalid mode. Use: prepare or execute' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

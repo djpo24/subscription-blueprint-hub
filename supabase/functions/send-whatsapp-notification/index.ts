@@ -130,7 +130,7 @@ async function logWhatsAppError(supabaseClient: any, notificationId: string, err
     } else if (errorDetails.error_code === 131056) {
       console.error('🚨 Phone number not registered on WhatsApp:', phone);
     } else if (errorDetails.error_code === 100) {
-      console.error('🚨 Invalid phone number format:', phone);
+      console.error('🚨 Invalid phone number format or missing parameter:', phone);
     } else if (errorDetails.error_code === 190) {
       console.error('🚨 Access token expired or invalid');
     } else if (errorDetails.error_code === 133016) {
@@ -327,7 +327,7 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - SIN ENCABEZADO, SOLO CUERPO CON 4 PARÁMETROS');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES CON HEADER Y BODY');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
@@ -365,8 +365,14 @@ serve(async (req) => {
             deadlineDate
           });
 
-          // CORRECCIÓN: Solo body component con 4 parámetros (sin header)
+          // CORRECCIÓN: Incluir header con nombre del cliente y body con 4 parámetros
           templatePayload.template.components = [
+            {
+              type: 'header',
+              parameters: [
+                { type: 'text', text: customerName }    // Para {{1}} en header - nombre_cliente
+              ]
+            },
             {
               type: 'body',
               parameters: [
@@ -378,7 +384,7 @@ serve(async (req) => {
             }
           ]
 
-          console.log('✅ CORRECCIÓN COMPLETA - Proximos viajes template SIN header, SOLO body con 4 parámetros')
+          console.log('✅ CORRECCIÓN COMPLETA - Proximos viajes template CON header y body')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');

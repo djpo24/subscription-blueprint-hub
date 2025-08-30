@@ -47,7 +47,7 @@ export function useMarketingNotifications() {
       }
 
       const logs = data || [];
-      console.log(`📊 Found ${logs.length} notifications`);
+      console.log(`📊 Found ${logs.length} notifications total`);
       
       const validStatuses = ['pending', 'prepared', 'sent', 'failed'];
       const typedLogs = logs.filter(log => validStatuses.includes(log.status)) as MarketingNotificationLog[];
@@ -92,7 +92,10 @@ export function useMarketingNotifications() {
       const { data, error } = await supabase.functions.invoke('process-marketing-notifications', {
         body: {
           mode: 'prepare',
-          ...campaignData
+          campaign_name: campaignData.campaign_name,
+          trip_start_date: campaignData.trip_start_date,
+          trip_end_date: campaignData.trip_end_date,
+          message_template: campaignData.message_template
         }
       });
 
@@ -106,7 +109,7 @@ export function useMarketingNotifications() {
       if (data && data.success) {
         toast({
           title: "¡Notificaciones preparadas!",
-          description: `Se prepararon ${data.prepared} notificaciones para envío${data.skipped ? ` (${data.skipped} clientes sin teléfono)` : ''}`
+          description: data.message || `Se prepararon ${data.prepared} notificaciones para envío${data.skipped ? ` (${data.skipped} clientes sin teléfono)` : ''}`
         });
         
         // Refresh notifications to show the prepared ones
@@ -149,7 +152,7 @@ export function useMarketingNotifications() {
       if (data && data.success) {
         toast({
           title: "¡Notificaciones enviadas!",
-          description: `Se enviaron ${data.executed} notificaciones exitosamente. ${data.failed} fallaron.`
+          description: data.message || `Se enviaron ${data.executed} notificaciones exitosamente. ${data.failed} fallaron.`
         });
         
         // Refresh notifications to show updated statuses
@@ -167,6 +170,49 @@ export function useMarketingNotifications() {
       });
     } finally {
       setIsExecuting(false);
+    }
+  };
+
+  const retryFailedNotifications = async () => {
+    setIsRetrying(true);
+    
+    try {
+      console.log('🔄 Reintentando notificaciones fallidas...');
+      
+      const { data, error } = await supabase.functions.invoke('process-marketing-notifications', {
+        body: {
+          mode: 'retry_failed'
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error from edge function:', error);
+        throw error;
+      }
+
+      console.log('✅ Retry result:', data);
+
+      if (data && data.success) {
+        toast({
+          title: "¡Reintentos completados!",
+          description: data.message || `Se reenviaron ${data.retried} notificaciones exitosamente. ${data.failed} siguen fallidas.`
+        });
+        
+        // Refresh notifications to show updated statuses
+        await fetchMarketingNotifications();
+      } else {
+        throw new Error(data?.error || 'Error desconocido al reintentar notificaciones');
+      }
+
+    } catch (error) {
+      console.error('❌ Error retrying marketing notifications:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron reintentar las notificaciones: " + (error.message || 'Error desconocido'),
+        variant: "destructive"
+      });
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -249,7 +295,7 @@ export function useMarketingNotifications() {
     isLoading,
     prepareNotifications,
     executeNotifications,
-    retryFailedNotifications: () => Promise.resolve(), // Not implemented yet
+    retryFailedNotifications,
     clearPreparedNotifications,
     clearPendingNotifications,
     isPreparing,

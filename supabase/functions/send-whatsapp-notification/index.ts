@@ -327,45 +327,41 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES IDÉNTICA A PACKAGE_ARRIVAL');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
           const customerName = templateParameters.customerName || 'Cliente'
-          let outboundDate = templateParameters.outboundDate || 'N/A'
-          let returnDate = templateParameters.returnDate || 'N/A'
-          let deadlineDate = templateParameters.deadlineDate || 'N/A'
+          
+          // CAMBIO CRÍTICO: Convertir fechas a números para que coincidan con la plantilla
+          let outboundDateNumber = '1'
+          let returnDateNumber = '2' 
+          let deadlineDateNumber = '3'
 
-          // Formatear fechas si vienen como YYYY-MM-DD
-          if (outboundDate && outboundDate.includes('-')) {
-            const date = new Date(outboundDate + 'T00:00:00');
-            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            outboundDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          // Si las fechas vienen como strings de fecha, extraer solo el día
+          if (templateParameters.outboundDate && templateParameters.outboundDate.includes('-')) {
+            const date = new Date(templateParameters.outboundDate + 'T00:00:00');
+            outboundDateNumber = date.getDate().toString();
           }
 
-          if (returnDate && returnDate.includes('-')) {
-            const date = new Date(returnDate + 'T00:00:00');
-            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            returnDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          if (templateParameters.returnDate && templateParameters.returnDate.includes('-')) {
+            const date = new Date(templateParameters.returnDate + 'T00:00:00');
+            returnDateNumber = date.getDate().toString();
           }
 
-          if (deadlineDate && deadlineDate.includes('-')) {
-            const date = new Date(deadlineDate + 'T00:00:00');
-            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            deadlineDate = `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
+          if (templateParameters.deadlineDate && templateParameters.deadlineDate.includes('-')) {
+            const date = new Date(templateParameters.deadlineDate + 'T00:00:00');
+            deadlineDateNumber = date.getDate().toString();
           }
 
-          console.log('📋 Fechas formateadas para WhatsApp:', {
+          console.log('📋 Parámetros numéricos para WhatsApp:', {
             customerName,
-            outboundDate,
-            returnDate,
-            deadlineDate
+            outboundDateNumber,
+            returnDateNumber,
+            deadlineDateNumber
           });
 
-          // CONFIGURACIÓN IDÉNTICA A PACKAGE_ARRIVAL: Header + Body
+          // CONFIGURACIÓN IGUAL A PACKAGE_ARRIVAL: Header + Body con números
           templatePayload.template.components = [
             {
               type: 'header',
@@ -376,14 +372,14 @@ serve(async (req) => {
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: outboundDate },    // Para {{2}} en body - fecha_salida_baq
-                { type: 'text', text: returnDate },      // Para {{3}} en body - fecha_retorno_cur
-                { type: 'text', text: deadlineDate }     // Para {{4}} en body - fecha_limite_entrega
+                { type: 'text', text: outboundDateNumber },    // Para {{2}} en body - día salida
+                { type: 'text', text: returnDateNumber },      // Para {{3}} en body - día retorno  
+                { type: 'text', text: deadlineDateNumber }     // Para {{4}} en body - día límite
               ]
             }
           ]
 
-          console.log('✅ CONFIGURACIÓN IDÉNTICA A PACKAGE_ARRIVAL - Proximos viajes template')
+          console.log('✅ CONFIGURACIÓN NUMÉRICA - Proximos viajes template')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');

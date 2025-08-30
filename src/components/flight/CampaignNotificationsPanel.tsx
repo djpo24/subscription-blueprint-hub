@@ -13,7 +13,6 @@ import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { TripNotificationTestDialog } from '@/components/marketing/TripNotificationTestDialog';
-import { ProximosViajesTestDialog } from '@/components/marketing/ProximosViajesTestDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
@@ -59,7 +58,6 @@ export function CampaignNotificationsPanel() {
   const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
   const [availableReturnTrips, setAvailableReturnTrips] = useState<any[]>([]);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
-  const [isProximosViajesTestOpen, setIsProximosViajesTestOpen] = useState(false);
 
   const [isSendingCampaign, setIsSendingCampaign] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<SendingStatus[]>([]);
@@ -678,21 +676,12 @@ export function CampaignNotificationsPanel() {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => setIsProximosViajesTestOpen(true)} 
-                className="flex items-center gap-2"
-                disabled={isSendingCampaign}
-              >
-                <TestTube className="h-4 w-4" />
-                Test Plantilla
-              </Button>
-              <Button 
-                variant="outline" 
                 onClick={() => setIsTestDialogOpen(true)} 
                 className="flex items-center gap-2"
                 disabled={isSendingCampaign}
               >
                 <TestTube className="h-4 w-4" />
-                Prueba General
+                Prueba
               </Button>
               <Button 
                 onClick={handleSendCampaign} 
@@ -710,11 +699,6 @@ export function CampaignNotificationsPanel() {
       <TripNotificationTestDialog 
         isOpen={isTestDialogOpen}
         onOpenChange={setIsTestDialogOpen}
-      />
-
-      <ProximosViajesTestDialog 
-        isOpen={isProximosViajesTestOpen}
-        onOpenChange={setIsProximosViajesTestOpen}
       />
     </div>
   );

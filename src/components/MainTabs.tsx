@@ -10,7 +10,7 @@ interface MainTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   unreadCount?: number;
-  previewRole?: string;
+  previewRole?: 'admin' | 'employee' | 'traveler';
   packageStats?: any;
   customersCount?: number;
   onNewPackage?: () => void;

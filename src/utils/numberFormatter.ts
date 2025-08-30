@@ -16,13 +16,23 @@ export const parseFormattedNumber = (formattedValue: string): string => {
 
 // Nueva función para formatear números con separador de miles
 export const formatNumberWithThousandsSeparator = (value: number | string | null | undefined): string => {
-  if (value === null || value === undefined) return '0';
+  if (value === null || value === undefined || value === '') return '0';
   
   // Convert to number if it's a string
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  let numValue: number;
+  if (typeof value === 'string') {
+    numValue = parseFloat(value);
+  } else {
+    numValue = value;
+  }
   
-  if (isNaN(numValue)) return '0';
+  if (isNaN(numValue) || !isFinite(numValue)) return '0';
   
-  // Format with thousands separator (periods)
-  return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // Format with thousands separator (periods) - ensure we have a valid number before calling toString
+  try {
+    return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  } catch (error) {
+    console.error('Error formatting number:', error, 'Value:', value);
+    return '0';
+  }
 };

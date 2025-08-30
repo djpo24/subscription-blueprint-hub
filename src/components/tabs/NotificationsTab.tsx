@@ -4,6 +4,7 @@ import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { TabsContent } from '@/components/ui/tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrivalNotificationsPanel } from '@/components/flight/ArrivalNotificationsPanel';
+import { CampaignNotificationsPanel } from '@/components/flight/CampaignNotificationsPanel';
 import { Bell, Plane, Megaphone } from 'lucide-react';
 
 export function NotificationsTab() {
@@ -31,8 +32,7 @@ export function NotificationsTab() {
         </TabsContent>
 
         <TabsContent value="campaign" className="space-y-6">
-          <ArrivalNotificationsPanel />
-          <FlightNotificationPanel />
+          <CampaignNotificationsPanel />
         </TabsContent>
 
         <TabsContent value="log" className="space-y-6">

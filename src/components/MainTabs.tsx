@@ -1,10 +1,32 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { NotificationsTab } from '@/components/tabs/NotificationsTab';
-import { CampaignNotificationsPanel } from '@/components/campaign/CampaignNotificationsPanel';
-import { DashboardTab } from '@/components/tabs/DashboardTab';
-import { TripsTab } from '@/components/tabs/TripsTab';
-import { DispatchesTab } from '@/components/tabs/DispatchesTab';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DashboardTab } from './tabs/DashboardTab';
+import { CustomersTab } from './tabs/CustomersTab';
+import { FinancesTab } from './tabs/FinancesTab';
+import { DispatchesTab } from './tabs/DispatchesTab';
+import { ChatTab } from './tabs/ChatTab';
+import { TripsTab } from './tabs/TripsTab';
+import { NotificationsTab } from './tabs/NotificationsTab';
+import { SettingsTab } from './tabs/SettingsTab';
+import { MarketingTab } from './tabs/MarketingTab';
+import { UsersTab } from './tabs/UsersTab';
+import { DeveloperTab } from './tabs/DeveloperTab';
+import { AdminInvestigationTab } from './tabs/AdminInvestigationTab';
+import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
+import { 
+  BarChart3, 
+  Users, 
+  DollarSign, 
+  Truck, 
+  MessageSquare, 
+  MapPin, 
+  Bell,
+  Settings,
+  Megaphone,
+  Shield,
+  Code,
+  Search
+} from 'lucide-react';
 
 interface MainTabsProps {
   activeTab: string;
@@ -20,7 +42,7 @@ interface MainTabsProps {
   packages?: any[];
   filteredPackages?: any[];
   isLoading?: boolean;
-  onUpdate?: () => void;
+  onUpdate?: (id: string, updates: any) => void;
   disableChat?: boolean;
   viewingPackagesByDate?: Date | null;
   trips?: any[];
@@ -35,7 +57,7 @@ interface MainTabsProps {
 export function MainTabs({ 
   activeTab, 
   onTabChange, 
-  unreadCount,
+  unreadCount = 0,
   previewRole,
   packageStats,
   customersCount,
@@ -43,75 +65,128 @@ export function MainTabs({
   onNewTrip,
   onViewNotifications,
   onMobileDelivery,
-  packages,
-  filteredPackages,
-  isLoading,
+  packages = [],
+  filteredPackages = [],
+  isLoading = false,
   onUpdate,
-  disableChat,
+  disableChat = false,
   viewingPackagesByDate,
-  trips,
-  tripsLoading,
+  trips = [],
+  tripsLoading = false,
   onAddPackage,
   onCreateTrip,
   onViewPackagesByDate,
   onBack,
   selectedDate
 }: MainTabsProps) {
+  const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
+  const effectiveRole = userRole?.role || 'employee';
+
   return (
-    <div className="p-4 sm:p-6">
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="trips">Viajes</TabsTrigger>
-          <TabsTrigger value="dispatches">Despachos</TabsTrigger>
-          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
-          <TabsTrigger value="campaign">Campaña</TabsTrigger>
-        </TabsList>
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 xl:grid-cols-12 gap-1 h-auto p-1">
+        <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3">
+          <BarChart3 className="h-4 w-4" />
+          <span className="hidden sm:inline">Panel</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="customers" className="flex items-center gap-2 py-2 px-3">
+          <Users className="h-4 w-4" />
+          <span className="hidden sm:inline">Clientes</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="finances" className="flex items-center gap-2 py-2 px-3">
+          <DollarSign className="h-4 w-4" />
+          <span className="hidden sm:inline">Finanzas</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="dispatches" className="flex items-center gap-2 py-2 px-3">
+          <Truck className="h-4 w-4" />
+          <span className="hidden sm:inline">Despachos</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="chat" className="flex items-center gap-2 py-2 px-3">
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline">Chat</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="trips" className="flex items-center gap-2 py-2 px-3">
+          <MapPin className="h-4 w-4" />
+          <span className="hidden sm:inline">Viajes</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="marketing" className="flex items-center gap-2 py-2 px-3">
+          <Megaphone className="h-4 w-4" />
+          <span className="hidden sm:inline">Marketing</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="notifications" className="flex items-center gap-2 py-2 px-3">
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">Notificaciones</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="settings" className="flex items-center gap-2 py-2 px-3">
+          <Settings className="h-4 w-4" />
+          <span className="hidden sm:inline">Configuración</span>
+        </TabsTrigger>
+        
+        {effectiveRole === 'admin' && (
+          <>
+            <TabsTrigger value="users" className="flex items-center gap-2 py-2 px-3">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Usuarios</span>
+            </TabsTrigger>
+            
+            <TabsTrigger value="developer" className="flex items-center gap-2 py-2 px-3">
+              <Code className="h-4 w-4" />
+              <span className="hidden sm:inline">Desarrollo</span>
+            </TabsTrigger>
+            
+            <TabsTrigger value="admin-investigation" className="flex items-center gap-2 py-2 px-3">
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Investigación</span>
+            </TabsTrigger>
+          </>
+        )}
+      </TabsList>
 
-        <TabsContent value="dashboard">
-          <DashboardTab
-            packageStats={packageStats}
-            customersCount={customersCount}
-            onNewPackage={onNewPackage}
-            onNewTrip={onNewTrip}
-            onViewNotifications={onViewNotifications}
-            onMobileDelivery={onMobileDelivery}
-            packages={packages}
-            filteredPackages={filteredPackages}
-            isLoading={isLoading}
-            onUpdate={onUpdate}
-            disableChat={disableChat}
-            previewRole={previewRole}
-            onTabChange={onTabChange}
-          />
-        </TabsContent>
-
-        <TabsContent value="trips">
-          <TripsTab
-            viewingPackagesByDate={viewingPackagesByDate}
-            trips={trips}
-            tripsLoading={tripsLoading}
-            onAddPackage={onAddPackage}
-            onCreateTrip={onCreateTrip}
-            onViewPackagesByDate={onViewPackagesByDate}
-            onBack={onBack}
-            disableChat={disableChat}
-            previewRole={previewRole}
-          />
-        </TabsContent>
-
-        <TabsContent value="dispatches">
-          <DispatchesTab />
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <NotificationsTab />
-        </TabsContent>
-
-        <TabsContent value="campaign">
-          <CampaignNotificationsPanel />
-        </TabsContent>
-      </Tabs>
-    </div>
+      <DashboardTab
+        packageStats={packageStats}
+        customersCount={customersCount}
+        onNewPackage={onNewPackage}
+        onNewTrip={onNewTrip}
+        onViewNotifications={onViewNotifications}
+        onMobileDelivery={onMobileDelivery}
+        packages={packages}
+        filteredPackages={filteredPackages}
+        isLoading={isLoading}
+        onUpdate={onUpdate}
+        onTabChange={onTabChange}
+      />
+      <CustomersTab />
+      <FinancesTab />
+      <DispatchesTab />
+      <ChatTab />
+      <TripsTab 
+        viewingPackagesByDate={viewingPackagesByDate}
+        trips={trips}
+        tripsLoading={tripsLoading}
+        onAddPackage={onAddPackage}
+        onCreateTrip={onCreateTrip}
+        onViewPackagesByDate={onViewPackagesByDate}
+        onBack={onBack}
+      />
+      <MarketingTab />
+      <NotificationsTab />
+      <SettingsTab />
+      
+      {effectiveRole === 'admin' && (
+        <>
+          <UsersTab />
+          <DeveloperTab />
+          <AdminInvestigationTab />
+        </>
+      )}
+    </Tabs>
   );
 }

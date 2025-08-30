@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -526,7 +526,6 @@ export type Database = {
       marketing_message_log: {
         Row: {
           campaign_id: string | null
-          campaign_name: string | null
           created_at: string
           customer_name: string | null
           customer_phone: string
@@ -539,7 +538,6 @@ export type Database = {
         }
         Insert: {
           campaign_id?: string | null
-          campaign_name?: string | null
           created_at?: string
           customer_name?: string | null
           customer_phone: string
@@ -552,7 +550,6 @@ export type Database = {
         }
         Update: {
           campaign_id?: string | null
-          campaign_name?: string | null
           created_at?: string
           customer_name?: string | null
           customer_phone?: string
@@ -1243,42 +1240,42 @@ export type Database = {
       create_first_admin_user: {
         Args: {
           admin_email: string
+          admin_password: string
           admin_first_name: string
           admin_last_name: string
-          admin_password: string
           admin_phone?: string
         }
         Returns: {
-          message: string
           success: boolean
+          message: string
           user_id: string
         }[]
       }
       generate_marketing_message: {
         Args: {
           customer_name_param: string
-          end_date: string
-          start_date: string
           template_param: string
+          start_date: string
+          end_date: string
         }
         Returns: string
       }
       generate_marketing_message_with_rates: {
         Args: {
           customer_name_param: string
-          end_date: string
-          start_date: string
           template_param: string
+          start_date: string
+          end_date: string
         }
         Returns: string
       }
       generate_trip_notification_message: {
         Args: {
           customer_name_param: string
-          deadline_date: string
+          template_param: string
           outbound_date: string
           return_date: string
-          template_param: string
+          deadline_date: string
         }
         Returns: string
       }
@@ -1288,15 +1285,15 @@ export type Database = {
       }
       get_current_freight_rate: {
         Args: {
-          destination_param: string
           origin_param: string
+          destination_param: string
           reference_date?: string
         }
         Returns: {
+          rate_id: string
+          price_per_kilo: number
           currency: string
           notes: string
-          price_per_kilo: number
-          rate_id: string
         }[]
       }
       get_current_user_role: {
@@ -1304,14 +1301,14 @@ export type Database = {
         Returns: string
       }
       get_trips_for_marketing_period: {
-        Args: { end_date: string; start_date: string }
+        Args: { start_date: string; end_date: string }
         Returns: {
+          trip_id: string
+          trip_date: string
+          origin: string
           destination: string
           flight_number: string
-          origin: string
           status: string
-          trip_date: string
-          trip_id: string
         }[]
       }
       is_admin: {

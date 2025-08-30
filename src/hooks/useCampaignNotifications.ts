@@ -41,7 +41,7 @@ export function useCampaignNotifications() {
       // Map the database response to match our interface
       return (data || []).map(item => ({
         id: item.id,
-        campaign_name: item.campaign_name || `Campaña ${new Date(item.created_at).toLocaleDateString()}`,
+        campaign_name: `Campaña ${new Date(item.created_at).toLocaleDateString()}`,
         outbound_trip_id: item.outbound_trip_id,
         return_trip_id: item.return_trip_id,
         deadline_date: item.deadline_date,
@@ -68,7 +68,6 @@ export function useCampaignNotifications() {
       const { data, error } = await supabase
         .from('trip_notifications')
         .insert({
-          campaign_name: params.campaign_name,
           outbound_trip_id: params.outbound_trip_id,
           return_trip_id: params.return_trip_id,
           deadline_date: params.deadline_date,

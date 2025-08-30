@@ -244,24 +244,21 @@ export function CampaignNotificationsPanel() {
       try {
         console.log(`📱 Enviando mensaje ${i + 1}/${preparedMessages.length} a ${customer.name} (${phone})`);
 
-        // Crear entrada de notificación para trip notifications
+        // CAMBIO CRÍTICO: Usar notification_log en lugar de trip_notification_log (igual que llegadas)
         const { data: notificationData, error: logError } = await supabase
-          .from('trip_notification_log')
+          .from('notification_log')
           .insert({
+            package_id: null,
             customer_id: customer.id,
-            customer_phone: phone,
-            customer_name: customer.name || 'Cliente',
-            personalized_message: messageData.message,
-            status: 'pending',
-            trip_notification_id: crypto.randomUUID(),
-            template_name: 'proximos_viajes',
-            template_language: 'es_CO'
+            notification_type: 'trip_campaign',
+            message: messageData.message,
+            status: 'pending'
           })
           .select()
           .single();
 
         if (logError) {
-          console.error('❌ Error creating trip notification log:', logError);
+          console.error('❌ Error creating notification log:', logError);
           setSendingStatus(prev => prev.map(status => 
             status.customerId === customer.id 
               ? { ...status, status: 'failed', error: 'Error al crear registro' }
@@ -271,7 +268,7 @@ export function CampaignNotificationsPanel() {
           continue;
         }
 
-        // Enviar mensaje por WhatsApp usando la plantilla correcta
+        // Enviar mensaje por WhatsApp usando la plantilla correcta (IGUAL QUE LLEGADAS)
         const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,

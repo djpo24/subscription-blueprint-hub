@@ -327,7 +327,7 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES IGUAL A PACKAGE_ARRIVAL CON HEADER');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES IDÉNTICA A PACKAGE_ARRIVAL');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
@@ -365,7 +365,7 @@ serve(async (req) => {
             deadlineDate
           });
 
-          // CONFIGURACIÓN IGUAL A PACKAGE_ARRIVAL: Con header (nombre cliente) y body (3 parámetros restantes)
+          // CONFIGURACIÓN IDÉNTICA A PACKAGE_ARRIVAL: Header + Body
           templatePayload.template.components = [
             {
               type: 'header',
@@ -383,7 +383,7 @@ serve(async (req) => {
             }
           ]
 
-          console.log('✅ CONFIGURACIÓN IGUAL A PACKAGE_ARRIVAL - Proximos viajes template CON header y body')
+          console.log('✅ CONFIGURACIÓN IDÉNTICA A PACKAGE_ARRIVAL - Proximos viajes template')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');
@@ -404,7 +404,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('📤 PAYLOAD FINAL CORREGIDO para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
+      console.log('📤 PAYLOAD FINAL para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {
@@ -454,41 +454,17 @@ serve(async (req) => {
     })
 
     if (whatsappResponse.ok && whatsappResult.messages) {
-      // Determine which table to update based on notification type
-      // First check if it's a trip notification log
-      const { data: tripLogData } = await supabaseClient
-        .from('trip_notification_log')
-        .select('id')
-        .eq('id', notificationId)
-        .single();
+      // CAMBIO CRÍTICO: Solo usar notification_log (igual que llegadas)
+      const { error: updateError } = await supabaseClient
+        .from('notification_log')
+        .update({ 
+          status: 'sent',
+          sent_at: new Date().toISOString()
+        })
+        .eq('id', notificationId);
 
-      if (tripLogData) {
-        // Update trip notification log status to sent
-        const { error: updateError } = await supabaseClient
-          .from('trip_notification_log')
-          .update({ 
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            whatsapp_message_id: whatsappResult.messages[0].id
-          })
-          .eq('id', notificationId);
-
-        if (updateError) {
-          console.error('❌ Error updating trip notification log status:', updateError);
-        }
-      } else {
-        // Update regular notification log status to sent
-        const { error: updateError } = await supabaseClient
-          .from('notification_log')
-          .update({ 
-            status: 'sent',
-            sent_at: new Date().toISOString()
-          })
-          .eq('id', notificationId);
-
-        if (updateError) {
-          console.error('❌ Error updating notification status:', updateError);
-        }
+      if (updateError) {
+        console.error('❌ Error updating notification status:', updateError);
       }
 
       console.log('✅ WhatsApp message sent successfully to:', apiPhone)

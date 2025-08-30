@@ -96,7 +96,7 @@ export function MetaDiagnostics() {
         )}
         <span className="font-medium">{title}</span>
       </div>
-      <Badge variant={result.success ? "success" : "destructive"}>
+      <Badge variant={result.success ? "default" : "destructive"} className={result.success ? "bg-green-100 text-green-800 border-green-200" : ""}>
         {result.success ? "OK" : "Error"}
       </Badge>
     </div>

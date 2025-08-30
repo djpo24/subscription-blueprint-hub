@@ -1,0 +1,320 @@
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { mode, campaign_name, trip_start_date, trip_end_date, message_template } = await req.json();
+    
+    console.log('🔄 Processing marketing notifications:', { mode, campaign_name, trip_start_date, trip_end_date });
+
+    if (!mode) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'mode is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Supabase credentials not configured' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (mode === 'prepare') {
+      console.log('📋 PREPARE MODE: Generating individual marketing notification messages...');
+      
+      if (!campaign_name || !trip_start_date || !trip_end_date || !message_template) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'campaign_name, trip_start_date, trip_end_date, and message_template are required for prepare mode' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Get all customers
+      const { data: customers, error: customersError } = await supabase
+        .from('customers')
+        .select('id, name, phone, whatsapp_number')
+        .order('name');
+
+      if (customersError) {
+        console.error('❌ Error fetching customers:', customersError);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Error fetching customers: ' + customersError.message 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      let prepared = 0;
+
+      // Generate personalized messages for each customer
+      for (const customer of customers || []) {
+        const phone = customer.whatsapp_number || customer.phone;
+        
+        if (!phone) {
+          console.log(`⚠️ Skipping customer ${customer.name} - no phone number`);
+          continue;
+        }
+
+        // Generate personalized message using the database function
+        const { data: messageResult, error: messageError } = await supabase
+          .rpc('generate_marketing_message_with_rates', {
+            customer_name_param: customer.name,
+            template_param: message_template,
+            start_date: trip_start_date,
+            end_date: trip_end_date
+          });
+
+        if (messageError) {
+          console.error('❌ Error generating message for', customer.name, ':', messageError);
+          continue;
+        }
+
+        console.log(`📝 Generated message for ${customer.name}:`, messageResult?.substring(0, 100) + '...');
+
+        // Create log entry
+        const { error: logError } = await supabase
+          .from('marketing_message_log')
+          .insert({
+            customer_name: customer.name,
+            customer_phone: phone,
+            message_content: messageResult || 'Generated message',
+            status: 'prepared',
+            campaign_name: campaign_name,
+            created_at: new Date().toISOString()
+          });
+
+        if (logError) {
+          console.error('❌ Error creating marketing message log for', customer.name, ':', logError);
+          continue;
+        }
+
+        prepared++;
+      }
+
+      console.log(`✅ Prepared ${prepared} marketing notifications`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        prepared
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } else if (mode === 'execute') {
+      console.log('🚀 EXECUTE MODE: Sending prepared marketing notifications...');
+      
+      // Get prepared notifications
+      const { data: preparedNotifications, error: fetchError } = await supabase
+        .from('marketing_message_log')
+        .select('*')
+        .eq('status', 'prepared');
+
+      if (fetchError) {
+        console.error('❌ Error fetching prepared notifications:', fetchError);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Error fetching prepared notifications' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      let executed = 0;
+      let failed = 0;
+
+      // Send each prepared notification
+      for (const notification of preparedNotifications || []) {
+        try {
+          console.log(`📤 Sending WhatsApp message to ${notification.customer_name}...`);
+
+          const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+            body: {
+              phone: notification.customer_phone,
+              message: notification.message_content,
+              useTemplate: false
+            }
+          });
+
+          if (whatsappError || !whatsappResult?.success) {
+            console.error(`❌ Failed to send to ${notification.customer_name}:`, whatsappError || whatsappResult?.error);
+            
+            // Update status to failed
+            await supabase
+              .from('marketing_message_log')
+              .update({
+                status: 'failed',
+                error_message: whatsappError?.message || whatsappResult?.error || 'Unknown error'
+              })
+              .eq('id', notification.id);
+            
+            failed++;
+          } else {
+            console.log(`✅ Successfully sent to ${notification.customer_name}`);
+            
+            // Update status to sent
+            await supabase
+              .from('marketing_message_log')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                whatsapp_message_id: whatsappResult.whatsappMessageId || null
+              })
+              .eq('id', notification.id);
+            
+            executed++;
+          }
+
+        } catch (error) {
+          console.error(`❌ Error processing ${notification.customer_name}:`, error);
+          
+          // Update status to failed
+          await supabase
+            .from('marketing_message_log')
+            .update({
+              status: 'failed',
+              error_message: error.message
+            })
+            .eq('id', notification.id);
+          
+          failed++;
+        }
+      }
+
+      console.log(`✅ Execution completed: ${executed} sent, ${failed} failed`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        executed,
+        failed
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } else if (mode === 'retry_failed') {
+      console.log('🔄 RETRY MODE: Retrying failed marketing notifications...');
+      
+      // Get failed notifications
+      const { data: failedNotifications, error: fetchError } = await supabase
+        .from('marketing_message_log')
+        .select('*')
+        .eq('status', 'failed');
+
+      if (fetchError) {
+        console.error('❌ Error fetching failed notifications:', fetchError);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Error fetching failed notifications' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      let retried = 0;
+      let executed = 0;
+      let failed = 0;
+
+      // Retry each failed notification
+      for (const notification of failedNotifications || []) {
+        try {
+          retried++;
+          console.log(`🔄 Retrying WhatsApp message to ${notification.customer_name}...`);
+          
+          const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+            body: {
+              phone: notification.customer_phone,
+              message: notification.message_content,
+              useTemplate: false
+            }
+          });
+
+          if (whatsappError || !whatsappResult?.success) {
+            console.error(`❌ Retry failed for ${notification.customer_name}:`, whatsappError || whatsappResult?.error);
+            failed++;
+          } else {
+            console.log(`✅ Retry successful for ${notification.customer_name}`);
+            
+            // Update status to sent
+            await supabase
+              .from('marketing_message_log')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                whatsapp_message_id: whatsappResult.whatsappMessageId || null,
+                error_message: null
+              })
+              .eq('id', notification.id);
+            
+            executed++;
+          }
+
+        } catch (error) {
+          console.error(`❌ Error retrying ${notification.customer_name}:`, error);
+          failed++;
+        }
+      }
+
+      console.log(`✅ Retry completed: ${retried} retried, ${executed} successful, ${failed} failed`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        retried,
+        executed,
+        failed
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } else {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Invalid mode. Use: prepare, execute, or retry_failed' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error in process-marketing-notifications function:', error);
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message,
+      stack: error.stack
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

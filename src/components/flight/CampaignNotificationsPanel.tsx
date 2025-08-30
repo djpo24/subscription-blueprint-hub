@@ -249,13 +249,13 @@ export function CampaignNotificationsPanel() {
           .from('trip_notification_log')
           .insert({
             customer_id: customer.id,
-            phone: phone,
+            customer_phone: phone,
             customer_name: customer.name || 'Cliente',
-            message_content: messageData.message,
+            personalized_message: messageData.message,
             status: 'pending',
-            outbound_date: selectedOutboundTripDetails?.trip_date || null,
-            return_date: selectedReturnTripDetails?.trip_date || null,
-            deadline_date: deadlineDate
+            trip_notification_id: crypto.randomUUID(),
+            template_name: 'proximos_viajes',
+            template_language: 'es_CO'
           })
           .select()
           .single();

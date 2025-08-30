@@ -56,10 +56,14 @@ export function useCreateCampaignNotifications() {
           continue;
         }
 
+        // Generar un trip_notification_id único para esta campaña
+        const tripNotificationId = crypto.randomUUID();
+
         // Crear notificación de campaña pendiente
         const { error: insertError } = await supabase
           .from('trip_notification_log')
           .insert({
+            trip_notification_id: tripNotificationId,
             customer_id: customer.id,
             customer_name: customer.name,
             customer_phone: phoneNumber,

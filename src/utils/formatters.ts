@@ -1,4 +1,3 @@
-
 import { formatNumberWithThousandsSeparator } from './numberFormatter';
 import { formatAmountToCollectWithCurrency, type Currency } from './currencyFormatter';
 
@@ -15,11 +14,12 @@ export const formatDecimal = (value: number | null | undefined, maxDecimals: num
   let numValue: number;
   if (typeof value === 'string') {
     // Check if string is empty or only whitespace
-    if (!value.trim()) {
+    const stringValue = value as string; // Type assertion to fix TypeScript error
+    if (!stringValue.trim()) {
       console.log('formatDecimal returning "0" for empty string');
       return '0';
     }
-    numValue = parseFloat(value);
+    numValue = parseFloat(stringValue);
   } else if (typeof value === 'number') {
     numValue = value;
   } else {
@@ -59,11 +59,12 @@ export const formatWeight = (weight: number | null | undefined): string => {
     // Convertir a número y eliminar decimales innecesarios
     let numWeight: number;
     if (typeof weight === 'string') {
-      if (!weight.trim()) {
+      const stringWeight = weight as string; // Type assertion to fix TypeScript error
+      if (!stringWeight.trim()) {
         console.log('formatWeight returning "0" for empty string');
         return '0';
       }
-      numWeight = parseFloat(weight);
+      numWeight = parseFloat(stringWeight);
     } else {
       numWeight = Number(weight);
     }

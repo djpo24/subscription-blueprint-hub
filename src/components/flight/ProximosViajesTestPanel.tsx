@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TestTube, Send, Eye, Copy, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDateDisplay } from '@/utils/dateUtils';
 
 export function ProximosViajesTestPanel() {
   const { toast } = useToast();
@@ -232,7 +231,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Nombre del Cliente ({{1}})</Label>
+              <Label htmlFor="customer-name">Nombre del Cliente (1)</Label>
               <Input
                 id="customer-name"
                 type="text"
@@ -244,7 +243,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha de Salida ({{2}})</Label>
+              <Label htmlFor="outbound-date">Fecha de Salida (2)</Label>
               <Input
                 id="outbound-date"
                 type="date"
@@ -255,7 +254,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha de Retorno ({{3}})</Label>
+              <Label htmlFor="return-date">Fecha de Retorno (3)</Label>
               <Input
                 id="return-date"
                 type="date"
@@ -266,7 +265,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="deadline-date">Fecha Límite ({{4}})</Label>
+              <Label htmlFor="deadline-date">Fecha Límite (4)</Label>
               <Input
                 id="deadline-date"
                 type="date"
@@ -313,10 +312,10 @@ export function ProximosViajesTestPanel() {
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Corregida:</h4>
                     <div className="text-sm text-blue-700 space-y-1">
-                      <div><strong>{{1}}</strong> = Nombre del cliente (en body)</div>
-                      <div><strong>{{2}}</strong> = Fecha de salida (en body)</div>
-                      <div><strong>{{3}}</strong> = Fecha de retorno (en body)</div>
-                      <div><strong>{{4}}</strong> = Fecha límite (en body)</div>
+                      <div><strong>1</strong> = Nombre del cliente (en body)</div>
+                      <div><strong>2</strong> = Fecha de salida (en body)</div>
+                      <div><strong>3</strong> = Fecha de retorno (en body)</div>
+                      <div><strong>4</strong> = Fecha límite (en body)</div>
                       <div className="font-medium text-blue-800 mt-2">✅ Sin parámetros en header</div>
                     </div>
                   </div>
@@ -338,10 +337,10 @@ export function ProximosViajesTestPanel() {
                   <div className="mt-4 space-y-2">
                     <h4 className="font-medium text-sm">Fechas Formateadas (en español):</h4>
                     <div className="text-xs space-y-1">
-                      <div><strong>{{1}} Nombre:</strong> {customerName}</div>
-                      <div><strong>{{2}} Salida:</strong> {getFormattedDates().outboundDateText}</div>
-                      <div><strong>{{3}} Retorno:</strong> {getFormattedDates().returnDateText}</div>
-                      <div><strong>{{4}} Límite:</strong> {getFormattedDates().deadlineDateText}</div>
+                      <div><strong>1 Nombre:</strong> {customerName}</div>
+                      <div><strong>2 Salida:</strong> {getFormattedDates().outboundDateText}</div>
+                      <div><strong>3 Retorno:</strong> {getFormattedDates().returnDateText}</div>
+                      <div><strong>4 Límite:</strong> {getFormattedDates().deadlineDateText}</div>
                     </div>
                   </div>
                 </CardContent>

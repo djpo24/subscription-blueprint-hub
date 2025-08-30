@@ -1,191 +1,141 @@
-
-import { useState, useEffect } from 'react';
-import { Header } from '@/components/Header';
-import { DashboardTab } from '@/components/tabs/DashboardTab';
-import { TripsTab } from '@/components/tabs/TripsTab';
-import { DispatchesTab } from '@/components/tabs/DispatchesTab';
-import { ChatTab } from '@/components/tabs/ChatTab';
-import { EscalationTab } from '@/components/tabs/EscalationTab';
-import { NotificationsTab } from '@/components/tabs/NotificationsTab';
-import { SettingsTab } from '@/components/tabs/SettingsTab';
-import { UsersTab } from '@/components/tabs/UsersTab';
-import { CustomersTab } from '@/components/tabs/CustomersTab';
-import { DeveloperTab } from '@/components/tabs/DeveloperTab';
-import { FinancesTab } from '@/components/tabs/FinancesTab';
-import { MarketingTab } from '@/components/tabs/MarketingTab';
-import { AdminInvestigationTab } from '@/components/tabs/AdminInvestigationTab';
-import { Tabs } from '@/components/ui/tabs';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/AppSidebar';
-import { useIndexData } from '@/hooks/useIndexData';
-import { useIndexState } from '@/hooks/useIndexState';
-import { useIndexHandlers } from '@/hooks/useIndexHandlers';
-import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
-import { MobileDeliveryView } from '@/components/mobile/MobileDeliveryView';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useState } from 'react';
+import { Sidebar } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { MainTabs } from '@/components/MainTabs';
+import { PackageCreationPanel } from '@/components/PackageCreationPanel';
+import { DashboardViewSwitcher } from '@/components/dashboard/DashboardViewSwitcher';
+import { EmployeePreviewHeader } from '@/components/preview/EmployeePreviewHeader';
+import { TravelerPreviewHeader } from '@/components/preview/TravelerPreviewHeader';
+import { AppSidebar } from '@/components/sidebar/AppSidebar';
+import { MobileDeliveryDialog } from '@/components/delivery/MobileDeliveryDialog';
+import { TripCreationDialog } from '@/components/TripCreationDialog';
+import { NewPackageDialog } from '@/components/NewPackageDialog';
+import { useIndex } from '@/hooks/useIndex';
+import { usePackagesData } from '@/hooks/usePackagesData';
+import { useTripsData } from '@/hooks/useTripsData';
 
 export default function Index() {
-  const [showMobileDelivery, setShowMobileDelivery] = useState(false);
-  const isMobile = useIsMobile();
-
   const {
-    packagesData,
-    trips,
-    tripsLoading,
-    refetchTrips,
-    customersCount,
-    packageStats,
-    unreadCount,
-    refetchUnreadMessages,
-  } = useIndexData();
-  
-  const {
-    searchTerm,
-    setSearchTerm,
-    packageDialogOpen,
-    setPackageDialogOpen,
-    tripDialogOpen,
-    setTripDialogOpen,
-    selectedTripId,
-    setSelectedTripId,
+    activeTab,
+    setActiveTab,
+    isMobileDeliveryOpen,
+    setIsMobileDeliveryOpen,
+    isNewTripOpen,
+    setIsNewTripOpen,
+    isNewPackageOpen,
+    setIsNewPackageOpen,
     selectedDate,
     setSelectedDate,
-    activeTab,
-    setActiveTab,
     viewingPackagesByDate,
     setViewingPackagesByDate,
-  } = useIndexState();
+    onBack,
+    previewRole,
+    setPreviewRole
+  } = useIndex();
 
   const {
-    handleNewPackage,
-    handleAddPackageToTrip,
-    handleCreateTripFromCalendar,
-    handleViewPackagesByDate,
-    handlePackageSuccess,
-    handleTripSuccess,
-    handleTripDialogClose,
-    handleViewNotifications,
-    handlePackagesUpdate,
-    handleBackToCalendar,
-  } = useIndexHandlers({
-    activeTab,
-    refetchUnreadMessages,
-    refetchTrips,
-    packagesRefetch: packagesData?.refetch || (() => {}),
-    setSelectedTripId,
-    setPackageDialogOpen,
-    setTripDialogOpen,
-    setSelectedDate,
-    setViewingPackagesByDate,
-    setActiveTab,
-  });
+    packageStats,
+    customersCount,
+    packages,
+    filteredPackages,
+    isLoading,
+    onUpdate,
+    onNewPackage,
+    onNewTrip
+  } = usePackagesData();
 
-  const handleMobileDelivery = () => {
-    setShowMobileDelivery(true);
+  const {
+    trips,
+    tripsLoading,
+    onAddPackage,
+    onCreateTrip
+  } = useTripsData(selectedDate);
+
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedCustomerName, setSelectedCustomerName] = useState('');
+  const [selectedTripId, setSelectedTripId] = useState('');
+
+  const onPackageClick = (pkg, tripId) => {
+    setSelectedPackage(pkg);
+    setSelectedTripId(tripId);
+    setEditDialogOpen(true);
   };
 
-  useEffect(() => {
-    refetchUnreadMessages();
-  }, []);
+  const onPackageEditSuccess = () => {
+    setEditDialogOpen(false);
+  };
 
-  const packages = packagesData?.data || [];
-  const isLoading = packagesData?.isLoading || false;
-
-  const filteredPackages = packages.filter((pkg: any) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      pkg.tracking_number.toLowerCase().includes(searchTermLower) ||
-      pkg.description.toLowerCase().includes(searchTermLower) ||
-      pkg.customers?.name.toLowerCase().includes(searchTermLower)
-    );
-  });
-
-  if (showMobileDelivery) {
-    return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
-  }
+  const onOpenChat = (customerId, customerName) => {
+    setSelectedCustomerId(customerId);
+    setSelectedCustomerName(customerName);
+    setChatDialogOpen(true);
+  };
 
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
-      <div className="min-h-screen bg-gray-50 w-full flex">
+    <SidebarProvider>
+      <div className="md:pl-64 flex h-screen antialiased text-gray-900 bg-gray-50">
         <AppSidebar 
           activeTab={activeTab} 
-          onTabChange={setActiveTab}
-          unreadCount={unreadCount}
+          onTabChange={setActiveTab} 
+          unreadCount={7}
+          previewRole={previewRole}
+          setPreviewRole={setPreviewRole}
         />
-        <SidebarInset className="flex-1 min-w-0">
-          <Header searchTerm={searchTerm} onSearchChange={setSearchTerm} />
-          
-          <main className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 lg:py-8 max-w-full overflow-x-hidden">
-            <div className="flex items-center gap-2 mb-2 sm:mb-4">
-              {!isMobile && (
-                <SidebarTrigger className="bg-black text-white hover:bg-gray-800 hover:text-white rounded-full h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
-              )}
-              <h2 className="text-lg sm:text-xl font-semibold truncate">
-                {activeTab === 'dashboard' && 'Dashboard'}
-                {activeTab === 'trips' && 'Viajes'}
-                {activeTab === 'dispatches' && 'Despachos'}
-                {activeTab === 'finances' && 'Finanzas'}
-                {activeTab === 'chat' && 'Chat'}
-                {activeTab === 'escalations' && 'Escalaciones'}
-                {activeTab === 'notifications' && 'Notificaciones'}
-                {activeTab === 'customers' && 'Clientes'}
-                {activeTab === 'users' && 'Usuarios'}
-                {activeTab === 'settings' && 'Configuración'}
-                {activeTab === 'developer' && 'Preview'}
-                {activeTab === 'marketing' && 'Marketing'}
-                {activeTab === 'admin-investigation' && 'Investigación'}
-              </h2>
-            </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <DashboardTab
-                packageStats={packageStats}
-                customersCount={customersCount}
-                onNewPackage={handleNewPackage}
-                onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-                onViewNotifications={handleViewNotifications}
-                onMobileDelivery={handleMobileDelivery}
-                packages={packages}
-                filteredPackages={filteredPackages}
-                isLoading={isLoading}
-                onUpdate={handlePackagesUpdate}
-                onTabChange={setActiveTab}
-              />
-              
-              <TripsTab 
-                viewingPackagesByDate={viewingPackagesByDate}
-                trips={trips}
-                tripsLoading={tripsLoading}
-                onAddPackage={handleAddPackageToTrip}
-                onCreateTrip={handleCreateTripFromCalendar}
-                onViewPackagesByDate={handleViewPackagesByDate}
-                onBack={handleBackToCalendar}
-              />
-              <DispatchesTab />
-              <FinancesTab />
-              <ChatTab />
-              <EscalationTab />
-              <MarketingTab />
-              <NotificationsTab />
-              <CustomersTab />
-              <UsersTab />
-              <AdminInvestigationTab />
-              <SettingsTab />
-              <DeveloperTab />
-            </Tabs>
+        <Sidebar.Container>
+          <Sidebar.Content>
+            {previewRole === 'employee' && (
+              <EmployeePreviewHeader onBack={onBack} />
+            )}
 
-            <DialogsContainer
-              packageDialogOpen={packageDialogOpen}
-              setPackageDialogOpen={setPackageDialogOpen}
-              onPackageSuccess={handlePackageSuccess}
-              selectedTripId={selectedTripId}
-              tripDialogOpen={tripDialogOpen}
-              onTripDialogChange={handleTripDialogClose}
-              onTripSuccess={handleTripSuccess}
+            {previewRole === 'traveler' && (
+              <TravelerPreviewHeader onBack={onBack} />
+            )}
+
+            <MainTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              packageStats={packageStats}
+              customersCount={customersCount}
+              onNewPackage={onNewPackage}
+              onNewTrip={onNewTrip}
+              onViewNotifications={() => setActiveTab('notifications')}
+              onMobileDelivery={() => setIsMobileDeliveryOpen(true)}
+              packages={packages}
+              filteredPackages={filteredPackages}
+              isLoading={isLoading}
+              onUpdate={onUpdate}
+              viewingPackagesByDate={viewingPackagesByDate}
+              trips={trips}
+              tripsLoading={tripsLoading}
+              onAddPackage={onAddPackage}
+              onCreateTrip={onCreateTrip}
+              onViewPackagesByDate={setViewingPackagesByDate}
+              onBack={onBack}
               selectedDate={selectedDate}
             />
-          </main>
-        </SidebarInset>
+          </Sidebar.Content>
+        </Sidebar.Container>
+
+        <MobileDeliveryDialog
+          open={isMobileDeliveryOpen}
+          onOpenChange={setIsMobileDeliveryOpen}
+        />
+
+        <TripCreationDialog
+          open={isNewTripOpen}
+          onOpenChange={setIsNewTripOpen}
+          selectedDate={selectedDate}
+          onCreateTrip={onCreateTrip}
+        />
+
+        <NewPackageDialog
+          open={isNewPackageOpen}
+          onOpenChange={setIsNewPackageOpen}
+        />
       </div>
     </SidebarProvider>
   );

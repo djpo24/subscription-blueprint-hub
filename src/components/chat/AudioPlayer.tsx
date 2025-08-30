@@ -22,13 +22,15 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
 
+    console.log('🎵 Loading audio from URL:', audioUrl);
     setIsLoading(true);
     setHasError(false);
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
       setIsLoading(false);
-      console.log('✅ Audio metadata loaded successfully');
+      setHasError(false);
+      console.log('✅ Audio metadata loaded successfully, duration:', audio.duration);
     };
 
     const handleTimeUpdate = () => {
@@ -38,15 +40,17 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      console.log('🎵 Audio playback ended');
     };
 
     const handleError = (e: Event) => {
       console.error('❌ Audio loading error:', e);
+      console.error('❌ Audio error details:', (e.target as HTMLAudioElement)?.error);
       setIsLoading(false);
       setHasError(true);
       toast({
-        title: "Error",
-        description: "No se pudo cargar el audio. Verifica tu conexión.",
+        title: "Error de audio",
+        description: "No se pudo cargar el audio. Intenta descargarlo.",
         variant: "destructive"
       });
     };
@@ -57,19 +61,37 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
       console.log('✅ Audio ready to play');
     };
 
+    const handleLoadStart = () => {
+      console.log('🔄 Audio load started');
+      setIsLoading(true);
+    };
+
+    const handleProgress = () => {
+      console.log('📊 Audio loading progress');
+    };
+
     // Add event listeners
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('progress', handleProgress);
 
-    // Set crossOrigin to handle CORS issues
+    // Configure audio element for better compatibility
+    audio.preload = 'metadata';
     audio.crossOrigin = 'anonymous';
     
-    // Load the audio
-    audio.src = audioUrl;
-    audio.load();
+    // Try to load the audio
+    try {
+      audio.src = audioUrl;
+      audio.load();
+    } catch (error) {
+      console.error('❌ Error setting audio source:', error);
+      setHasError(true);
+      setIsLoading(false);
+    }
 
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -77,6 +99,8 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('progress', handleProgress);
     };
   }, [audioUrl, toast]);
 
@@ -86,13 +110,22 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
     try {
       if (isPlaying) {
+        console.log('⏸️ Pausing audio');
         audio.pause();
         setIsPlaying(false);
       } else {
+        console.log('▶️ Playing audio');
         setIsLoading(true);
-        await audio.play();
-        setIsPlaying(true);
-        setIsLoading(false);
+        
+        // Try to play the audio
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          await playPromise;
+          setIsPlaying(true);
+          setIsLoading(false);
+          console.log('✅ Audio started playing');
+        }
       }
     } catch (error) {
       console.error('❌ Error playing audio:', error);
@@ -108,7 +141,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
-    if (!audio || hasError) return;
+    if (!audio || hasError || !duration) return;
 
     const newTime = (parseFloat(e.target.value) / 100) * duration;
     audio.currentTime = newTime;
@@ -117,27 +150,26 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
   const downloadAudio = async () => {
     try {
-      console.log('📥 Downloading audio from:', audioUrl);
+      console.log('📥 Attempting to download audio from:', audioUrl);
       
-      // Crear un enlace temporal para descargar
-      const response = await fetch(audioUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
+      // Create a temporary link to download
       const link = document.createElement('a');
-      link.href = url;
+      link.href = audioUrl;
       link.download = `audio_${Date.now()}.mp3`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Append to body, click, and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Limpiar el objeto URL
-      window.URL.revokeObjectURL(url);
       
       toast({
         title: "Descarga iniciada",
         description: "El archivo de audio se está descargando.",
       });
+      
+      console.log('✅ Download initiated successfully');
     } catch (error) {
       console.error('❌ Error downloading audio:', error);
       toast({
@@ -160,12 +192,14 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
   if (hasError) {
     return (
       <div className={`flex items-center space-x-3 p-3 border rounded-lg bg-red-50 border-red-200 ${className}`}>
-        <div className="text-red-600 text-sm">Error al cargar audio</div>
+        <div className="text-red-600 text-sm flex-1">
+          Error al cargar audio - Intenta descargarlo
+        </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={downloadAudio}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 shrink-0"
           title="Descargar audio"
         >
           <Download className="h-4 w-4" />
@@ -186,7 +220,8 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
         size="sm"
         onClick={togglePlayPause}
         disabled={isLoading || hasError}
-        className="h-8 w-8 p-0"
+        className="h-8 w-8 p-0 shrink-0"
+        title={isPlaying ? "Pausar" : "Reproducir"}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -197,10 +232,10 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
         )}
       </Button>
 
-      <div className="flex-1 space-y-1">
+      <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center space-x-2">
-          <Volume2 className="h-3 w-3 text-gray-500" />
-          <span className="text-xs text-gray-600">
+          <Volume2 className="h-3 w-3 text-gray-500 shrink-0" />
+          <span className="text-xs text-gray-600 whitespace-nowrap">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
         </div>
@@ -223,7 +258,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
         variant="ghost"
         size="sm"
         onClick={downloadAudio}
-        className="h-8 w-8 p-0"
+        className="h-8 w-8 p-0 shrink-0"
         title="Descargar audio"
       >
         <Download className="h-4 w-4" />

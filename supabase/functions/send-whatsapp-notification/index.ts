@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -328,7 +327,7 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - ESTRUCTURA COMPLETA');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - SIN ENCABEZADO, SOLO CUERPO CON 4 PARÁMETROS');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
@@ -366,25 +365,20 @@ serve(async (req) => {
             deadlineDate
           });
 
-          // CONFIGURACIÓN COMPLETA: Incluir header y body components
+          // CORRECCIÓN: Solo body component con 4 parámetros (sin header)
           templatePayload.template.components = [
-            {
-              type: 'header',
-              parameters: [
-                { type: 'text', text: customerName }  // Para el header {{1}}
-              ]
-            },
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: outboundDate },    // Para {{1}} en body
-                { type: 'text', text: returnDate },      // Para {{2}} en body
-                { type: 'text', text: deadlineDate }     // Para {{3}} en body
+                { type: 'text', text: customerName },    // Para {{1}} en body - nombre_cliente
+                { type: 'text', text: outboundDate },    // Para {{2}} en body - fecha_salida_baq
+                { type: 'text', text: returnDate },      // Para {{3}} en body - fecha_retorno_cur
+                { type: 'text', text: deadlineDate }     // Para {{4}} en body - fecha_limite_entrega
               ]
             }
           ]
 
-          console.log('✅ CONFIGURACIÓN COMPLETA - Proximos viajes template con header y body')
+          console.log('✅ CORRECCIÓN COMPLETA - Proximos viajes template SIN header, SOLO body con 4 parámetros')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');
@@ -405,7 +399,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('📤 PAYLOAD FINAL CON ESTRUCTURA COMPLETA para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
+      console.log('📤 PAYLOAD FINAL CORREGIDO para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {

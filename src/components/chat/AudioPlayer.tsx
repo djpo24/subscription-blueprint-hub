@@ -13,17 +13,22 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audioUrl) return;
+
+    setIsLoading(true);
+    setHasError(false);
 
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
+      setDuration(audio.duration || 0);
       setIsLoading(false);
+      console.log('✅ Audio metadata loaded successfully');
     };
 
     const handleTimeUpdate = () => {
@@ -35,31 +40,49 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
       setCurrentTime(0);
     };
 
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error('❌ Audio loading error:', e);
       setIsLoading(false);
+      setHasError(true);
       toast({
         title: "Error",
-        description: "No se pudo cargar el audio",
+        description: "No se pudo cargar el audio. Verifica tu conexión.",
         variant: "destructive"
       });
     };
 
+    const handleCanPlay = () => {
+      setIsLoading(false);
+      setHasError(false);
+      console.log('✅ Audio ready to play');
+    };
+
+    // Add event listeners
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('canplay', handleCanPlay);
+
+    // Set crossOrigin to handle CORS issues
+    audio.crossOrigin = 'anonymous';
+    
+    // Load the audio
+    audio.src = audioUrl;
+    audio.load();
 
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('canplay', handleCanPlay);
     };
   }, [audioUrl, toast]);
 
   const togglePlayPause = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || hasError) return;
 
     try {
       if (isPlaying) {
@@ -72,11 +95,12 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error('❌ Error playing audio:', error);
       setIsLoading(false);
+      setHasError(true);
       toast({
-        title: "Error",
-        description: "No se pudo reproducir el audio",
+        title: "Error de reproducción",
+        description: "No se pudo reproducir el audio. Intenta descargarlo.",
         variant: "destructive"
       });
     }
@@ -84,23 +108,48 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || hasError) return;
 
     const newTime = (parseFloat(e.target.value) / 100) * duration;
     audio.currentTime = newTime;
     setCurrentTime(newTime);
   };
 
-  const downloadAudio = () => {
-    const link = document.createElement('a');
-    link.href = audioUrl;
-    link.download = `audio_${Date.now()}.mp3`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadAudio = async () => {
+    try {
+      console.log('📥 Downloading audio from:', audioUrl);
+      
+      // Crear un enlace temporal para descargar
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audio_${Date.now()}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar el objeto URL
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Descarga iniciada",
+        description: "El archivo de audio se está descargando.",
+      });
+    } catch (error) {
+      console.error('❌ Error downloading audio:', error);
+      toast({
+        title: "Error de descarga",
+        description: "No se pudo descargar el archivo de audio.",
+        variant: "destructive"
+      });
+    }
   };
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -108,11 +157,27 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  if (hasError) {
+    return (
+      <div className={`flex items-center space-x-3 p-3 border rounded-lg bg-red-50 border-red-200 ${className}`}>
+        <div className="text-red-600 text-sm">Error al cargar audio</div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={downloadAudio}
+          className="h-8 w-8 p-0"
+          title="Descargar audio"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex items-center space-x-3 p-3 border rounded-lg bg-gray-50 ${className}`}>
       <audio
         ref={audioRef}
-        src={audioUrl}
         preload="metadata"
       />
       
@@ -120,7 +185,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
         variant="ghost"
         size="sm"
         onClick={togglePlayPause}
-        disabled={isLoading}
+        disabled={isLoading || hasError}
         className="h-8 w-8 p-0"
       >
         {isLoading ? (
@@ -146,6 +211,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
           max="100"
           value={progress}
           onChange={handleSeek}
+          disabled={hasError || duration === 0}
           className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           style={{
             background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progress}%, #e5e7eb ${progress}%, #e5e7eb 100%)`

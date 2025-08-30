@@ -13,8 +13,6 @@ import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { TripNotificationTestDialog } from '@/components/marketing/TripNotificationTestDialog';
-import { sendWhatsAppMessage } from '@/utils/whatsappSender';
-import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
@@ -111,20 +109,6 @@ export function CampaignNotificationsPanel() {
       setAvailableReturnTrips(returnTrips);
     }
   }, [trips]);
-
-  const sendManualNotificationMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const { data: result, error } = await supabase.functions.invoke('send-manual-notification', {
-        body: data
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      return result;
-    }
-  });
 
   const generatePersonalizedMessage = (customer: any) => {
     const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
@@ -232,6 +216,9 @@ export function CampaignNotificationsPanel() {
 
     console.log('🚀 Iniciando envío de campaña a', loadedCustomers.length, 'clientes');
 
+    const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
+    const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
+
     for (let i = 0; i < preparedMessages.length; i++) {
       const messageData = preparedMessages[i];
       const customer = messageData.customer;
@@ -257,30 +244,63 @@ export function CampaignNotificationsPanel() {
       try {
         console.log(`📱 Enviando mensaje ${i + 1}/${preparedMessages.length} a ${customer.name} (${phone})`);
 
-        await sendWhatsAppMessage({
-          selectedPhone: phone,
-          customerId: customer.id,
-          message: messageData.message,
-          sendManualNotification: async (data) => {
-            const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
-            const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
+        // Crear entrada de notificación para trip notifications
+        const { data: notificationData, error: logError } = await supabase
+          .from('trip_notification_log')
+          .insert({
+            customer_id: customer.id,
+            phone: phone,
+            customer_name: customer.name || 'Cliente',
+            message_content: messageData.message,
+            status: 'pending',
+            outbound_date: selectedOutboundTripDetails?.trip_date || null,
+            return_date: selectedReturnTripDetails?.trip_date || null,
+            deadline_date: deadlineDate
+          })
+          .select()
+          .single();
 
-            const templateData = {
-              ...data,
-              useTemplate: true,
-              templateName: 'proximos_viajes',
-              templateLanguage: 'es_CO',
-              templateParameters: {
-                customerName: customer.name || 'Cliente',
-                outboundDate: selectedOutboundTripDetails?.trip_date || '',
-                returnDate: selectedReturnTripDetails?.trip_date || '',
-                deadlineDate: deadlineDate || ''
-              }
-            };
+        if (logError) {
+          console.error('❌ Error creating trip notification log:', logError);
+          setSendingStatus(prev => prev.map(status => 
+            status.customerId === customer.id 
+              ? { ...status, status: 'failed', error: 'Error al crear registro' }
+              : status
+          ));
+          setFailedCount(prev => prev + 1);
+          continue;
+        }
 
-            return await sendManualNotificationMutation.mutateAsync(templateData);
+        // Enviar mensaje por WhatsApp usando la plantilla correcta
+        const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+          body: {
+            notificationId: notificationData.id,
+            phone: phone,
+            message: messageData.message,
+            useTemplate: true,
+            templateName: 'proximos_viajes',
+            templateLanguage: 'es_CO',
+            templateParameters: {
+              customerName: customer.name || 'Cliente',
+              outboundDate: selectedOutboundTripDetails?.trip_date || '',
+              returnDate: selectedReturnTripDetails?.trip_date || '',
+              deadlineDate: deadlineDate || ''
+            },
+            customerId: customer.id
           }
         });
+
+        if (whatsappError || (whatsappResponse && whatsappResponse.error)) {
+          console.error(`❌ Error enviando WhatsApp a ${customer.name}:`, whatsappError || whatsappResponse.error);
+          
+          setSendingStatus(prev => prev.map(status => 
+            status.customerId === customer.id 
+              ? { ...status, status: 'failed', error: whatsappError?.message || whatsappResponse?.error || 'Error de WhatsApp' }
+              : status
+          ));
+          setFailedCount(prev => prev + 1);
+          continue;
+        }
 
         setSendingStatus(prev => prev.map(status => 
           status.customerId === customer.id 
@@ -302,6 +322,7 @@ export function CampaignNotificationsPanel() {
         setFailedCount(prev => prev + 1);
       }
 
+      // Pausa entre mensajes
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 

@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Megaphone, Send, Eye, Users, Package } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 
@@ -40,7 +40,7 @@ export function CampaignNotificationsPanel() {
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
 
-  const handleLoadCustomers = () => {
+  const handleLoadMessages = () => {
     if (!customers || customers.length === 0) {
       toast({
         title: "Sin clientes",
@@ -52,8 +52,8 @@ export function CampaignNotificationsPanel() {
 
     setLoadedCustomers(customers);
     toast({
-      title: "Clientes cargados",
-      description: `Se cargaron ${customers.length} clientes para la campaña`,
+      title: "Mensajes cargados",
+      description: `Se prepararon mensajes para ${customers.length} clientes`,
     });
   };
 
@@ -74,7 +74,7 @@ export function CampaignNotificationsPanel() {
     if (loadedCustomers.length === 0) {
       toast({
         title: "Error",
-        description: "Debes cargar los clientes antes de enviar la campaña",
+        description: "Debes cargar los mensajes antes de enviar la campaña",
         variant: "destructive"
       });
       return;
@@ -151,21 +151,21 @@ export function CampaignNotificationsPanel() {
             </Select>
           </div>
 
-          {/* Botón para cargar clientes */}
+          {/* Botón para cargar mensajes */}
           <div className="flex items-center gap-4">
             <Button
-              onClick={handleLoadCustomers}
+              onClick={handleLoadMessages}
               disabled={loadingCustomers}
               className="flex items-center gap-2"
               variant="outline"
             >
-              <Package className="h-4 w-4" />
-              {loadingCustomers ? 'Cargando...' : 'Cargar Paquetes'}
+              <MessageSquare className="h-4 w-4" />
+              {loadingCustomers ? 'Cargando...' : 'Cargar Mensajes'}
             </Button>
             {loadedCustomers.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Users className="h-4 w-4" />
-                <span>{loadedCustomers.length} clientes cargados</span>
+                <span>{loadedCustomers.length} mensajes preparados</span>
               </div>
             )}
           </div>
@@ -242,7 +242,7 @@ export function CampaignNotificationsPanel() {
               <span>
                 {loadedCustomers.length > 0 
                   ? `Enviará a ${loadedCustomers.length} clientes cargados`
-                  : 'Primero carga los clientes con "Cargar Paquetes"'
+                  : 'Primero carga los mensajes con "Cargar Mensajes"'
                 }
               </span>
             </div>

@@ -34,11 +34,12 @@ export function CampaignNotificationsPanel() {
   const [template, setTemplate] = useState(CAMPAIGN_TEMPLATE);
   const [selectedTemplate, setSelectedTemplate] = useState('proximos_viajes');
   const [selectedOutboundTrip, setSelectedOutboundTrip] = useState('');
-  const [returnDate, setReturnDate] = useState('');
+  const [selectedReturnTrip, setSelectedReturnTrip] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [loadedCustomers, setLoadedCustomers] = useState<any[]>([]);
   const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
+  const [availableReturnTrips, setAvailableReturnTrips] = useState<any[]>([]);
   
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
@@ -66,6 +67,28 @@ export function CampaignNotificationsPanel() {
     }
   }, [trips]);
 
+  // Filter trips from Curazao that are after today's date
+  useEffect(() => {
+    if (trips && trips.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const returnTrips = trips.filter(trip => {
+        const tripDate = new Date(trip.trip_date);
+        tripDate.setHours(0, 0, 0, 0);
+        
+        return (
+          trip.origin && 
+          trip.origin.toLowerCase().includes('curazao') &&
+          tripDate >= today &&
+          (trip.status === 'scheduled' || trip.status === 'pending')
+        );
+      }).sort((a, b) => new Date(a.trip_date).getTime() - new Date(b.trip_date).getTime());
+      
+      setAvailableReturnTrips(returnTrips);
+    }
+  }, [trips]);
+
   const handleLoadMessages = () => {
     if (!customers || customers.length === 0) {
       toast({
@@ -88,7 +111,7 @@ export function CampaignNotificationsPanel() {
   };
 
   const handleSendCampaign = () => {
-    if (!selectedOutboundTrip || !returnDate || !deadlineDate) {
+    if (!selectedOutboundTrip || !selectedReturnTrip || !deadlineDate) {
       toast({
         title: "Error",
         description: "Por favor completa todas las fechas antes de enviar la campaña",
@@ -113,15 +136,21 @@ export function CampaignNotificationsPanel() {
   };
 
   // Get the selected trip details for preview
-  const selectedTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
-  const outboundDateForPreview = selectedTripDetails 
-    ? formatDateDisplay(selectedTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+  const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
+  const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
+  
+  const outboundDateForPreview = selectedOutboundTripDetails 
+    ? formatDateDisplay(selectedOutboundTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
     : '[fecha_salida_baq]';
+    
+  const returnDateForPreview = selectedReturnTripDetails 
+    ? formatDateDisplay(selectedReturnTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+    : '[fecha_retorno_cur]';
 
   const previewTemplate = template
     .replace(/{{nombre_cliente}}/g, 'Juan Pérez')
     .replace(/{{fecha_salida_baq}}/g, outboundDateForPreview)
-    .replace(/{{fecha_retorno_cur}}/g, returnDate || '[fecha_retorno_cur]')
+    .replace(/{{fecha_retorno_cur}}/g, returnDateForPreview)
     .replace(/{{fecha_limite_entrega}}/g, deadlineDate || '[fecha_limite_entrega]');
 
   return (
@@ -162,13 +191,26 @@ export function CampaignNotificationsPanel() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha Retorno Curazao</Label>
-              <Input
-                id="return-date"
-                type="date"
-                value={returnDate}
-                onChange={(e) => setReturnDate(e.target.value)}
-              />
+              <Label htmlFor="return-trip">Retorno desde Curazao</Label>
+              <Select value={selectedReturnTrip} onValueChange={setSelectedReturnTrip}>
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingTrips ? "Cargando viajes..." : "Selecciona un viaje"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableReturnTrips.length === 0 ? (
+                    <SelectItem value="no-trips" disabled>
+                      No hay viajes disponibles desde Curazao
+                    </SelectItem>
+                  ) : (
+                    availableReturnTrips.map((trip) => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {formatDateDisplay(trip.trip_date, 'dd/MM/yyyy')} - {trip.destination || 'Sin destino'}
+                        {trip.flight_number && ` (${trip.flight_number})`}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="deadline-date">Fecha Límite Entrega</Label>

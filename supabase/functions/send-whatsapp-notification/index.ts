@@ -333,53 +333,52 @@ serve(async (req) => {
         if (templateParameters) {
           const customerName = templateParameters.customerName || 'Cliente'
           
-          // CAMBIO CRÍTICO: Convertir fechas a números para que coincidan con la plantilla
-          let outboundDateNumber = '1'
-          let returnDateNumber = '2' 
-          let deadlineDateNumber = '3'
+          // Helper function to format dates in Spanish
+          const formatDateToSpanish = (dateString) => {
+            if (!dateString) return 'fecha no disponible';
+            
+            const date = new Date(dateString + 'T00:00:00');
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            
+            const dayName = days[date.getDay()];
+            const dayNumber = date.getDate();
+            const monthName = months[date.getMonth()];
+            
+            return `${dayName} ${dayNumber} de ${monthName}`;
+          };
 
-          // Si las fechas vienen como strings de fecha, extraer solo el día
-          if (templateParameters.outboundDate && templateParameters.outboundDate.includes('-')) {
-            const date = new Date(templateParameters.outboundDate + 'T00:00:00');
-            outboundDateNumber = date.getDate().toString();
-          }
+          // Format dates according to Facebook template
+          const outboundDateText = formatDateToSpanish(templateParameters.outboundDate);
+          const returnDateText = formatDateToSpanish(templateParameters.returnDate);
+          const deadlineDateText = formatDateToSpanish(templateParameters.deadlineDate);
 
-          if (templateParameters.returnDate && templateParameters.returnDate.includes('-')) {
-            const date = new Date(templateParameters.returnDate + 'T00:00:00');
-            returnDateNumber = date.getDate().toString();
-          }
-
-          if (templateParameters.deadlineDate && templateParameters.deadlineDate.includes('-')) {
-            const date = new Date(templateParameters.deadlineDate + 'T00:00:00');
-            deadlineDateNumber = date.getDate().toString();
-          }
-
-          console.log('📋 Parámetros numéricos para WhatsApp:', {
+          console.log('📋 Fechas formateadas para WhatsApp:', {
             customerName,
-            outboundDateNumber,
-            returnDateNumber,
-            deadlineDateNumber
+            outboundDateText,
+            returnDateText,
+            deadlineDateText
           });
 
-          // CONFIGURACIÓN IGUAL A PACKAGE_ARRIVAL: Header + Body con números
+          // CONFIGURACIÓN CORRECTA: Header ({{1}}) + Body ({{2}}, {{3}}, {{4}}) con fechas completas
           templatePayload.template.components = [
             {
               type: 'header',
               parameters: [
-                { type: 'text', text: customerName }    // Para {{1}} en header - nombre_cliente
+                { type: 'text', text: customerName }    // {{1}} - nombre del cliente
               ]
             },
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: outboundDateNumber },    // Para {{2}} en body - día salida
-                { type: 'text', text: returnDateNumber },      // Para {{3}} en body - día retorno  
-                { type: 'text', text: deadlineDateNumber }     // Para {{4}} en body - día límite
+                { type: 'text', text: outboundDateText },    // {{2}} - fecha salida completa
+                { type: 'text', text: returnDateText },      // {{3}} - fecha retorno completa
+                { type: 'text', text: deadlineDateText }     // {{4}} - fecha límite completa
               ]
             }
           ]
 
-          console.log('✅ CONFIGURACIÓN NUMÉRICA - Proximos viajes template')
+          console.log('✅ CONFIGURACIÓN CON FECHAS COMPLETAS - Proximos viajes template')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');

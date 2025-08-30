@@ -60,11 +60,11 @@ export function TripNotificationTestDialog({
         templateLanguage
       });
 
-      // Crear entrada de log de notificación
+      // Crear entrada de log usando el mismo tipo que funciona en arrivals
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
         .insert({
-          notification_type: 'trip_notification_test',
+          notification_type: 'manual_reply', // Usar el mismo tipo que funciona
           message: testMessage.replace('{{nombre_cliente}}', testCustomerName),
           status: 'pending'
         })
@@ -76,7 +76,7 @@ export function TripNotificationTestDialog({
         throw new Error('Error al crear registro de notificación');
       }
 
-      // Generar mensaje personalizado usando la función de la base de datos
+      // Generar fechas de ejemplo para la prueba
       const testOutboundDate = new Date();
       testOutboundDate.setDate(testOutboundDate.getDate() + 7); // 7 días desde hoy
       
@@ -86,37 +86,32 @@ export function TripNotificationTestDialog({
       const testDeadlineDate = new Date();
       testDeadlineDate.setDate(testDeadlineDate.getDate() + 5); // 5 días desde hoy
 
-      const { data: personalizedMessage, error: messageError } = await supabase
-        .rpc('generate_trip_notification_message', {
-          customer_name_param: testCustomerName,
-          template_param: testMessage,
-          outbound_date: testOutboundDate.toISOString().split('T')[0],
-          return_date: testReturnDate.toISOString().split('T')[0],
-          deadline_date: testDeadlineDate.toISOString().split('T')[0]
-        });
+      // Formatear fechas como ISO strings (YYYY-MM-DD)
+      const outboundDateStr = testOutboundDate.toISOString().split('T')[0];
+      const returnDateStr = testReturnDate.toISOString().split('T')[0];
+      const deadlineDateStr = testDeadlineDate.toISOString().split('T')[0];
 
-      if (messageError) {
-        console.error('❌ Error generating personalized message:', messageError);
-        throw new Error('Error al generar mensaje personalizado');
-      }
+      console.log('📅 Fechas para la prueba:', {
+        outbound: outboundDateStr,
+        return: returnDateStr,
+        deadline: deadlineDateStr
+      });
 
-      console.log('📝 Mensaje personalizado generado:', personalizedMessage);
-
-      // CORRECCIÓN: Usar exactamente los mismos nombres de parámetros que en el Edge Function
+      // Enviar exactamente como lo hace useArrivalNotifications
       const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
           phone: testPhone,
-          message: personalizedMessage,
+          message: testMessage.replace('{{nombre_cliente}}', testCustomerName),
           useTemplate: true,
           templateName: templateName,
           templateLanguage: templateLanguage,
-          customerId: null, // No hay customerId para mensajes de prueba
+          customerId: null,
           templateParameters: {
-            customerName: testCustomerName,        // Para {{nombre_cliente}}
-            outboundDate: testOutboundDate.toISOString().split('T')[0],   // Para {{fecha_salida_baq}}
-            returnDate: testReturnDate.toISOString().split('T')[0],       // Para {{fecha_retorno_cur}}
-            deadlineDate: testDeadlineDate.toISOString().split('T')[0]    // Para {{fecha_limite_entrega}}
+            customerName: testCustomerName,
+            outboundDate: outboundDateStr,
+            returnDate: returnDateStr,
+            deadlineDate: deadlineDateStr
           }
         }
       });
@@ -158,11 +153,10 @@ export function TripNotificationTestDialog({
     }
   };
 
-  // CORRECCIÓN: Usar los nombres exactos de la plantilla para la vista previa
   const getPreviewMessage = () => {
-    const sampleOutboundDate = 'lunes 15 de julio';
-    const sampleReturnDate = 'domingo 21 de julio';
-    const sampleDeadlineDate = 'viernes 12 de julio';
+    const sampleOutboundDate = 'lunes 15 de julio de 2024';
+    const sampleReturnDate = 'domingo 21 de julio de 2024';
+    const sampleDeadlineDate = 'viernes 12 de julio de 2024';
     
     return testMessage
       .replace('{{nombre_cliente}}', testCustomerName || 'Juan Pérez')

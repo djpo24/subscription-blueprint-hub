@@ -1,10 +1,10 @@
 
-import { MarketingNotificationsManager } from '@/components/marketing/MarketingNotificationsManager';
+import { MarketingNotificationsPanel } from '@/components/marketing/MarketingNotificationsPanel';
 
 export function Marketing() {
   return (
     <div className="container mx-auto py-6">
-      <MarketingNotificationsManager />
+      <MarketingNotificationsPanel />
     </div>
   );
 }

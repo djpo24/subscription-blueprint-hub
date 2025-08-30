@@ -2,21 +2,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useMarketingNotifications } from '@/hooks/useMarketingNotifications';
-import { useCreateMarketingNotifications } from '@/hooks/useCreateMarketingNotifications';
-import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2 } from 'lucide-react';
+import { useCampaignNotifications } from '@/hooks/useCampaignNotifications';
+import { useCreateCampaignNotifications } from '@/hooks/useCreateCampaignNotifications';
+import { MapPin, Package, Send, Clock, AlertCircle, CheckCircle, Eye, Plus, Trash2, Megaphone } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useState } from 'react';
 
-export function MarketingNotificationsPanel() {
+export function CampaignNotificationsPanel() {
   const {
     pendingNotifications,
     preparedNotifications,
-    failedNotifications,
     isLoading,
     prepareNotifications,
     executeNotifications,
@@ -26,36 +21,20 @@ export function MarketingNotificationsPanel() {
     isExecuting,
     isClearing,
     isClearingPending
-  } = useMarketingNotifications();
+  } = useCampaignNotifications();
 
   const {
     createNotifications,
     isCreating
-  } = useCreateMarketingNotifications();
-
-  const [campaignName, setCampaignName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [messageTemplate, setMessageTemplate] = useState(`¡Hola {customer_name}! 👋
-
-🛫 *Próximos viajes programados*
-
-{trip_details}
-
-💼 ¡Aprovecha estos viajes para enviar tus paquetes!
-
-📞 Contáctanos para reservar tu espacio
-🚚 Servicio de puerta a puerta disponible
-
-¡Te esperamos! ✈️`);
+  } = useCreateCampaignNotifications();
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Notificaciones de Marketing
+            <Megaphone className="h-5 w-5" />
+            Notificaciones de Campaña
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -65,103 +44,45 @@ export function MarketingNotificationsPanel() {
     );
   }
 
-  const totalNotifications = pendingNotifications.length + preparedNotifications.length + failedNotifications.length;
-
-  const handlePrepareNotifications = () => {
-    if (!campaignName || !startDate || !endDate || !messageTemplate) {
-      return;
-    }
-
-    prepareNotifications({
-      campaign_name: campaignName,
-      trip_start_date: startDate,
-      trip_end_date: endDate,
-      message_template: messageTemplate
-    });
-  };
+  const totalNotifications = pendingNotifications.length + preparedNotifications.length;
 
   return (
     <div className="space-y-4">
       {/* Panel Principal */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-purple-50 border-purple-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-800">
-            <Package className="h-5 w-5" />
-            Sistema de Notificaciones de Marketing
+          <CardTitle className="flex items-center gap-2 text-purple-800">
+            <Megaphone className="h-5 w-5" />
+            Sistema de Notificaciones de Campaña - Próximos Viajes
             {totalNotifications > 0 && (
               <Badge variant="secondary" className="ml-auto">
                 {totalNotifications} total
               </Badge>
             )}
           </CardTitle>
-          <CardDescription className="text-blue-600">
-            Sistema de revisión manual con plantillas personalizadas para cada cliente
+          <CardDescription className="text-purple-600">
+            Sistema de revisión manual para notificaciones de próximos viajes con plantilla "proximos_viajes"
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Configuración de Campaña */}
+          {/* Botón para cargar clientes */}
           <div className="mb-6 p-4 bg-orange-50 rounded border border-orange-200">
-            <div className="space-y-4">
-              <h4 className="font-medium text-orange-800 mb-3">
-                Configurar Nueva Campaña de Marketing
-              </h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="campaignName">Nombre de Campaña</Label>
-                  <Input
-                    id="campaignName"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ej: Viajes Septiembre 2025"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="startDate">Fecha Inicio</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate">Fecha Fin</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              
+            <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="messageTemplate">Plantilla de Mensaje</Label>
-                <Textarea
-                  id="messageTemplate"
-                  value={messageTemplate}
-                  onChange={(e) => setMessageTemplate(e.target.value)}
-                  rows={8}
-                  placeholder="Plantilla del mensaje..."
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Variables disponibles: {'{customer_name}'}, {'{trip_details}'}
+                <h4 className="font-medium text-orange-800 mb-1">
+                  Cargar Todos los Clientes
+                </h4>
+                <p className="text-sm text-orange-600">
+                  Crear notificaciones de próximos viajes para todos los clientes usando la plantilla "proximos_viajes"
                 </p>
               </div>
-
-              <Button 
-                onClick={() => createNotifications({
-                  campaign_name: campaignName,
-                  trip_start_date: startDate,
-                  trip_end_date: endDate,
-                  message_template: messageTemplate
-                })}
-                disabled={isCreating || !campaignName || !startDate || !endDate || !messageTemplate}
+              <Button
+                onClick={() => createNotifications()}
+                disabled={isCreating}
                 className="bg-orange-600 hover:bg-orange-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {isCreating ? 'Cargando Clientes...' : 'Cargar Clientes para Campaña'}
+                {isCreating ? 'Cargando...' : 'Cargar Clientes'}
               </Button>
             </div>
           </div>
@@ -170,7 +91,7 @@ export function MarketingNotificationsPanel() {
             {/* Panel de Notificaciones Pendientes (para preparar) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium text-blue-800 flex items-center gap-2">
+                <h4 className="font-medium text-purple-800 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   Pendientes de Preparar
                   {pendingNotifications.length > 0 && (
@@ -193,7 +114,7 @@ export function MarketingNotificationsPanel() {
                         {isClearingPending ? 'Limpiando...' : 'Limpiar'}
                       </Button>
                       <Button
-                        onClick={handlePrepareNotifications}
+                        onClick={() => prepareNotifications()}
                         disabled={isPreparing}
                         size="sm"
                         variant="outline"
@@ -217,16 +138,19 @@ export function MarketingNotificationsPanel() {
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-orange-600" />
+                            <Megaphone className="h-4 w-4 text-orange-600" />
                             <span className="font-medium text-sm">
-                              {notification.customer_name}
+                              Campaña Próximos Viajes
                             </span>
+                            <Badge variant="outline" className="text-orange-600">
+                              Plantilla: proximos_viajes
+                            </Badge>
                           </div>
+                          <p className="text-xs text-gray-600">
+                            Cliente: {notification.customer_name}
+                          </p>
                           <p className="text-xs text-green-600 font-medium">
                             📱 {notification.customer_phone}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Campaña: {notification.campaign_name}
                           </p>
                         </div>
                         <Badge variant="secondary" className="text-orange-600">
@@ -242,7 +166,7 @@ export function MarketingNotificationsPanel() {
                 </div>
               ) : (
                 <div className="text-center py-4 text-orange-600">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No hay notificaciones pendientes de preparar</p>
                 </div>
               )}
@@ -297,21 +221,24 @@ export function MarketingNotificationsPanel() {
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-green-600" />
+                            <Megaphone className="h-4 w-4 text-green-600" />
                             <span className="font-medium text-sm">
-                              {notification.customer_name}
+                              Campaña Próximos Viajes
                             </span>
+                            <Badge variant="outline" className="text-green-600">
+                              Plantilla: proximos_viajes
+                            </Badge>
                           </div>
+                          <p className="text-xs text-gray-600">
+                            Cliente: {notification.customer_name}
+                          </p>
                           <p className="text-xs text-green-600 font-medium">
                             📱 {notification.customer_phone}
                           </p>
-                          <p className="text-xs text-gray-600">
-                            Campaña: {notification.campaign_name}
-                          </p>
                           {notification.message_content && (
                             <div className="mt-2 p-2 bg-white rounded text-xs border">
-                              <strong>Vista Previa:</strong>
-                              <div className="mt-1 text-gray-700 whitespace-pre-line max-h-20 overflow-y-auto">
+                              <strong>Mensaje:</strong>
+                              <div className="mt-1 text-gray-700 whitespace-pre-line">
                                 {notification.message_content}
                               </div>
                             </div>
@@ -334,59 +261,45 @@ export function MarketingNotificationsPanel() {
             </div>
           </div>
 
-          {/* Panel de Notificaciones Fallidas */}
-          {failedNotifications.length > 0 && (
-            <div className="mt-4 p-4 bg-red-50 rounded border border-red-200">
-              <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Notificaciones Fallidas ({failedNotifications.length})
-              </h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {failedNotifications.map((notification) => (
-                  <div key={notification.id} className="p-2 bg-white rounded border text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{notification.customer_name}</span>
-                      <span className="text-red-600">{notification.customer_phone}</span>
-                    </div>
-                    {notification.error_message && (
-                      <p className="text-xs text-red-600 mt-1">{notification.error_message}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Información del Sistema */}
-          <div className="mt-6 p-4 bg-blue-100 rounded border border-blue-200">
-            <h4 className="font-medium text-sm text-blue-800 mb-2">
-              Sistema de Marketing Personalizado
+          <div className="mt-6 p-4 bg-purple-100 rounded border border-purple-200">
+            <h4 className="font-medium text-sm text-purple-800 mb-2">
+              Sistema de Campaña - Próximos Viajes
             </h4>
-            <div className="space-y-2 text-sm text-blue-700">
+            <div className="space-y-2 text-sm text-purple-700">
               <div className="flex items-start gap-2">
-                <Plus className="h-4 w-4 mt-0.5 text-blue-600" />
+                <CheckCircle className="h-4 w-4 mt-0.5 text-green-600" />
                 <div>
-                  <p className="font-medium">1. Cargar clientes para campaña</p>
-                  <p className="text-blue-600">
-                    Crea notificaciones pendientes para todos los clientes activos del sistema.
+                  <p className="font-medium">Plantilla: "proximos_viajes"</p>
+                  <p className="text-purple-600">
+                    Notifica a todos los clientes sobre próximos viajes programados con fechas personalizadas.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Eye className="h-4 w-4 mt-0.5 text-blue-600" />
+                <Plus className="h-4 w-4 mt-0.5 text-purple-600" />
+                <div>
+                  <p className="font-medium">1. Cargar todos los clientes</p>
+                  <p className="text-purple-600">
+                    Crea notificaciones para todos los clientes del sistema con la plantilla de próximos viajes.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 mt-0.5 text-purple-600" />
                 <div>
                   <p className="font-medium">2. Preparación para revisión</p>
-                  <p className="text-blue-600">
-                    Genera mensajes personalizados con detalles de viajes y tarifas para cada cliente.
+                  <p className="text-purple-600">
+                    Genera mensajes personalizados con fechas de viajes disponibles y fechas límite.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Send className="h-4 w-4 mt-0.5 text-blue-600" />
+                <Send className="h-4 w-4 mt-0.5 text-purple-600" />
                 <div>
                   <p className="font-medium">3. Envío masivo</p>
-                  <p className="text-blue-600">
-                    Los mensajes se envían por WhatsApp usando la información actualizada de cada cliente.
+                  <p className="text-purple-600">
+                    Los mensajes se envían a todos los clientes con información personalizada de próximos viajes.
                   </p>
                 </div>
               </div>

@@ -16,23 +16,45 @@ export const parseFormattedNumber = (formattedValue: string): string => {
 
 // Nueva función para formatear números con separador de miles
 export const formatNumberWithThousandsSeparator = (value: number | string | null | undefined): string => {
-  if (value === null || value === undefined || value === '') return '0';
+  // Add comprehensive logging for debugging
+  console.log('formatNumberWithThousandsSeparator called with:', { value, type: typeof value });
+  
+  if (value === null || value === undefined || value === '') {
+    console.log('formatNumberWithThousandsSeparator returning "0" for null/undefined/empty value');
+    return '0';
+  }
   
   // Convert to number if it's a string
   let numValue: number;
   if (typeof value === 'string') {
+    // Check if string is empty or only whitespace
+    if (!value.trim()) {
+      console.log('formatNumberWithThousandsSeparator returning "0" for empty string');
+      return '0';
+    }
     numValue = parseFloat(value);
   } else {
     numValue = value;
   }
   
-  if (isNaN(numValue) || !isFinite(numValue)) return '0';
+  if (isNaN(numValue) || !isFinite(numValue)) {
+    console.log('formatNumberWithThousandsSeparator returning "0" for invalid number:', numValue);
+    return '0';
+  }
   
-  // Format with thousands separator (periods) - ensure we have a valid number before calling toString
+  // Ensure we have a valid number before calling toString
   try {
-    return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    if (typeof numValue !== 'number') {
+      console.error('formatNumberWithThousandsSeparator: numValue is not a number:', numValue);
+      return '0';
+    }
+    
+    const stringValue = numValue.toString();
+    const result = stringValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    console.log('formatNumberWithThousandsSeparator result:', result);
+    return result;
   } catch (error) {
-    console.error('Error formatting number:', error, 'Value:', value);
+    console.error('Error formatting number:', error, 'Value:', value, 'NumValue:', numValue);
     return '0';
   }
 };

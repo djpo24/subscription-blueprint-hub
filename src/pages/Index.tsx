@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MainTabs } from '@/components/MainTabs';
 import { MobileDeliveryDialog } from '@/components/mobile/MobileDeliveryDialog';
@@ -6,7 +7,6 @@ import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { useQueryState } from '@/hooks/useQueryState';
 import { usePackages } from '@/hooks/usePackages';
 import { useTrips } from '@/hooks/useTrips';
-import type { PackageFilters } from '@/types/package';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useQueryState('tab', 'dashboard');

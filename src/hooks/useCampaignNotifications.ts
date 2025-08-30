@@ -48,7 +48,7 @@ export function useCampaignNotifications() {
         message_template: item.message_template,
         template_name: item.template_name,
         template_language: item.template_language,
-        status: item.status,
+        status: (item.status === 'sent' ? 'sent' : 'draft') as 'draft' | 'sent',
         total_customers_sent: item.total_customers_sent,
         success_count: item.success_count,
         failed_count: item.failed_count,

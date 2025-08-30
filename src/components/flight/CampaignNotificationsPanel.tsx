@@ -5,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Megaphone, Send, Eye, Users, MessageSquare, TestTube } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
@@ -30,6 +31,11 @@ Te informamos que tenemos un viaje programado próximamente:
 
 ✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
 
+interface PreparedMessage {
+  customer: any;
+  message: string;
+}
+
 export function CampaignNotificationsPanel() {
   const [template, setTemplate] = useState(CAMPAIGN_TEMPLATE);
   const [selectedTemplate, setSelectedTemplate] = useState('proximos_viajes');
@@ -38,6 +44,7 @@ export function CampaignNotificationsPanel() {
   const [deadlineDate, setDeadlineDate] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [loadedCustomers, setLoadedCustomers] = useState<any[]>([]);
+  const [preparedMessages, setPreparedMessages] = useState<PreparedMessage[]>([]);
   const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
   const [availableReturnTrips, setAvailableReturnTrips] = useState<any[]>([]);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
@@ -46,11 +53,10 @@ export function CampaignNotificationsPanel() {
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
   const { data: trips = [], isLoading: loadingTrips } = useTrips();
 
-  // Filter trips from Barranquilla that are after today's date
   useEffect(() => {
     if (trips && trips.length > 0) {
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+      today.setHours(0, 0, 0, 0);
       
       const outboundTrips = trips.filter(trip => {
         const tripDate = new Date(trip.trip_date);
@@ -68,7 +74,6 @@ export function CampaignNotificationsPanel() {
     }
   }, [trips]);
 
-  // Filter trips from Curazao that are after today's date
   useEffect(() => {
     if (trips && trips.length > 0) {
       const today = new Date();
@@ -90,6 +95,29 @@ export function CampaignNotificationsPanel() {
     }
   }, [trips]);
 
+  const generatePersonalizedMessage = (customer: any) => {
+    const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
+    const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
+    
+    const outboundDateForMessage = selectedOutboundTripDetails 
+      ? formatDateDisplay(selectedOutboundTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+      : '[fecha_salida_baq]';
+      
+    const returnDateForMessage = selectedReturnTripDetails 
+      ? formatDateDisplay(selectedReturnTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+      : '[fecha_retorno_cur]';
+
+    const formattedDeadlineDate = deadlineDate 
+      ? formatDateDisplay(deadlineDate, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+      : '[fecha_limite_entrega]';
+
+    return template
+      .replace(/{{nombre_cliente}}/g, customer.name || 'Cliente')
+      .replace(/{{fecha_salida_baq}}/g, outboundDateForMessage)
+      .replace(/{{fecha_retorno_cur}}/g, returnDateForMessage)
+      .replace(/{{fecha_limite_entrega}}/g, formattedDeadlineDate);
+  };
+
   const handleLoadMessages = () => {
     if (!customers || customers.length === 0) {
       toast({
@@ -100,10 +128,35 @@ export function CampaignNotificationsPanel() {
       return;
     }
 
+    if (!selectedOutboundTrip || !selectedReturnTrip || !deadlineDate) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todas las fechas antes de cargar los mensajes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const generatedMessages: PreparedMessage[] = customers.map(customer => ({
+      customer,
+      message: generatePersonalizedMessage(customer)
+    }));
+
     setLoadedCustomers(customers);
+    setPreparedMessages(generatedMessages);
+    
     toast({
       title: "Mensajes cargados",
-      description: `Se prepararon mensajes para ${customers.length} clientes`,
+      description: `Se prepararon mensajes personalizados para ${customers.length} clientes`,
+    });
+  };
+
+  const handleClearMessages = () => {
+    setLoadedCustomers([]);
+    setPreparedMessages([]);
+    toast({
+      title: "Mensajes limpiados",
+      description: "Se han eliminado todos los mensajes preparados",
     });
   };
 
@@ -136,7 +189,6 @@ export function CampaignNotificationsPanel() {
     });
   };
 
-  // Get the selected trip details for preview
   const selectedOutboundTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
   const selectedReturnTripDetails = availableReturnTrips.find(trip => trip.id === selectedReturnTrip);
   
@@ -167,7 +219,6 @@ export function CampaignNotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Configuración de fechas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="outbound-trip">Salida desde Barranquilla</Label>
@@ -224,7 +275,6 @@ export function CampaignNotificationsPanel() {
             </div>
           </div>
 
-          {/* Selector de plantilla */}
           <div className="space-y-2">
             <Label htmlFor="template-select">Plantilla de WhatsApp</Label>
             <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -239,26 +289,88 @@ export function CampaignNotificationsPanel() {
             </Select>
           </div>
 
-          {/* Botón para cargar mensajes */}
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={handleLoadMessages}
-              disabled={loadingCustomers}
-              className="flex items-center gap-2"
-              variant="outline"
-            >
-              <MessageSquare className="h-4 w-4" />
-              {loadingCustomers ? 'Cargando...' : 'Cargar Mensajes'}
-            </Button>
-            {loadedCustomers.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Users className="h-4 w-4" />
-                <span>{loadedCustomers.length} mensajes preparados</span>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleLoadMessages}
+                disabled={loadingCustomers}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {loadingCustomers ? 'Cargando...' : 'Cargar Mensajes'}
+              </Button>
+              {loadedCustomers.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Users className="h-4 w-4" />
+                  <span>{loadedCustomers.length} mensajes preparados</span>
+                </div>
+              )}
+            </div>
+            {preparedMessages.length > 0 && (
+              <Button
+                onClick={handleClearMessages}
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpiar Mensajes
+              </Button>
             )}
           </div>
 
-          {/* Editor de plantilla */}
+          {preparedMessages.length > 0 && (
+            <Card className="bg-green-50 border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <Package className="h-5 w-5" />
+                  Mensajes Preparados para Envío
+                  <Badge variant="outline" className="text-green-600 border-green-300">
+                    {preparedMessages.length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-green-600">
+                  Mensajes personalizados listos para ser enviados via WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {preparedMessages.map((item, index) => (
+                    <div
+                      key={item.customer.id || index}
+                      className="p-4 bg-white rounded border border-green-200"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-sm">
+                              {item.customer.name || 'Cliente'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-green-600 font-medium">
+                            📱 {item.customer.whatsapp_number || item.customer.phone}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="text-green-600">
+                          Listo
+                        </Badge>
+                      </div>
+                      
+                      <div className="mt-3 p-3 bg-gray-50 rounded text-xs border">
+                        <strong>Mensaje personalizado:</strong>
+                        <div className="mt-2 text-gray-700 whitespace-pre-line">
+                          {item.message}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="template">Mensaje de la Plantilla</Label>
@@ -291,7 +403,6 @@ export function CampaignNotificationsPanel() {
             )}
           </div>
 
-          {/* Información de variables */}
           <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
             <h4 className="font-medium text-blue-900 mb-2">Variables disponibles:</h4>
             <div className="text-sm text-blue-700 space-y-1">
@@ -302,28 +413,6 @@ export function CampaignNotificationsPanel() {
             </div>
           </div>
 
-          {/* Lista de clientes cargados */}
-          {loadedCustomers.length > 0 && (
-            <div className="p-4 bg-green-50 rounded-md border border-green-200">
-              <h4 className="font-medium text-green-900 mb-2">Clientes que recibirán la campaña:</h4>
-              <div className="max-h-32 overflow-y-auto">
-                <div className="text-sm text-green-700 space-y-1">
-                  {loadedCustomers.slice(0, 10).map((customer, index) => (
-                    <p key={customer.id}>
-                      {index + 1}. {customer.name} - {customer.phone}
-                    </p>
-                  ))}
-                  {loadedCustomers.length > 10 && (
-                    <p className="font-medium">
-                      ... y {loadedCustomers.length - 10} clientes más
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Botones de acción */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Users className="h-4 w-4" />

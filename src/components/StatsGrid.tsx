@@ -23,7 +23,7 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
   const stats = [
     {
       title: "Total Encomiendas",
-      value: packageStats?.total.toString() || "0",
+      value: (packageStats?.total ?? 0).toString(),
       change: "+12%",
       icon: Package,
       color: "text-black",
@@ -31,7 +31,7 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
     },
     {
       title: "Clientes Activos",
-      value: customersCount.toString(),
+      value: (customersCount ?? 0).toString(),
       change: "+8%",
       icon: Users,
       color: "text-black",
@@ -47,7 +47,7 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
     },
     {
       title: "Entregados",
-      value: packageStats?.delivered.toString() || "0",
+      value: (packageStats?.delivered ?? 0).toString(),
       change: "+15%",
       icon: TrendingUp,
       color: "text-black",

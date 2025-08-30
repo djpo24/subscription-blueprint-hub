@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { MainTabs } from '@/components/MainTabs';
@@ -126,27 +125,6 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
         <MainTabs 
           activeTab={activeTab} 
           onTabChange={setActiveTab}
-          unreadCount={unreadCount}
-          previewRole="employee"
-          packageStats={employeePackageStats}
-          customersCount={customersCount}
-          onNewPackage={handleNewPackage}
-          onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-          onViewNotifications={() => {}} 
-          onMobileDelivery={handleMobileDelivery}
-          packages={employeePackages}
-          filteredPackages={employeeFilteredPackages}
-          isLoading={isLoading}
-          onUpdate={handlePackagesUpdate}
-          disableChat={true}
-          viewingPackagesByDate={viewingPackagesByDate ? selectedDate : null}
-          trips={employeeTrips}
-          tripsLoading={tripsLoading}
-          onAddPackage={handleAddPackageToTrip}
-          onCreateTrip={handleCreateTripFromCalendar}
-          onViewPackagesByDate={handleViewPackagesByDate}
-          onBack={handleBackToCalendar}
-          selectedDate={selectedDate}
         />
 
         <DialogsContainer

@@ -81,6 +81,8 @@ export function MainTabs({
             isLoading={isLoading}
             onUpdate={onUpdate}
             disableChat={disableChat}
+            previewRole={previewRole}
+            onTabChange={onTabChange}
           />
         </TabsContent>
 
@@ -93,7 +95,8 @@ export function MainTabs({
             onCreateTrip={onCreateTrip}
             onViewPackagesByDate={onViewPackagesByDate}
             onBack={onBack}
-            selectedDate={selectedDate}
+            disableChat={disableChat}
+            previewRole={previewRole}
           />
         </TabsContent>
 

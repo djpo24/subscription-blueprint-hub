@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Megaphone, Send, Eye, Users, MessageSquare } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
 import { formatDateDisplay } from '@/utils/dateUtils';
+import { TripNotificationTestDialog } from '@/components/marketing/TripNotificationTestDialog';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
 
@@ -40,6 +40,7 @@ export function CampaignNotificationsPanel() {
   const [loadedCustomers, setLoadedCustomers] = useState<any[]>([]);
   const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
   const [availableReturnTrips, setAvailableReturnTrips] = useState<any[]>([]);
+  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
@@ -333,13 +334,28 @@ export function CampaignNotificationsPanel() {
                 }
               </span>
             </div>
-            <Button onClick={handleSendCampaign} className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              Enviar Campaña
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsTestDialogOpen(true)} 
+                className="flex items-center gap-2"
+              >
+                <TestTube className="h-4 w-4" />
+                Prueba
+              </Button>
+              <Button onClick={handleSendCampaign} className="flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                Enviar Campaña
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      <TripNotificationTestDialog 
+        isOpen={isTestDialogOpen}
+        onOpenChange={setIsTestDialogOpen}
+      />
     </div>
   );
 }

@@ -1,14 +1,15 @@
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardTab } from './tabs/DashboardTab';
 import { TripsTab } from './tabs/TripsTab';
 import { DispatchesTab } from './tabs/DispatchesTab';
 import { NotificationsTab } from './tabs/NotificationsTab';
 import { FinancesTab } from './tabs/FinancesTab';
-import { CustomersTab } from './tabs/CustomersTab';
-import { DeveloperTab } from './tabs/DeveloperTab';
-import { AdminInvestigationTab } from './tabs/AdminInvestigationTab';
+import { StatsTab } from './tabs/StatsTab';
 import { ChatTab } from './tabs/ChatTab';
+import { FlightsTab } from './tabs/FlightsTab';
+import { CustomersTab } from './tabs/CustomersTab';
+import { SettingsTab } from './tabs/SettingsTab';
 
 interface MainTabsProps {
   activeTab: string;
@@ -66,46 +67,77 @@ export function MainTabs({
         <TabsTrigger value="dispatches">Despachos</TabsTrigger>
         <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
         <TabsTrigger value="finances">Finanzas</TabsTrigger>
-        <TabsTrigger value="customers">Clientes</TabsTrigger>
+        <TabsTrigger value="stats">Estadísticas</TabsTrigger>
         <TabsTrigger value="chat">Chat</TabsTrigger>
-        <TabsTrigger value="developer">Developer</TabsTrigger>
-        <TabsTrigger value="admin-investigation">Admin</TabsTrigger>
+        <TabsTrigger value="flights">Vuelos</TabsTrigger>
+        <TabsTrigger value="customers">Clientes</TabsTrigger>
+        <TabsTrigger value="settings">Configuración</TabsTrigger>
       </TabsList>
       
       <div className="flex-1 min-h-0">
-        <DashboardTab
-          packageStats={packageStats}
-          customersCount={customersCount}
-          onNewPackage={onNewPackage}
-          onNewTrip={onNewTrip}
-          onViewNotifications={onViewNotifications}
-          onMobileDelivery={onMobileDelivery}
-          packages={packages}
-          filteredPackages={filteredPackages}
-          isLoading={isLoading}
-          onUpdate={onUpdate}
-          disableChat={disableChat}
-          previewRole={previewRole}
-          onTabChange={onTabChange}
-        />
-        <TripsTab
-          viewingPackagesByDate={viewingPackagesByDate}
-          trips={trips}
-          tripsLoading={tripsLoading}
-          onAddPackage={onAddPackage}
-          onCreateTrip={onCreateTrip}
-          onViewPackagesByDate={onViewPackagesByDate}
-          onBack={onBack}
-          disableChat={disableChat}
-          previewRole={previewRole}
-        />
-        <DispatchesTab />
-        <NotificationsTab />
-        <FinancesTab />
-        <CustomersTab />
-        <ChatTab />
-        <DeveloperTab />
-        <AdminInvestigationTab />
+        <TabsContent value="dashboard" className="h-full">
+          <DashboardTab
+            packageStats={packageStats}
+            customersCount={customersCount}
+            onNewPackage={onNewPackage}
+            onNewTrip={onNewTrip}
+            onViewNotifications={onViewNotifications}
+            onMobileDelivery={onMobileDelivery}
+            packages={packages}
+            filteredPackages={filteredPackages}
+            isLoading={isLoading}
+            onUpdate={onUpdate}
+            disableChat={disableChat}
+            previewRole={previewRole}
+            onTabChange={onTabChange}
+          />
+        </TabsContent>
+        
+        <TabsContent value="trips" className="h-full">
+          <TripsTab
+            viewingPackagesByDate={viewingPackagesByDate}
+            trips={trips}
+            tripsLoading={tripsLoading}
+            onAddPackage={onAddPackage}
+            onCreateTrip={onCreateTrip}
+            onViewPackagesByDate={onViewPackagesByDate}
+            onBack={onBack}
+            disableChat={disableChat}
+            previewRole={previewRole}
+          />
+        </TabsContent>
+        
+        <TabsContent value="dispatches" className="h-full">
+          <DispatchesTab />
+        </TabsContent>
+        
+        <TabsContent value="notifications" className="h-full">
+          <NotificationsTab />
+        </TabsContent>
+        
+        <TabsContent value="finances" className="h-full">
+          <FinancesTab />
+        </TabsContent>
+        
+        <TabsContent value="stats" className="h-full">
+          <StatsTab />
+        </TabsContent>
+        
+        <TabsContent value="chat" className="h-full">
+          <ChatTab />
+        </TabsContent>
+        
+        <TabsContent value="flights" className="h-full">
+          <FlightsTab />
+        </TabsContent>
+        
+        <TabsContent value="customers" className="h-full">
+          <CustomersTab />
+        </TabsContent>
+        
+        <TabsContent value="settings" className="h-full">
+          <SettingsTab />
+        </TabsContent>
       </div>
     </Tabs>
   );

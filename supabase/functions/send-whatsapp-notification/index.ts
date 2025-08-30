@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -327,11 +328,10 @@ serve(async (req) => {
           }
         ]
       } else if (autoSelectedTemplate === 'proximos_viajes') {
-        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - NOMBRES EXACTOS DE LA CONFIGURACIÓN');
+        console.log('🚀 CONFIGURANDO PLANTILLA PROXIMOS_VIAJES - ESTRUCTURA COMPLETA');
         console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
         
         if (templateParameters) {
-          // SOLUCIÓN DEFINITIVA: Usar EXACTAMENTE los nombres de la plantilla configurada
           const customerName = templateParameters.customerName || 'Cliente'
           let outboundDate = templateParameters.outboundDate || 'N/A'
           let returnDate = templateParameters.returnDate || 'N/A'
@@ -366,20 +366,25 @@ serve(async (req) => {
             deadlineDate
           });
 
-          // CORRECCIÓN FINAL: Usar EXACTAMENTE los nombres que aparecen en la configuración de WhatsApp
+          // CONFIGURACIÓN COMPLETA: Incluir header y body components
           templatePayload.template.components = [
+            {
+              type: 'header',
+              parameters: [
+                { type: 'text', text: customerName }  // Para el header {{1}}
+              ]
+            },
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: customerName },    // Para {{nombre_cliente}}
-                { type: 'text', text: outboundDate },    // Para {{fecha_salida_baq}}
-                { type: 'text', text: returnDate },      // Para {{fecha_retorno_cur}}
-                { type: 'text', text: deadlineDate }     // Para {{fecha_limite_entrega}}
+                { type: 'text', text: outboundDate },    // Para {{1}} en body
+                { type: 'text', text: returnDate },      // Para {{2}} en body
+                { type: 'text', text: deadlineDate }     // Para {{3}} en body
               ]
             }
           ]
 
-          console.log('✅ CORRECCIÓN FINAL - Proximos viajes template con nombres exactos de la configuración')
+          console.log('✅ CONFIGURACIÓN COMPLETA - Proximos viajes template con header y body')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');
@@ -400,7 +405,7 @@ serve(async (req) => {
       }
 
       whatsappPayload = templatePayload
-      console.log('📤 PAYLOAD FINAL CON NOMBRES EXACTOS para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
+      console.log('📤 PAYLOAD FINAL CON ESTRUCTURA COMPLETA para WhatsApp:', JSON.stringify(whatsappPayload, null, 2));
     } else if (imageUrl) {
       // Send image with optional text caption
       whatsappPayload = {

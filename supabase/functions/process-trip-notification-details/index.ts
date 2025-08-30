@@ -47,14 +47,10 @@ serve(async (req) => {
     if (mode === 'prepare') {
       console.log('📋 PREPARE MODE: Generating individual trip notification messages...');
       
-      // Get notification details
+      // Get notification details (sin JOIN directo)
       const { data: notification, error: notificationError } = await supabase
         .from('trip_notifications')
-        .select(`
-          *,
-          outbound_trip:outbound_trip_id(trip_date, origin, destination, flight_number),
-          return_trip:return_trip_id(trip_date, origin, destination, flight_number)
-        `)
+        .select('*')
         .eq('id', tripNotificationId)
         .single();
 
@@ -62,11 +58,52 @@ serve(async (req) => {
         console.error('❌ Error fetching notification:', notificationError);
         return new Response(JSON.stringify({ 
           success: false,
-          error: 'Notification not found' 
+          error: 'Notification not found: ' + (notificationError?.message || 'Not found')
         }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      console.log('📋 Notification found:', {
+        id: notification.id,
+        template_name: notification.template_name,
+        outbound_trip_id: notification.outbound_trip_id,
+        return_trip_id: notification.return_trip_id
+      });
+
+      // Get outbound trip details separately
+      let outboundTrip = null;
+      if (notification.outbound_trip_id) {
+        const { data: outboundData, error: outboundError } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination, flight_number')
+          .eq('id', notification.outbound_trip_id)
+          .single();
+
+        if (outboundError) {
+          console.error('❌ Error fetching outbound trip:', outboundError);
+        } else {
+          outboundTrip = outboundData;
+          console.log('✅ Outbound trip found:', outboundTrip);
+        }
+      }
+
+      // Get return trip details separately
+      let returnTrip = null;
+      if (notification.return_trip_id) {
+        const { data: returnData, error: returnError } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination, flight_number')
+          .eq('id', notification.return_trip_id)
+          .single();
+
+        if (returnError) {
+          console.error('❌ Error fetching return trip:', returnError);
+        } else {
+          returnTrip = returnData;
+          console.log('✅ Return trip found:', returnTrip);
+        }
       }
 
       // Get all customers
@@ -97,13 +134,13 @@ serve(async (req) => {
           continue;
         }
 
-        // Generate personalized message
+        // Generate personalized message using the database function
         const { data: messageResult, error: messageError } = await supabase
           .rpc('generate_trip_notification_message', {
             customer_name_param: customer.name,
             template_param: notification.message_template || '',
-            outbound_date: notification.outbound_trip?.trip_date || null,
-            return_date: notification.return_trip?.trip_date || null,
+            outbound_date: outboundTrip?.trip_date || null,
+            return_date: returnTrip?.trip_date || null,
             deadline_date: notification.deadline_date || null
           });
 
@@ -111,6 +148,8 @@ serve(async (req) => {
           console.error('❌ Error generating message for', customer.name, ':', messageError);
           continue;
         }
+
+        console.log(`📝 Generated message for ${customer.name}:`, messageResult?.substring(0, 100) + '...');
 
         // Create/update log entry
         const { error: logError } = await supabase
@@ -170,9 +209,40 @@ serve(async (req) => {
       let executed = 0;
       let failed = 0;
 
+      // Get notification details for template parameters
+      const { data: notification } = await supabase
+        .from('trip_notifications')
+        .select('*')
+        .eq('id', tripNotificationId)
+        .single();
+
+      // Get trip details for template parameters
+      let outboundTrip = null;
+      let returnTrip = null;
+      
+      if (notification?.outbound_trip_id) {
+        const { data } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination')
+          .eq('id', notification.outbound_trip_id)
+          .single();
+        outboundTrip = data;
+      }
+
+      if (notification?.return_trip_id) {
+        const { data } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination')
+          .eq('id', notification.return_trip_id)
+          .single();
+        returnTrip = data;
+      }
+
       // Send each prepared notification
       for (const notificationLog of preparedNotifications || []) {
         try {
+          console.log(`📤 Sending WhatsApp message to ${notificationLog.customer_name}...`);
+
           const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
               notificationId: notificationLog.id,
@@ -184,23 +254,54 @@ serve(async (req) => {
               templateLanguage: notificationLog.template_language || 'es_CO',
               templateParameters: {
                 customerName: notificationLog.customer_name,
-                outboundDate: new Date().toISOString().split('T')[0], // This should come from notification
-                returnDate: new Date().toISOString().split('T')[0], // This should come from notification
-                deadlineDate: new Date().toISOString().split('T')[0] // This should come from notification
+                outboundDate: outboundTrip?.trip_date || 'N/A',
+                returnDate: returnTrip?.trip_date || 'N/A',
+                deadlineDate: notification?.deadline_date || 'N/A'
               }
             }
           });
 
           if (whatsappError || !whatsappResult?.success) {
-            console.error(`❌ Failed to send to ${notificationLog.customer_name}:`, whatsappError);
+            console.error(`❌ Failed to send to ${notificationLog.customer_name}:`, whatsappError || whatsappResult?.error);
+            
+            // Update status to failed
+            await supabase
+              .from('trip_notification_log')
+              .update({
+                status: 'failed',
+                error_message: whatsappError?.message || whatsappResult?.error || 'Unknown error'
+              })
+              .eq('id', notificationLog.id);
+            
             failed++;
           } else {
             console.log(`✅ Successfully sent to ${notificationLog.customer_name}`);
+            
+            // Update status to sent
+            await supabase
+              .from('trip_notification_log')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                whatsapp_message_id: whatsappResult.whatsappMessageId || null
+              })
+              .eq('id', notificationLog.id);
+            
             executed++;
           }
 
         } catch (error) {
           console.error(`❌ Error processing ${notificationLog.customer_name}:`, error);
+          
+          // Update status to failed
+          await supabase
+            .from('trip_notification_log')
+            .update({
+              status: 'failed',
+              error_message: error.message
+            })
+            .eq('id', notificationLog.id);
+          
           failed++;
         }
       }
@@ -240,10 +341,39 @@ serve(async (req) => {
       let executed = 0;
       let failed = 0;
 
+      // Get notification and trip details for template parameters
+      const { data: notification } = await supabase
+        .from('trip_notifications')
+        .select('*')
+        .eq('id', tripNotificationId)
+        .single();
+
+      let outboundTrip = null;
+      let returnTrip = null;
+      
+      if (notification?.outbound_trip_id) {
+        const { data } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination')
+          .eq('id', notification.outbound_trip_id)
+          .single();
+        outboundTrip = data;
+      }
+
+      if (notification?.return_trip_id) {
+        const { data } = await supabase
+          .from('trips')
+          .select('trip_date, origin, destination')
+          .eq('id', notification.return_trip_id)
+          .single();
+        returnTrip = data;
+      }
+
       // Retry each failed notification
       for (const notificationLog of failedNotifications || []) {
         try {
           retried++;
+          console.log(`🔄 Retrying WhatsApp message to ${notificationLog.customer_name}...`);
           
           const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
@@ -256,18 +386,30 @@ serve(async (req) => {
               templateLanguage: notificationLog.template_language || 'es_CO',
               templateParameters: {
                 customerName: notificationLog.customer_name,
-                outboundDate: new Date().toISOString().split('T')[0],
-                returnDate: new Date().toISOString().split('T')[0],
-                deadlineDate: new Date().toISOString().split('T')[0]
+                outboundDate: outboundTrip?.trip_date || 'N/A',
+                returnDate: returnTrip?.trip_date || 'N/A',
+                deadlineDate: notification?.deadline_date || 'N/A'
               }
             }
           });
 
           if (whatsappError || !whatsappResult?.success) {
-            console.error(`❌ Retry failed for ${notificationLog.customer_name}:`, whatsappError);
+            console.error(`❌ Retry failed for ${notificationLog.customer_name}:`, whatsappError || whatsappResult?.error);
             failed++;
           } else {
             console.log(`✅ Retry successful for ${notificationLog.customer_name}`);
+            
+            // Update status to sent
+            await supabase
+              .from('trip_notification_log')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                whatsapp_message_id: whatsappResult.whatsappMessageId || null,
+                error_message: null
+              })
+              .eq('id', notificationLog.id);
+            
             executed++;
           }
 

@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 export interface MetaDiagnosticResult {
   success: boolean;
@@ -8,100 +7,149 @@ export interface MetaDiagnosticResult {
   details?: any;
 }
 
-export async function testMetaConnection(): Promise<{
+interface DiagnosticResults {
   tokenValidation: MetaDiagnosticResult;
   phoneValidation: MetaDiagnosticResult;
   connectivity: MetaDiagnosticResult;
-}> {
-  console.log('🔍 Starting Meta diagnostics...');
+}
+
+export async function testMetaConnection(): Promise<DiagnosticResults> {
+  console.log('🔍 Starting Meta connectivity diagnostics...');
+
+  const results: DiagnosticResults = {
+    tokenValidation: { success: false, message: 'No probado' },
+    phoneValidation: { success: false, message: 'No probado' },
+    connectivity: { success: false, message: 'No probado' }
+  };
 
   try {
-    // Test token validation
-    const { data: tokenResult } = await supabase.functions.invoke('validate-meta-connection', {
-      body: { testType: 'token_validation' }
-    });
+    // Get Meta credentials
+    const { data: tokenData } = await supabase.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_TOKEN' });
+    const { data: phoneData } = await supabase.rpc('get_app_secret', { secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' });
+    
+    const token = tokenData;
+    const phoneNumberId = phoneData;
 
-    // Test phone number validation
-    const { data: phoneResult } = await supabase.functions.invoke('validate-meta-connection', {
-      body: { testType: 'phone_number_validation' }
-    });
+    // Test 1: Token validation
+    if (!token) {
+      results.tokenValidation = {
+        success: false,
+        message: 'Token no encontrado en los secretos'
+      };
+    } else if (token.length < 100) {
+      results.tokenValidation = {
+        success: false,
+        message: 'Token parece ser demasiado corto (posiblemente inválido)'
+      };
+    } else {
+      results.tokenValidation = {
+        success: true,
+        message: 'Token encontrado y con formato válido'
+      };
+    }
 
-    // Test general connectivity
-    const { data: connectivityResult } = await supabase.functions.invoke('validate-meta-connection', {
-      body: { testType: 'connectivity_test' }
-    });
+    // Test 2: Phone Number ID validation
+    if (!phoneNumberId) {
+      results.phoneValidation = {
+        success: false,
+        message: 'Phone Number ID no encontrado'
+      };
+    } else if (!/^\d+$/.test(phoneNumberId)) {
+      results.phoneValidation = {
+        success: false,
+        message: 'Phone Number ID tiene formato inválido (debe ser solo números)'
+      };
+    } else {
+      results.phoneValidation = {
+        success: true,
+        message: 'Phone Number ID válido'
+      };
+    }
 
-    console.log('📊 Meta diagnostics results:', {
-      tokenResult,
-      phoneResult,
-      connectivityResult
-    });
+    // Test 3: Connectivity test (try to get WhatsApp Business Account info)
+    if (token && phoneNumberId) {
+      try {
+        const response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}?fields=verified_name,display_phone_number,quality_rating&access_token=${token}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          results.connectivity = {
+            success: true,
+            message: `Conectividad exitosa - ${data.verified_name || 'Nombre no verificado'}`,
+            details: data
+          };
+        } else {
+          const errorData = await response.json();
+          results.connectivity = {
+            success: false,
+            message: `Error ${response.status}: ${errorData.error?.message || 'Error desconocido'}`,
+            details: errorData
+          };
+        }
+      } catch (error) {
+        results.connectivity = {
+          success: false,
+          message: `Error de red: ${error.message}`,
+          details: error
+        };
+      }
+    } else {
+      results.connectivity = {
+        success: false,
+        message: 'No se puede probar conectividad sin token y Phone Number ID válidos'
+      };
+    }
 
-    return {
-      tokenValidation: tokenResult || { success: false, message: 'No response from server' },
-      phoneValidation: phoneResult || { success: false, message: 'No response from server' },
-      connectivity: connectivityResult || { success: false, message: 'No response from server' }
-    };
   } catch (error) {
-    console.error('❌ Error running Meta diagnostics:', error);
-    const errorResult = { success: false, message: 'Error running diagnostics: ' + error.message };
+    console.error('❌ Error in diagnostics:', error);
     return {
-      tokenValidation: errorResult,
-      phoneValidation: errorResult,
-      connectivity: errorResult
+      tokenValidation: { success: false, message: 'Error al obtener credenciales' },
+      phoneValidation: { success: false, message: 'Error al obtener credenciales' },
+      connectivity: { success: false, message: 'Error al obtener credenciales' }
     };
   }
+
+  return results;
 }
 
 export async function testAudioUrl(audioUrl: string): Promise<MetaDiagnosticResult> {
   console.log('🎵 Testing audio URL:', audioUrl);
-  
-  try {
-    // First, try to fetch with CORS
-    const response = await fetch(audioUrl, {
-      method: 'HEAD',
-      mode: 'cors'
-    });
 
-    if (response.ok) {
+  try {
+    // Validate URL format
+    if (!audioUrl.includes('lookaside.fbsbx.com') && !audioUrl.includes('scontent')) {
+      return {
+        success: false,
+        message: 'URL no parece ser de Meta/WhatsApp (debe contener lookaside.fbsbx.com o scontent)'
+      };
+    }
+
+    // Test direct access (will likely fail due to CORS)
+    try {
+      const response = await fetch(audioUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors'
+      });
+      
       return {
         success: true,
-        message: 'Audio URL is accessible',
-        details: {
-          status: response.status,
-          contentType: response.headers.get('content-type'),
-          contentLength: response.headers.get('content-length')
-        }
+        message: 'URL accesible directamente (inusual)',
+        details: { status: response.status, type: response.type }
       };
-    } else {
+    } catch (corsError) {
+      // Expected CORS error
       return {
         success: false,
-        message: `HTTP ${response.status}: ${response.statusText}`,
-        details: { status: response.status, statusText: response.statusText }
+        message: 'Error CORS esperado - se requiere proxy del servidor para acceder',
+        details: { error: corsError.message, recommendation: 'Usar proxy de servidor' }
       };
     }
+
   } catch (error) {
-    console.error('❌ Error testing audio URL:', error);
-    
-    // Try to determine the specific error
-    if (error.message.includes('CORS')) {
-      return {
-        success: false,
-        message: 'CORS policy blocked the request - audio URLs from Meta require server-side proxy',
-        details: { error: error.message }
-      };
-    } else if (error.message.includes('network')) {
-      return {
-        success: false,
-        message: 'Network error - check internet connection',
-        details: { error: error.message }
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Failed to access audio URL',
-        details: { error: error.message }
-      };
-    }
+    return {
+      success: false,
+      message: `Error al probar URL: ${error.message}`,
+      details: error
+    };
   }
 }

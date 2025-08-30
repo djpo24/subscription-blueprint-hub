@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, Download } from 'lucide-react';
+import { Play, Pause, Volume2, Download, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,62 +16,123 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [proxiedUrl, setProxiedUrl] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
+  const maxRetries = 2;
+
   useEffect(() => {
-    const setupAudio = async () => {
-      if (!audioUrl) return;
+    setupAudio();
+    
+    // Cleanup blob URL when component unmounts or URL changes
+    return () => {
+      if (proxiedUrl) {
+        URL.revokeObjectURL(proxiedUrl);
+      }
+    };
+  }, [audioUrl, retryCount]);
 
-      console.log('🎵 Setting up audio for URL:', audioUrl);
-      setIsLoading(true);
-      setHasError(false);
+  const setupAudio = async () => {
+    if (!audioUrl) return;
 
-      try {
-        // Try to get proxied URL from our server
-        console.log('🔄 Requesting proxied audio...');
-        const { data, error } = await supabase.functions.invoke('whatsapp-audio-proxy', {
-          body: { audioUrl }
+    console.log('🎵 Setting up audio for URL:', audioUrl);
+    console.log('🔄 Retry attempt:', retryCount);
+    
+    setIsLoading(true);
+    setHasError(false);
+    setErrorMessage('');
+
+    try {
+      // Clean up previous blob URL
+      if (proxiedUrl) {
+        URL.revokeObjectURL(proxiedUrl);
+        setProxiedUrl('');
+      }
+
+      console.log('🔄 Requesting proxied audio...');
+      const { data, error } = await supabase.functions.invoke('whatsapp-audio-proxy', {
+        body: { audioUrl }
+      });
+
+      if (error) {
+        console.error('❌ Error getting proxied audio:', error);
+        throw new Error(`Error del proxy: ${error.message}`);
+      }
+
+      // Check if response is error JSON
+      if (data && typeof data === 'object' && data.error) {
+        console.error('❌ Proxy returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Validate that we received binary data
+      if (!data || !(data instanceof ArrayBuffer)) {
+        console.error('❌ Invalid audio data received:', typeof data);
+        throw new Error('Datos de audio inválidos recibidos del servidor');
+      }
+
+      console.log('✅ Audio data received, size:', data.byteLength, 'bytes');
+
+      if (data.byteLength === 0) {
+        throw new Error('El archivo de audio está vacío');
+      }
+
+      // Create blob URL from the binary data
+      const audioBlob = new Blob([data], { type: 'audio/ogg' });
+      const blobUrl = URL.createObjectURL(audioBlob);
+      setProxiedUrl(blobUrl);
+      
+      console.log('✅ Audio blob created successfully');
+      setIsLoading(false);
+
+    } catch (error) {
+      console.error('❌ Setup audio error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      setErrorMessage(errorMsg);
+      setHasError(true);
+      setIsLoading(false);
+      
+      // Show different toast messages based on error type
+      if (errorMsg.includes('404') || errorMsg.includes('expirado')) {
+        toast({
+          title: "Audio no disponible",
+          description: "La URL del audio ha expirado. Solicita el audio nuevamente.",
+          variant: "destructive"
         });
-
-        if (error) {
-          console.error('❌ Error getting proxied audio:', error);
-          throw new Error('Error al obtener audio: ' + error.message);
-        }
-
-        if (data && data.error) {
-          console.error('❌ Proxy returned error:', data.error);
-          throw new Error(data.error);
-        }
-
-        // Create blob URL from the response
-        const audioBlob = new Blob([data], { type: 'audio/ogg' });
-        const blobUrl = URL.createObjectURL(audioBlob);
-        setProxiedUrl(blobUrl);
-        
-        console.log('✅ Audio blob created successfully');
-
-      } catch (error) {
-        console.error('❌ Setup audio error:', error);
-        setHasError(true);
+      } else if (errorMsg.includes('token') || errorMsg.includes('401') || errorMsg.includes('403')) {
+        toast({
+          title: "Error de autenticación",
+          description: "Token de WhatsApp inválido. Contacta al administrador.",
+          variant: "destructive"
+        });
+      } else {
         toast({
           title: "Error de audio",
           description: "No se pudo cargar el audio. Verifica tu conexión.",
           variant: "destructive"
         });
       }
-    };
+    }
+  };
 
-    setupAudio();
-
-    // Cleanup blob URL when component unmounts
-    return () => {
-      if (proxiedUrl) {
-        URL.revokeObjectURL(proxiedUrl);
-      }
-    };
-  }, [audioUrl, toast]);
+  const handleRetry = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      toast({
+        title: "Reintentando...",
+        description: `Intento ${retryCount + 2} de ${maxRetries + 1}`
+      });
+    } else {
+      toast({
+        title: "Máximo de intentos alcanzado",
+        description: "No se pudo cargar el audio después de varios intentos",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -81,7 +142,6 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
-      setIsLoading(false);
       setHasError(false);
       console.log('✅ Audio metadata loaded, duration:', audio.duration);
     };
@@ -98,8 +158,8 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
 
     const handleError = (e: Event) => {
       console.error('❌ Audio element error:', e);
-      setIsLoading(false);
       setHasError(true);
+      setErrorMessage('Error al reproducir el audio');
       toast({
         title: "Error de reproducción",
         description: "No se pudo reproducir el audio.",
@@ -108,7 +168,6 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
     };
 
     const handleCanPlay = () => {
-      setIsLoading(false);
       setHasError(false);
       console.log('✅ Audio ready to play');
     };
@@ -127,7 +186,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
     } catch (error) {
       console.error('❌ Error setting audio source:', error);
       setHasError(true);
-      setIsLoading(false);
+      setErrorMessage('Error al configurar el audio');
     }
 
     return () => {
@@ -157,6 +216,7 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
     } catch (error) {
       console.error('❌ Error playing audio:', error);
       setHasError(true);
+      setErrorMessage('Error al reproducir el audio');
       toast({
         title: "Error de reproducción",
         description: "No se pudo reproducir el audio.",
@@ -179,7 +239,6 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
       console.log('📥 Downloading audio...');
       
       if (proxiedUrl) {
-        // Use the proxied URL for download
         const link = document.createElement('a');
         link.href = proxiedUrl;
         link.download = `audio_${Date.now()}.ogg`;
@@ -216,13 +275,27 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
   if (hasError) {
     return (
       <div className={`flex items-center space-x-3 p-3 border rounded-lg bg-red-50 border-red-200 ${className}`}>
-        <div className="text-red-600 text-sm flex-1">
-          Error al cargar audio - Intenta descargarlo
+        <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-red-600 text-sm font-medium">Error al cargar audio</div>
+          <div className="text-red-500 text-xs truncate">{errorMessage}</div>
         </div>
+        {retryCount < maxRetries && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRetry}
+            className="h-8 w-8 p-0 shrink-0"
+            title="Reintentar"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
           onClick={downloadAudio}
+          disabled={!proxiedUrl}
           className="h-8 w-8 p-0 shrink-0"
           title="Descargar audio"
         >
@@ -259,6 +332,11 @@ export function AudioPlayer({ audioUrl, className = '' }: AudioPlayerProps) {
           <span className="text-xs text-gray-600 whitespace-nowrap">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
+          {retryCount > 0 && (
+            <span className="text-xs text-orange-600">
+              (Intento {retryCount + 1})
+            </span>
+          )}
         </div>
         
         <input

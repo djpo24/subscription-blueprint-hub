@@ -20,10 +20,15 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
   // Usar el estado correcto 'transito' o fallback a 'inTransit'
   const inTransitCount = packageStats?.transito || packageStats?.inTransit || 0;
   
+  // Helper function to safely convert to string
+  const safeToString = (value: number | undefined): string => {
+    return (value ?? 0).toString();
+  };
+  
   const stats = [
     {
       title: "Total Encomiendas",
-      value: packageStats?.total.toString() || "0",
+      value: safeToString(packageStats?.total),
       change: "+12%",
       icon: Package,
       color: "text-black",
@@ -47,7 +52,7 @@ export function StatsGrid({ packageStats, customersCount, onStatClick }: StatsGr
     },
     {
       title: "Entregados",
-      value: packageStats?.delivered.toString() || "0",
+      value: safeToString(packageStats?.delivered),
       change: "+15%",
       icon: TrendingUp,
       color: "text-black",

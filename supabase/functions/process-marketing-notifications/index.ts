@@ -57,7 +57,7 @@ serve(async (req) => {
         });
       }
 
-      // Get all customers
+      // Get all customers with their phone numbers
       const { data: customers, error: customersError } = await supabase
         .from('customers')
         .select('id, name, phone, whatsapp_number')
@@ -74,7 +74,10 @@ serve(async (req) => {
         });
       }
 
+      console.log(`📊 Found ${customers?.length || 0} customers to process`);
+
       let prepared = 0;
+      let skipped = 0;
 
       // Generate personalized messages for each customer
       for (const customer of customers || []) {
@@ -82,50 +85,63 @@ serve(async (req) => {
         
         if (!phone) {
           console.log(`⚠️ Skipping customer ${customer.name} - no phone number`);
+          skipped++;
           continue;
         }
 
-        // Generate personalized message using the database function
-        const { data: messageResult, error: messageError } = await supabase
-          .rpc('generate_marketing_message_with_rates', {
-            customer_name_param: customer.name,
-            template_param: message_template,
-            start_date: trip_start_date,
-            end_date: trip_end_date
-          });
+        console.log(`📝 Processing customer: ${customer.name} (${phone})`);
 
-        if (messageError) {
-          console.error('❌ Error generating message for', customer.name, ':', messageError);
+        try {
+          // Generate personalized message using the database function
+          const { data: messageResult, error: messageError } = await supabase
+            .rpc('generate_marketing_message_with_rates', {
+              customer_name_param: customer.name,
+              template_param: message_template,
+              start_date: trip_start_date,
+              end_date: trip_end_date
+            });
+
+          if (messageError) {
+            console.error('❌ Error generating message for', customer.name, ':', messageError);
+            continue;
+          }
+
+          const generatedMessage = messageResult || `Hola ${customer.name}! Tenemos próximos viajes programados. ¡Contáctanos para más información!`;
+          
+          console.log(`✅ Generated message for ${customer.name} (${generatedMessage.length} chars)`);
+
+          // Create log entry in marketing_message_log
+          const { error: logError } = await supabase
+            .from('marketing_message_log')
+            .insert({
+              customer_name: customer.name,
+              customer_phone: phone,
+              message_content: generatedMessage,
+              status: 'prepared',
+              campaign_name: campaign_name,
+              created_at: new Date().toISOString()
+            });
+
+          if (logError) {
+            console.error('❌ Error creating marketing message log for', customer.name, ':', logError);
+            continue;
+          }
+
+          prepared++;
+          console.log(`✅ Successfully prepared message for ${customer.name}`);
+
+        } catch (error) {
+          console.error(`❌ Error processing customer ${customer.name}:`, error);
           continue;
         }
-
-        console.log(`📝 Generated message for ${customer.name}:`, messageResult?.substring(0, 100) + '...');
-
-        // Create log entry
-        const { error: logError } = await supabase
-          .from('marketing_message_log')
-          .insert({
-            customer_name: customer.name,
-            customer_phone: phone,
-            message_content: messageResult || 'Generated message',
-            status: 'prepared',
-            campaign_name: campaign_name,
-            created_at: new Date().toISOString()
-          });
-
-        if (logError) {
-          console.error('❌ Error creating marketing message log for', customer.name, ':', logError);
-          continue;
-        }
-
-        prepared++;
       }
 
-      console.log(`✅ Prepared ${prepared} marketing notifications`);
+      console.log(`✅ Preparation completed: ${prepared} prepared, ${skipped} skipped`);
 
       return new Response(JSON.stringify({
         success: true,
-        prepared
+        prepared,
+        skipped
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -137,18 +153,21 @@ serve(async (req) => {
       const { data: preparedNotifications, error: fetchError } = await supabase
         .from('marketing_message_log')
         .select('*')
-        .eq('status', 'prepared');
+        .eq('status', 'prepared')
+        .order('created_at', { ascending: true });
 
       if (fetchError) {
         console.error('❌ Error fetching prepared notifications:', fetchError);
         return new Response(JSON.stringify({ 
           success: false,
-          error: 'Error fetching prepared notifications' 
+          error: 'Error fetching prepared notifications: ' + fetchError.message 
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      console.log(`📊 Found ${preparedNotifications?.length || 0} prepared notifications to send`);
 
       let executed = 0;
       let failed = 0;
@@ -156,7 +175,7 @@ serve(async (req) => {
       // Send each prepared notification
       for (const notification of preparedNotifications || []) {
         try {
-          console.log(`📤 Sending WhatsApp message to ${notification.customer_name}...`);
+          console.log(`📤 Sending WhatsApp message to ${notification.customer_name} (${notification.customer_phone})...`);
 
           const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
@@ -203,12 +222,15 @@ serve(async (req) => {
             .from('marketing_message_log')
             .update({
               status: 'failed',
-              error_message: error.message
+              error_message: error.message || 'Unknown error occurred'
             })
             .eq('id', notification.id);
           
           failed++;
         }
+
+        // Add a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       console.log(`✅ Execution completed: ${executed} sent, ${failed} failed`);
@@ -228,18 +250,21 @@ serve(async (req) => {
       const { data: failedNotifications, error: fetchError } = await supabase
         .from('marketing_message_log')
         .select('*')
-        .eq('status', 'failed');
+        .eq('status', 'failed')
+        .order('created_at', { ascending: true });
 
       if (fetchError) {
         console.error('❌ Error fetching failed notifications:', fetchError);
         return new Response(JSON.stringify({ 
           success: false,
-          error: 'Error fetching failed notifications' 
+          error: 'Error fetching failed notifications: ' + fetchError.message 
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      console.log(`📊 Found ${failedNotifications?.length || 0} failed notifications to retry`);
 
       let retried = 0;
       let executed = 0;
@@ -249,7 +274,7 @@ serve(async (req) => {
       for (const notification of failedNotifications || []) {
         try {
           retried++;
-          console.log(`🔄 Retrying WhatsApp message to ${notification.customer_name}...`);
+          console.log(`🔄 Retrying WhatsApp message to ${notification.customer_name} (${notification.customer_phone})...`);
           
           const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
@@ -283,6 +308,9 @@ serve(async (req) => {
           console.error(`❌ Error retrying ${notification.customer_name}:`, error);
           failed++;
         }
+
+        // Add a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       console.log(`✅ Retry completed: ${retried} retried, ${executed} successful, ${failed} failed`);
@@ -310,7 +338,7 @@ serve(async (req) => {
     console.error('❌ Error in process-marketing-notifications function:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message,
+      error: error.message || 'Unknown error occurred',
       stack: error.stack
     }), {
       status: 500,

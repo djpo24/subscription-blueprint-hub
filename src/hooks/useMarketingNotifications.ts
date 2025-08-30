@@ -14,6 +14,7 @@ interface MarketingNotificationLog {
   created_at: string;
   sent_at: string | null;
   whatsapp_message_id: string | null;
+  campaign_name: string | null;
 }
 
 export function useMarketingNotifications() {
@@ -32,25 +33,37 @@ export function useMarketingNotifications() {
   const fetchMarketingNotifications = async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 Fetching marketing notifications...');
+      
       const { data, error } = await supabase
         .from('marketing_message_log')
         .select('*')
         .in('status', ['pending', 'prepared', 'failed'])
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching notifications:', error);
+        throw error;
+      }
 
       const logs = data || [];
+      console.log(`📊 Found ${logs.length} notifications`);
       
       const validStatuses = ['pending', 'prepared', 'sent', 'failed'];
       const typedLogs = logs.filter(log => validStatuses.includes(log.status)) as MarketingNotificationLog[];
       
-      setPendingNotifications(typedLogs.filter(log => log.status === 'pending'));
-      setPreparedNotifications(typedLogs.filter(log => log.status === 'prepared'));
-      setFailedNotifications(typedLogs.filter(log => log.status === 'failed'));
+      const pending = typedLogs.filter(log => log.status === 'pending');
+      const prepared = typedLogs.filter(log => log.status === 'prepared');
+      const failed = typedLogs.filter(log => log.status === 'failed');
+      
+      console.log(`📋 Notifications breakdown: ${pending.length} pending, ${prepared.length} prepared, ${failed.length} failed`);
+      
+      setPendingNotifications(pending);
+      setPreparedNotifications(prepared);
+      setFailedNotifications(failed);
       
     } catch (error) {
-      console.error('Error fetching marketing notifications:', error);
+      console.error('❌ Error fetching marketing notifications:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar las notificaciones de marketing",
@@ -73,7 +86,7 @@ export function useMarketingNotifications() {
   }) => {
     setIsPreparing(true);
     try {
-      console.log('🔄 Preparando notificaciones de marketing...');
+      console.log('🔄 Preparando notificaciones de marketing...', campaignData);
       
       const { data, error } = await supabase.functions.invoke('process-marketing-notifications', {
         body: {
@@ -82,19 +95,28 @@ export function useMarketingNotifications() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error from edge function:', error);
+        throw error;
+      }
 
-      toast({
-        title: "¡Notificaciones preparadas!",
-        description: `Se prepararon ${data.prepared} notificaciones para envío`
-      });
+      console.log('✅ Preparation result:', data);
+
+      if (data && data.success) {
+        toast({
+          title: "¡Notificaciones preparadas!",
+          description: `Se prepararon ${data.prepared} notificaciones para envío${data.skipped ? ` (${data.skipped} clientes sin teléfono)` : ''}`
+        });
+      } else {
+        throw new Error(data?.error || 'Error desconocido al preparar notificaciones');
+      }
 
       await fetchMarketingNotifications();
     } catch (error) {
-      console.error('Error preparing marketing notifications:', error);
+      console.error('❌ Error preparing marketing notifications:', error);
       toast({
         title: "Error",
-        description: "No se pudieron preparar las notificaciones: " + error.message,
+        description: "No se pudieron preparar las notificaciones: " + (error.message || 'Error desconocido'),
         variant: "destructive"
       });
     } finally {
@@ -113,19 +135,28 @@ export function useMarketingNotifications() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error from edge function:', error);
+        throw error;
+      }
 
-      toast({
-        title: "¡Notificaciones enviadas!",
-        description: `Se enviaron ${data.executed} notificaciones exitosamente. ${data.failed} fallaron.`
-      });
+      console.log('✅ Execution result:', data);
+
+      if (data && data.success) {
+        toast({
+          title: "¡Notificaciones enviadas!",
+          description: `Se enviaron ${data.executed} notificaciones exitosamente. ${data.failed} fallaron.`
+        });
+      } else {
+        throw new Error(data?.error || 'Error desconocido al ejecutar notificaciones');
+      }
 
       await fetchMarketingNotifications();
     } catch (error) {
-      console.error('Error executing marketing notifications:', error);
+      console.error('❌ Error executing marketing notifications:', error);
       toast({
         title: "Error",
-        description: "No se pudieron enviar las notificaciones: " + error.message,
+        description: "No se pudieron enviar las notificaciones: " + (error.message || 'Error desconocido'),
         variant: "destructive"
       });
     } finally {
@@ -136,25 +167,36 @@ export function useMarketingNotifications() {
   const retryFailedNotifications = async () => {
     setIsRetrying(true);
     try {
+      console.log('🔄 Reintentando notificaciones fallidas...');
+      
       const { data, error } = await supabase.functions.invoke('process-marketing-notifications', {
         body: {
           mode: 'retry_failed'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error from edge function:', error);
+        throw error;
+      }
 
-      toast({
-        title: "¡Reintento completado!",
-        description: `Se reintentaron ${data.retried} mensajes. ${data.executed} exitosos, ${data.failed} fallaron.`
-      });
+      console.log('✅ Retry result:', data);
+
+      if (data && data.success) {
+        toast({
+          title: "¡Reintento completado!",
+          description: `Se reintentaron ${data.retried} mensajes. ${data.executed} exitosos, ${data.failed} fallaron.`
+        });
+      } else {
+        throw new Error(data?.error || 'Error desconocido al reintentar notificaciones');
+      }
 
       await fetchMarketingNotifications();
     } catch (error) {
-      console.error('Error retrying failed notifications:', error);
+      console.error('❌ Error retrying failed notifications:', error);
       toast({
         title: "Error",
-        description: "No se pudieron reintentar las notificaciones: " + error.message,
+        description: "No se pudieron reintentar las notificaciones: " + (error.message || 'Error desconocido'),
         variant: "destructive"
       });
     } finally {
@@ -165,12 +207,17 @@ export function useMarketingNotifications() {
   const clearPreparedNotifications = async () => {
     setIsClearing(true);
     try {
+      console.log('🗑️ Limpiando notificaciones preparadas...');
+      
       const { error } = await supabase
         .from('marketing_message_log')
         .delete()
         .eq('status', 'prepared');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error clearing prepared notifications:', error);
+        throw error;
+      }
 
       toast({
         title: "Notificaciones limpiadas",
@@ -179,7 +226,7 @@ export function useMarketingNotifications() {
 
       await fetchMarketingNotifications();
     } catch (error) {
-      console.error('Error clearing prepared notifications:', error);
+      console.error('❌ Error clearing prepared notifications:', error);
       toast({
         title: "Error",
         description: "No se pudieron limpiar las notificaciones",
@@ -193,12 +240,17 @@ export function useMarketingNotifications() {
   const clearPendingNotifications = async () => {
     setIsClearingPending(true);
     try {
+      console.log('🗑️ Limpiando notificaciones pendientes...');
+      
       const { error } = await supabase
         .from('marketing_message_log')
         .delete()
         .eq('status', 'pending');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error clearing pending notifications:', error);
+        throw error;
+      }
 
       toast({
         title: "Notificaciones pendientes limpiadas",
@@ -207,7 +259,7 @@ export function useMarketingNotifications() {
 
       await fetchMarketingNotifications();
     } catch (error) {
-      console.error('Error clearing pending notifications:', error);
+      console.error('❌ Error clearing pending notifications:', error);
       toast({
         title: "Error",
         description: "No se pudieron limpiar las notificaciones pendientes",

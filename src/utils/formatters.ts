@@ -4,7 +4,7 @@ import { formatAmountToCollectWithCurrency, type Currency } from './currencyForm
 
 // Utility functions for formatting numbers
 export const formatDecimal = (value: number | null | undefined, maxDecimals: number = 2): string => {
-  if (value === null || value === undefined || value === '') return '0';
+  if (value === null || value === undefined) return '0';
   
   // Convert to number if it's a string
   let numValue: number;

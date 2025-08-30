@@ -1,15 +1,10 @@
+
 import { useState } from 'react';
-import { Sidebar } from '@/components/ui/sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { MainTabs } from '@/components/MainTabs';
-import { PackageCreationPanel } from '@/components/PackageCreationPanel';
-import { DashboardViewSwitcher } from '@/components/dashboard/DashboardViewSwitcher';
 import { EmployeePreviewHeader } from '@/components/preview/EmployeePreviewHeader';
 import { TravelerPreviewHeader } from '@/components/preview/TravelerPreviewHeader';
-import { AppSidebar } from '@/components/sidebar/AppSidebar';
-import { MobileDeliveryDialog } from '@/components/delivery/MobileDeliveryDialog';
-import { TripCreationDialog } from '@/components/TripCreationDialog';
-import { NewPackageDialog } from '@/components/NewPackageDialog';
+import { AppSidebar } from '@/components/AppSidebar';
 import { useIndex } from '@/hooks/useIndex';
 import { usePackagesData } from '@/hooks/usePackagesData';
 import { useTripsData } from '@/hooks/useTripsData';
@@ -76,17 +71,16 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      <div className="md:pl-64 flex h-screen antialiased text-gray-900 bg-gray-50">
+      <div className="flex min-h-screen w-full">
         <AppSidebar 
           activeTab={activeTab} 
           onTabChange={setActiveTab} 
           unreadCount={7}
           previewRole={previewRole}
-          setPreviewRole={setPreviewRole}
         />
 
-        <Sidebar.Container>
-          <Sidebar.Content>
+        <SidebarInset>
+          <div className="flex flex-col h-screen">
             {previewRole === 'employee' && (
               <EmployeePreviewHeader onBack={onBack} />
             )}
@@ -95,47 +89,34 @@ export default function Index() {
               <TravelerPreviewHeader onBack={onBack} />
             )}
 
-            <MainTabs
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              packageStats={packageStats}
-              customersCount={customersCount}
-              onNewPackage={onNewPackage}
-              onNewTrip={onNewTrip}
-              onViewNotifications={() => setActiveTab('notifications')}
-              onMobileDelivery={() => setIsMobileDeliveryOpen(true)}
-              packages={packages}
-              filteredPackages={filteredPackages}
-              isLoading={isLoading}
-              onUpdate={onUpdate}
-              viewingPackagesByDate={viewingPackagesByDate}
-              trips={trips}
-              tripsLoading={tripsLoading}
-              onAddPackage={onAddPackage}
-              onCreateTrip={onCreateTrip}
-              onViewPackagesByDate={setViewingPackagesByDate}
-              onBack={onBack}
-              selectedDate={selectedDate}
-            />
-          </Sidebar.Content>
-        </Sidebar.Container>
-
-        <MobileDeliveryDialog
-          open={isMobileDeliveryOpen}
-          onOpenChange={setIsMobileDeliveryOpen}
-        />
-
-        <TripCreationDialog
-          open={isNewTripOpen}
-          onOpenChange={setIsNewTripOpen}
-          selectedDate={selectedDate}
-          onCreateTrip={onCreateTrip}
-        />
-
-        <NewPackageDialog
-          open={isNewPackageOpen}
-          onOpenChange={setIsNewPackageOpen}
-        />
+            <div className="flex-1 overflow-auto">
+              <MainTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                packageStats={packageStats}
+                customersCount={customersCount}
+                onNewPackage={onNewPackage}
+                onNewTrip={onNewTrip}
+                onViewNotifications={() => setActiveTab('notifications')}
+                onMobileDelivery={() => setIsMobileDeliveryOpen(true)}
+                packages={packages}
+                filteredPackages={filteredPackages}
+                isLoading={isLoading}
+                onUpdate={onUpdate}
+                viewingPackagesByDate={viewingPackagesByDate}
+                trips={trips}
+                tripsLoading={tripsLoading}
+                onAddPackage={onAddPackage}
+                onCreateTrip={onCreateTrip}
+                onViewPackagesByDate={setViewingPackagesByDate}
+                onBack={onBack}
+                selectedDate={selectedDate}
+                previewRole={previewRole}
+                setPreviewRole={setPreviewRole}
+              />
+            </div>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

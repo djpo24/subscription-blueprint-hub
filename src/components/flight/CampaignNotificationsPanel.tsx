@@ -6,8 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Megaphone, Send, Eye, Users } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCustomerData } from '@/hooks/useCustomerData';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
 
@@ -34,8 +35,27 @@ export function CampaignNotificationsPanel() {
   const [returnDate, setReturnDate] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [isPreview, setIsPreview] = useState(false);
+  const [loadedCustomers, setLoadedCustomers] = useState<any[]>([]);
   
   const { toast } = useToast();
+  const { data: customers, isLoading: loadingCustomers } = useCustomerData();
+
+  const handleLoadCustomers = () => {
+    if (!customers || customers.length === 0) {
+      toast({
+        title: "Sin clientes",
+        description: "No se encontraron clientes registrados en el sistema",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadedCustomers(customers);
+    toast({
+      title: "Clientes cargados",
+      description: `Se cargaron ${customers.length} clientes para la campaña`,
+    });
+  };
 
   const handlePreview = () => {
     setIsPreview(!isPreview);
@@ -51,9 +71,18 @@ export function CampaignNotificationsPanel() {
       return;
     }
 
+    if (loadedCustomers.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes cargar los clientes antes de enviar la campaña",
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: "Campaña enviada",
-      description: "La campaña de notificación ha sido enviada exitosamente",
+      description: `La campaña de notificación ha sido enviada a ${loadedCustomers.length} clientes`,
     });
   };
 
@@ -122,6 +151,25 @@ export function CampaignNotificationsPanel() {
             </Select>
           </div>
 
+          {/* Botón para cargar clientes */}
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={handleLoadCustomers}
+              disabled={loadingCustomers}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <Package className="h-4 w-4" />
+              {loadingCustomers ? 'Cargando...' : 'Cargar Paquetes'}
+            </Button>
+            {loadedCustomers.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Users className="h-4 w-4" />
+                <span>{loadedCustomers.length} clientes cargados</span>
+              </div>
+            )}
+          </div>
+
           {/* Editor de plantilla */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -166,11 +214,37 @@ export function CampaignNotificationsPanel() {
             </div>
           </div>
 
+          {/* Lista de clientes cargados */}
+          {loadedCustomers.length > 0 && (
+            <div className="p-4 bg-green-50 rounded-md border border-green-200">
+              <h4 className="font-medium text-green-900 mb-2">Clientes que recibirán la campaña:</h4>
+              <div className="max-h-32 overflow-y-auto">
+                <div className="text-sm text-green-700 space-y-1">
+                  {loadedCustomers.slice(0, 10).map((customer, index) => (
+                    <p key={customer.id}>
+                      {index + 1}. {customer.name} - {customer.phone}
+                    </p>
+                  ))}
+                  {loadedCustomers.length > 10 && (
+                    <p className="font-medium">
+                      ... y {loadedCustomers.length - 10} clientes más
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Botones de acción */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Users className="h-4 w-4" />
-              <span>Enviará a todos los clientes registrados</span>
+              <span>
+                {loadedCustomers.length > 0 
+                  ? `Enviará a ${loadedCustomers.length} clientes cargados`
+                  : 'Primero carga los clientes con "Cargar Paquetes"'
+                }
+              </span>
             </div>
             <Button onClick={handleSendCampaign} className="flex items-center gap-2">
               <Send className="h-4 w-4" />

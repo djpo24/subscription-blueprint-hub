@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Megaphone, Send, Eye, Users, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
+import { useTrips } from '@/hooks/useTrips';
+import { formatDateDisplay } from '@/utils/dateUtils';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
 
@@ -31,14 +33,38 @@ Te informamos que tenemos un viaje programado próximamente:
 export function CampaignNotificationsPanel() {
   const [template, setTemplate] = useState(CAMPAIGN_TEMPLATE);
   const [selectedTemplate, setSelectedTemplate] = useState('proximos_viajes');
-  const [outboundDate, setOutboundDate] = useState('');
+  const [selectedOutboundTrip, setSelectedOutboundTrip] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [loadedCustomers, setLoadedCustomers] = useState<any[]>([]);
+  const [availableOutboundTrips, setAvailableOutboundTrips] = useState<any[]>([]);
   
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
+  const { data: trips = [], isLoading: loadingTrips } = useTrips();
+
+  // Filter trips from Barranquilla that are after today's date
+  useEffect(() => {
+    if (trips && trips.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+      
+      const outboundTrips = trips.filter(trip => {
+        const tripDate = new Date(trip.trip_date);
+        tripDate.setHours(0, 0, 0, 0);
+        
+        return (
+          trip.origin && 
+          trip.origin.toLowerCase().includes('barranquilla') &&
+          tripDate >= today &&
+          (trip.status === 'scheduled' || trip.status === 'pending')
+        );
+      }).sort((a, b) => new Date(a.trip_date).getTime() - new Date(b.trip_date).getTime());
+      
+      setAvailableOutboundTrips(outboundTrips);
+    }
+  }, [trips]);
 
   const handleLoadMessages = () => {
     if (!customers || customers.length === 0) {
@@ -62,7 +88,7 @@ export function CampaignNotificationsPanel() {
   };
 
   const handleSendCampaign = () => {
-    if (!outboundDate || !returnDate || !deadlineDate) {
+    if (!selectedOutboundTrip || !returnDate || !deadlineDate) {
       toast({
         title: "Error",
         description: "Por favor completa todas las fechas antes de enviar la campaña",
@@ -86,9 +112,15 @@ export function CampaignNotificationsPanel() {
     });
   };
 
+  // Get the selected trip details for preview
+  const selectedTripDetails = availableOutboundTrips.find(trip => trip.id === selectedOutboundTrip);
+  const outboundDateForPreview = selectedTripDetails 
+    ? formatDateDisplay(selectedTripDetails.trip_date, 'EEEE, dd \'de\' MMMM \'de\' yyyy')
+    : '[fecha_salida_baq]';
+
   const previewTemplate = template
     .replace(/{{nombre_cliente}}/g, 'Juan Pérez')
-    .replace(/{{fecha_salida_baq}}/g, outboundDate || '[fecha_salida_baq]')
+    .replace(/{{fecha_salida_baq}}/g, outboundDateForPreview)
     .replace(/{{fecha_retorno_cur}}/g, returnDate || '[fecha_retorno_cur]')
     .replace(/{{fecha_limite_entrega}}/g, deadlineDate || '[fecha_limite_entrega]');
 
@@ -108,13 +140,26 @@ export function CampaignNotificationsPanel() {
           {/* Configuración de fechas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha Salida Barranquilla</Label>
-              <Input
-                id="outbound-date"
-                type="date"
-                value={outboundDate}
-                onChange={(e) => setOutboundDate(e.target.value)}
-              />
+              <Label htmlFor="outbound-trip">Salida desde Barranquilla</Label>
+              <Select value={selectedOutboundTrip} onValueChange={setSelectedOutboundTrip}>
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingTrips ? "Cargando viajes..." : "Selecciona un viaje"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableOutboundTrips.length === 0 ? (
+                    <SelectItem value="no-trips" disabled>
+                      No hay viajes disponibles desde Barranquilla
+                    </SelectItem>
+                  ) : (
+                    availableOutboundTrips.map((trip) => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {formatDateDisplay(trip.trip_date, 'dd/MM/yyyy')} - {trip.destination || 'Sin destino'}
+                        {trip.flight_number && ` (${trip.flight_number})`}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="return-date">Fecha Retorno Curazao</Label>

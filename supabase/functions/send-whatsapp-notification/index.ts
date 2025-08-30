@@ -360,17 +360,12 @@ serve(async (req) => {
             deadlineDateText
           });
 
-          // CONFIGURACIÓN CORRECTA: Header ({{1}}) + Body ({{2}}, {{3}}, {{4}}) con fechas completas
+          // CONFIGURACIÓN CORREGIDA: Solo Body con 4 parámetros (nombre + 3 fechas)
           templatePayload.template.components = [
-            {
-              type: 'header',
-              parameters: [
-                { type: 'text', text: customerName }    // {{1}} - nombre del cliente
-              ]
-            },
             {
               type: 'body',
               parameters: [
+                { type: 'text', text: customerName },        // {{1}} - nombre del cliente
                 { type: 'text', text: outboundDateText },    // {{2}} - fecha salida completa
                 { type: 'text', text: returnDateText },      // {{3}} - fecha retorno completa
                 { type: 'text', text: deadlineDateText }     // {{4}} - fecha límite completa
@@ -378,7 +373,7 @@ serve(async (req) => {
             }
           ]
 
-          console.log('✅ CONFIGURACIÓN CON FECHAS COMPLETAS - Proximos viajes template')
+          console.log('✅ CONFIGURACIÓN CORREGIDA - Solo Body con 4 parámetros')
           console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2))
         } else {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');

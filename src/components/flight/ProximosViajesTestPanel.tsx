@@ -4,9 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { TestTube, Send, Eye, Copy, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,20 +28,28 @@ export function ProximosViajesTestPanel() {
 
   // Generate formatted dates for WhatsApp
   const getFormattedDates = () => {
-    const outboundDateText = outboundDate 
-      ? formatDateDisplay(outboundDate, 'EEEE d \'de\' MMMM')
-      : '';
-    const returnDateText = returnDate 
-      ? formatDateDisplay(returnDate, 'EEEE d \'de\' MMMM')
-      : '';
-    const deadlineDateText = deadlineDate 
-      ? formatDateDisplay(deadlineDate, 'EEEE d \'de\' MMMM')
-      : '';
+    const formatDateToSpanish = (dateString: string) => {
+      if (!dateString) return 'fecha no disponible';
+      
+      const date = new Date(dateString + 'T00:00:00');
+      const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      
+      const dayName = days[date.getDay()];
+      const dayNumber = date.getDate();
+      const monthName = months[date.getMonth()];
+      
+      return `${dayName} ${dayNumber} de ${monthName}`;
+    };
+
+    const outboundDateText = outboundDate ? formatDateToSpanish(outboundDate) : '';
+    const returnDateText = returnDate ? formatDateToSpanish(returnDate) : '';
+    const deadlineDateText = deadlineDate ? formatDateToSpanish(deadlineDate) : '';
     
     return { outboundDateText, returnDateText, deadlineDateText };
   };
 
-  // Generate WhatsApp payload
+  // Generate WhatsApp payload (CORREGIDO: todos los parámetros en body)
   const generateWhatsAppPayload = () => {
     const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
     
@@ -60,28 +66,23 @@ export function ProximosViajesTestPanel() {
         },
         components: [
           {
-            type: "header",
-            parameters: [
-              {
-                type: "text",
-                text: customerName
-              }
-            ]
-          },
-          {
             type: "body",
             parameters: [
               {
                 type: "text",
-                text: outboundDateText
+                text: customerName        // {{1}} - nombre del cliente
               },
               {
                 type: "text",
-                text: returnDateText
+                text: outboundDateText   // {{2}} - fecha salida
               },
               {
                 type: "text",
-                text: deadlineDateText
+                text: returnDateText     // {{3}} - fecha retorno
+              },
+              {
+                type: "text",
+                text: deadlineDateText   // {{4}} - fecha límite
               }
             ]
           }
@@ -212,7 +213,7 @@ export function ProximosViajesTestPanel() {
             Test Plantilla proximos_viajes
           </CardTitle>
           <CardDescription>
-            Prueba la plantilla de WhatsApp para verificar parámetros y estructura
+            Prueba la plantilla de WhatsApp - TODOS los parámetros van en BODY (sin header)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -231,7 +232,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Nombre del Cliente</Label>
+              <Label htmlFor="customer-name">Nombre del Cliente ({{1}})</Label>
               <Input
                 id="customer-name"
                 type="text"
@@ -243,7 +244,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha de Salida</Label>
+              <Label htmlFor="outbound-date">Fecha de Salida ({{2}})</Label>
               <Input
                 id="outbound-date"
                 type="date"
@@ -254,7 +255,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha de Retorno</Label>
+              <Label htmlFor="return-date">Fecha de Retorno ({{3}})</Label>
               <Input
                 id="return-date"
                 type="date"
@@ -265,7 +266,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="deadline-date">Fecha Límite</Label>
+              <Label htmlFor="deadline-date">Fecha Límite ({{4}})</Label>
               <Input
                 id="deadline-date"
                 type="date"
@@ -296,7 +297,7 @@ export function ProximosViajesTestPanel() {
                 <CardTitle className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
-                    Vista Previa del Payload WhatsApp
+                    Vista Previa del Payload WhatsApp (SOLO BODY)
                   </span>
                   <Button
                     variant="outline"
@@ -309,6 +310,17 @@ export function ProximosViajesTestPanel() {
               </CardHeader>
               {showPayload && (
                 <CardContent>
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Corregida:</h4>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <div><strong>{{1}}</strong> = Nombre del cliente (en body)</div>
+                      <div><strong>{{2}}</strong> = Fecha de salida (en body)</div>
+                      <div><strong>{{3}}</strong> = Fecha de retorno (en body)</div>
+                      <div><strong>{{4}}</strong> = Fecha límite (en body)</div>
+                      <div className="font-medium text-blue-800 mt-2">✅ Sin parámetros en header</div>
+                    </div>
+                  </div>
+
                   <div className="relative">
                     <Button
                       variant="ghost"
@@ -324,11 +336,12 @@ export function ProximosViajesTestPanel() {
                   </div>
                   
                   <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-sm">Fechas Formateadas:</h4>
+                    <h4 className="font-medium text-sm">Fechas Formateadas (en español):</h4>
                     <div className="text-xs space-y-1">
-                      <div><strong>Salida:</strong> {getFormattedDates().outboundDateText}</div>
-                      <div><strong>Retorno:</strong> {getFormattedDates().returnDateText}</div>
-                      <div><strong>Límite:</strong> {getFormattedDates().deadlineDateText}</div>
+                      <div><strong>{{1}} Nombre:</strong> {customerName}</div>
+                      <div><strong>{{2}} Salida:</strong> {getFormattedDates().outboundDateText}</div>
+                      <div><strong>{{3}} Retorno:</strong> {getFormattedDates().returnDateText}</div>
+                      <div><strong>{{4}} Límite:</strong> {getFormattedDates().deadlineDateText}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -371,6 +384,14 @@ export function ProximosViajesTestPanel() {
                   <div className="bg-red-100 p-3 rounded border border-red-200">
                     <h4 className="font-medium text-red-800 mb-2">Error Detallado:</h4>
                     <p className="text-sm text-red-700">{lastResult.error.message || JSON.stringify(lastResult.error)}</p>
+                    {lastResult.error.error_code === 132000 && (
+                      <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Error 132000:</strong> El número de parámetros no coincide. 
+                          Ahora todos los parámetros van en el BODY (sin header).
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -395,7 +416,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.payload && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Payload Enviado:</h4>
+                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida):</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"

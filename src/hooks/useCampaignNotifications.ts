@@ -38,7 +38,23 @@ export function useCampaignNotifications() {
         throw error;
       }
 
-      return data || [];
+      // Map the database response to match our interface
+      return (data || []).map(item => ({
+        id: item.id,
+        campaign_name: item.campaign_name || `Campaña ${new Date(item.created_at).toLocaleDateString()}`,
+        outbound_trip_id: item.outbound_trip_id,
+        return_trip_id: item.return_trip_id,
+        deadline_date: item.deadline_date,
+        message_template: item.message_template,
+        template_name: item.template_name,
+        template_language: item.template_language,
+        status: item.status,
+        total_customers_sent: item.total_customers_sent,
+        success_count: item.success_count,
+        failed_count: item.failed_count,
+        created_at: item.created_at,
+        sent_at: item.sent_at
+      }));
     }
   });
 

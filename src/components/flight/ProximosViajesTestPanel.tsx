@@ -48,7 +48,7 @@ export function ProximosViajesTestPanel() {
     return { outboundDateText, returnDateText, deadlineDateText };
   };
 
-  // Generate WhatsApp payload (ACTUALIZADO para proximo_viaje_3)
+  // Generate WhatsApp payload (CORREGIDO para incluir components con parameters)
   const generateWhatsAppPayload = () => {
     const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
     
@@ -212,7 +212,7 @@ export function ProximosViajesTestPanel() {
             Test Plantilla proximo_viaje_3
           </CardTitle>
           <CardDescription>
-            Prueba la nueva plantilla de WhatsApp v3 - TODOS los parámetros van en BODY (sin header)
+            Prueba la plantilla de WhatsApp v3 - Todos los parámetros van en BODY con estructura COMPONENTS
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -231,7 +231,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Nombre del Cliente (1)</Label>
+              <Label htmlFor="customer-name">Nombre del Cliente ({{1}})</Label>
               <Input
                 id="customer-name"
                 type="text"
@@ -243,7 +243,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha de Salida (2)</Label>
+              <Label htmlFor="outbound-date">Fecha de Salida ({{2}})</Label>
               <Input
                 id="outbound-date"
                 type="date"
@@ -254,7 +254,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha de Retorno (3)</Label>
+              <Label htmlFor="return-date">Fecha de Retorno ({{3}})</Label>
               <Input
                 id="return-date"
                 type="date"
@@ -265,7 +265,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="deadline-date">Fecha Límite (4)</Label>
+              <Label htmlFor="deadline-date">Fecha Límite ({{4}})</Label>
               <Input
                 id="deadline-date"
                 type="date"
@@ -312,10 +312,10 @@ export function ProximosViajesTestPanel() {
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Plantilla proximo_viaje_3:</h4>
                     <div className="text-sm text-blue-700 space-y-1">
-                      <div><strong>1</strong> = Nombre del cliente (en body)</div>
-                      <div><strong>2</strong> = Fecha de salida (en body)</div>
-                      <div><strong>3</strong> = Fecha de retorno (en body)</div>
-                      <div><strong>4</strong> = Fecha límite (en body)</div>
+                      <div><strong>{{1}}</strong> = Nombre del cliente (en body/parameters)</div>
+                      <div><strong>{{2}}</strong> = Fecha de salida (en body/parameters)</div>
+                      <div><strong>{{3}}</strong> = Fecha de retorno (en body/parameters)</div>
+                      <div><strong>{{4}}</strong> = Fecha límite (en body/parameters)</div>
                       <div className="font-medium text-blue-800 mt-2">✅ Incluye direcciones y contactos fijos</div>
                     </div>
                   </div>
@@ -337,10 +337,10 @@ export function ProximosViajesTestPanel() {
                   <div className="mt-4 space-y-2">
                     <h4 className="font-medium text-sm">Fechas Formateadas (en español):</h4>
                     <div className="text-xs space-y-1">
-                      <div><strong>1 Nombre:</strong> {customerName}</div>
-                      <div><strong>2 Salida:</strong> {getFormattedDates().outboundDateText}</div>
-                      <div><strong>3 Retorno:</strong> {getFormattedDates().returnDateText}</div>
-                      <div><strong>4 Límite:</strong> {getFormattedDates().deadlineDateText}</div>
+                      <div><strong>{{1}} Nombre:</strong> {customerName}</div>
+                      <div><strong>{{2}} Salida:</strong> {getFormattedDates().outboundDateText}</div>
+                      <div><strong>{{3}} Retorno:</strong> {getFormattedDates().returnDateText}</div>
+                      <div><strong>{{4}} Límite:</strong> {getFormattedDates().deadlineDateText}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -387,7 +387,7 @@ export function ProximosViajesTestPanel() {
                       <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded">
                         <p className="text-sm text-yellow-800">
                           <strong>Error 132000:</strong> El número de parámetros no coincide. 
-                          Ahora todos los parámetros van en el BODY (sin header).
+                          Ahora el payload incluye la estructura components con parameters correcta.
                         </p>
                       </div>
                     )}
@@ -415,7 +415,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.payload && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida):</h4>
+                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida con Components):</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"

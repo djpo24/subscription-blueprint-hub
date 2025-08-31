@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Customer } from '@/types/supabase-temp';
@@ -38,7 +39,22 @@ export function useCustomerData(customerId?: string) {
           throw error;
         }
 
-        return data || [];
+        // Filtrar contactos de prueba
+        const filteredData = (data || []).filter(customer => {
+          const isTestUser = customer.name?.includes('TEST_USER_DO_NOT_SAVE') || 
+                           customer.phone === '0000000000' || 
+                           customer.whatsapp_number === '0000000000' ||
+                           customer.phone === '0' ||
+                           customer.whatsapp_number === '0';
+          
+          if (isTestUser) {
+            console.warn('⚠️ Filtering out test user:', customer.name, customer.phone);
+          }
+          
+          return !isTestUser;
+        });
+
+        return filteredData;
       } catch (error) {
         console.error('❌ Error in useCustomerData:', error);
         return [];

@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock, Broom } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
+import { useCleanTestContacts } from '@/hooks/useCleanTestContacts';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { TripNotificationTestDialog } from '@/components/marketing/TripNotificationTestDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,6 +68,7 @@ export function CampaignNotificationsPanel() {
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
   const { data: trips = [], isLoading: loadingTrips } = useTrips();
+  const cleanTestContacts = useCleanTestContacts();
 
   useEffect(() => {
     if (trips && trips.length > 0) {
@@ -152,18 +154,42 @@ export function CampaignNotificationsPanel() {
       return;
     }
 
-    const generatedMessages: PreparedMessage[] = customers.map(customer => ({
+    // Verificar si hay contactos válidos (sin contactos de prueba)
+    const validCustomers = customers.filter(customer => {
+      const hasValidPhone = customer.whatsapp_number || customer.phone;
+      const isNotTestUser = !customer.name?.includes('TEST_USER_DO_NOT_SAVE') && 
+                           customer.phone !== '0000000000' && 
+                           customer.whatsapp_number !== '0000000000' &&
+                           customer.phone !== '0' &&
+                           customer.whatsapp_number !== '0';
+      return hasValidPhone && isNotTestUser;
+    });
+
+    if (validCustomers.length === 0) {
+      toast({
+        title: "Sin clientes válidos",
+        description: "No se encontraron clientes con números de teléfono válidos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const generatedMessages: PreparedMessage[] = validCustomers.map(customer => ({
       customer,
       message: generatePersonalizedMessage(customer)
     }));
 
-    setLoadedCustomers(customers);
+    setLoadedCustomers(validCustomers);
     setPreparedMessages(generatedMessages);
     
     toast({
       title: "Mensajes cargados",
-      description: `Se prepararon mensajes personalizados para ${customers.length} clientes`,
+      description: `Se prepararon mensajes personalizados para ${validCustomers.length} clientes válidos`,
     });
+  };
+
+  const handleCleanTestContacts = () => {
+    cleanTestContacts.mutate();
   };
 
   const handleClearMessages = () => {
@@ -365,6 +391,27 @@ export function CampaignNotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Botón de limpieza de contactos de prueba */}
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-yellow-900 mb-1">Limpiar Contactos de Prueba</h4>
+                <p className="text-sm text-yellow-700">
+                  Elimina contactos de prueba (TEST_USER_DO_NOT_SAVE, números 0000000000) para evitar costos innecesarios
+                </p>
+              </div>
+              <Button
+                onClick={handleCleanTestContacts}
+                disabled={cleanTestContacts.isPending}
+                variant="outline"
+                className="flex items-center gap-2 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+              >
+                <Broom className="h-4 w-4" />
+                {cleanTestContacts.isPending ? 'Limpiando...' : 'Limpiar Contactos'}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="outbound-trip">Salida desde Barranquilla</Label>

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock, Broom } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
@@ -406,7 +406,7 @@ export function CampaignNotificationsPanel() {
                 variant="outline"
                 className="flex items-center gap-2 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
               >
-                <Broom className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
                 {cleanTestContacts.isPending ? 'Limpiando...' : 'Limpiar Contactos'}
               </Button>
             </div>

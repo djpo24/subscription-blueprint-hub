@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TestTube, Send, Eye, Copy, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateDisplay } from '@/utils/dateUtils';
 
 export function ProximosViajesTestPanel() {
   const { toast } = useToast();
@@ -48,7 +49,7 @@ export function ProximosViajesTestPanel() {
     return { outboundDateText, returnDateText, deadlineDateText };
   };
 
-  // Generate WhatsApp payload with proper components structure
+  // Generate WhatsApp payload (CORREGIDO: todos los parámetros en body)
   const generateWhatsAppPayload = () => {
     const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
     
@@ -59,7 +60,7 @@ export function ProximosViajesTestPanel() {
         : `57${testPhone.replace(/\D/g, '')}`,
       type: "template",
       template: {
-        name: "proximo_viaje_3",
+        name: "proximos_viajes",
         language: {
           code: templateLanguage
         },
@@ -69,19 +70,19 @@ export function ProximosViajesTestPanel() {
             parameters: [
               {
                 type: "text",
-                text: customerName
+                text: customerName        // {{1}} - nombre del cliente
               },
               {
                 type: "text",
-                text: outboundDateText
+                text: outboundDateText   // {{2}} - fecha salida
               },
               {
                 type: "text",
-                text: returnDateText
+                text: returnDateText     // {{3}} - fecha retorno
               },
               {
                 type: "text",
-                text: deadlineDateText
+                text: deadlineDateText   // {{4}} - fecha límite
               }
             ]
           }
@@ -104,10 +105,10 @@ export function ProximosViajesTestPanel() {
     setLastResult(null);
 
     try {
-      console.log('🧪 Iniciando test de plantilla proximo_viaje_3...');
+      console.log('🧪 Iniciando test de plantilla proximos_viajes...');
 
       // Crear registro en notification_log
-      const testMessage = `Test de plantilla proximo_viaje_3 para ${customerName}`;
+      const testMessage = `Test de plantilla proximos_viajes para ${customerName}`;
       
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
@@ -133,7 +134,7 @@ export function ProximosViajesTestPanel() {
           phone: testPhone,
           message: testMessage,
           useTemplate: true,
-          templateName: 'proximo_viaje_3',
+          templateName: 'proximos_viajes',
           templateLanguage: templateLanguage,
           templateParameters: {
             customerName: customerName,
@@ -162,7 +163,7 @@ export function ProximosViajesTestPanel() {
       if (result.success) {
         toast({
           title: "✅ Test exitoso",
-          description: `Plantilla proximo_viaje_3 enviada correctamente a ${testPhone}`,
+          description: `Plantilla enviada correctamente a ${testPhone}`,
         });
       } else {
         toast({
@@ -209,10 +210,10 @@ export function ProximosViajesTestPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TestTube className="h-5 w-5" />
-            Test Plantilla proximo_viaje_3
+            Test Plantilla proximos_viajes
           </CardTitle>
           <CardDescription>
-            Prueba la plantilla de WhatsApp v3 - Todos los parámetros van en BODY con estructura COMPONENTS
+            Prueba la plantilla de WhatsApp - TODOS los parámetros van en BODY (sin header)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -231,7 +232,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Nombre del Cliente</Label>
+              <Label htmlFor="customer-name">Nombre del Cliente ({{1}})</Label>
               <Input
                 id="customer-name"
                 type="text"
@@ -243,7 +244,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha de Salida</Label>
+              <Label htmlFor="outbound-date">Fecha de Salida ({{2}})</Label>
               <Input
                 id="outbound-date"
                 type="date"
@@ -254,7 +255,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha de Retorno</Label>
+              <Label htmlFor="return-date">Fecha de Retorno ({{3}})</Label>
               <Input
                 id="return-date"
                 type="date"
@@ -265,7 +266,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="deadline-date">Fecha Límite</Label>
+              <Label htmlFor="deadline-date">Fecha Límite ({{4}})</Label>
               <Input
                 id="deadline-date"
                 type="date"
@@ -296,7 +297,7 @@ export function ProximosViajesTestPanel() {
                 <CardTitle className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
-                    Vista Previa del Payload WhatsApp (proximo_viaje_3)
+                    Vista Previa del Payload WhatsApp (SOLO BODY)
                   </span>
                   <Button
                     variant="outline"
@@ -310,13 +311,13 @@ export function ProximosViajesTestPanel() {
               {showPayload && (
                 <CardContent>
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Plantilla proximo_viaje_3</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Corregida:</h4>
                     <div className="text-sm text-blue-700 space-y-1">
-                      <div><strong>Parámetro 1</strong> = Nombre del cliente</div>
-                      <div><strong>Parámetro 2</strong> = Fecha de salida</div>
-                      <div><strong>Parámetro 3</strong> = Fecha de retorno</div>
-                      <div><strong>Parámetro 4</strong> = Fecha límite</div>
-                      <div className="font-medium text-blue-800 mt-2">✅ Incluye direcciones y contactos fijos</div>
+                      <div><strong>{{1}}</strong> = Nombre del cliente (en body)</div>
+                      <div><strong>{{2}}</strong> = Fecha de salida (en body)</div>
+                      <div><strong>{{3}}</strong> = Fecha de retorno (en body)</div>
+                      <div><strong>{{4}}</strong> = Fecha límite (en body)</div>
+                      <div className="font-medium text-blue-800 mt-2">✅ Sin parámetros en header</div>
                     </div>
                   </div>
 
@@ -335,12 +336,12 @@ export function ProximosViajesTestPanel() {
                   </div>
                   
                   <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-sm">Fechas Formateadas (en español)</h4>
+                    <h4 className="font-medium text-sm">Fechas Formateadas (en español):</h4>
                     <div className="text-xs space-y-1">
-                      <div><strong>Nombre</strong> {customerName}</div>
-                      <div><strong>Salida</strong> {getFormattedDates().outboundDateText}</div>
-                      <div><strong>Retorno</strong> {getFormattedDates().returnDateText}</div>
-                      <div><strong>Límite</strong> {getFormattedDates().deadlineDateText}</div>
+                      <div><strong>{{1}} Nombre:</strong> {customerName}</div>
+                      <div><strong>{{2}} Salida:</strong> {getFormattedDates().outboundDateText}</div>
+                      <div><strong>{{3}} Retorno:</strong> {getFormattedDates().returnDateText}</div>
+                      <div><strong>{{4}} Límite:</strong> {getFormattedDates().deadlineDateText}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -381,13 +382,13 @@ export function ProximosViajesTestPanel() {
               <CardContent className="space-y-4">
                 {!lastResult.success && lastResult.error && (
                   <div className="bg-red-100 p-3 rounded border border-red-200">
-                    <h4 className="font-medium text-red-800 mb-2">Error Detallado</h4>
+                    <h4 className="font-medium text-red-800 mb-2">Error Detallado:</h4>
                     <p className="text-sm text-red-700">{lastResult.error.message || JSON.stringify(lastResult.error)}</p>
                     {lastResult.error.error_code === 132000 && (
                       <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded">
                         <p className="text-sm text-yellow-800">
                           <strong>Error 132000:</strong> El número de parámetros no coincide. 
-                          Ahora el payload incluye la estructura components con parameters correcta.
+                          Ahora todos los parámetros van en el BODY (sin header).
                         </p>
                       </div>
                     )}
@@ -396,7 +397,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.response && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Respuesta de WhatsApp</h4>
+                    <h4 className="font-medium text-sm mb-2">Respuesta de WhatsApp:</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"
@@ -415,7 +416,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.payload && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida con Components)</h4>
+                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida):</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"

@@ -4,12 +4,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, Image as ImageIcon, Bot, User, Reply, FileText, Video, Headphones } from 'lucide-react';
+import { Clock, Image as ImageIcon, Bot, User, Reply } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
-import { AudioPlayer } from './AudioPlayer';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
@@ -38,36 +37,6 @@ export function ChatMessage({
   const handleAIResponseGenerated = (response: any) => {
     if (response.action === 'send' && response.response) {
       onSendMessage(response.response);
-    }
-  };
-
-  const getMessageTypeIcon = () => {
-    switch (message.message_type) {
-      case 'image':
-        return <ImageIcon className="h-3 w-3" />;
-      case 'document':
-        return <FileText className="h-3 w-3" />;
-      case 'video':
-        return <Video className="h-3 w-3" />;
-      case 'audio':
-        return <Headphones className="h-3 w-3" />;
-      default:
-        return null;
-    }
-  };
-
-  const getMessageTypeLabel = () => {
-    switch (message.message_type) {
-      case 'image':
-        return 'Imagen';
-      case 'document':
-        return 'Documento';
-      case 'video':
-        return 'Video';
-      case 'audio':
-        return 'Audio';
-      default:
-        return null;
     }
   };
 
@@ -114,26 +83,10 @@ export function ChatMessage({
                   </p>
                 )}
                 
-                {/* Reproductor de audio */}
-                {message.message_type === 'audio' && message.media_url && (
-                  <div className="mt-2">
-                    <AudioPlayer audioUrl={message.media_url} />
-                  </div>
-                )}
-                
-                {/* Otros tipos de media */}
-                {message.media_url && message.message_type !== 'audio' && (
+                {message.media_url && (
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    {getMessageTypeIcon()}
-                    <span>{getMessageTypeLabel()}</span>
-                    {message.message_type === 'image' && (
-                      <img 
-                        src={message.media_url} 
-                        alt="Imagen adjunta" 
-                        className="max-w-full h-auto rounded-lg mt-2"
-                        style={{ maxHeight: '200px' }}
-                      />
-                    )}
+                    <ImageIcon className="h-3 w-3" />
+                    <span>Imagen adjunta</span>
                   </div>
                 )}
               </div>

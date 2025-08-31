@@ -17,21 +17,26 @@ import { supabase } from '@/integrations/supabase/client';
 
 const CAMPAIGN_TEMPLATE = `¡Hola {{nombre_cliente}}! 👋
 
-🛫 **IMPORTANTE: Próximo viaje programado**
+🛫 *IMPORTANTE: Próximo viaje programado*
 
 Te informamos que tenemos un viaje programado próximamente:
 
-📅 **Salida desde Barranquilla:** {{fecha_salida_baq}}
-📅 **Retorno desde Curazao:** {{fecha_retorno_cur}}
+📅 Salida desde Barranquilla:*{{fecha_salida_baq}}*
+📅 Retorno desde Curazao:*{{fecha_retorno_cur}}*
 
-⏰ **FECHA LÍMITE para entrega de encomiendas:**
-🗓️ **{{fecha_limite_entrega}} antes de las 3:00 PM**
+⏰ FECHA LÍMITE para entrega de encomiendas:
+🗓️ *{{fecha_limite_entrega}} antes de las 3:00 PM*
 
 📦 Si tienes alguna encomienda para enviar, por favor asegúrate de entregarla antes de la fecha límite.
 
-📞 Para coordinar la entrega o resolver dudas, contáctanos.
+📍 Dirección de entrega en Barranquilla:
+🏠*Calle 45b #22-124*
 
-✈️ **Envíos Ojito** - Conectando Barranquilla y Curazao`;
+📞 Contactos para coordinar:
+🇨🇴*Darwin (Colombia): +573127271746*
+🇨🇼*Josefa (Curazao): +59996964306*
+
+✈️ Envíos Ojito - Conectando Barranquilla y Curazao`;
 
 interface PreparedMessage {
   customer: any;
@@ -48,7 +53,7 @@ interface SendingStatus {
 
 export function CampaignNotificationsPanel() {
   const [template, setTemplate] = useState(CAMPAIGN_TEMPLATE);
-  const [selectedTemplate, setSelectedTemplate] = useState('proximos_viajes');
+  const [selectedTemplate, setSelectedTemplate] = useState('proximo_viaje_3');
   const [selectedOutboundTrip, setSelectedOutboundTrip] = useState('');
   const [selectedReturnTrip, setSelectedReturnTrip] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
@@ -244,7 +249,7 @@ export function CampaignNotificationsPanel() {
       try {
         console.log(`📱 Enviando mensaje ${i + 1}/${preparedMessages.length} a ${customer.name} (${phone})`);
 
-        // CAMBIO CRÍTICO: Usar notification_log en lugar de trip_notification_log (igual que llegadas)
+        // Crear registro en notification_log
         const { data: notificationData, error: logError } = await supabase
           .from('notification_log')
           .insert({
@@ -268,14 +273,14 @@ export function CampaignNotificationsPanel() {
           continue;
         }
 
-        // Enviar mensaje por WhatsApp usando la plantilla correcta (IGUAL QUE LLEGADAS)
+        // Enviar mensaje por WhatsApp usando la nueva plantilla proximo_viaje_3
         const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
             phone: phone,
             message: messageData.message,
             useTemplate: true,
-            templateName: 'proximos_viajes',
+            templateName: 'proximo_viaje_3',
             templateLanguage: 'es_CO',
             templateParameters: {
               customerName: customer.name || 'Cliente',
@@ -428,7 +433,7 @@ export function CampaignNotificationsPanel() {
                 <SelectValue placeholder="Selecciona una plantilla" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="proximos_viajes">Próximos Viajes</SelectItem>
+                <SelectItem value="proximo_viaje_3">Próximos Viajes v3</SelectItem>
                 <SelectItem value="urgente_viaje">Viaje Urgente</SelectItem>
                 <SelectItem value="recordatorio">Recordatorio</SelectItem>
               </SelectContent>
@@ -643,7 +648,7 @@ export function CampaignNotificationsPanel() {
                 id="template"
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
-                rows={15}
+                rows={20}
                 placeholder="Escribe tu mensaje aquí..."
                 className="font-mono text-sm"
                 disabled={isSendingCampaign}

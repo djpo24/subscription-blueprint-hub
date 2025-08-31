@@ -48,7 +48,7 @@ export function ProximosViajesTestPanel() {
     return { outboundDateText, returnDateText, deadlineDateText };
   };
 
-  // Generate WhatsApp payload (CORREGIDO: todos los parámetros en body)
+  // Generate WhatsApp payload (ACTUALIZADO para proximo_viaje_3)
   const generateWhatsAppPayload = () => {
     const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
     
@@ -59,7 +59,7 @@ export function ProximosViajesTestPanel() {
         : `57${testPhone.replace(/\D/g, '')}`,
       type: "template",
       template: {
-        name: "proximos_viajes",
+        name: "proximo_viaje_3",
         language: {
           code: templateLanguage
         },
@@ -104,10 +104,10 @@ export function ProximosViajesTestPanel() {
     setLastResult(null);
 
     try {
-      console.log('🧪 Iniciando test de plantilla proximos_viajes...');
+      console.log('🧪 Iniciando test de plantilla proximo_viaje_3...');
 
       // Crear registro en notification_log
-      const testMessage = `Test de plantilla proximos_viajes para ${customerName}`;
+      const testMessage = `Test de plantilla proximo_viaje_3 para ${customerName}`;
       
       const { data: notificationData, error: logError } = await supabase
         .from('notification_log')
@@ -133,7 +133,7 @@ export function ProximosViajesTestPanel() {
           phone: testPhone,
           message: testMessage,
           useTemplate: true,
-          templateName: 'proximos_viajes',
+          templateName: 'proximo_viaje_3',
           templateLanguage: templateLanguage,
           templateParameters: {
             customerName: customerName,
@@ -162,7 +162,7 @@ export function ProximosViajesTestPanel() {
       if (result.success) {
         toast({
           title: "✅ Test exitoso",
-          description: `Plantilla enviada correctamente a ${testPhone}`,
+          description: `Plantilla proximo_viaje_3 enviada correctamente a ${testPhone}`,
         });
       } else {
         toast({
@@ -209,10 +209,10 @@ export function ProximosViajesTestPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TestTube className="h-5 w-5" />
-            Test Plantilla proximos_viajes
+            Test Plantilla proximo_viaje_3
           </CardTitle>
           <CardDescription>
-            Prueba la plantilla de WhatsApp - TODOS los parámetros van en BODY (sin header)
+            Prueba la nueva plantilla de WhatsApp v3 - TODOS los parámetros van en BODY (sin header)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -296,7 +296,7 @@ export function ProximosViajesTestPanel() {
                 <CardTitle className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
-                    Vista Previa del Payload WhatsApp (SOLO BODY)
+                    Vista Previa del Payload WhatsApp (proximo_viaje_3)
                   </span>
                   <Button
                     variant="outline"
@@ -310,13 +310,13 @@ export function ProximosViajesTestPanel() {
               {showPayload && (
                 <CardContent>
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Corregida:</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Plantilla proximo_viaje_3:</h4>
                     <div className="text-sm text-blue-700 space-y-1">
                       <div><strong>1</strong> = Nombre del cliente (en body)</div>
                       <div><strong>2</strong> = Fecha de salida (en body)</div>
                       <div><strong>3</strong> = Fecha de retorno (en body)</div>
                       <div><strong>4</strong> = Fecha límite (en body)</div>
-                      <div className="font-medium text-blue-800 mt-2">✅ Sin parámetros en header</div>
+                      <div className="font-medium text-blue-800 mt-2">✅ Incluye direcciones y contactos fijos</div>
                     </div>
                   </div>
 

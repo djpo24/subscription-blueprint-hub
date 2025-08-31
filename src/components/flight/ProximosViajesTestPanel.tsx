@@ -48,7 +48,7 @@ export function ProximosViajesTestPanel() {
     return { outboundDateText, returnDateText, deadlineDateText };
   };
 
-  // Generate WhatsApp payload (CORREGIDO para incluir components con parameters)
+  // Generate WhatsApp payload with proper components structure
   const generateWhatsAppPayload = () => {
     const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
     
@@ -69,19 +69,19 @@ export function ProximosViajesTestPanel() {
             parameters: [
               {
                 type: "text",
-                text: customerName        // {{1}} - nombre del cliente
+                text: customerName
               },
               {
                 type: "text",
-                text: outboundDateText   // {{2}} - fecha salida
+                text: outboundDateText
               },
               {
                 type: "text",
-                text: returnDateText     // {{3}} - fecha retorno
+                text: returnDateText
               },
               {
                 type: "text",
-                text: deadlineDateText   // {{4}} - fecha límite
+                text: deadlineDateText
               }
             ]
           }
@@ -231,7 +231,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Nombre del Cliente ({{1}})</Label>
+              <Label htmlFor="customer-name">Nombre del Cliente</Label>
               <Input
                 id="customer-name"
                 type="text"
@@ -243,7 +243,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="outbound-date">Fecha de Salida ({{2}})</Label>
+              <Label htmlFor="outbound-date">Fecha de Salida</Label>
               <Input
                 id="outbound-date"
                 type="date"
@@ -254,7 +254,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="return-date">Fecha de Retorno ({{3}})</Label>
+              <Label htmlFor="return-date">Fecha de Retorno</Label>
               <Input
                 id="return-date"
                 type="date"
@@ -265,7 +265,7 @@ export function ProximosViajesTestPanel() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="deadline-date">Fecha Límite ({{4}})</Label>
+              <Label htmlFor="deadline-date">Fecha Límite</Label>
               <Input
                 id="deadline-date"
                 type="date"
@@ -310,12 +310,12 @@ export function ProximosViajesTestPanel() {
               {showPayload && (
                 <CardContent>
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Plantilla proximo_viaje_3:</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">📋 Estructura Plantilla proximo_viaje_3</h4>
                     <div className="text-sm text-blue-700 space-y-1">
-                      <div><strong>{{1}}</strong> = Nombre del cliente (en body/parameters)</div>
-                      <div><strong>{{2}}</strong> = Fecha de salida (en body/parameters)</div>
-                      <div><strong>{{3}}</strong> = Fecha de retorno (en body/parameters)</div>
-                      <div><strong>{{4}}</strong> = Fecha límite (en body/parameters)</div>
+                      <div><strong>Parámetro 1</strong> = Nombre del cliente</div>
+                      <div><strong>Parámetro 2</strong> = Fecha de salida</div>
+                      <div><strong>Parámetro 3</strong> = Fecha de retorno</div>
+                      <div><strong>Parámetro 4</strong> = Fecha límite</div>
                       <div className="font-medium text-blue-800 mt-2">✅ Incluye direcciones y contactos fijos</div>
                     </div>
                   </div>
@@ -335,12 +335,12 @@ export function ProximosViajesTestPanel() {
                   </div>
                   
                   <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-sm">Fechas Formateadas (en español):</h4>
+                    <h4 className="font-medium text-sm">Fechas Formateadas (en español)</h4>
                     <div className="text-xs space-y-1">
-                      <div><strong>{{1}} Nombre:</strong> {customerName}</div>
-                      <div><strong>{{2}} Salida:</strong> {getFormattedDates().outboundDateText}</div>
-                      <div><strong>{{3}} Retorno:</strong> {getFormattedDates().returnDateText}</div>
-                      <div><strong>{{4}} Límite:</strong> {getFormattedDates().deadlineDateText}</div>
+                      <div><strong>Nombre</strong> {customerName}</div>
+                      <div><strong>Salida</strong> {getFormattedDates().outboundDateText}</div>
+                      <div><strong>Retorno</strong> {getFormattedDates().returnDateText}</div>
+                      <div><strong>Límite</strong> {getFormattedDates().deadlineDateText}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -381,7 +381,7 @@ export function ProximosViajesTestPanel() {
               <CardContent className="space-y-4">
                 {!lastResult.success && lastResult.error && (
                   <div className="bg-red-100 p-3 rounded border border-red-200">
-                    <h4 className="font-medium text-red-800 mb-2">Error Detallado:</h4>
+                    <h4 className="font-medium text-red-800 mb-2">Error Detallado</h4>
                     <p className="text-sm text-red-700">{lastResult.error.message || JSON.stringify(lastResult.error)}</p>
                     {lastResult.error.error_code === 132000 && (
                       <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded">
@@ -396,7 +396,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.response && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Respuesta de WhatsApp:</h4>
+                    <h4 className="font-medium text-sm mb-2">Respuesta de WhatsApp</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"
@@ -415,7 +415,7 @@ export function ProximosViajesTestPanel() {
                 
                 {lastResult.payload && (
                   <div>
-                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida con Components):</h4>
+                    <h4 className="font-medium text-sm mb-2">Payload Enviado (Estructura Corregida con Components)</h4>
                     <div className="relative">
                       <Button
                         variant="ghost"

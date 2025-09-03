@@ -27,8 +27,8 @@ export interface BotStates {
 export function useAdvancedBotToggle() {
   const [botStates, setBotStates] = useState<BotStates>(() => {
     return {
-      isAutoResponseEnabled: false, // Desactivado permanentemente
-      isManualResponseEnabled: true
+      isAutoResponseEnabled: false, // COMPLETAMENTE DESACTIVADO
+      isManualResponseEnabled: true // Solo respuesta manual permitida
     };
   });
 
@@ -38,12 +38,15 @@ export function useAdvancedBotToggle() {
       setBotStates(states);
     });
 
+    console.log('🚫 Sistema de auto-respuesta COMPLETAMENTE DESACTIVADO');
+
     return unsubscribe;
   }, []);
 
   const toggleAutoResponse = (enabled: boolean) => {
-    // Respuesta automática desactivada permanentemente
-    console.log('🚫 Respuesta automática desactivada - No se puede activar');
+    // 🚫 RESPUESTA AUTOMÁTICA COMPLETAMENTE DESACTIVADA
+    console.log('🚫 SISTEMA DE AUTO-RESPUESTA COMPLETAMENTE DESACTIVADO - No se puede activar');
+    console.log('🚫 El bot NO responderá automáticamente bajo ninguna circunstancia');
     return;
   };
 

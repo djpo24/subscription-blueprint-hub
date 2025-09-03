@@ -2,30 +2,16 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, BotOff, Zap, ZapOff, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Bot, BotOff, MessageSquare, MessageSquareOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 
 export function AdvancedBotToggleButton() {
   const {
-    isAutoResponseEnabled,
     isManualResponseEnabled,
-    toggleAutoResponse,
     toggleManualResponse
   } = useAdvancedBotToggle();
   const { toast } = useToast();
-
-  const handleAutoResponseToggle = () => {
-    const newState = !isAutoResponseEnabled;
-    toggleAutoResponse(newState);
-    
-    toast({
-      title: newState ? "🤖 Respuestas automáticas activadas" : "🔕 Respuestas automáticas desactivadas",
-      description: newState 
-        ? "SARA responderá automáticamente a todos los mensajes entrantes" 
-        : "SARA no responderá automáticamente a los mensajes"
-    });
-  };
 
   const handleManualResponseToggle = () => {
     const newState = !isManualResponseEnabled;
@@ -44,25 +30,14 @@ export function AdvancedBotToggleButton() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Bot className="h-4 w-4" />
-          Control de SARA (IA)
+          Control de SARA (IA) - Auto-respuesta DESACTIVADA
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Control de respuestas automáticas */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Respuestas Automáticas</span>
-            <span className="text-xs text-gray-500">Responde automáticamente a mensajes</span>
-          </div>
-          <Button
-            variant={isAutoResponseEnabled ? "default" : "outline"}
-            size="sm"
-            onClick={handleAutoResponseToggle}
-            className="flex items-center gap-2"
-          >
-            {isAutoResponseEnabled ? <Zap className="h-3 w-3" /> : <ZapOff className="h-3 w-3" />}
-            {isAutoResponseEnabled ? "ON" : "OFF"}
-          </Button>
+        {/* Aviso de auto-respuesta desactivada */}
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm font-medium text-red-800">🚫 Auto-respuesta DESACTIVADA</p>
+          <p className="text-xs text-red-600">El bot NO responderá automáticamente a ningún mensaje</p>
         </div>
 
         {/* Control de generación manual */}
@@ -84,15 +59,9 @@ export function AdvancedBotToggleButton() {
 
         {/* Estado general */}
         <div className="flex items-center justify-center pt-2 border-t">
-          <Badge variant={isAutoResponseEnabled || isManualResponseEnabled ? "default" : "secondary"}>
-            {isAutoResponseEnabled && isManualResponseEnabled 
-              ? "🤖 SARA completamente activa"
-              : isAutoResponseEnabled 
-                ? "⚡ Solo respuestas automáticas"
-                : isManualResponseEnabled
-                  ? "✋ Solo generación manual"
-                  : "😴 SARA desactivada"
-            }
+          <Badge variant="secondary" className="bg-red-100 text-red-800">
+            🚫 Auto-respuesta COMPLETAMENTE DESACTIVADA
+            {isManualResponseEnabled ? " | ✋ Solo generación manual" : " | 😴 Todo desactivado"}
           </Badge>
         </div>
       </CardContent>

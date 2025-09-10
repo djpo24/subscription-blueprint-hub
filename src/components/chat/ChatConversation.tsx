@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,14 +27,29 @@ export function ChatConversation({
   phone,
   customerName,
   customerId,
-  messages,
+  messages: initialMessages,
   isRegistered,
   onSendMessage,
   isLoading,
   profileImageUrl
 }: ChatConversationProps) {
+  // Estado local para manejar la lista de mensajes
+  const [messages, setMessages] = useState<ChatMessageType[]>(initialMessages);
+  
+  // Sincronizar con los mensajes externos
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
   const { data: packageIndicator } = useCustomerPackageStatus(phone);
   const displayName = customerName || 'Cliente';
+
+  // Función para manejar la eliminación de mensajes
+  const handleMessageDeleted = (messageId: string) => {
+    setMessages(prevMessages => 
+      prevMessages.filter(message => message.id !== messageId)
+    );
+  };
 
   return (
     <Card className="h-full flex flex-col">
@@ -108,6 +124,7 @@ export function ChatConversation({
                   onSendMessage={onSendMessage}
                   customerPhone={phone}
                   customerId={customerId}
+                  onMessageDeleted={handleMessageDeleted}
                 />
               ))}
             </div>

@@ -4,12 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, Image as ImageIcon, Bot, User, Reply } from 'lucide-react';
+import { Clock, Image as ImageIcon, Bot, User, Reply, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useDeleteMessage } from '@/hooks/useDeleteMessage';
 import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
@@ -19,6 +21,7 @@ interface ChatMessageProps {
   onSendMessage: (message: string, image?: File) => void;
   customerPhone: string;
   customerId?: string | null;
+  onMessageDeleted?: (messageId: string) => void;
 }
 
 export function ChatMessage({ 
@@ -27,9 +30,13 @@ export function ChatMessage({
   profileImageUrl,
   onSendMessage,
   customerPhone,
-  customerId
+  customerId,
+  onMessageDeleted
 }: ChatMessageProps) {
   const { isManualResponseEnabled } = useAdvancedBotToggle();
+  const { isAdmin } = useUserRole();
+  const { deleteMessage, isDeleting } = useDeleteMessage();
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
@@ -38,6 +45,30 @@ export function ChatMessage({
     if (response.action === 'send' && response.response) {
       onSendMessage(response.response);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setShowConfirmDelete(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    const messageType = isFromCustomer ? 'incoming' : 'sent';
+    const success = await deleteMessage({
+      messageId: message.id,
+      messageType,
+      onDeleted: () => {
+        onMessageDeleted?.(message.id);
+        setShowConfirmDelete(false);
+      }
+    });
+    
+    if (!success) {
+      setShowConfirmDelete(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmDelete(false);
   };
 
   return (
@@ -70,10 +101,53 @@ export function ChatMessage({
                     {isFromCustomer ? (customerName || 'Cliente') : 'Enviado'}
                   </span>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {messageTime}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {messageTime}
+                  </Badge>
+                  {/* Botón de eliminar para administradores */}
+                  {isAdmin && !showConfirmDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDeleteClick}
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      title="Eliminar mensaje"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {/* Confirmación de eliminación */}
+              {isAdmin && showConfirmDelete && (
+                <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded">
+                  <p className="text-xs text-red-800 mb-2">
+                    ¿Estás seguro de que quieres eliminar este mensaje?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleConfirmDelete}
+                      disabled={isDeleting}
+                      className="h-6 text-xs px-2"
+                    >
+                      {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelDelete}
+                      disabled={isDeleting}
+                      className="h-6 text-xs px-2"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Contenido del mensaje */}
               <div className="space-y-2">

@@ -83,10 +83,67 @@ export function ChatMessage({
                   </p>
                 )}
                 
+                {/* Renderizar diferentes tipos de media */}
                 {message.media_url && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <ImageIcon className="h-3 w-3" />
-                    <span>Imagen adjunta</span>
+                  <div className="mt-2">
+                    {message.message_type === 'audio' && (
+                      <div className="bg-white rounded-lg p-2 border">
+                        <audio 
+                          controls 
+                          className="w-full max-w-xs"
+                          preload="metadata"
+                        >
+                          <source src={message.media_url} type="audio/ogg" />
+                          <source src={message.media_url} type="audio/mpeg" />
+                          <source src={message.media_url} type="audio/wav" />
+                          Tu navegador no soporta la reproducción de audio.
+                        </audio>
+                      </div>
+                    )}
+                    
+                    {message.message_type === 'image' && (
+                      <div className="bg-white rounded-lg p-1 border">
+                        <img 
+                          src={message.media_url} 
+                          alt="Imagen compartida"
+                          className="max-w-xs max-h-64 rounded object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(message.media_url, '_blank')}
+                        />
+                      </div>
+                    )}
+                    
+                    {message.message_type === 'video' && (
+                      <div className="bg-white rounded-lg p-1 border">
+                        <video 
+                          controls 
+                          className="max-w-xs max-h-64 rounded"
+                          preload="metadata"
+                        >
+                          <source src={message.media_url} type="video/mp4" />
+                          <source src={message.media_url} type="video/webm" />
+                          Tu navegador no soporta la reproducción de video.
+                        </video>
+                      </div>
+                    )}
+                    
+                    {message.message_type === 'document' && (
+                      <div className="bg-white rounded-lg p-3 border">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-gray-100 p-2 rounded">
+                            📄
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">Documento</p>
+                            <button
+                              onClick={() => window.open(message.media_url, '_blank')}
+                              className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              Descargar archivo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

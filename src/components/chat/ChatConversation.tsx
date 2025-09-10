@@ -136,6 +136,7 @@ export function ChatConversation({
                   customerPhone={phone}
                   customerId={customerId}
                   onMessageDeleted={handleMessageDeleted}
+                  allMessages={messages}
                 />
               ))}
               <div ref={messagesEndRef} />

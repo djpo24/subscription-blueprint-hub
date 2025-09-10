@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
+import { ReactionMessage } from './ReactionMessage';
+import { StickerMessage } from './StickerMessage';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDeleteMessage } from '@/hooks/useDeleteMessage';
@@ -22,6 +24,7 @@ interface ChatMessageProps {
   customerPhone: string;
   customerId?: string | null;
   onMessageDeleted?: (messageId: string) => void;
+  allMessages?: ChatMessageType[];
 }
 
 export function ChatMessage({ 
@@ -31,7 +34,8 @@ export function ChatMessage({
   onSendMessage,
   customerPhone,
   customerId,
-  onMessageDeleted
+  onMessageDeleted,
+  allMessages = []
 }: ChatMessageProps) {
   const { isManualResponseEnabled } = useAdvancedBotToggle();
   const { isAdmin } = useUserRole();
@@ -70,6 +74,33 @@ export function ChatMessage({
   const handleCancelDelete = () => {
     setShowConfirmDelete(false);
   };
+
+  // Handle special message types
+  if (message.message_type === 'reaction') {
+    // Find the referenced message for reactions
+    const reactionData = message.raw_data?.reaction_details || message.raw_data?.reaction;
+    const referencedMessage = reactionData?.message_id ? 
+      allMessages.find(msg => msg.whatsapp_message_id === reactionData.message_id) : null;
+    
+    return (
+      <ReactionMessage 
+        message={message}
+        customerName={customerName}
+        referencedMessage={referencedMessage}
+      />
+    );
+  }
+
+  if (message.message_type === 'sticker') {
+    return (
+      <StickerMessage 
+        message={message}
+        customerName={customerName}
+        profileImageUrl={profileImageUrl}
+        customerPhone={customerPhone}
+      />
+    );
+  }
 
   return (
     <div className="space-y-3">

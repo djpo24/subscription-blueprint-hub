@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { useCustomerHistory } from '@/hooks/useCustomerHistory';
 import { FidelizationCustomer } from '@/hooks/useFidelizationData';
-import { Trophy, Package, Calendar, MapPin, Hash, Weight } from 'lucide-react';
+import { Trophy, Package, Calendar, MapPin, Hash, Weight, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -95,6 +95,7 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
                     <TableHead className="text-center">Peso</TableHead>
                     <TableHead>Ruta</TableHead>
                     <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-center">Pago</TableHead>
                     <TableHead className="text-right">Puntos</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -149,6 +150,27 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
                            shipment.status === 'pending' ? 'Pendiente' : 
                            shipment.status || 'N/A'}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          {shipment.payment ? (
+                            <div className="text-sm">
+                              <div className="font-semibold">
+                                {shipment.payment.currency === 'COP' ? '$' : 
+                                 shipment.payment.currency === 'AWG' ? 'ƒ' : ''}
+                                {shipment.payment.amount.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {shipment.payment.currency}
+                              </div>
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Sin pago
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="space-y-1">

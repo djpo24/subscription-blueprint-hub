@@ -13,6 +13,11 @@ export interface CustomerShipment {
   basePoints: number;
   weightPoints: number;
   totalPoints: number;
+  payment: {
+    amount: number;
+    currency: string;
+    payment_method: string;
+  } | null;
 }
 
 export function useCustomerHistory(customerId: string | null) {
@@ -33,7 +38,12 @@ export function useCustomerHistory(customerId: string | null) {
           status,
           created_at,
           origin,
-          destination
+          destination,
+          customer_payments (
+            amount,
+            currency,
+            payment_method
+          )
         `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
@@ -52,11 +62,24 @@ export function useCustomerHistory(customerId: string | null) {
         const weightPoints = weight * 10; // 10 points per kilo
         const totalPoints = basePoints + weightPoints;
 
+        // Get payment information (first payment if multiple exist)
+        const paymentData = pkg.customer_payments && pkg.customer_payments.length > 0 
+          ? pkg.customer_payments[0] 
+          : null;
+
         return {
-          ...pkg,
+          id: pkg.id,
+          tracking_number: pkg.tracking_number,
+          weight: pkg.weight,
+          description: pkg.description,
+          status: pkg.status,
+          created_at: pkg.created_at,
+          origin: pkg.origin,
+          destination: pkg.destination,
           basePoints,
           weightPoints,
-          totalPoints
+          totalPoints,
+          payment: paymentData
         };
       });
 

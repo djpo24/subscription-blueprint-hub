@@ -236,36 +236,6 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
     return null
   }
 }
-      
-      // Extraer URL del perfil de la respuesta alternativa
-      if (altData.contacts && altData.contacts.length > 0) {
-        const contact = altData.contacts[0]
-        if (contact.profile && contact.profile.profile_picture_url) {
-          console.log('✅ Profile image found via alternative method:', wa_id)
-          return contact.profile.profile_picture_url
-        }
-      }
-      
-      return null
-    }
-    
-    const profileData = await contactResponse.json()
-    console.log('📱 Profile data response:', JSON.stringify(profileData, null, 2))
-    
-    // Extraer URL del perfil
-    if (profileData.profile_pic_url) {
-      console.log('✅ Profile image found for:', wa_id)
-      return profileData.profile_pic_url
-    }
-    
-    console.log('📭 No profile image available for customer')
-    return null
-    
-  } catch (error) {
-    console.error('❌ Error getting WhatsApp profile:', error)
-    return null
-  }
-}
 
 async function updateCustomerProfileImage(wa_id: string, customer: any, accessToken: string, phoneNumberId: string, supabaseClient: any) {
   try {

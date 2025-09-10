@@ -37,7 +37,7 @@ export function FlightMonitoringCard() {
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              <h4 className="font-medium text-green-900">Monitoreo Automático Activo</h4>
+              <h4 className="font-medium text-green-900">Monitoreo Manual Únicamente</h4>
             </div>
             <div className="flex items-center gap-2 text-sm text-green-800">
               <Clock className="h-4 w-4" />

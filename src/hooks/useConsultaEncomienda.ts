@@ -54,7 +54,7 @@ export function useConsultaEncomienda() {
       
       console.log('📊 [CONSULTA] Request body:', requestBody);
       
-      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-manual-message', {
         body: requestBody
       });
 

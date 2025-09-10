@@ -10,8 +10,7 @@ import { CustomerAvatar } from './CustomerAvatar';
 import { CustomerInfoButton } from './CustomerInfoButton';
 import { useCustomerPackageStatus } from '@/hooks/useCustomerPackageStatus';
 import { PackageStatusIndicator } from './components/PackageStatusIndicator';
-import { processMessagesWithReactionsAndReplies } from '@/utils/messageProcessor';
-import type { ChatMessage as ChatMessageType, ProcessedMessage } from '@/types/chatMessage';
+import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatConversationProps {
   phone: string;
@@ -34,8 +33,8 @@ export function ChatConversation({
   isLoading,
   profileImageUrl
 }: ChatConversationProps) {
-  // Estado local para manejar la lista de mensajes procesados
-  const [messages, setMessages] = useState<ProcessedMessage[]>([]);
+  // Estado local para manejar la lista de mensajes (SIN PROCESAMIENTO AUTOMÁTICO)
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Función para hacer scroll al final
@@ -43,10 +42,9 @@ export function ChatConversation({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  // Sincronizar con los mensajes externos y procesarlos
+  // ELIMINADO: NO HAY PROCESAMIENTO AUTOMÁTICO DE MENSAJES
   useEffect(() => {
-    const processedMessages = processMessagesWithReactionsAndReplies(initialMessages);
-    setMessages(processedMessages);
+    setMessages(initialMessages);
   }, [initialMessages]);
 
   // Auto-scroll cuando cambian los mensajes

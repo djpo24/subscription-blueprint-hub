@@ -9,16 +9,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 
-import { StickerMessage } from './StickerMessage';
-import { ReplyMessage } from './ReplyMessage';
-import { ReactionOverlay } from './ReactionOverlay';
-
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDeleteMessage } from '@/hooks/useDeleteMessage';
-import type { ChatMessage as ChatMessageType, ProcessedMessage } from '@/types/chatMessage';
+import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
 
 interface ChatMessageProps {
-  message: ProcessedMessage;
+  message: ChatMessageType;
   customerName?: string;
   profileImageUrl?: string | null;
   onSendMessage: (message: string, image?: File) => void;
@@ -69,35 +65,25 @@ export function ChatMessage({
     setShowConfirmDelete(false);
   };
 
-  // Handle reply messages
-  if (message.isReply && message.referencedMessage) {
-    return (
-      <ReplyMessage 
-        message={message}
-        referencedMessage={message.referencedMessage}
-        customerName={customerName}
-        profileImageUrl={profileImageUrl}
-        customerPhone={customerPhone}
-        reactions={message.reactions}
-      />
-    );
-  }
+  // ELIMINADO: NO HAY PROCESAMIENTO DE REPLIES AUTOMÁTICO
+  // if (message.isReply && message.referencedMessage) {
+  //   return (
+  //     <ReplyMessage />
+  //   );
+  // }
 
+  // ELIMINADO: NO HAY PROCESAMIENTO DE REACCIONES AUTOMÁTICO
   // Skip standalone reaction messages (they'll be shown as overlays on original messages)
-  if (message.message_type === 'reaction') {
-    return null;
-  }
+  // if (message.message_type === 'reaction') {
+  //   return null;
+  // }
 
-  if (message.message_type === 'sticker') {
-    return (
-      <StickerMessage 
-        message={message}
-        customerName={customerName}
-        profileImageUrl={profileImageUrl}
-        customerPhone={customerPhone}
-      />
-    );
-  }
+  // ELIMINADO: NO HAY PROCESAMIENTO AUTOMÁTICO DE STICKERS
+  // if (message.message_type === 'sticker') {
+  //   return (
+  //     <StickerMessage />
+  //   );
+  // }
 
   return (
     <div className="space-y-3">
@@ -250,8 +236,8 @@ export function ChatMessage({
                 )}
               </div>
 
-              {/* Reacciones si las hay */}
-              <ReactionOverlay reactions={message.reactions || []} />
+              {/* ELIMINADO: NO HAY REACCIONES AUTOMÁTICAS */}
+              {/* <ReactionOverlay reactions={message.reactions || []} /> */}
 
               {/* Timestamp detallado */}
               <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">

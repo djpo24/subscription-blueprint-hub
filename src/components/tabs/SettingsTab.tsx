@@ -7,7 +7,7 @@ import { DestinationAddressesManager } from '@/components/flight/DestinationAddr
 import { WhatsAppTemplateTest } from '@/components/flight/WhatsAppTemplateTest';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { WebhookDiagnostic } from '@/components/WebhookDiagnostic';
-import { ChatbotConfigPanel } from '@/components/settings/ChatbotConfigPanel';
+import { ChatConfigPanel } from '@/components/settings/ChatConfigPanel';
 import { TabsContent } from '@/components/ui/tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,9 +22,9 @@ export function SettingsTab() {
             <Settings className="h-4 w-4" />
             General
           </TabsTrigger>
-          <TabsTrigger value="chatbot" className="flex items-center gap-2">
-            <Bot className="h-4 w-4" />
-            Chatbot
+          <TabsTrigger value="chat" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Chat
           </TabsTrigger>
           <TabsTrigger value="admin" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -56,8 +56,8 @@ export function SettingsTab() {
           <NotificationSettings />
         </TabsContent>
 
-        <TabsContent value="chatbot" className="space-y-6">
-          <ChatbotConfigPanel />
+        <TabsContent value="chat" className="space-y-6">
+          <ChatConfigPanel />
         </TabsContent>
 
         <TabsContent value="admin" className="space-y-6">

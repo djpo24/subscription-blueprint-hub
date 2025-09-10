@@ -126,8 +126,8 @@ export function ProximosViajesTestPanel() {
       // Generar fechas formateadas
       const { outboundDateText, returnDateText, deadlineDateText } = getFormattedDates();
 
-      // Enviar a WhatsApp usando la función edge
-      const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+      // Enviar a WhatsApp MANUALMENTE - SIN PLANTILLAS
+      const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-manual-message', {
         body: {
           notificationId: notificationData.id,
           phone: testPhone,

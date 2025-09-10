@@ -1,4 +1,6 @@
 
+// ELIMINADO COMPLETAMENTE - NO HAY PROCESAMIENTO AUTOMÁTICO DE MENSAJES
+
 export interface ChatMessage {
   id: string;
   message_content: string;
@@ -9,31 +11,12 @@ export interface ChatMessage {
   is_from_customer?: boolean;
   media_url?: string;
   raw_data?: any;
-  // Para manejar replies/respuestas
   reply_to_message_id?: string;
   reply_to_message?: ChatMessage;
 }
 
-export interface ReactionData {
-  emoji: string;
-  message_id: string;
-}
-
-export interface StickerData {
-  id: string;
-  mime_type: string;
-  animated?: boolean;
-}
-
-export interface ProcessedMessage extends ChatMessage {
-  reactions?: Array<{
-    emoji: string;
-    count: number;
-    users: string[];
-  }>;
-  isReply?: boolean;
-  referencedMessage?: ChatMessage;
-}
+// ELIMINADO: ReactionData, StickerData, ProcessedMessage
+// No hay procesamiento automático de reacciones, stickers o mensajes
 
 export interface IncomingMessage {
   id: string;

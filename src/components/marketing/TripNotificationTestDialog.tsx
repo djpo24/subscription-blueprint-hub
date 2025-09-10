@@ -97,8 +97,8 @@ export function TripNotificationTestDialog({
         deadline: deadlineDateStr
       });
 
-      // Enviar exactamente como lo hace useArrivalNotifications
-      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
+      // Enviar MANUALMENTE - SIN PLANTILLAS AUTOMÁTICAS
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-manual-message', {
         body: {
           notificationId: notificationData.id,
           phone: testPhone,

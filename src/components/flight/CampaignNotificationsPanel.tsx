@@ -294,8 +294,8 @@ export function CampaignNotificationsPanel() {
           continue;
         }
 
-        // Enviar mensaje por WhatsApp usando la plantilla correcta (IGUAL QUE LLEGADAS)
-        const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+        // Enviar mensaje por WhatsApp MANUALMENTE - SIN PLANTILLAS
+        const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-manual-message', {
           body: {
             notificationId: notificationData.id,
             phone: phone,

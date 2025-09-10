@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, CheckCircle, AlertTriangle, Shield, Settings } from 'lucide-react';
 
 
-export function ChatbotConfigPanel() {
+export function ChatConfigPanel() {
   return (
     <div className="space-y-6">
       <Card>

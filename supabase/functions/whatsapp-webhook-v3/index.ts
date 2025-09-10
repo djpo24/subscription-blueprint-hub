@@ -513,6 +513,10 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string, supab
                      contentType.includes('doc') ? '.doc' :
                      contentType.includes('excel') ? '.xlsx' :
                      contentType.includes('text') ? '.txt' : '.bin'
+    } else if (messageType === 'sticker') {
+      fileExtension = contentType.includes('webp') ? '.webp' :
+                     contentType.includes('png') ? '.png' :
+                     contentType.includes('gif') ? '.gif' : '.webp'
     }
     
     // Create unique filename
@@ -643,7 +647,7 @@ async function checkAutoResponseSettings() {
 }
 
 async function handleIncomingMessage(message: any, supabaseClient: any) {
-  const { id, from, timestamp, type, text, image, document, audio, video } = message
+  const { id, from, timestamp, type, text, image, document, audio, video, sticker, reaction } = message
   
   console.log('Incoming message V3:', {
     id,
@@ -654,7 +658,9 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     image: image?.id,
     document: document?.id,
     audio: audio?.id,
-    video: video?.id
+    video: video?.id,
+    sticker: sticker?.id,
+    reaction: reaction?.emoji
   })
 
   // Get access token from app secrets
@@ -725,6 +731,27 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
       if (video?.id && accessTokenData) {
         mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData, supabaseClient, 'video')
         console.log('🎥 Video media URL processed V3:', mediaUrl)
+      }
+      break
+    
+    case 'sticker':
+      messageContent = '🏷️ Sticker'
+      if (sticker?.id && accessTokenData) {
+        mediaUrl = await downloadWhatsAppMedia(sticker.id, accessTokenData, supabaseClient, 'sticker')
+        console.log('🏷️ Sticker media URL processed V3:', mediaUrl)
+      }
+      break
+    
+    case 'reaction':
+      const reactionEmoji = reaction?.emoji || '👍'
+      const reactionMessageId = reaction?.message_id || ''
+      messageContent = `Reaccionó con ${reactionEmoji}`
+      console.log('👍 Reaction processed V3 - Emoji:', reactionEmoji, 'Message ID:', reactionMessageId)
+      
+      // Store additional reaction data in raw_data for future reference
+      message.reaction_details = {
+        emoji: reactionEmoji,
+        message_id: reactionMessageId
       }
       break
     

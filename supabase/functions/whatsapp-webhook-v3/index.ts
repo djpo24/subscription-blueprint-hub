@@ -228,6 +228,66 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
   }
 }
 
+async function updateCustomerProfileImage(wa_id: string, customer: any, accessToken: string, phoneNumberId: string, supabaseClient: any) {
+  try {
+    console.log('🖼️ Checking profile image for customer:', customer?.name || 'Unregistered', 'wa_id:', wa_id)
+    
+    // Skip if customer is not registered
+    if (!customer) {
+      console.log('⚠️ Customer not registered, skipping profile image update')
+      return
+    }
+    
+    // Check if customer already has a recent profile image (within last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    if (customer.profile_image_url && customer.updated_at) {
+      const lastUpdate = new Date(customer.updated_at)
+      if (lastUpdate > thirtyDaysAgo) {
+        console.log('✅ Customer has recent profile image, skipping update')
+        return
+      }
+    }
+    
+    console.log('🔄 Attempting to fetch fresh profile image from WhatsApp API...')
+    
+    // Get profile image URL from WhatsApp
+    const profileImageUrl = await getWhatsAppProfileImage(wa_id, phoneNumberId, accessToken)
+    
+    if (profileImageUrl) {
+      console.log('🖼️ Profile image found, downloading and storing permanently...')
+      
+      // Download and store the image permanently
+      const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
+      
+      if (permanentImageUrl && permanentImageUrl !== customer.profile_image_url) {
+        // Update customer with new profile image
+        const { error: updateError } = await supabaseClient
+          .from('customers')
+          .update({ 
+            profile_image_url: permanentImageUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', customer.id)
+        
+        if (updateError) {
+          console.error('❌ Error updating customer profile image:', updateError)
+        } else {
+          console.log('✅ Customer profile image updated successfully:', permanentImageUrl)
+        }
+      } else {
+        console.log('📷 Profile image unchanged or download failed')
+      }
+    } else {
+      console.log('📭 No public profile image available for this customer')
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in profile image update process:', error)
+  }
+}
+
 async function handleContactInfo(contact: any, supabaseClient: any) {
   const { wa_id, profile } = contact
   
@@ -687,6 +747,21 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     return
   } else {
     console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
+  }
+
+  // 🖼️ OBTENER FOTO DE PERFIL AUTOMÁTICAMENTE PARA CADA MENSAJE
+  console.log('🔄 Attempting to get profile image for message from:', from)
+  
+  // Get WhatsApp credentials
+  const { data: phoneNumberId } = await supabaseClient.rpc('get_app_secret', { 
+    secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' 
+  })
+  
+  if (accessTokenData && phoneNumberId) {
+    // Try to get and update profile image for this contact
+    await updateCustomerProfileImage(from, customer, accessTokenData, phoneNumberId, supabaseClient)
+  } else {
+    console.log('⚠️ Missing WhatsApp credentials for profile image fetch')
   }
 
   // 🤖 AUTO RESPONSE LOGIC - Only for text messages

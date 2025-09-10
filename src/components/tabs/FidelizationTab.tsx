@@ -4,12 +4,25 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
-import { useFidelizationData, DateFilter } from '@/hooks/useFidelizationData';
+import { CustomerDetailModal } from '@/components/fidelization/CustomerDetailModal';
+import { useFidelizationData, DateFilter, FidelizationCustomer } from '@/hooks/useFidelizationData';
 import { Trophy, Users, Star, Award } from 'lucide-react';
 
 export function FidelizationTab() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [selectedCustomer, setSelectedCustomer] = useState<FidelizationCustomer | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: fidelizationData = [], isLoading, error } = useFidelizationData(dateFilter);
+
+  const handleCustomerClick = (customer: FidelizationCustomer) => {
+    setSelectedCustomer(customer);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCustomer(null);
+  };
 
   const topCustomer = fidelizationData[0];
   const totalCustomers = fidelizationData.length;
@@ -105,9 +118,9 @@ export function FidelizationTab() {
                 <Trophy className="h-5 w-5 text-yellow-500" />
                 Ranking de Fidelización
               </CardTitle>
-              <CardDescription>
-                Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan multiplicando el peso de cada envío por 10.
-              </CardDescription>
+               <CardDescription>
+                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo.
+               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
@@ -131,9 +144,17 @@ export function FidelizationTab() {
             data={fidelizationData} 
             isLoading={isLoading}
             dateFilter={dateFilter}
+            onCustomerClick={handleCustomerClick}
           />
         </CardContent>
       </Card>
+
+      {/* Customer Detail Modal */}
+      <CustomerDetailModal
+        customer={selectedCustomer}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </TabsContent>
   );
 }

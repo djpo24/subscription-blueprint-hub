@@ -8,9 +8,10 @@ interface FidelizationTableProps {
   data: FidelizationCustomer[];
   isLoading: boolean;
   dateFilter: DateFilter;
+  onCustomerClick: (customer: FidelizationCustomer) => void;
 }
 
-export function FidelizationTable({ data, isLoading, dateFilter }: FidelizationTableProps) {
+export function FidelizationTable({ data, isLoading, dateFilter, onCustomerClick }: FidelizationTableProps) {
   const getPositionIcon = (position: number) => {
     switch (position) {
       case 1:
@@ -100,7 +101,8 @@ export function FidelizationTable({ data, isLoading, dateFilter }: FidelizationT
           {data.map((customer) => (
             <TableRow 
               key={customer.id} 
-              className={cn(getRowClassName(customer.position))}
+              className={cn(getRowClassName(customer.position), "cursor-pointer")}
+              onClick={() => onCustomerClick(customer)}
             >
               <TableCell>
                 <div className="flex items-center gap-2">

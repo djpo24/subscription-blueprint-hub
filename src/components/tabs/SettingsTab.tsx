@@ -1,5 +1,6 @@
 
 import { AudioMigrationButton } from '@/components/AudioMigrationButton';
+import { ProfileMigrationButton } from '@/components/ProfileMigrationButton';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { UserActionsPanel } from '@/components/admin/UserActionsPanel';
 import { DestinationAddressesManager } from '@/components/flight/DestinationAddressesManager';
@@ -72,29 +73,48 @@ export function SettingsTab() {
         </TabsContent>
 
         <TabsContent value="migration" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🎵 Recuperación de Audios Anteriores
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Esta herramienta permite recuperar audios de WhatsApp que fueron enviados antes de la 
-                  implementación del almacenamiento permanente. Los audios se descargarán y almacenarán 
-                  de forma permanente en Supabase Storage.
-                </p>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Nota:</strong> Esta operación puede tomar varios minutos dependiendo de la cantidad 
-                    de audios a migrar. Se recomienda ejecutar durante horarios de poco tráfico.
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Migración de Audios */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🎵 Recuperación de Audios Anteriores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Recupera audios de WhatsApp enviados antes de la implementación del almacenamiento permanente.
                   </p>
+                  <AudioMigrationButton />
                 </div>
-                <AudioMigrationButton />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Migración de Fotos de Perfil */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  👤 Recuperación de Fotos de Perfil
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Obtiene y almacena permanentemente las fotos de perfil de WhatsApp de todos los clientes.
+                  </p>
+                  <ProfileMigrationButton />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              <strong>Nota:</strong> Estas operaciones pueden tomar varios minutos. Se recomienda ejecutar durante horarios de poco tráfico. 
+              Las fotos de perfil solo se pueden obtener si los usuarios las tienen públicas en WhatsApp.
+            </p>
+          </div>
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-6">

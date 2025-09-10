@@ -189,6 +189,45 @@ async function downloadProfileImage(profileImageUrl: string, wa_id: string, supa
   }
 }
 
+async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, accessToken: string): Promise<string | null> {
+  try {
+    console.log('🔍 Getting WhatsApp profile for:', wa_id)
+    
+    // Make request to WhatsApp contacts endpoint
+    const contactResponse = await fetch(
+      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${wa_id}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    
+    if (!contactResponse.ok) {
+      console.log('❌ Profile not available or accessible for:', wa_id)
+      return null
+    }
+    
+    const contactData = await contactResponse.json()
+    console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
+    
+    // Extract profile image URL from the response
+    const contacts = contactData.contacts || []
+    if (contacts.length > 0 && contacts[0].profile && contacts[0].profile.profile_url) {
+      console.log('✅ Profile image found for:', wa_id)
+      return contacts[0].profile.profile_url
+    }
+    
+    console.log('📭 No profile image available for customer')
+    return null
+    
+  } catch (error) {
+    console.error('❌ Error getting WhatsApp profile:', error)
+    return null
+  }
+}
+
 async function handleContactInfo(contact: any, supabaseClient: any) {
   const { wa_id, profile } = contact
   
@@ -196,15 +235,25 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
 
   if (!wa_id) return
 
-  // Extract profile image URL if available
-  const profileImageUrl = profile?.profile_url || null
   const contactName = profile?.name || null
 
   console.log('Contact profile data V3:', {
     wa_id,
-    profileImageUrl,
     contactName
   })
+  
+  // Get WhatsApp access token and phone number ID from secrets
+  const { data: accessToken } = await supabaseClient.rpc('get_app_secret', { 
+    secret_name: 'META_WHATSAPP_TOKEN' 
+  })
+  const { data: phoneNumberId } = await supabaseClient.rpc('get_app_secret', { 
+    secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' 
+  })
+  
+  if (!accessToken || !phoneNumberId) {
+    console.error('❌ Missing WhatsApp credentials for profile image fetch')
+    return
+  }
 
   // 🔒 BUSCAR SOLO CLIENTES EXISTENTES - NO CREAR NUEVOS
   const { data: existingCustomers, error: findError } = await supabaseClient
@@ -234,14 +283,19 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     // Update existing customer with profile image
     const updateData: any = {}
     
-    // Download and store profile image permanently if provided and different
-    if (profileImageUrl && profileImageUrl !== bestMatch.profile_image_url) {
-      console.log('🖼️ New or different profile image detected, downloading...')
-      const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
+    // Get profile image from WhatsApp API if customer doesn't have one or we want to update it
+    if (!bestMatch.profile_image_url) {
+      console.log('🔄 Customer has no profile image, attempting to fetch from WhatsApp...')
+      const profileImageUrl = await getWhatsAppProfileImage(wa_id, phoneNumberId, accessToken)
       
-      if (permanentImageUrl) {
-        updateData.profile_image_url = permanentImageUrl
-        console.log('✅ Profile image downloaded and stored permanently V3:', permanentImageUrl)
+      if (profileImageUrl) {
+        console.log('🖼️ Profile image found, downloading and storing...')
+        const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
+        
+        if (permanentImageUrl) {
+          updateData.profile_image_url = permanentImageUrl
+          console.log('✅ Profile image downloaded and stored permanently V3:', permanentImageUrl)
+        }
       }
     }
     

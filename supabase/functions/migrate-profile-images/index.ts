@@ -83,7 +83,7 @@ serve(async (req) => {
         console.log(`📱 Checking profile for phone: ${cleanPhone}`)
 
         // Try to get profile info from WhatsApp Business API
-        const profileUrl = await getWhatsAppProfile(cleanPhone, accessTokenData)
+        const profileUrl = await getWhatsAppProfile(cleanPhone, accessTokenData, phoneIdData)
 
         if (profileUrl) {
           // Download and store the profile image permanently
@@ -171,27 +171,39 @@ serve(async (req) => {
   }
 })
 
-async function getWhatsAppProfile(phoneNumber: string, accessToken: string): Promise<string | null> {
+async function getWhatsAppProfile(phone: string, accessToken: string, phoneNumberId: string): Promise<string | null> {
   try {
-    console.log('🔍 Getting WhatsApp profile for:', phoneNumber)
+    console.log('🔍 Getting WhatsApp profile for:', phone)
     
-    // Try to get profile from WhatsApp Business API
-    const response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumber}/profile`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    // Clean phone number - remove any non-digit characters except +
+    const cleanPhone = phone.startsWith('+') ? phone : phone.replace(/[^\d]/g, '')
+    
+    // Use the correct contacts endpoint according to WhatsApp Cloud API docs
+    const profileResponse = await fetch(
+      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${cleanPhone}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
       }
-    })
+    )
     
-    if (!response.ok) {
-      console.log('❌ Profile not available or accessible for:', phoneNumber)
+    if (!profileResponse.ok) {
+      console.log('❌ Profile not available or accessible for:', phone)
       return null
     }
     
-    const profileData = await response.json()
-    const profileImageUrl = profileData?.profile_picture_url || profileData?.picture?.data?.url
+    const profileData = await profileResponse.json()
+    console.log('📱 Profile data:', JSON.stringify(profileData, null, 2))
     
-    console.log('📸 Profile image URL found:', profileImageUrl)
-    return profileImageUrl
+    // Extract profile image URL from the contacts response
+    const contacts = profileData.contacts || []
+    if (contacts.length > 0 && contacts[0].profile && contacts[0].profile.profile_url) {
+      return contacts[0].profile.profile_url
+    }
+    
+    return null
     
   } catch (error) {
     console.error('❌ Error getting WhatsApp profile:', error)

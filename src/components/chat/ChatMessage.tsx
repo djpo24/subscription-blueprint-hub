@@ -9,15 +9,16 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
 import { AIResponseButton } from './AIResponseButton';
-import { ReactionMessage } from './ReactionMessage';
 import { StickerMessage } from './StickerMessage';
+import { ReplyMessage } from './ReplyMessage';
+import { ReactionOverlay } from './ReactionOverlay';
 import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDeleteMessage } from '@/hooks/useDeleteMessage';
-import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+import type { ChatMessage as ChatMessageType, ProcessedMessage } from '@/types/chatMessage';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: ProcessedMessage;
   customerName?: string;
   profileImageUrl?: string | null;
   onSendMessage: (message: string, image?: File) => void;
@@ -75,20 +76,23 @@ export function ChatMessage({
     setShowConfirmDelete(false);
   };
 
-  // Handle special message types
-  if (message.message_type === 'reaction') {
-    // Find the referenced message for reactions
-    const reactionData = message.raw_data?.reaction_details || message.raw_data?.reaction;
-    const referencedMessage = reactionData?.message_id ? 
-      allMessages.find(msg => msg.whatsapp_message_id === reactionData.message_id) : null;
-    
+  // Handle reply messages
+  if (message.isReply && message.referencedMessage) {
     return (
-      <ReactionMessage 
+      <ReplyMessage 
         message={message}
+        referencedMessage={message.referencedMessage}
         customerName={customerName}
-        referencedMessage={referencedMessage}
+        profileImageUrl={profileImageUrl}
+        customerPhone={customerPhone}
+        reactions={message.reactions}
       />
     );
+  }
+
+  // Skip standalone reaction messages (they'll be shown as overlays on original messages)
+  if (message.message_type === 'reaction') {
+    return null;
   }
 
   if (message.message_type === 'sticker') {
@@ -252,6 +256,9 @@ export function ChatMessage({
                   </div>
                 )}
               </div>
+
+              {/* Reacciones si las hay */}
+              <ReactionOverlay reactions={message.reactions || []} />
 
               {/* Timestamp detallado */}
               <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">

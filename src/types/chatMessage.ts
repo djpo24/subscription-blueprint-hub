@@ -9,6 +9,9 @@ export interface ChatMessage {
   is_from_customer?: boolean;
   media_url?: string;
   raw_data?: any;
+  // Para manejar replies/respuestas
+  reply_to_message_id?: string;
+  reply_to_message?: ChatMessage;
 }
 
 export interface ReactionData {
@@ -20,6 +23,16 @@ export interface StickerData {
   id: string;
   mime_type: string;
   animated?: boolean;
+}
+
+export interface ProcessedMessage extends ChatMessage {
+  reactions?: Array<{
+    emoji: string;
+    count: number;
+    users: string[];
+  }>;
+  isReply?: boolean;
+  referencedMessage?: ChatMessage;
 }
 
 export interface IncomingMessage {

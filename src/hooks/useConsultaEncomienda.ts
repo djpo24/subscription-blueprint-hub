@@ -55,10 +55,7 @@ export function useConsultaEncomienda() {
       console.log('📊 [CONSULTA] Request body:', requestBody);
       
       const { data: responseData, error: functionError } = await supabase.functions.invoke('send-manual-message', {
-        body: requestBody,
-        headers: {
-          'X-App-Key': 'manual-send-2024-secure'
-        }
+        body: requestBody
       });
 
       console.log('📱 [CONSULTA] Raw WhatsApp function response:', responseData);

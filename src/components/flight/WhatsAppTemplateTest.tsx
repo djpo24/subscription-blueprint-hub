@@ -151,9 +151,6 @@ export function WhatsAppTemplateTest() {
           templateName: selectedTemplate,
           templateLanguage: templateLanguage,
           templateParameters: templateParameters
-        },
-        headers: {
-          'X-App-Key': 'manual-send-2024-secure'
         }
       });
 

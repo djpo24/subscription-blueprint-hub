@@ -310,9 +310,6 @@ export function CampaignNotificationsPanel() {
               deadlineDate: deadlineDate || ''
             },
             customerId: customer.id
-          },
-          headers: {
-            'X-App-Key': 'manual-send-2024-secure'
           }
         });
 

@@ -232,26 +232,6 @@ export function ChatMessage({
             </CardContent>
           </Card>
 
-          {/* Botón de respuesta IA solo para mensajes del cliente y si la generación manual está habilitada */}
-          {isFromCustomer && isManualResponseEnabled && (
-            <div className="mt-2 flex justify-start">
-              <AIResponseButton
-                customerPhone={customerPhone}
-                customerId={customerId || ''}
-                customerMessage={message.message_content || ''}
-                onResponseGenerated={handleAIResponseGenerated}
-              />
-            </div>
-          )}
-
-          {/* Mensaje cuando la generación manual está deshabilitada */}
-          {isFromCustomer && !isManualResponseEnabled && (
-            <div className="mt-2 flex justify-start">
-              <Badge variant="secondary" className="text-xs">
-                Generación manual desactivada
-              </Badge>
-            </div>
-          )}
         </div>
       </div>
     </div>

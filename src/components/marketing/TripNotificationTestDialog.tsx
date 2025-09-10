@@ -113,6 +113,9 @@ export function TripNotificationTestDialog({
             returnDate: returnDateStr,
             deadlineDate: deadlineDateStr
           }
+        },
+        headers: {
+          'X-App-Key': 'manual-send-2024-secure'
         }
       });
 

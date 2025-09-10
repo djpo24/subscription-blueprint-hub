@@ -40,6 +40,9 @@ export function DirectWhatsAppTest() {
           notificationId: notificationData.id,
           phone: '+573014940399',
           message: 'hola didi'
+        },
+        headers: {
+          'X-App-Key': 'manual-send-2024-secure'
         }
       });
 

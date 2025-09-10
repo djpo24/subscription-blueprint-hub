@@ -74,6 +74,9 @@ export function useNotifications() {
           message: message,
           imageUrl: imageUrl,
           customerId: null // NO HAY DETECCIÓN AUTOMÁTICA
+        },
+        headers: {
+          'X-App-Key': 'manual-send-2024-secure'
         }
       });
 

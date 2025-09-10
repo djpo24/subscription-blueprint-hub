@@ -142,6 +142,9 @@ export function ProximosViajesTestPanel() {
             deadlineDate: deadlineDate
           },
           customerId: null
+        },
+        headers: {
+          'X-App-Key': 'manual-send-2024-secure'
         }
       });
 

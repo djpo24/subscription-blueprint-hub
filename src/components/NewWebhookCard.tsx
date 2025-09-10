@@ -12,7 +12,7 @@ export function NewWebhookCard() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
+  const webhookUrl = 'WEBHOOK DESHABILITADO - No se procesan mensajes automáticamente';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -27,12 +27,12 @@ export function NewWebhookCard() {
   return (
     <Card className="bg-emerald-50 border-emerald-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-emerald-800">
-          <Sparkles className="h-5 w-5" />
-          Nuevo Webhook WhatsApp V3
-        </CardTitle>
-        <CardDescription className="text-emerald-600">
-          Webhook completamente nuevo con URL funcional y todas las características
+          <CardTitle className="flex items-center gap-2 text-red-800">
+            <Sparkles className="h-5 w-5" />
+            ⚠️ WEBHOOK COMPLETAMENTE DESHABILITADO
+          </CardTitle>
+          <CardDescription className="text-red-600">
+            El webhook ha sido eliminado permanentemente. El sistema NO procesa mensajes automáticamente.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

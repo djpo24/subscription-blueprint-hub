@@ -16,13 +16,3 @@ verify_jwt = true
 
 [functions.create-chat-storage]
 verify_jwt = false
-
-# 🛑 KILL STUBS - Disabled auto-response functions
-[functions.whatsapp-webhook-v3]
-verify_jwt = false
-
-[functions.send-whatsapp-notification]
-verify_jwt = false
-
-[functions.ai-whatsapp-response]
-verify_jwt = false

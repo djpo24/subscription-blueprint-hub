@@ -21,6 +21,9 @@ port = 54322
 [functions.whatsapp-webhook-v3]
 verify_jwt = false
 
+[functions.migrate-profile-images]
+verify_jwt = false
+
 [realtime]
 enabled = true
 port = 54323

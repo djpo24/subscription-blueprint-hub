@@ -6,7 +6,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AdvancedBotToggleButton } from './AdvancedBotToggleButton';
+
 import type { ChatMessage } from '@/types/chatMessage';
 
 interface ChatDialogProps {
@@ -121,13 +121,10 @@ export function ChatDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] p-0">
         <DialogHeader className="p-6 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Chat con {displayName}
-            </DialogTitle>
-            <AdvancedBotToggleButton />
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Chat con {displayName}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">

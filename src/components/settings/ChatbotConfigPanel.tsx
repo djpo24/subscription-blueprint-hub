@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Bot, CheckCircle, AlertTriangle, Clock, Zap, Shield, Brain, Settings } from 'lucide-react';
-import { AdvancedBotToggleButton } from '@/components/chat/AdvancedBotToggleButton';
+
 
 export function ChatbotConfigPanel() {
   return (
@@ -18,21 +18,18 @@ export function ChatbotConfigPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Control Principal del Bot */}
+          {/* Información del Sistema */}
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Control del Sistema
+              Sistema de Respuestas
             </h3>
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-blue-800 mb-1">Sistema de Respuestas Automáticas</h4>
-                  <p className="text-sm text-blue-700">
-                    Controla el comportamiento del bot para respuestas automáticas y manuales
-                  </p>
-                </div>
-                <AdvancedBotToggleButton />
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div>
+                <h4 className="font-medium text-green-800 mb-1">Respuestas Manuales Únicamente</h4>
+                <p className="text-sm text-green-700">
+                  El sistema NO genera respuestas automáticas. Todas las respuestas son manuales y controladas por el operador.
+                </p>
               </div>
             </div>
           </div>

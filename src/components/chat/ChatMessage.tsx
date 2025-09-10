@@ -12,7 +12,7 @@ import { AIResponseButton } from './AIResponseButton';
 import { StickerMessage } from './StickerMessage';
 import { ReplyMessage } from './ReplyMessage';
 import { ReactionOverlay } from './ReactionOverlay';
-import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
+
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDeleteMessage } from '@/hooks/useDeleteMessage';
 import type { ChatMessage as ChatMessageType, ProcessedMessage } from '@/types/chatMessage';
@@ -38,7 +38,6 @@ export function ChatMessage({
   onMessageDeleted,
   allMessages = []
 }: ChatMessageProps) {
-  const { isManualResponseEnabled } = useAdvancedBotToggle();
   const { isAdmin } = useUserRole();
   const { deleteMessage, isDeleting } = useDeleteMessage();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);

@@ -4,7 +4,7 @@ import { ChatViewHeader } from './chat/ChatViewHeader';
 import { ChatViewMobile } from './chat/ChatViewMobile';
 import { ChatViewDesktop } from './chat/ChatViewDesktop';
 import { ChatViewEmptyState } from './chat/ChatViewEmptyState';
-import { AutoResponseProvider } from './chat/AutoResponseProvider';
+
 import { useChatData } from '@/hooks/useChatData';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,34 +81,32 @@ export function ChatView() {
   const formattedChatList = formatChatList(chatList);
 
   return (
-    <AutoResponseProvider>
-      <div className="h-[calc(100vh-12rem)]">
-        <ChatViewHeader />
-        
-        {/* Vista móvil o desktop */}
-        {isMobile ? (
-          <ChatViewMobile
-            selectedPhone={selectedPhone}
-            chatList={formattedChatList}
-            conversationsByPhone={conversationsByPhone}
-            onChatSelect={setSelectedPhone}
-            onSendMessage={handleSendMessageWrapper}
-            onBackToList={handleBackToList}
-            isManualSending={isManualSending}
-            convertToChatMessages={convertToChatMessages}
-          />
-        ) : (
-          <ChatViewDesktop
-            selectedPhone={selectedPhone}
-            chatList={formattedChatList}
-            conversationsByPhone={conversationsByPhone}
-            onChatSelect={setSelectedPhone}
-            onSendMessage={handleSendMessageWrapper}
-            isManualSending={isManualSending}
-            convertToChatMessages={convertToChatMessages}
-          />
-        )}
-      </div>
-    </AutoResponseProvider>
+    <div className="h-[calc(100vh-12rem)]">
+      <ChatViewHeader />
+      
+      {/* Vista móvil o desktop */}
+      {isMobile ? (
+        <ChatViewMobile
+          selectedPhone={selectedPhone}
+          chatList={formattedChatList}
+          conversationsByPhone={conversationsByPhone}
+          onChatSelect={setSelectedPhone}
+          onSendMessage={handleSendMessageWrapper}
+          onBackToList={handleBackToList}
+          isManualSending={isManualSending}
+          convertToChatMessages={convertToChatMessages}
+        />
+      ) : (
+        <ChatViewDesktop
+          selectedPhone={selectedPhone}
+          chatList={formattedChatList}
+          conversationsByPhone={conversationsByPhone}
+          onChatSelect={setSelectedPhone}
+          onSendMessage={handleSendMessageWrapper}
+          isManualSending={isManualSending}
+          convertToChatMessages={convertToChatMessages}
+        />
+      )}
+    </div>
   );
 }

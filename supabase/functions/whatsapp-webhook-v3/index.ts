@@ -270,11 +270,11 @@ async function handleMessageStatus(status: any, supabaseClient: any) {
   }
 }
 
-async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Promise<string | null> {
+async function downloadWhatsAppMedia(mediaId: string, accessToken: string, supabaseClient: any, messageType: string): Promise<string | null> {
   try {
-    console.log('Downloading WhatsApp media V3:', mediaId)
+    console.log('🔄 Downloading and storing WhatsApp media V3:', mediaId, 'Type:', messageType)
     
-    // First, get the media URL
+    // First, get the media URL from WhatsApp
     const mediaResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -282,21 +282,89 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string): Prom
     })
     
     if (!mediaResponse.ok) {
-      console.error('Error getting media URL V3:', await mediaResponse.text())
+      console.error('❌ Error getting media URL V3:', await mediaResponse.text())
       return null
     }
     
     const mediaData = await mediaResponse.json()
-    const mediaUrl = mediaData.url
+    const temporaryUrl = mediaData.url
     
-    console.log('Media URL obtained from WhatsApp V3:', mediaUrl)
+    console.log('📥 Temporary media URL obtained from WhatsApp V3:', temporaryUrl)
     
-    // Return the URL directly - this is a temporary URL provided by WhatsApp
-    // In production, you would want to download the file and store it permanently
-    return mediaUrl
+    // Download the actual media file
+    const fileResponse = await fetch(temporaryUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!fileResponse.ok) {
+      console.error('❌ Error downloading media file V3:', await fileResponse.text())
+      return temporaryUrl // Fallback to temporary URL
+    }
+    
+    // Get file extension based on content type or message type
+    const contentType = fileResponse.headers.get('content-type') || ''
+    let fileExtension = ''
+    
+    if (messageType === 'audio') {
+      fileExtension = contentType.includes('ogg') ? '.ogg' : 
+                     contentType.includes('opus') ? '.opus' :
+                     contentType.includes('mp3') ? '.mp3' :
+                     contentType.includes('aac') ? '.aac' :
+                     contentType.includes('amr') ? '.amr' : '.ogg'
+    } else if (messageType === 'image') {
+      fileExtension = contentType.includes('jpeg') ? '.jpg' :
+                     contentType.includes('png') ? '.png' :
+                     contentType.includes('gif') ? '.gif' :
+                     contentType.includes('webp') ? '.webp' : '.jpg'
+    } else if (messageType === 'video') {
+      fileExtension = contentType.includes('mp4') ? '.mp4' :
+                     contentType.includes('webm') ? '.webm' :
+                     contentType.includes('quicktime') ? '.mov' : '.mp4'
+    } else if (messageType === 'document') {
+      fileExtension = contentType.includes('pdf') ? '.pdf' :
+                     contentType.includes('doc') ? '.doc' :
+                     contentType.includes('excel') ? '.xlsx' :
+                     contentType.includes('text') ? '.txt' : '.bin'
+    }
+    
+    // Create unique filename
+    const fileName = `${messageType}_${mediaId}_${Date.now()}${fileExtension}`
+    const filePath = `whatsapp-media/${fileName}`
+    
+    // Convert response to ArrayBuffer
+    const fileBuffer = await fileResponse.arrayBuffer()
+    
+    console.log('💾 Storing media file in Supabase Storage V3:', filePath, 'Size:', fileBuffer.byteLength, 'bytes')
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('whatsapp-media')
+      .upload(filePath, fileBuffer, {
+        contentType: contentType,
+        upsert: false
+      })
+    
+    if (uploadError) {
+      console.error('❌ Error uploading media to Supabase Storage V3:', uploadError)
+      return temporaryUrl // Fallback to temporary URL
+    }
+    
+    console.log('✅ Media file uploaded successfully V3:', uploadData.path)
+    
+    // Get public URL for the stored file
+    const { data: publicUrlData } = supabaseClient.storage
+      .from('whatsapp-media')
+      .getPublicUrl(filePath)
+    
+    const permanentUrl = publicUrlData?.publicUrl
+    console.log('🔗 Permanent media URL created V3:', permanentUrl)
+    
+    return permanentUrl || temporaryUrl
     
   } catch (error) {
-    console.error('Error downloading WhatsApp media V3:', error)
+    console.error('❌ Error downloading and storing WhatsApp media V3:', error)
     return null
   }
 }
@@ -443,31 +511,34 @@ async function handleIncomingMessage(message: any, supabaseClient: any) {
     case 'image':
       messageContent = image?.caption || ''
       if (image?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(image.id, accessTokenData)
-        console.log('Image media URL processed V3:', mediaUrl)
+        mediaUrl = await downloadWhatsAppMedia(image.id, accessTokenData, supabaseClient, 'image')
+        console.log('🖼️ Image media URL processed V3:', mediaUrl)
       } else {
-        console.error('No access token found for image download V3')
+        console.error('❌ No access token found for image download V3')
       }
       break
     
     case 'document':
       messageContent = document?.caption || `📄 Documento: ${document?.filename || 'archivo'}`
       if (document?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(document.id, accessTokenData)
+        mediaUrl = await downloadWhatsAppMedia(document.id, accessTokenData, supabaseClient, 'document')
+        console.log('📄 Document media URL processed V3:', mediaUrl)
       }
       break
     
     case 'audio':
       messageContent = '🎵 Mensaje de voz'
       if (audio?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(audio.id, accessTokenData)
+        mediaUrl = await downloadWhatsAppMedia(audio.id, accessTokenData, supabaseClient, 'audio')
+        console.log('🎵 Audio media URL processed V3:', mediaUrl)
       }
       break
     
     case 'video':
       messageContent = video?.caption || '🎥 Video'
       if (video?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData)
+        mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData, supabaseClient, 'video')
+        console.log('🎥 Video media URL processed V3:', mediaUrl)
       }
       break
     

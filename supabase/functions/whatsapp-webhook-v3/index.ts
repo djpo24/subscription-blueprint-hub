@@ -131,6 +131,64 @@ async function processMessagesChange(value: any, supabaseClient: any) {
   }
 }
 
+async function downloadProfileImage(profileImageUrl: string, wa_id: string, supabaseClient: any): Promise<string | null> {
+  try {
+    console.log('🔄 Downloading and storing profile image V3:', profileImageUrl, 'for:', wa_id)
+    
+    // Download the profile image directly (WhatsApp profile URLs don't need auth token)
+    const imageResponse = await fetch(profileImageUrl)
+    
+    if (!imageResponse.ok) {
+      console.error('❌ Error downloading profile image V3:', await imageResponse.text())
+      return profileImageUrl // Return original URL as fallback
+    }
+    
+    // Get file extension based on content type
+    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    const fileExtension = contentType.includes('png') ? '.png' :
+                         contentType.includes('webp') ? '.webp' :
+                         contentType.includes('gif') ? '.gif' : '.jpg'
+    
+    // Create unique filename for profile image
+    const fileName = `profile_${wa_id}_${Date.now()}${fileExtension}`
+    const filePath = `whatsapp-media/profiles/${fileName}`
+    
+    // Convert response to ArrayBuffer
+    const imageBuffer = await imageResponse.arrayBuffer()
+    
+    console.log('💾 Storing profile image in Supabase Storage V3:', filePath, 'Size:', imageBuffer.byteLength, 'bytes')
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('whatsapp-media')
+      .upload(filePath, imageBuffer, {
+        contentType: contentType,
+        upsert: false
+      })
+    
+    if (uploadError) {
+      console.error('❌ Error uploading profile image to Supabase Storage V3:', uploadError)
+      return profileImageUrl // Return original URL as fallback
+    }
+    
+    console.log('✅ Profile image uploaded successfully V3:', uploadData.path)
+    
+    // Get public URL for the stored file
+    const { data: publicUrlData } = supabaseClient.storage
+      .from('whatsapp-media')
+      .getPublicUrl(filePath)
+    
+    const permanentUrl = publicUrlData?.publicUrl
+    console.log('🔗 Permanent profile image URL created V3:', permanentUrl)
+    
+    return permanentUrl || profileImageUrl
+    
+  } catch (error) {
+    console.error('❌ Error downloading and storing profile image V3:', error)
+    return profileImageUrl // Return original URL as fallback
+  }
+}
+
 async function handleContactInfo(contact: any, supabaseClient: any) {
   const { wa_id, profile } = contact
   
@@ -176,10 +234,15 @@ async function handleContactInfo(contact: any, supabaseClient: any) {
     // Update existing customer with profile image
     const updateData: any = {}
     
-    // Always update profile image if provided, even if it's different
-    if (profileImageUrl) {
-      updateData.profile_image_url = profileImageUrl
-      console.log('Updating profile image URL for existing customer V3:', profileImageUrl)
+    // Download and store profile image permanently if provided and different
+    if (profileImageUrl && profileImageUrl !== bestMatch.profile_image_url) {
+      console.log('🖼️ New or different profile image detected, downloading...')
+      const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
+      
+      if (permanentImageUrl) {
+        updateData.profile_image_url = permanentImageUrl
+        console.log('✅ Profile image downloaded and stored permanently V3:', permanentImageUrl)
+      }
     }
     
     // Update WhatsApp number if not set

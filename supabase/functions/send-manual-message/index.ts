@@ -12,6 +12,25 @@ serve(async (req) => {
   }
 
   try {
+    // 🔒 SECURITY: Require manual app key to prevent unauthorized sending
+    const appKey = req.headers.get('X-App-Key')
+    const requiredKey = Deno.env.get('WHATSAPP_OUTBOUND_APP_KEY')
+    
+    if (!appKey || !requiredKey || appKey !== requiredKey) {
+      console.log('🛑 UNAUTHORIZED: Manual message blocked - missing/invalid X-App-Key')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Unauthorized: Manual sending requires valid app key' 
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    console.log('✅ AUTHORIZED: Manual message processing with valid key')
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

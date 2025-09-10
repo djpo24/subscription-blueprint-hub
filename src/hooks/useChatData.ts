@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { IncomingMessage } from '@/types/supabase-temp';
@@ -30,39 +29,20 @@ export function useChatData(): ChatData {
     queryKey: ['chat-data'],
     queryFn: async (): Promise<IncomingMessage[]> => {
       try {
-        // Primero obtenemos todos los clientes registrados para hacer lookup por teléfono
-        const { data: allCustomers, error: customersError } = await supabase
-          .from('customers')
-          .select('id, name, phone, whatsapp_number, profile_image_url');
-
-        if (customersError) {
-          console.error('❌ Error fetching customers:', customersError);
-          throw customersError;
-        }
-
-        // Crear un mapa de teléfonos a clientes para lookup rápido
-        const customersByPhone = new Map<string, any>();
-        allCustomers?.forEach(customer => {
-          // Normalizar números de teléfono para comparación
-          const normalizePhone = (phone: string) => phone?.replace(/[\s\-\(\)\+]/g, '') || '';
-          
-          if (customer.phone) {
-            const normalizedPhone = normalizePhone(customer.phone);
-            customersByPhone.set(normalizedPhone, customer);
-          }
-          if (customer.whatsapp_number) {
-            const normalizedWhatsapp = normalizePhone(customer.whatsapp_number);
-            customersByPhone.set(normalizedWhatsapp, customer);
-          }
-        });
-
+        console.log('🔍 Fetching chat data...');
         
-
-        // Fetch incoming messages
+        // Fetch incoming messages (optimized query)
         const { data: incomingData, error: incomingError } = await supabase
           .from('incoming_messages')
           .select(`
-            *,
+            id,
+            whatsapp_message_id,
+            from_phone,
+            customer_id,
+            message_type,
+            message_content,
+            media_url,
+            timestamp,
             customers (
               id,
               name,
@@ -72,18 +52,26 @@ export function useChatData(): ChatData {
             )
           `)
           .order('timestamp', { ascending: false })
-          .limit(1000);
+          .limit(300); // Reducido significativamente
 
         if (incomingError) {
           console.error('❌ Error fetching incoming messages:', incomingError);
           throw incomingError;
         }
 
-        // Fetch sent messages
+        console.log('📨 Incoming messages fetched:', incomingData?.length || 0);
+
+        // Fetch sent messages (optimized query)
         const { data: sentData, error: sentError } = await supabase
           .from('sent_messages')
           .select(`
-            *,
+            id,
+            phone,
+            customer_id,
+            message,
+            image_url,
+            sent_at,
+            whatsapp_message_id,
             customers (
               id,
               name,
@@ -93,168 +81,60 @@ export function useChatData(): ChatData {
             )
           `)
           .order('sent_at', { ascending: false })
-          .limit(1000);
+          .limit(300); // Reducido significativamente
 
         if (sentError) {
           console.error('❌ Error fetching sent messages:', sentError);
           throw sentError;
         }
 
-        // Fetch notification log
-        const { data: notificationData, error: notificationError } = await supabase
-          .from('notification_log')
-          .select(`
-            *,
-            customers (
-              id,
-              name,
-              profile_image_url,
-              phone,
-              whatsapp_number
-            )
-          `)
-          .in('notification_type', ['consulta_encomienda', 'package_arrival_notification', 'customer_service_followup'])
-          .eq('status', 'sent')
-          .order('sent_at', { ascending: false })
-          .limit(1000);
+        console.log('📤 Sent messages fetched:', sentData?.length || 0);
 
-        if (notificationError) {
-          console.error('❌ Error fetching notifications:', notificationError);
-          throw notificationError;
-        }
+        // Procesar mensajes entrantes
+        const incomingMessages = (incomingData || []).map(msg => ({
+          id: msg.id,
+          whatsapp_message_id: msg.whatsapp_message_id,
+          from_phone: msg.from_phone,
+          customer_id: msg.customer_id,
+          message_type: msg.message_type,
+          message_content: msg.message_content,
+          media_url: msg.media_url,
+          timestamp: msg.timestamp,
+          is_from_customer: true,
+          customers: msg.customers
+        } as IncomingMessage & { is_from_customer: boolean }));
 
-        // Función para encontrar cliente por teléfono
-        const findCustomerByPhone = (phone: string) => {
-          const normalizedPhone = phone?.replace(/[\s\-\(\)\+]/g, '') || '';
-          
-          // Buscar coincidencia exacta
-          let customer = customersByPhone.get(normalizedPhone);
-          if (customer) {
-            return customer;
-          }
-
-          // Buscar coincidencias parciales
-          for (const [registeredPhone, customerData] of customersByPhone) {
-            if (registeredPhone.endsWith(normalizedPhone) || normalizedPhone.endsWith(registeredPhone)) {
-              return customerData;
-            }
-          }
-
-          return null;
-        };
-
-        // Procesar mensajes entrantes con lookup mejorado
-        const incomingMessages = (incomingData || []).map(msg => {
-          let customerData = msg.customers;
-          let customerId = msg.customer_id;
-
-          // Si no hay customer_id o customers, intentar encontrar por teléfono
-          if (!customerId || !customerData) {
-            const foundCustomer = findCustomerByPhone(msg.from_phone);
-            if (foundCustomer) {
-              customerData = {
-                id: foundCustomer.id,
-                name: foundCustomer.name,
-                profile_image_url: foundCustomer.profile_image_url,
-                phone: foundCustomer.phone,
-                whatsapp_number: foundCustomer.whatsapp_number
-              };
-              customerId = foundCustomer.id;
-            }
-          }
-
-          return {
-            id: msg.id,
-            whatsapp_message_id: msg.whatsapp_message_id,
-            from_phone: msg.from_phone,
-            customer_id: customerId,
-            message_type: msg.message_type,
-            message_content: msg.message_content,
-            media_url: msg.media_url,
-            timestamp: msg.timestamp,
-            is_from_customer: true,
-            customers: customerData
-          } as IncomingMessage & { is_from_customer: boolean };
-        });
-
-        // Procesar mensajes enviados con lookup mejorado
-        const sentMessages = (sentData || []).map(msg => {
-          let customerData = msg.customers;
-          let customerId = msg.customer_id;
-
-          if (!customerId || !customerData) {
-            const foundCustomer = findCustomerByPhone(msg.phone);
-            if (foundCustomer) {
-              customerData = {
-                id: foundCustomer.id,
-                name: foundCustomer.name,
-                profile_image_url: foundCustomer.profile_image_url,
-                phone: foundCustomer.phone,
-                whatsapp_number: foundCustomer.whatsapp_number
-              };
-              customerId = foundCustomer.id;
-            }
-          }
-
-          return {
-            id: `sent_${msg.id}`,
-            whatsapp_message_id: msg.whatsapp_message_id,
-            from_phone: msg.phone,
-            customer_id: customerId,
-            message_type: 'text' as const,
-            message_content: msg.message,
-            media_url: msg.image_url,
-            timestamp: msg.sent_at,
-            is_from_customer: false,
-            customers: customerData
-          } as IncomingMessage & { is_from_customer: boolean };
-        });
-
-        // Procesar notificaciones template
-        const templateMessages = (notificationData || []).map(notification => {
-          let fromPhone = '';
-          let customerData = notification.customers;
-
-          if (notification.customers) {
-            fromPhone = notification.customers.whatsapp_number || notification.customers.phone || '';
-            customerData = {
-              id: notification.customers.id,
-              name: notification.customers.name,
-              profile_image_url: notification.customers.profile_image_url,
-              phone: notification.customers.phone,
-              whatsapp_number: notification.customers.whatsapp_number
-            };
-          }
-
-          return {
-            id: `template_${notification.id}`,
-            whatsapp_message_id: null,
-            from_phone: fromPhone,
-            customer_id: notification.customer_id,
-            message_type: 'template' as const,
-            message_content: `📋 Plantilla: ${notification.notification_type} - ${notification.message}`,
-            media_url: null,
-            timestamp: notification.sent_at || notification.created_at,
-            is_from_customer: false,
-            customers: customerData
-          } as IncomingMessage & { is_from_customer: boolean };
-        });
+        // Procesar mensajes enviados
+        const sentMessages = (sentData || []).map(msg => ({
+          id: `sent_${msg.id}`,
+          whatsapp_message_id: msg.whatsapp_message_id,
+          from_phone: msg.phone,
+          customer_id: msg.customer_id,
+          message_type: 'text' as const,
+          message_content: msg.message,
+          media_url: msg.image_url,
+          timestamp: msg.sent_at,
+          is_from_customer: false,
+          customers: msg.customers
+        } as IncomingMessage & { is_from_customer: boolean }));
 
         // Combinar todos los mensajes
-        const allMessages = [...incomingMessages, ...sentMessages, ...templateMessages]
+        const allMessages = [...incomingMessages, ...sentMessages]
           .filter(msg => msg.from_phone)
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-
+        console.log('✅ Total messages processed:', allMessages.length);
         return allMessages;
       } catch (error) {
         console.error('❌ Error in useChatData:', error);
         return [];
       }
     },
-    refetchInterval: 30000, // 30 segundos en lugar de 3
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 2 * 60 * 1000, // 2 minutos - datos considerados frescos
+    gcTime: 5 * 60 * 1000, // 5 minutos - tiempo en cache
+    retry: 2, // Solo 2 reintentos
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Removido refetchInterval para evitar consultas automáticas constantes
   });
 
   // Group messages by phone number
@@ -286,19 +166,18 @@ export function useChatData(): ChatData {
 
   // Sort messages within each conversation
   Object.values(conversationsByPhone).forEach(conversation => {
-    conversation.messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    conversation.messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   });
 
   // Create chat list
   Object.entries(conversationsByPhone).forEach(([phone, conversation]) => {
-    const lastMessage = conversation.messages[0];
+    const lastMessage = conversation.messages[conversation.messages.length - 1]; // Último mensaje cronológicamente
     if (lastMessage) {
       const messageWithFlag = lastMessage as IncomingMessage & { is_from_customer?: boolean };
       let displayMessage = lastMessage.message_content || '';
-      if (lastMessage.message_type === 'template') {
-        displayMessage = `📋 ${displayMessage}`;
-      } else if (messageWithFlag.is_from_customer === false) {
-        displayMessage = `🤖 SARA: ${displayMessage}`;
+      
+      if (messageWithFlag.is_from_customer === false) {
+        displayMessage = `Tú: ${displayMessage}`;
       }
 
       chatList.push({
@@ -315,7 +194,6 @@ export function useChatData(): ChatData {
 
   // Sort chat list by most recent message
   chatList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
 
   return {
     chatList,

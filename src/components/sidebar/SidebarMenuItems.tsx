@@ -12,7 +12,8 @@ import {
   UserCheck,
   Megaphone,
   AlertTriangle,
-  Search
+  Search,
+  Trophy
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -43,6 +44,9 @@ export const createMenuItems = (
 
   // Customers tab is now visible for ALL users
   items.push({ value: 'customers', title: 'Clientes', icon: UserCheck });
+  
+  // Fidelization tab visible for all users
+  items.push({ value: 'fidelization', title: 'Fidelización', icon: Trophy });
 
   if (showChatTab) {
     items.push({ 

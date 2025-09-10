@@ -14,6 +14,7 @@ import { DeveloperTab } from '@/components/tabs/DeveloperTab';
 import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { MarketingTab } from '@/components/tabs/MarketingTab';
 import { AdminInvestigationTab } from '@/components/tabs/AdminInvestigationTab';
+import { FidelizationTab } from '@/components/tabs/FidelizationTab';
 import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -129,6 +130,7 @@ export default function Index() {
                 {activeTab === 'escalations' && 'Escalaciones'}
                 {activeTab === 'notifications' && 'Notificaciones'}
                 {activeTab === 'customers' && 'Clientes'}
+                {activeTab === 'fidelization' && 'Fidelización'}
                 {activeTab === 'users' && 'Usuarios'}
                 {activeTab === 'settings' && 'Configuración'}
                 {activeTab === 'developer' && 'Preview'}
@@ -168,6 +170,7 @@ export default function Index() {
               <MarketingTab />
               <NotificationsTab />
               <CustomersTab />
+              <FidelizationTab />
               <UsersTab />
               <AdminInvestigationTab />
               <SettingsTab />

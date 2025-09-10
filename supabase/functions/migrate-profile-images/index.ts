@@ -175,34 +175,75 @@ async function getWhatsAppProfile(phone: string, accessToken: string, phoneNumbe
   try {
     console.log('🔍 Getting WhatsApp profile for:', phone)
     
-    // Clean phone number - remove any non-digit characters except +
-    const cleanPhone = phone.startsWith('+') ? phone : phone.replace(/[^\d]/g, '')
+    // Clean phone number - ensure it's in the correct format
+    const cleanPhone = phone.replace(/[\s\-\(\)+]/g, '')
+    console.log('📱 Cleaned phone for profile request:', cleanPhone)
     
-    // Use the correct contacts endpoint according to WhatsApp Cloud API docs
-    const profileResponse = await fetch(
-      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${cleanPhone}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
+    // MÉTODO 1: Intentar obtener directamente del usuario
+    try {
+      const directResponse = await fetch(
+        `https://graph.facebook.com/v20.0/${cleanPhone}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      
+      if (directResponse.ok) {
+        const directData = await directResponse.json()
+        console.log('📱 Direct profile data:', JSON.stringify(directData, null, 2))
+        
+        if (directData.profile_pic_url) {
+          console.log('✅ Profile found via direct method')
+          return directData.profile_pic_url
         }
       }
-    )
-    
-    if (!profileResponse.ok) {
-      console.log('❌ Profile not available or accessible for:', phone)
-      return null
+    } catch (directError) {
+      console.log('⚠️ Direct method failed, trying contacts endpoint')
     }
     
-    const profileData = await profileResponse.json()
-    console.log('📱 Profile data:', JSON.stringify(profileData, null, 2))
+    // MÉTODO 2: Usar endpoint contacts con diferentes formatos
+    const phoneFormats = [
+      cleanPhone,
+      `+${cleanPhone}`,
+      cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`,
+    ]
     
-    // Extract profile image URL from the contacts response
-    const contacts = profileData.contacts || []
-    if (contacts.length > 0 && contacts[0].profile && contacts[0].profile.profile_url) {
-      return contacts[0].profile.profile_url
+    for (const phoneFormat of phoneFormats) {
+      try {
+        console.log('🔄 Trying contacts endpoint with format:', phoneFormat)
+        
+        const contactResponse = await fetch(
+          `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?wa_ids=${phoneFormat}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+        
+        if (contactResponse.ok) {
+          const contactData = await contactResponse.json()
+          console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
+          
+          if (contactData.contacts && contactData.contacts.length > 0) {
+            const contact = contactData.contacts[0]
+            if (contact.profile && contact.profile.profile_url) {
+              console.log('✅ Profile found via contacts endpoint')
+              return contact.profile.profile_url
+            }
+          }
+        }
+      } catch (formatError) {
+        console.log(`⚠️ Format ${phoneFormat} failed:`, formatError.message)
+        continue
+      }
     }
     
+    console.log('📭 No profile image found with any method')
     return null
     
   } catch (error) {

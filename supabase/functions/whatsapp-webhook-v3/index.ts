@@ -193,9 +193,10 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
   try {
     console.log('🔍 Getting WhatsApp profile for:', wa_id)
     
-    // Make request to WhatsApp contacts endpoint
+    // ENDPOINT CORRECTO: Usar el wa_id directamente sin limpiar
+    // WhatsApp Cloud API v20.0 requiere el wa_id exactamente como viene
     const contactResponse = await fetch(
-      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${wa_id}`,
+      `https://graph.facebook.com/v20.0/${wa_id}`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -205,18 +206,48 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
     )
     
     if (!contactResponse.ok) {
-      console.log('❌ Profile not available or accessible for:', wa_id)
+      const errorText = await contactResponse.text()
+      console.log('❌ Profile request failed:', contactResponse.status, errorText)
+      
+      // Intentar método alternativo con endpoint contacts
+      console.log('🔄 Trying alternative contacts endpoint...')
+      const altResponse = await fetch(
+        `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?wa_ids=${wa_id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      
+      if (!altResponse.ok) {
+        console.log('❌ Alternative endpoint also failed')
+        return null
+      }
+      
+      const altData = await altResponse.json()
+      console.log('📱 Alternative profile data:', JSON.stringify(altData, null, 2))
+      
+      // Extraer URL del perfil de la respuesta alternativa
+      if (altData.contacts && altData.contacts.length > 0) {
+        const contact = altData.contacts[0]
+        if (contact.profile && contact.profile.profile_url) {
+          console.log('✅ Profile image found via alternative method:', wa_id)
+          return contact.profile.profile_url
+        }
+      }
+      
       return null
     }
     
-    const contactData = await contactResponse.json()
-    console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
+    const profileData = await contactResponse.json()
+    console.log('📱 Profile data response:', JSON.stringify(profileData, null, 2))
     
-    // Extract profile image URL from the response
-    const contacts = contactData.contacts || []
-    if (contacts.length > 0 && contacts[0].profile && contacts[0].profile.profile_url) {
+    // Extraer URL del perfil
+    if (profileData.profile_pic_url) {
       console.log('✅ Profile image found for:', wa_id)
-      return contacts[0].profile.profile_url
+      return profileData.profile_pic_url
     }
     
     console.log('📭 No profile image available for customer')

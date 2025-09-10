@@ -29,11 +29,8 @@ export function useChatData(): ChatData {
   const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ['chat-data'],
     queryFn: async (): Promise<IncomingMessage[]> => {
-      console.log('🔍 Fetching chat data with improved customer linking...');
-      
       try {
         // Primero obtenemos todos los clientes registrados para hacer lookup por teléfono
-        console.log('📞 Fetching all registered customers...');
         const { data: allCustomers, error: customersError } = await supabase
           .from('customers')
           .select('id, name, phone, whatsapp_number, profile_image_url');
@@ -42,8 +39,6 @@ export function useChatData(): ChatData {
           console.error('❌ Error fetching customers:', customersError);
           throw customersError;
         }
-
-        console.log('👥 Found registered customers:', allCustomers?.length || 0);
 
         // Crear un mapa de teléfonos a clientes para lookup rápido
         const customersByPhone = new Map<string, any>();
@@ -61,7 +56,7 @@ export function useChatData(): ChatData {
           }
         });
 
-        console.log('📱 Phone lookup map created with', customersByPhone.size, 'entries');
+        
 
         // Fetch incoming messages
         const { data: incomingData, error: incomingError } = await supabase
@@ -135,19 +130,16 @@ export function useChatData(): ChatData {
           // Buscar coincidencia exacta
           let customer = customersByPhone.get(normalizedPhone);
           if (customer) {
-            console.log(`✅ Exact match found for ${phone} -> ${customer.name}`);
             return customer;
           }
 
-          // Buscar coincidencias parciales (el número registrado termina con el número del mensaje)
+          // Buscar coincidencias parciales
           for (const [registeredPhone, customerData] of customersByPhone) {
             if (registeredPhone.endsWith(normalizedPhone) || normalizedPhone.endsWith(registeredPhone)) {
-              console.log(`✅ Partial match found for ${phone} -> ${customerData.name} (registered: ${registeredPhone})`);
               return customerData;
             }
           }
 
-          console.log(`❌ No customer found for phone: ${phone}`);
           return null;
         };
 
@@ -168,7 +160,6 @@ export function useChatData(): ChatData {
                 whatsapp_number: foundCustomer.whatsapp_number
               };
               customerId = foundCustomer.id;
-              console.log(`🔗 Linked message from ${msg.from_phone} to customer ${foundCustomer.name}`);
             }
           }
 
@@ -202,7 +193,6 @@ export function useChatData(): ChatData {
                 whatsapp_number: foundCustomer.whatsapp_number
               };
               customerId = foundCustomer.id;
-              console.log(`🔗 Linked sent message to ${msg.phone} with customer ${foundCustomer.name}`);
             }
           }
 
@@ -255,14 +245,6 @@ export function useChatData(): ChatData {
           .filter(msg => msg.from_phone)
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        console.log('✅ Processing complete:', {
-          incoming: incomingMessages.length,
-          sent: sentMessages.length,
-          templates: templateMessages.length,
-          total: allMessages.length,
-          messagesWithCustomers: allMessages.filter(m => m.customers).length,
-          messagesWithoutCustomers: allMessages.filter(m => !m.customers).length
-        });
 
         return allMessages;
       } catch (error) {
@@ -270,7 +252,9 @@ export function useChatData(): ChatData {
         return [];
       }
     },
-    refetchInterval: 3000,
+    refetchInterval: 30000, // 30 segundos en lugar de 3
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 
   // Group messages by phone number
@@ -332,12 +316,6 @@ export function useChatData(): ChatData {
   // Sort chat list by most recent message
   chatList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  console.log('📊 Final chat summary:', {
-    totalChats: chatList.length,
-    chatsWithNames: chatList.filter(c => c.customerName !== c.phone).length,
-    chatsWithoutNames: chatList.filter(c => c.customerName === c.phone).length,
-    chatsWithCustomerId: chatList.filter(c => c.customerId).length
-  });
 
   return {
     chatList,

@@ -1,35 +1,43 @@
-
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketingSettings } from './MarketingSettings';
 import { MarketingContacts } from './MarketingContacts';
-import { MarketingCampaigns } from './MarketingCampaigns';
 import { MarketingStats } from './MarketingStats';
 import { FreightRatesManager } from './FreightRatesManager';
 import { TripNotificationsManager } from './TripNotificationsManager';
-import { Send, Settings, Users, BarChart3, DollarSign, Plane } from 'lucide-react';
+import { Settings, Users, BarChart3, DollarSign, Plane, AlertTriangle } from 'lucide-react';
 
 export function MarketingPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Panel de Marketing</h1>
-          <p className="text-gray-500 mt-2">
-            Gestiona campañas automáticas de WhatsApp para promocionar servicios de envío de encomiendas
+          <h1 className="text-3xl font-bold">Panel de Marketing DESHABILITADO</h1>
+          <p className="text-red-600 mt-2">
+            Las campañas automáticas han sido completamente eliminadas. Solo funcionalidad manual disponible.
           </p>
         </div>
       </div>
 
+      <Card className="bg-red-50 border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-800">
+            <AlertTriangle className="h-5 w-5" />
+            Campañas Automáticas ELIMINADAS
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-700">
+            Todas las funciones de campañas automáticas de WhatsApp han sido eliminadas permanentemente.
+            Solo están disponibles las funcionalidades de configuración manual.
+          </p>
+        </CardContent>
+      </Card>
+
       <MarketingStats />
 
-      <Tabs defaultValue="campaigns" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="campaigns" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Campañas
-          </TabsTrigger>
+      <Tabs defaultValue="trip-notifications" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="trip-notifications" className="flex items-center gap-2">
             <Plane className="h-4 w-4" />
             Viajes
@@ -51,10 +59,6 @@ export function MarketingPanel() {
             Análisis
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="campaigns" className="space-y-6">
-          <MarketingCampaigns />
-        </TabsContent>
 
         <TabsContent value="trip-notifications" className="space-y-6">
           <TripNotificationsManager />

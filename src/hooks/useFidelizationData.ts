@@ -114,10 +114,10 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
         // Total shipments
         const totalShipments = packages.length;
         
-        // Calculate total points (50 per shipment + weight * 10)
+        // Calculate total points (90 per shipment + weight * 10)
         const totalPoints = packages.reduce((sum, pkg) => {
           const weight = pkg.weight || 0;
-          return sum + 50 + (weight * 10); // 50 base points + 10 per kilo
+          return sum + 90 + (weight * 10); // 90 base points + 10 per kilo
         }, 0);
 
         // Calculate best streak

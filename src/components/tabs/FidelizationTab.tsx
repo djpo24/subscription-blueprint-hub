@@ -119,7 +119,7 @@ export function FidelizationTab() {
                 Ranking de Fidelización
               </CardTitle>
                <CardDescription>
-                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo.
+                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 90 puntos base + 10 puntos por kilo.
                  <br />
                  <strong>Solo se cuentan envíos entregados y pagados.</strong>
                </CardDescription>

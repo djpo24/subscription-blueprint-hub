@@ -38,6 +38,7 @@ serve(async (req) => {
       .select('*')
       .not('whatsapp_number', 'is', null)
       .or('profile_image_url.is.null,profile_image_url.eq.')
+      .limit(10) // Limit to 10 customers to avoid timeouts
 
     if (fetchError) {
       throw fetchError
@@ -60,7 +61,7 @@ serve(async (req) => {
     let failureCount = 0
     const results = []
 
-    // Process each customer
+    // Process customers sequentially to avoid overwhelming API
     for (const customer of customers) {
       try {
         console.log(`🔄 Processing customer ${customer.id} (${customer.name})...`)
@@ -78,16 +79,12 @@ serve(async (req) => {
           continue
         }
 
-        // Clean phone number (remove + and other characters)
-        const cleanPhone = whatsappNumber.replace(/[\s\-\(\)+]/g, '')
-        console.log(`📱 Checking profile for phone: ${cleanPhone}`)
-
         // Try to get profile info from WhatsApp Business API
-        const profileUrl = await getWhatsAppProfile(cleanPhone, accessTokenData, phoneIdData)
+        const profileUrl = await getWhatsAppProfile(whatsappNumber, accessTokenData, phoneIdData)
 
         if (profileUrl) {
           // Download and store the profile image permanently
-          const permanentUrl = await downloadProfileImage(profileUrl, cleanPhone, supabaseClient)
+          const permanentUrl = await downloadProfileImage(profileUrl, whatsappNumber, supabaseClient)
 
           if (permanentUrl) {
             // Update the customer with the new permanent URL
@@ -132,7 +129,7 @@ serve(async (req) => {
         }
 
         // Small delay to avoid overwhelming WhatsApp API
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await new Promise(resolve => setTimeout(resolve, 500))
         
       } catch (error) {
         console.error(`❌ Error processing customer ${customer.id}:`, error)
@@ -179,36 +176,11 @@ async function getWhatsAppProfile(phone: string, accessToken: string, phoneNumbe
     const cleanPhone = phone.replace(/[\s\-\(\)+]/g, '')
     console.log('📱 Cleaned phone for profile request:', cleanPhone)
     
-    // MÉTODO 1: Intentar obtener directamente del usuario
-    try {
-      const directResponse = await fetch(
-        `https://graph.facebook.com/v20.0/${cleanPhone}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      
-      if (directResponse.ok) {
-        const directData = await directResponse.json()
-        console.log('📱 Direct profile data:', JSON.stringify(directData, null, 2))
-        
-        if (directData.profile_pic_url) {
-          console.log('✅ Profile found via direct method')
-          return directData.profile_pic_url
-        }
-      }
-    } catch (directError) {
-      console.log('⚠️ Direct method failed, trying contacts endpoint')
-    }
-    
-    // MÉTODO 2: Usar endpoint contacts con diferentes formatos
+    // ENDPOINT CORRECTO: Usar el endpoint contacts de WhatsApp Business API
+    // Este es el único endpoint documentado que funciona para obtener fotos de perfil
     const phoneFormats = [
       cleanPhone,
       `+${cleanPhone}`,
-      cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`,
     ]
     
     for (const phoneFormat of phoneFormats) {
@@ -216,7 +188,7 @@ async function getWhatsAppProfile(phone: string, accessToken: string, phoneNumbe
         console.log('🔄 Trying contacts endpoint with format:', phoneFormat)
         
         const contactResponse = await fetch(
-          `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?wa_ids=${phoneFormat}`,
+          `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${encodeURIComponent(phoneFormat)}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -225,17 +197,28 @@ async function getWhatsAppProfile(phone: string, accessToken: string, phoneNumbe
           }
         )
         
+        console.log('📊 Contact response status:', contactResponse.status)
+        
         if (contactResponse.ok) {
           const contactData = await contactResponse.json()
           console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
           
           if (contactData.contacts && contactData.contacts.length > 0) {
             const contact = contactData.contacts[0]
-            if (contact.profile && contact.profile.profile_url) {
-              console.log('✅ Profile found via contacts endpoint')
-              return contact.profile.profile_url
+            // ✅ CAMPO CORRECTO: profile_picture_url (no profile_url)
+            if (contact.profile && contact.profile.profile_picture_url) {
+              console.log('✅ Profile picture found!')
+              console.log('🖼️ Profile picture URL:', contact.profile.profile_picture_url)
+              return contact.profile.profile_picture_url
+            } else {
+              console.log('📭 Contact found but no profile picture available (privacy settings)')
             }
+          } else {
+            console.log('📭 No contacts returned from API')
           }
+        } else {
+          const errorText = await contactResponse.text()
+          console.log('❌ Contact API error:', contactResponse.status, errorText)
         }
       } catch (formatError) {
         console.log(`⚠️ Format ${phoneFormat} failed:`, formatError.message)

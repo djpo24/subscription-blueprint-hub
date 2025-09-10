@@ -193,10 +193,9 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
   try {
     console.log('🔍 Getting WhatsApp profile for:', wa_id)
     
-    // ENDPOINT CORRECTO: Usar el wa_id directamente sin limpiar
-    // WhatsApp Cloud API v20.0 requiere el wa_id exactamente como viene
+    // ENDPOINT CORRECTO: Usar contacts endpoint que es el único documentado
     const contactResponse = await fetch(
-      `https://graph.facebook.com/v20.0/${wa_id}`,
+      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${encodeURIComponent(wa_id)}`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -205,36 +204,45 @@ async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, acc
       }
     )
     
+    console.log('📊 Contact response status:', contactResponse.status)
+    
     if (!contactResponse.ok) {
       const errorText = await contactResponse.text()
       console.log('❌ Profile request failed:', contactResponse.status, errorText)
-      
-      // Intentar método alternativo con endpoint contacts
-      console.log('🔄 Trying alternative contacts endpoint...')
-      const altResponse = await fetch(
-        `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?wa_ids=${wa_id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      
-      if (!altResponse.ok) {
-        console.log('❌ Alternative endpoint also failed')
-        return null
+      return null
+    }
+    
+    const contactData = await contactResponse.json()
+    console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
+    
+    if (contactData.contacts && contactData.contacts.length > 0) {
+      const contact = contactData.contacts[0]
+      // ✅ CAMPO CORRECTO: profile_picture_url
+      if (contact.profile && contact.profile.profile_picture_url) {
+        console.log('✅ Profile picture found!')
+        console.log('🖼️ Profile picture URL:', contact.profile.profile_picture_url)
+        return contact.profile.profile_picture_url
+      } else {
+        console.log('📭 Contact found but no profile picture available (privacy settings)')
       }
-      
-      const altData = await altResponse.json()
-      console.log('📱 Alternative profile data:', JSON.stringify(altData, null, 2))
+    } else {
+      console.log('📭 No contacts returned from API')
+    }
+    
+    return null
+    
+  } catch (error) {
+    console.error('❌ Error getting WhatsApp profile image:', error)
+    return null
+  }
+}
       
       // Extraer URL del perfil de la respuesta alternativa
       if (altData.contacts && altData.contacts.length > 0) {
         const contact = altData.contacts[0]
-        if (contact.profile && contact.profile.profile_url) {
+        if (contact.profile && contact.profile.profile_picture_url) {
           console.log('✅ Profile image found via alternative method:', wa_id)
-          return contact.profile.profile_url
+          return contact.profile.profile_picture_url
         }
       }
       

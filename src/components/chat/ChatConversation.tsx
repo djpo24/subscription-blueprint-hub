@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +35,22 @@ export function ChatConversation({
 }: ChatConversationProps) {
   // Estado local para manejar la lista de mensajes
   const [messages, setMessages] = useState<ChatMessageType[]>(initialMessages);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Función para hacer scroll al final
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
   
   // Sincronizar con los mensajes externos
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
+
+  // Auto-scroll cuando cambian los mensajes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const { data: packageIndicator } = useCustomerPackageStatus(phone);
   const displayName = customerName || 'Cliente';
@@ -127,6 +138,7 @@ export function ChatConversation({
                   onMessageDeleted={handleMessageDeleted}
                 />
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>

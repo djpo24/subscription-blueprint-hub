@@ -8,7 +8,7 @@ import { Clock, Image as ImageIcon, Bot, User, Reply, Trash2 } from 'lucide-reac
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
-import { AIResponseButton } from './AIResponseButton';
+
 import { StickerMessage } from './StickerMessage';
 import { ReplyMessage } from './ReplyMessage';
 import { ReactionOverlay } from './ReactionOverlay';
@@ -44,12 +44,6 @@ export function ChatMessage({
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
-
-  const handleAIResponseGenerated = (response: any) => {
-    if (response.action === 'send' && response.response) {
-      onSendMessage(response.response);
-    }
-  };
 
   const handleDeleteClick = () => {
     setShowConfirmDelete(true);

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Bot, CheckCircle, AlertTriangle, Clock, Zap, Shield, Brain, Settings } from 'lucide-react';
+import { MessageSquare, CheckCircle, AlertTriangle, Shield, Settings } from 'lucide-react';
 
 
 export function ChatbotConfigPanel() {
@@ -10,25 +10,25 @@ export function ChatbotConfigPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            Configuración del Chatbot SARA
+            <MessageSquare className="h-5 w-5" />
+            Sistema de Chat Manual
           </CardTitle>
           <CardDescription>
-            Información técnica y estado del sistema de respuestas automáticas de WhatsApp
+            Configuración y estado del sistema de chat completamente manual
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Información del Sistema */}
+          {/* Sistema Completamente Manual */}
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Sistema de Respuestas
+              Sistema de Respuestas Completamente Manual
             </h3>
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
               <div>
-                <h4 className="font-medium text-green-800 mb-1">Respuestas Manuales Únicamente</h4>
+                <h4 className="font-medium text-green-800 mb-1">✅ Respuestas Manuales Únicas</h4>
                 <p className="text-sm text-green-700">
-                  El sistema NO genera respuestas automáticas. Todas las respuestas son manuales y controladas por el operador.
+                  El sistema está configurado para NUNCA generar respuestas por sí mismo. Todas las respuestas son escritas y enviadas manualmente por el operador. No hay funcionalidad de IA habilitada.
                 </p>
               </div>
             </div>
@@ -39,68 +39,68 @@ export function ChatbotConfigPanel() {
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="font-medium">Sistema Activo</span>
+                <span className="font-medium">Sistema Manual Activo</span>
               </div>
               <p className="text-sm text-gray-600">
-                Bot funcionando correctamente con verificación avanzada
+                Chat funcionando en modo completamente manual
               </p>
             </div>
             
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">Verificación Activa</span>
+                <span className="font-medium">Sin IA</span>
               </div>
               <p className="text-sm text-gray-600">
-                Sistema de verificación de respuestas en 2 pasos
+                No hay inteligencia artificial conectada al sistema
               </p>
             </div>
             
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <Brain className="h-5 w-5 text-purple-600" />
-                <span className="font-medium">IA Avanzada</span>
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                <span className="font-medium">Control Total</span>
               </div>
               <p className="text-sm text-gray-600">
-                GPT-4 con contexto específico de negocio
+                Operador tiene control completo de todas las respuestas
               </p>
             </div>
           </div>
 
-          {/* Funcionalidades Principales */}
+          {/* Funcionalidades del Sistema Manual */}
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Funcionalidades Principales
+              <MessageSquare className="h-5 w-5" />
+              Funcionalidades del Sistema Manual
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-green-100 text-green-800 mt-0.5">Activo</Badge>
+                  <Badge className="bg-green-100 text-green-800 mt-0.5">Manual</Badge>
                   <div>
-                    <h4 className="font-medium">Consultas de Encomiendas</h4>
+                    <h4 className="font-medium">Respuestas Escritas por Operador</h4>
                     <p className="text-sm text-gray-600">
-                      Respuestas inteligentes sobre el estado de paquetes específicos
+                      Cada respuesta es escrita manualmente por un operador humano
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-green-100 text-green-800 mt-0.5">Activo</Badge>
+                  <Badge className="bg-blue-100 text-blue-800 mt-0.5">Controlado</Badge>
                   <div>
-                    <h4 className="font-medium">Información de Viajes</h4>
+                    <h4 className="font-medium">Envío Manual de Mensajes</h4>
                     <p className="text-sm text-gray-600">
-                      Fechas reales de próximos viajes y destinos disponibles
+                      Los mensajes se envían únicamente cuando el operador lo decide
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-green-100 text-green-800 mt-0.5">Activo</Badge>
+                  <Badge className="bg-purple-100 text-purple-800 mt-0.5">Humano</Badge>
                   <div>
-                    <h4 className="font-medium">Tarifas y Servicios</h4>
+                    <h4 className="font-medium">Atención Personalizada</h4>
                     <p className="text-sm text-gray-600">
-                      Información actualizada de precios y servicios disponibles
+                      Cada cliente recibe atención personal y contextualizada
                     </p>
                   </div>
                 </div>
@@ -108,31 +108,31 @@ export function ChatbotConfigPanel() {
               
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-blue-100 text-blue-800 mt-0.5">Verificado</Badge>
+                  <Badge className="bg-orange-100 text-orange-800 mt-0.5">Seguro</Badge>
                   <div>
-                    <h4 className="font-medium">Verificación de Respuestas</h4>
+                    <h4 className="font-medium">Sin Respuestas No Deseadas</h4>
                     <p className="text-sm text-gray-600">
-                      Sistema de 2 pasos que valida calidad antes de enviar
+                      Garantía de que no se enviarán respuestas no solicitadas
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-purple-100 text-purple-800 mt-0.5">IA</Badge>
+                  <Badge className="bg-gray-100 text-gray-800 mt-0.5">Confiable</Badge>
                   <div>
-                    <h4 className="font-medium">Aprendizaje Contextual</h4>
+                    <h4 className="font-medium">Control Total del Flujo</h4>
                     <p className="text-sm text-gray-600">
-                      Mejora respuestas basado en historial del cliente
+                      El operador controla completamente el flujo de conversación
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <Badge className="bg-orange-100 text-orange-800 mt-0.5">Automático</Badge>
+                  <Badge className="bg-red-100 text-red-800 mt-0.5">Bloqueado</Badge>
                   <div>
-                    <h4 className="font-medium">Entrega a Domicilio</h4>
+                    <h4 className="font-medium">IA Completamente Deshabilitada</h4>
                     <p className="text-sm text-gray-600">
-                      Derivación automática a coordinación con Josefa
+                      No hay conexión a ningún sistema de inteligencia artificial
                     </p>
                   </div>
                 </div>
@@ -140,79 +140,44 @@ export function ChatbotConfigPanel() {
             </div>
           </div>
 
-          {/* Información Técnica */}
+          {/* Información del Sistema */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Información Técnica</h3>
+            <h3 className="text-lg font-semibold mb-4">Configuración del Sistema</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Modelo de IA</h4>
-                <p className="text-sm text-gray-600 mb-2">GPT-4.1-2025-04-14</p>
+                <h4 className="font-medium mb-2">Modo de Operación</h4>
+                <p className="text-sm text-gray-600 mb-2">Completamente Manual</p>
                 <p className="text-xs text-gray-500">
-                  Modelo optimizado para respuestas precisas y verificación
+                  Sistema configurado para operación 100% manual sin IA
                 </p>
               </div>
               
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Sistema de Verificación</h4>
-                <p className="text-sm text-gray-600 mb-2">Doble validación automática</p>
+                <h4 className="font-medium mb-2">Inteligencia Artificial</h4>
+                <p className="text-sm text-gray-600 mb-2">Completamente Deshabilitada</p>
                 <p className="text-xs text-gray-500">
-                  Cada respuesta es verificada por precisión y calidad
+                  No hay conexión a sistemas de IA externos
                 </p>
               </div>
               
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Contexto de Negocio</h4>
-                <p className="text-sm text-gray-600 mb-2">Datos en tiempo real</p>
+                <h4 className="font-medium mb-2">Control de Respuestas</h4>
+                <p className="text-sm text-gray-600 mb-2">100% Operador Humano</p>
                 <p className="text-xs text-gray-500">
-                  Acceso a información actualizada de encomiendas y viajes
+                  Todas las respuestas requieren intervención humana
                 </p>
               </div>
               
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Tiempo de Respuesta</h4>
-                <p className="text-sm text-gray-600 mb-2">2-5 segundos promedio</p>
+                <h4 className="font-medium mb-2">Seguridad</h4>
+                <p className="text-sm text-gray-600 mb-2">Máxima - Sin Respuestas No Solicitadas</p>
                 <p className="text-xs text-gray-500">
-                  Incluye tiempo de verificación y validación
+                  Garantía de que no se enviarán mensajes no deseados
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Mejoras Implementadas */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Mejoras Recientes</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-green-800">Sistema de Verificación Implementado</h4>
-                  <p className="text-sm text-green-700">
-                    Ahora cada respuesta pasa por un proceso de verificación de calidad antes de ser enviada
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <Brain className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-800">Respuestas Contextuales Mejoradas</h4>
-                  <p className="text-sm text-blue-700">
-                    El bot ahora puede manejar consultas múltiples e integradas de manera más inteligente
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <Zap className="h-5 w-5 text-purple-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-purple-800">Detección Avanzada de Intenciones</h4>
-                  <p className="text-sm text-purple-700">
-                    Mejor reconocimiento de consultas sobre fechas, tarifas y estados de encomiendas
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -108,9 +108,26 @@ export function useNotifications() {
     }
   });
 
+  // Create a promise-based version for easier async handling
+  const sendManualNotificationAsync = async (params: { 
+    customerId: string;
+    packageId: string;
+    message: string;
+    phone: string;
+    imageUrl?: string;
+  }) => {
+    return new Promise((resolve, reject) => {
+      sendManualNotificationMutation.mutate(params, {
+        onSuccess: (data) => resolve(data),
+        onError: (error) => reject(error)
+      });
+    });
+  };
+
   return {
     ...notificationsQuery,
     sendManualNotification: sendManualNotificationMutation.mutate,
+    sendManualNotificationAsync,
     isManualSending: sendManualNotificationMutation.isPending
   };
 }

@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export function useChatMessages() {
   const { toast } = useToast();
-  const { sendManualNotification, isManualSending } = useNotifications();
+  const { sendManualNotificationAsync, isManualSending } = useNotifications();
   const { saveSentMessage } = useSentMessages();
   const { validateMessage } = useMessageValidation();
   const { handleError } = useErrorHandler();
@@ -54,9 +54,9 @@ export function useChatMessages() {
 
       // Enviar mensaje por WhatsApp
       if (customerId) {
-        // Cliente registrado - usar sendManualNotification
+        // Cliente registrado - usar sendManualNotificationAsync
         console.log('👤 Sending to registered customer');
-        sendManualNotification({
+        await sendManualNotificationAsync({
           customerId: customerId,
           packageId: '',
           message: finalMessage,

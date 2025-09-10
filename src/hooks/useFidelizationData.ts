@@ -17,11 +17,16 @@ interface Package {
   id: string;
   customer_id: string;
   weight: number | null;
+  status: string | null;
   created_at: string;
   customers: {
     id: string;
     name: string;
   } | null;
+  customer_payments: {
+    id: string;
+    amount: number;
+  }[] | null;
 }
 
 export function useFidelizationData(dateFilter: DateFilter = 'all') {
@@ -30,17 +35,22 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
     queryFn: async (): Promise<FidelizationCustomer[]> => {
       console.log('🏆 Fetching fidelization data...');
 
-      // Get all packages with customer data
+      // Get all packages with customer data and payments
       const { data: packages, error } = await supabase
         .from('packages')
         .select(`
           id,
           customer_id,
           weight,
+          status,
           created_at,
           customers (
             id,
             name
+          ),
+          customer_payments (
+            id,
+            amount
           )
         `)
         .order('created_at', { ascending: true });
@@ -80,6 +90,12 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
 
       filteredPackages.forEach(pkg => {
         if (!pkg.customers || !pkg.customer_id) return;
+        
+        // Only count packages that are delivered AND have payments
+        const isDelivered = pkg.status === 'delivered';
+        const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
+        
+        if (!isDelivered || !hasPay) return;
         
         if (!customerMap.has(pkg.customer_id)) {
           customerMap.set(pkg.customer_id, {

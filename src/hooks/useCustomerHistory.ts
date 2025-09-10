@@ -55,36 +55,75 @@ export function useCustomerHistory(customerId: string | null) {
 
       if (!packages) return [];
 
-      // Calculate points for each shipment
-      const shipmentsWithPoints: CustomerShipment[] = packages.map(pkg => {
-        const weight = pkg.weight || 0;
-        const basePoints = 50; // 50 points per shipment
-        const weightPoints = weight * 10; // 10 points per kilo
-        const totalPoints = basePoints + weightPoints;
+      // Calculate points for each shipment (only for delivered and paid packages)
+      const shipmentsWithPoints: CustomerShipment[] = packages
+        .filter(pkg => {
+          const isDelivered = pkg.status === 'delivered';
+          const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
+          return isDelivered && hasPay;
+        })
+        .map(pkg => {
+          const weight = pkg.weight || 0;
+          const basePoints = 50; // 50 points per shipment
+          const weightPoints = weight * 10; // 10 points per kilo
+          const totalPoints = basePoints + weightPoints;
 
-        // Get payment information (first payment if multiple exist)
-        const paymentData = pkg.customer_payments && pkg.customer_payments.length > 0 
-          ? pkg.customer_payments[0] 
-          : null;
+          // Get payment information (first payment if multiple exist)
+          const paymentData = pkg.customer_payments && pkg.customer_payments.length > 0 
+            ? pkg.customer_payments[0] 
+            : null;
 
-        return {
-          id: pkg.id,
-          tracking_number: pkg.tracking_number,
-          weight: pkg.weight,
-          description: pkg.description,
-          status: pkg.status,
-          created_at: pkg.created_at,
-          origin: pkg.origin,
-          destination: pkg.destination,
-          basePoints,
-          weightPoints,
-          totalPoints,
-          payment: paymentData
-        };
-      });
+          return {
+            id: pkg.id,
+            tracking_number: pkg.tracking_number,
+            weight: pkg.weight,
+            description: pkg.description,
+            status: pkg.status,
+            created_at: pkg.created_at,
+            origin: pkg.origin,
+            destination: pkg.destination,
+            basePoints,
+            weightPoints,
+            totalPoints,
+            payment: paymentData
+          };
+        });
 
-      console.log('🏆 Customer history processed:', shipmentsWithPoints.length, 'shipments');
-      return shipmentsWithPoints;
+      // Add packages that don't contribute to points (not delivered or not paid) with 0 points
+      const nonScoringShipments: CustomerShipment[] = packages
+        .filter(pkg => {
+          const isDelivered = pkg.status === 'delivered';
+          const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
+          return !(isDelivered && hasPay);
+        })
+        .map(pkg => {
+          // Get payment information (first payment if multiple exist)
+          const paymentData = pkg.customer_payments && pkg.customer_payments.length > 0 
+            ? pkg.customer_payments[0] 
+            : null;
+
+          return {
+            id: pkg.id,
+            tracking_number: pkg.tracking_number,
+            weight: pkg.weight,
+            description: pkg.description,
+            status: pkg.status,
+            created_at: pkg.created_at,
+            origin: pkg.origin,
+            destination: pkg.destination,
+            basePoints: 0,
+            weightPoints: 0,
+            totalPoints: 0,
+            payment: paymentData
+          };
+        });
+
+      // Combine both arrays and sort by date
+      const allShipments = [...shipmentsWithPoints, ...nonScoringShipments]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      console.log('🏆 Customer history processed:', allShipments.length, 'shipments');
+      return allShipments;
     },
     enabled: !!customerId,
   });

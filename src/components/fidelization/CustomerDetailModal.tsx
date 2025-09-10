@@ -54,17 +54,18 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
         <Separator />
 
         {/* Points Explanation */}
-        <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            Sistema de Puntos
-          </h3>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>• <strong>50 puntos</strong> por cada envío realizado</p>
-            <p>• <strong>10 puntos adicionales</strong> por cada kilo enviado</p>
-            <p className="font-medium">Ejemplo: Un envío de 5kg = 50 + (5 × 10) = 100 puntos</p>
-          </div>
-        </div>
+         <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+           <h3 className="font-semibold mb-2 flex items-center gap-2">
+             <Trophy className="h-4 w-4" />
+             Sistema de Puntos
+           </h3>
+           <div className="text-sm text-muted-foreground space-y-1">
+             <p>• <strong>50 puntos</strong> por cada envío realizado</p>
+             <p>• <strong>10 puntos adicionales</strong> por cada kilo enviado</p>
+             <p className="font-medium text-orange-600">⚠️ Solo se otorgan puntos cuando el envío está entregado Y pagado</p>
+             <p className="font-medium">Ejemplo: Un envío de 5kg entregado y pagado = 50 + (5 × 10) = 100 puntos</p>
+           </div>
+         </div>
 
         <Separator />
 
@@ -174,12 +175,25 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="space-y-1">
-                          <div className="font-bold text-green-600">
-                            {shipment.totalPoints} pts
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            50 + ({shipment.weight || 0} × 10)
-                          </div>
+                          {shipment.totalPoints > 0 ? (
+                            <>
+                              <div className="font-bold text-green-600">
+                                {shipment.totalPoints} pts
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                50 + ({shipment.weight || 0} × 10)
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-bold text-gray-400">
+                                0 pts
+                              </div>
+                              <div className="text-xs text-red-500">
+                                No entregado o sin pago
+                              </div>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

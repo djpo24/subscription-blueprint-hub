@@ -141,8 +141,8 @@ export function WhatsAppTemplateTest() {
         };
       }
 
-      // Call the WhatsApp edge function - MANUAL MESSAGE ONLY (NO TEMPLATES)
-      const response = await supabase.functions.invoke('send-manual-message', {
+      // Call the WhatsApp edge function with template parameters
+      const response = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
           phone: testPhone,

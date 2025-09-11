@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FlightData } from '@/types/flight';
+import { FlightUpdateButton } from './FlightUpdateButton';
 
 interface FlightCardHeaderProps {
   flight: FlightData;
@@ -28,9 +29,7 @@ export function FlightCardHeader({ flight, onUpdateFlightStatus }: FlightCardHea
             Vuelo {flight.flight_number}
           </span>
         </div>
-        <Badge variant="outline" className="text-red-600 border-red-200">
-          Actualizaciones Automáticas DESHABILITADAS
-        </Badge>
+        <FlightUpdateButton flightNumber={flight.flight_number} />
       </div>
       
       <div className="flex gap-2">

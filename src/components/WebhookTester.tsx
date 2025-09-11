@@ -13,7 +13,7 @@ export function WebhookTester() {
   const [testResults, setTestResults] = useState<any[]>([]);
   const { toast } = useToast();
   
-  const webhookUrl = 'WEBHOOK COMPLETAMENTE DESHABILITADO';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
 
   const testWebhookVerification = async () => {
     setIsTesting(true);

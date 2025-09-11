@@ -8,13 +8,17 @@ import { Clock, Image as ImageIcon, Bot, User, Reply, Trash2 } from 'lucide-reac
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerAvatar } from './CustomerAvatar';
-
+import { AIResponseButton } from './AIResponseButton';
+import { StickerMessage } from './StickerMessage';
+import { ReplyMessage } from './ReplyMessage';
+import { ReactionOverlay } from './ReactionOverlay';
+import { useAdvancedBotToggle } from '@/hooks/useAdvancedBotToggle';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useDeleteMessage } from '@/hooks/useDeleteMessage';
-import type { ChatMessage as ChatMessageType } from '@/types/chatMessage';
+import type { ChatMessage as ChatMessageType, ProcessedMessage } from '@/types/chatMessage';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: ProcessedMessage;
   customerName?: string;
   profileImageUrl?: string | null;
   onSendMessage: (message: string, image?: File) => void;
@@ -34,12 +38,19 @@ export function ChatMessage({
   onMessageDeleted,
   allMessages = []
 }: ChatMessageProps) {
+  const { isManualResponseEnabled } = useAdvancedBotToggle();
   const { isAdmin } = useUserRole();
   const { deleteMessage, isDeleting } = useDeleteMessage();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const isFromCustomer = message.is_from_customer !== false;
   const messageTime = format(new Date(message.timestamp), 'HH:mm', { locale: es });
   const messageDate = format(new Date(message.timestamp), 'dd/MM/yyyy', { locale: es });
+
+  const handleAIResponseGenerated = (response: any) => {
+    if (response.action === 'send' && response.response) {
+      onSendMessage(response.response);
+    }
+  };
 
   const handleDeleteClick = () => {
     setShowConfirmDelete(true);
@@ -65,25 +76,35 @@ export function ChatMessage({
     setShowConfirmDelete(false);
   };
 
-  // ELIMINADO: NO HAY PROCESAMIENTO DE REPLIES AUTOMÁTICO
-  // if (message.isReply && message.referencedMessage) {
-  //   return (
-  //     <ReplyMessage />
-  //   );
-  // }
+  // Handle reply messages
+  if (message.isReply && message.referencedMessage) {
+    return (
+      <ReplyMessage 
+        message={message}
+        referencedMessage={message.referencedMessage}
+        customerName={customerName}
+        profileImageUrl={profileImageUrl}
+        customerPhone={customerPhone}
+        reactions={message.reactions}
+      />
+    );
+  }
 
-  // ELIMINADO: NO HAY PROCESAMIENTO DE REACCIONES AUTOMÁTICO
   // Skip standalone reaction messages (they'll be shown as overlays on original messages)
-  // if (message.message_type === 'reaction') {
-  //   return null;
-  // }
+  if (message.message_type === 'reaction') {
+    return null;
+  }
 
-  // ELIMINADO: NO HAY PROCESAMIENTO AUTOMÁTICO DE STICKERS
-  // if (message.message_type === 'sticker') {
-  //   return (
-  //     <StickerMessage />
-  //   );
-  // }
+  if (message.message_type === 'sticker') {
+    return (
+      <StickerMessage 
+        message={message}
+        customerName={customerName}
+        profileImageUrl={profileImageUrl}
+        customerPhone={customerPhone}
+      />
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -236,8 +257,8 @@ export function ChatMessage({
                 )}
               </div>
 
-              {/* ELIMINADO: NO HAY REACCIONES AUTOMÁTICAS */}
-              {/* <ReactionOverlay reactions={message.reactions || []} /> */}
+              {/* Reacciones si las hay */}
+              <ReactionOverlay reactions={message.reactions || []} />
 
               {/* Timestamp detallado */}
               <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">

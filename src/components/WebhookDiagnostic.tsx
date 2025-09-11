@@ -13,7 +13,7 @@ export function WebhookDiagnostic() {
   const [results, setResults] = useState<any[]>([]);
   const { toast } = useToast();
   
-  const webhookUrl = 'WEBHOOK DESHABILITADO - Sistema completamente manual';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
   const verifyToken = 'ojitos_webhook_verify';
 
   const copyToClipboard = (text: string, label: string) => {
@@ -176,12 +176,12 @@ export function WebhookDiagnostic() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bug className="h-5 w-5" />
-            ⛔ Sistema Manual - Sin Webhook
-          </CardTitle>
-          <CardDescription>
-            El webhook ha sido eliminado. Sistema configurado para operación completamente manual.
+        <CardTitle className="flex items-center gap-2">
+          <Bug className="h-5 w-5" />
+          Diagnóstico de Webhook WhatsApp
+        </CardTitle>
+        <CardDescription>
+          Diagnostica problemas con la configuración del webhook en Meta Developer Console
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

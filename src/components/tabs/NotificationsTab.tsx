@@ -3,10 +3,10 @@ import { FlightNotificationPanel } from '@/components/FlightNotificationPanel';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { TabsContent } from '@/components/ui/tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrivalNotificationsPanel } from '@/components/flight/ArrivalNotificationsPanel';
 import { CampaignNotificationsPanel } from '@/components/flight/CampaignNotificationsPanel';
 import { ProximosViajesTestPanel } from '@/components/flight/ProximosViajesTestPanel';
-import { Bell, Plane, Megaphone, TestTube, AlertTriangle } from 'lucide-react';
+import { Bell, Plane, Megaphone, TestTube } from 'lucide-react';
 
 export function NotificationsTab() {
   return (
@@ -32,20 +32,7 @@ export function NotificationsTab() {
         </TabsList>
 
         <TabsContent value="arrival" className="space-y-6">
-          <Card className="bg-red-50 border-red-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-800">
-                <AlertTriangle className="h-5 w-5" />
-                Notificaciones de Llegada ELIMINADAS
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-red-700">
-                Las notificaciones automáticas de llegada han sido completamente eliminadas.
-                No hay procesamiento automático de notificaciones de vuelos.
-              </p>
-            </CardContent>
-          </Card>
+          <ArrivalNotificationsPanel />
           <FlightNotificationPanel />
         </TabsContent>
 

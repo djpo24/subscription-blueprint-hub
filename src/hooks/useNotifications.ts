@@ -66,14 +66,14 @@ export function useNotifications() {
         throw new Error('Error al crear registro de notificación');
       }
 
-      // Send via WhatsApp MANUALLY - NO AUTO FEATURES
-      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-manual-message', {
+      // Send via WhatsApp
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
           phone: phone,
           message: message,
           imageUrl: imageUrl,
-          customerId: null // NO HAY DETECCIÓN AUTOMÁTICA
+          customerId: customerId
         }
       });
 

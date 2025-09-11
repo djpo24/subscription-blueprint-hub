@@ -77,7 +77,18 @@ export function DeleteCustomerDialog({
 
       // Eliminar dependencias primero
 
-      // 1. Eliminar mensajes enviados
+      // 1. Eliminar interacciones de chat con IA
+      const { error: aiInteractionsError } = await supabase
+        .from('ai_chat_interactions')
+        .delete()
+        .eq('customer_id', customer.id);
+
+      if (aiInteractionsError) {
+        console.error('Error eliminando interacciones de IA:', aiInteractionsError);
+        // No lanzar error, continuar con otros registros
+      }
+
+      // 2. Eliminar mensajes enviados
       const { error: sentMessagesError } = await supabase
         .from('sent_messages')
         .delete()
@@ -88,7 +99,7 @@ export function DeleteCustomerDialog({
         // No lanzar error, continuar
       }
 
-      // 2. Eliminar pagos del cliente
+      // 3. Eliminar mensajes entrantes
       const { error: incomingMessagesError } = await supabase
         .from('incoming_messages')
         .delete()
@@ -99,7 +110,7 @@ export function DeleteCustomerDialog({
         // No lanzar error, continuar
       }
 
-      // 3. Eliminar logs de notificaciones
+      // 4. Eliminar logs de notificaciones
       const { error: notificationLogError } = await supabase
         .from('notification_log')
         .delete()
@@ -107,6 +118,17 @@ export function DeleteCustomerDialog({
 
       if (notificationLogError) {
         console.error('Error eliminando logs de notificaciones:', notificationLogError);
+        // No lanzar error, continuar
+      }
+
+      // 5. Eliminar feedback de respuestas IA
+      const { error: feedbackError } = await supabase
+        .from('ai_response_feedback')
+        .delete()
+        .eq('created_by', customer.id);
+
+      if (feedbackError) {
+        console.error('Error eliminando feedback de IA:', feedbackError);
         // No lanzar error, continuar
       }
 
@@ -149,7 +171,7 @@ export function DeleteCustomerDialog({
           <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción no se puede deshacer. El cliente "{customer.name}" y todos sus datos asociados 
-            (mensajes, notificaciones) serán eliminados permanentemente del sistema.
+            (mensajes, interacciones de chat, notificaciones) serán eliminados permanentemente del sistema.
             {customer.package_count > 0 && (
               <span className="block mt-2 text-red-600 font-medium">
                 Advertencia: Este cliente tiene {customer.package_count} paquete(s) asociado(s) y no podrá ser eliminado.

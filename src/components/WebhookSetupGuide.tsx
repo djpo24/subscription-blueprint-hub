@@ -11,7 +11,7 @@ export function WebhookSetupGuide() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
-  const webhookUrl = 'WEBHOOK DESHABILITADO - No hay procesamiento automático';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -26,13 +26,13 @@ export function WebhookSetupGuide() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Webhook className="h-5 w-5" />
-            🚫 Sistema Manual - Webhook Eliminado
-          </CardTitle>
-          <CardDescription>
-            El webhook ha sido completamente eliminado. El sistema opera en modo manual únicamente.
-          </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Webhook className="h-5 w-5" />
+          Configuración del Webhook de WhatsApp V3
+        </CardTitle>
+        <CardDescription>
+          Configura el nuevo webhook en Meta Developer Console para recibir eventos de WhatsApp
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">

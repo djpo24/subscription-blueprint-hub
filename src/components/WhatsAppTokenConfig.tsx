@@ -33,7 +33,7 @@ export function WhatsAppTokenConfig() {
     phoneNumberId: 'unknown'
   });
 
-  const webhookUrl = 'WEBHOOK ELIMINADO - Sin procesamiento automático';
+  const webhookUrl = 'https://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/whatsapp-webhook-v3';
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);

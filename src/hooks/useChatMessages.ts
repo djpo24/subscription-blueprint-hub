@@ -64,7 +64,7 @@ export function useChatMessages() {
           imageUrl: imageUrl
         });
       } else {
-        // Cliente no registrado - envío directo MANUAL ÚNICAMENTE
+        // Cliente no registrado - envío directo con detección automática de plantillas
         console.log('👤 Sending to unregistered customer');
         
         // Crear entrada de notificación
@@ -85,14 +85,14 @@ export function useChatMessages() {
           throw new Error('Error al crear registro de notificación');
         }
 
-        // Enviar a WhatsApp MANUALMENTE - SIN DETECCIÓN AUTOMÁTICA
-        const { data: responseData, error: functionError } = await supabase.functions.invoke('send-manual-message', {
+        // Enviar a WhatsApp con customerId para detección automática de plantillas
+        const { data: responseData, error: functionError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             notificationId: notificationData.id,
             phone: selectedPhone,
             message: finalMessage,
             imageUrl: imageUrl,
-            customerId: null // NO HAY DETECCIÓN AUTOMÁTICA
+            customerId: customerId // Pasar customerId para detección automática
           }
         });
 
@@ -116,10 +116,10 @@ export function useChatMessages() {
           throw new Error('Error de WhatsApp: ' + responseData.error);
         }
 
-        // ELIMINADO: NO MOSTRAR INFO DE PLANTILLAS AUTOMÁTICAS
-        // if (responseData && responseData.autoDetected) {
-        //   console.log('✅ Plantilla detectada automáticamente:', responseData.templateUsed);
-        // }
+        // Mostrar información adicional si se usó plantilla automáticamente
+        if (responseData && responseData.autoDetected) {
+          console.log('✅ Plantilla detectada automáticamente:', responseData.templateUsed);
+        }
 
         console.log('✅ WhatsApp message sent successfully');
         

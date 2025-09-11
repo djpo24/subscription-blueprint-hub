@@ -34,8 +34,8 @@ export function DirectWhatsAppTest() {
 
       console.log('Notification log created:', notificationData);
 
-      // Call the WhatsApp edge function - MANUAL MESSAGE ONLY
-      const response = await supabase.functions.invoke('send-manual-message', {
+      // Call the WhatsApp edge function
+      const response = await supabase.functions.invoke('send-whatsapp-notification', {
         body: {
           notificationId: notificationData.id,
           phone: '+573014940399',

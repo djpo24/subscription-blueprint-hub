@@ -63,7 +63,7 @@ export function usePackagesByDate(selectedDate: Date) {
         `)
         .in('trip_id', tripIds)
         .order('created_at', { ascending: false })
-        .range(0, 999999);
+        .range(0, 10000);
 
       if (packagesError) {
         console.error('❌ Error fetching packages:', packagesError);

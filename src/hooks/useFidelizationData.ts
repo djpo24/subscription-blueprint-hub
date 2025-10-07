@@ -54,7 +54,7 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           )
         `)
         .order('created_at', { ascending: true })
-        .range(0, 999999);
+        .range(0, 10000);
 
       if (error) {
         console.error('❌ Error fetching packages for fidelization:', error);

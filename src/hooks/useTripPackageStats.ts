@@ -12,7 +12,7 @@ export function useTripPackageStats() {
         .from('packages')
         .select('id, trip_id, weight, freight, amount_to_collect, currency', { count: 'exact' })
         .not('trip_id', 'is', null)
-        .range(0, 999999);
+        .range(0, 10000);
 
       if (error) {
         console.error('❌ [useTripPackageStats] Error:', error);

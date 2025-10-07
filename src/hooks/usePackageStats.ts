@@ -9,7 +9,7 @@ export function usePackageStats() {
       const { data, error } = await supabase
         .from('packages')
         .select('status')
-        .range(0, 999999);
+        .range(0, 10000);
       
       if (error) throw error;
       

@@ -10,6 +10,7 @@ import { PackageRouteDisplay } from './PackageRouteDisplay';
 import { formatPackageDescription } from '@/utils/descriptionFormatter';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
+import { FirstPackageBadge } from '@/components/badges/FirstPackageBadge';
 
 type Currency = 'COP' | 'AWG';
 
@@ -42,6 +43,7 @@ interface PackagesTableRowProps {
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
   showChatInSeparateColumn?: boolean;
+  isFirstPackage?: boolean;
 }
 
 export function PackagesTableRow({ 
@@ -52,7 +54,8 @@ export function PackagesTableRow({
   onOpenChat,
   previewRole,
   disableChat = false,
-  showChatInSeparateColumn = false
+  showChatInSeparateColumn = false,
+  isFirstPackage = false
 }: PackagesTableRowProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
 
@@ -75,7 +78,12 @@ export function PackagesTableRow({
       onClick={() => onRowClick(pkg)}
     >
       <TableCell className="font-medium">{pkg.tracking_number}</TableCell>
-      <TableCell>{pkg.customers?.name || 'N/A'}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span>{pkg.customers?.name || 'N/A'}</span>
+          {isFirstPackage && <FirstPackageBadge />}
+        </div>
+      </TableCell>
       <TableCell>
         <PackageRouteDisplay 
           status={pkg.status}

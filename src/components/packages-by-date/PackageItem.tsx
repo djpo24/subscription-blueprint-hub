@@ -34,6 +34,7 @@ interface PackageItemProps {
   onOpenChat: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
+  isFirstPackage?: boolean;
 }
 
 export function PackageItem({
@@ -42,7 +43,8 @@ export function PackageItem({
   onPackageClick,
   onOpenChat,
   previewRole,
-  disableChat = false
+  disableChat = false,
+  isFirstPackage = false
 }: PackageItemProps) {
   const isMobile = useIsMobile();
 
@@ -63,6 +65,7 @@ export function PackageItem({
         onOpenChat={onOpenChat}
         previewRole={previewRole}
         disableChat={disableChat}
+        isFirstPackage={isFirstPackage}
       />
     );
   }
@@ -75,6 +78,7 @@ export function PackageItem({
       onOpenChat={onOpenChat}
       previewRole={previewRole}
       disableChat={disableChat}
+      isFirstPackage={isFirstPackage}
     />
   );
 }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBadge';
 import { formatAmountToCollectWithCurrency } from '@/utils/currencyFormatter';
+import { FirstPackageBadge } from '@/components/badges/FirstPackageBadge';
 
 type Currency = 'COP' | 'AWG';
 
@@ -30,6 +31,7 @@ interface PackageItemMobileProps {
   onOpenChat: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
+  isFirstPackage?: boolean;
 }
 
 export function PackageItemMobile({
@@ -38,7 +40,8 @@ export function PackageItemMobile({
   onPackageClick,
   onOpenChat,
   previewRole,
-  disableChat = false
+  disableChat = false,
+  isFirstPackage = false
 }: PackageItemMobileProps) {
   const handleClick = () => {
     onPackageClick(pkg, tripId);
@@ -70,6 +73,7 @@ export function PackageItemMobile({
           <span className="text-sm text-gray-700">
             {pkg.customers?.name || 'Cliente no encontrado'}
           </span>
+          {isFirstPackage && <FirstPackageBadge />}
         </div>
 
         <p className="text-sm text-gray-600 line-clamp-2">{pkg.description}</p>

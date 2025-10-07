@@ -3,6 +3,7 @@ import { CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
 import { PackageItem } from './PackageItem';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isFirstPackageForCustomer } from '@/utils/customerPackageUtils';
 
 type Currency = 'COP' | 'AWG';
 
@@ -29,6 +30,7 @@ interface TripPackageCardContentProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
+  allPackages?: Package[]; // Todos los paquetes del día para calcular primer envío
 }
 
 export function TripPackageCardContent({ 
@@ -37,7 +39,8 @@ export function TripPackageCardContent({
   onPackageClick, 
   onOpenChat,
   previewRole,
-  disableChat = false
+  disableChat = false,
+  allPackages = []
 }: TripPackageCardContentProps) {
   const isMobile = useIsMobile();
 
@@ -50,17 +53,25 @@ export function TripPackageCardContent({
         </div>
       ) : (
         <div className={`${isMobile ? 'grid grid-cols-1 gap-3' : 'space-y-2'}`}>
-          {packages.map((pkg) => (
-            <PackageItem
-              key={pkg.id}
-              package={pkg}
-              tripId={tripId}
-              onPackageClick={onPackageClick}
-              onOpenChat={onOpenChat}
-              previewRole={previewRole}
-              disableChat={disableChat}
-            />
-          ))}
+          {packages.map((pkg) => {
+            const isFirstPackage = isFirstPackageForCustomer(
+              pkg.customer_id, 
+              allPackages.length > 0 ? allPackages : packages
+            );
+            
+            return (
+              <PackageItem
+                key={pkg.id}
+                package={pkg}
+                tripId={tripId}
+                onPackageClick={onPackageClick}
+                onOpenChat={onOpenChat}
+                previewRole={previewRole}
+                disableChat={disableChat}
+                isFirstPackage={isFirstPackage}
+              />
+            );
+          })}
         </div>
       )}
     </CardContent>

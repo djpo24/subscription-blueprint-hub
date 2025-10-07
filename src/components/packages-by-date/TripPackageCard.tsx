@@ -41,6 +41,7 @@ interface TripPackageCardProps {
   disableChat?: boolean;
   tripDate?: Date;
   showSummary?: boolean;
+  allPackages?: Package[]; // Todos los paquetes del día
 }
 
 export function TripPackageCard({ 
@@ -51,7 +52,8 @@ export function TripPackageCard({
   previewRole,
   disableChat = false,
   tripDate,
-  showSummary = true
+  showSummary = true,
+  allPackages = []
 }: TripPackageCardProps) {
   const { data: userRole } = useCurrentUserRoleWithPreview(previewRole);
   const queryClient = useQueryClient();
@@ -104,6 +106,7 @@ export function TripPackageCard({
         onOpenChat={canShowChat ? onOpenChat : undefined}
         previewRole={previewRole}
         disableChat={disableChat}
+        allPackages={allPackages}
       />
     </Card>
   );

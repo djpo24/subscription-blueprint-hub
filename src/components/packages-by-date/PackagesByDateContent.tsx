@@ -76,6 +76,9 @@ export function PackagesByDateContent({
     acc + trip.packages.reduce((packAcc, pkg) => packAcc + (pkg.freight || 0), 0), 0
   );
   
+  // Recopilar todos los paquetes del día para calcular primer envío
+  const allPackagesOfDay = trips.flatMap(trip => trip.packages);
+  
   // Calcular montos filtrados por moneda
   const filteredAmountsByCurrency = filteredTrips.reduce((acc, trip) => {
     trip.packages.forEach(pkg => {
@@ -145,6 +148,7 @@ export function PackagesByDateContent({
               disableChat={disableChat}
               tripDate={selectedDate}
               showSummary={true}
+              allPackages={allPackagesOfDay}
             />
           ))}
         </div>

@@ -104,7 +104,7 @@ export function TripsListMobileView({ trips, onViewTrip }: TripsListMobileViewPr
             className="border border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
             onClick={() => {
               if (trip.trip_date) {
-                onViewTrip(new Date(trip.trip_date));
+                onViewTrip(parseISO(trip.trip_date));
               }
             }}
           >

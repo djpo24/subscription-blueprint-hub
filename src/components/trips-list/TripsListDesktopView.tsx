@@ -116,7 +116,7 @@ export function TripsListDesktopView({ trips, onViewTrip }: TripsListDesktopView
               className="cursor-pointer hover:bg-gray-50"
               onClick={() => {
                 if (trip.trip_date) {
-                  onViewTrip(new Date(trip.trip_date));
+                  onViewTrip(parseISO(trip.trip_date));
                 }
               }}
             >

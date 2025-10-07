@@ -1,7 +1,12 @@
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plane, Calendar, MapPin, User, ArrowRight } from 'lucide-react';
+import { Plane, Calendar, MapPin, Package, Weight, DollarSign } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useTripPackageStats } from '@/hooks/useTripPackageStats';
+import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
+import { formatWeight } from './tripListUtils';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 interface Trip {
   id: string;
@@ -10,8 +15,6 @@ interface Trip {
   destination: string | null;
   flight_number: string | null;
   status: string | null;
-  departure_date: string | null;
-  arrival_date: string | null;
   travelers?: {
     first_name: string;
     last_name: string;
@@ -65,62 +68,89 @@ const formatDate = (date: string | null) => {
 };
 
 export function TripsListMobileView({ trips }: TripsListMobileViewProps) {
+  const { data: tripStats = {} } = useTripPackageStats();
+
+  const formatAmountToCollectDisplay = (tripId: string) => {
+    const stats = tripStats[tripId];
+    if (!stats || !stats.amountsByCurrency || Object.keys(stats.amountsByCurrency).length === 0) {
+      return '---';
+    }
+
+    const currencies = Object.keys(stats.amountsByCurrency);
+    if (currencies.length === 1) {
+      const currency = currencies[0];
+      const amount = stats.amountsByCurrency[currency];
+      const parsedCurrency = parseCurrencyString(currency);
+      return formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    }
+
+    const primaryCurrency = currencies[0];
+    const amount = stats.amountsByCurrency[primaryCurrency];
+    const parsedCurrency = parseCurrencyString(primaryCurrency);
+    const formattedAmount = formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    
+    return currencies.length > 1 ? `${formattedAmount} (+${currencies.length - 1} más)` : formattedAmount;
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-3">
-      {trips.map((trip) => (
-        <div 
-          key={trip.id} 
-          className="p-3 border border-gray-200 rounded-lg bg-white"
-        >
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="font-medium text-sm">{formatDate(trip.trip_date)}</span>
-            </div>
-            <Badge className={`${getStatusColor(trip.status)} text-xs`}>
-              {getStatusLabel(trip.status)}
-            </Badge>
-          </div>
+    <div className="space-y-3">
+      {trips.map((trip) => {
+        const stats = tripStats[trip.id] || { totalPackages: 0, totalWeight: 0, totalFreight: 0 };
+        
+        return (
+          <Card key={trip.id} className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium text-sm">
+                        {formatDate(trip.trip_date)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-3 w-3 text-blue-500" />
+                      <span className="text-sm">
+                        {trip.origin || '-'} → {trip.destination || '-'}
+                      </span>
+                    </div>
+                    {trip.flight_number && (
+                      <div className="flex items-center gap-2">
+                        <Plane className="h-3 w-3 text-indigo-500" />
+                        <span className="text-xs font-mono">{trip.flight_number}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Badge className={`${getStatusColor(trip.status)} text-xs`}>
+                    {getStatusLabel(trip.status)}
+                  </Badge>
+                </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3 w-3 text-blue-500" />
-              <div className="flex items-center gap-1 text-sm">
-                <span className="font-medium">{trip.origin || '-'}</span>
-                <ArrowRight className="h-3 w-3 text-gray-400" />
-                <span className="font-medium">{trip.destination || '-'}</span>
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3 w-3 text-blue-500" />
+                    <span>{stats.totalPackages} paquetes</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Weight className="h-3 w-3 text-purple-500" />
+                    <span>{formatWeight(stats.totalWeight)} kg</span>
+                  </div>
+                </div>
 
-            {trip.flight_number && (
-              <div className="flex items-center gap-2">
-                <Plane className="h-3 w-3 text-indigo-500" />
-                <span className="text-sm font-mono">{trip.flight_number}</span>
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">A Cobrar:</span>
+                    <span className="text-sm font-medium text-green-600">
+                      {formatAmountToCollectDisplay(trip.id)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-
-            {trip.travelers && (
-              <div className="flex items-center gap-2">
-                <User className="h-3 w-3 text-purple-500" />
-                <span className="text-sm">
-                  {trip.travelers.first_name} {trip.travelers.last_name}
-                </span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-              <div>
-                <p className="text-xs text-gray-500">Salida</p>
-                <p className="text-xs font-medium">{formatDate(trip.departure_date)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Llegada</p>
-                <p className="text-xs font-medium">{formatDate(trip.arrival_date)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

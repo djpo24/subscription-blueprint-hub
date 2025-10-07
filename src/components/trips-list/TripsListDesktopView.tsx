@@ -1,8 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plane, Calendar, MapPin, User } from 'lucide-react';
+import { Plane, Calendar, MapPin, Package, Weight, DollarSign } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useTripPackageStats } from '@/hooks/useTripPackageStats';
+import { formatAmountToCollectWithCurrency, parseCurrencyString } from '@/utils/currencyFormatter';
+import { formatWeight } from './tripListUtils';
+import { formatNumberWithThousandsSeparator } from '@/utils/numberFormatter';
 
 interface Trip {
   id: string;
@@ -11,8 +15,6 @@ interface Trip {
   destination: string | null;
   flight_number: string | null;
   status: string | null;
-  departure_date: string | null;
-  arrival_date: string | null;
   travelers?: {
     first_name: string;
     last_name: string;
@@ -66,6 +68,30 @@ const formatDate = (date: string | null) => {
 };
 
 export function TripsListDesktopView({ trips }: TripsListDesktopViewProps) {
+  const { data: tripStats = {} } = useTripPackageStats();
+
+  const formatAmountToCollectDisplay = (tripId: string) => {
+    const stats = tripStats[tripId];
+    if (!stats || !stats.amountsByCurrency || Object.keys(stats.amountsByCurrency).length === 0) {
+      return '---';
+    }
+
+    const currencies = Object.keys(stats.amountsByCurrency);
+    if (currencies.length === 1) {
+      const currency = currencies[0];
+      const amount = stats.amountsByCurrency[currency];
+      const parsedCurrency = parseCurrencyString(currency);
+      return formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    }
+
+    const primaryCurrency = currencies[0];
+    const amount = stats.amountsByCurrency[primaryCurrency];
+    const parsedCurrency = parseCurrencyString(primaryCurrency);
+    const formattedAmount = formatAmountToCollectWithCurrency(amount, parsedCurrency);
+    
+    return currencies.length > 1 ? `${formattedAmount} (+${currencies.length - 1} más)` : formattedAmount;
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -73,57 +99,64 @@ export function TripsListDesktopView({ trips }: TripsListDesktopViewProps) {
           <TableHead>Fecha</TableHead>
           <TableHead>Ruta</TableHead>
           <TableHead>Vuelo</TableHead>
-          <TableHead>Viajero</TableHead>
-          <TableHead>Salida</TableHead>
-          <TableHead>Llegada</TableHead>
+          <TableHead>Paquetes</TableHead>
+          <TableHead>Peso Total</TableHead>
+          <TableHead>A Cobrar</TableHead>
           <TableHead>Estado</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {trips.map((trip) => (
-          <TableRow key={trip.id}>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{formatDate(trip.trip_date)}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-500" />
-                <span>{trip.origin || '-'} → {trip.destination || '-'}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <Plane className="h-4 w-4 text-indigo-500" />
-                <span className="font-mono text-sm">{trip.flight_number || '-'}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-purple-500" />
-                <span>
-                  {trip.travelers 
-                    ? `${trip.travelers.first_name} ${trip.travelers.last_name}`
-                    : '-'
-                  }
-                </span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <span className="text-sm text-gray-600">{formatDate(trip.departure_date)}</span>
-            </TableCell>
-            <TableCell>
-              <span className="text-sm text-gray-600">{formatDate(trip.arrival_date)}</span>
-            </TableCell>
-            <TableCell>
-              <Badge className={getStatusColor(trip.status)}>
-                {getStatusLabel(trip.status)}
-              </Badge>
-            </TableCell>
-          </TableRow>
-        ))}
+        {trips.map((trip) => {
+          const stats = tripStats[trip.id] || { totalPackages: 0, totalWeight: 0, totalFreight: 0 };
+          
+          return (
+            <TableRow key={trip.id}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">{formatDate(trip.trip_date)}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-blue-500" />
+                  <span>{trip.origin || '-'} → {trip.destination || '-'}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Plane className="h-4 w-4 text-indigo-500" />
+                  <span className="font-mono text-sm">{trip.flight_number || '-'}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">{stats.totalPackages}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Weight className="h-4 w-4 text-purple-500" />
+                  <span>{formatWeight(stats.totalWeight)} kg</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  <span className="font-medium text-green-700">
+                    {formatAmountToCollectDisplay(trip.id)}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(trip.status)}>
+                  {getStatusLabel(trip.status)}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

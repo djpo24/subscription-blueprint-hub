@@ -9,6 +9,8 @@ import { EmptyTripsState } from './EmptyTripsState';
 import { PackageSearchBar } from '@/components/common/PackageSearchBar';
 import { filterPackagesBySearchTerm } from '@/utils/packageSearchUtils';
 import { Trip, Package } from './types';
+import { useCustomerPackageCounts } from '@/hooks/useCustomerPackageCounts';
+import { useMemo } from 'react';
 
 interface DispatchRelation {
   id: string;
@@ -60,6 +62,22 @@ export function PackagesByDateContent({
   disableChat = false
 }: PackagesByDateContentProps) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Obtener todos los IDs de clientes únicos de todos los paquetes
+  const uniqueCustomerIds = useMemo(() => {
+    const customerIds = new Set<string>();
+    trips.forEach(trip => {
+      trip.packages.forEach(pkg => {
+        if (pkg.customer_id) {
+          customerIds.add(pkg.customer_id);
+        }
+      });
+    });
+    return Array.from(customerIds);
+  }, [trips]);
+
+  // Obtener conteos de paquetes para todos los clientes
+  const { data: customerPackageCounts = {} } = useCustomerPackageCounts(uniqueCustomerIds);
 
   // Filtrar trips basado en el término de búsqueda
   const filteredTrips = trips.map(trip => ({
@@ -148,7 +166,7 @@ export function PackagesByDateContent({
               disableChat={disableChat}
               tripDate={selectedDate}
               showSummary={true}
-              allPackages={allPackagesOfDay}
+              customerPackageCounts={customerPackageCounts}
             />
           ))}
         </div>

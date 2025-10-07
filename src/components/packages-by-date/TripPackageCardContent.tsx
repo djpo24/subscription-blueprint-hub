@@ -3,7 +3,6 @@ import { CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
 import { PackageItem } from './PackageItem';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { isFirstPackageForCustomer } from '@/utils/customerPackageUtils';
 
 type Currency = 'COP' | 'AWG';
 
@@ -30,7 +29,7 @@ interface TripPackageCardContentProps {
   onOpenChat?: (customerId: string, customerName?: string) => void;
   previewRole?: 'admin' | 'employee' | 'traveler';
   disableChat?: boolean;
-  allPackages?: Package[]; // Todos los paquetes del día para calcular primer envío
+  customerPackageCounts?: Record<string, number>; // Conteos reales de la BD
 }
 
 export function TripPackageCardContent({ 
@@ -40,7 +39,7 @@ export function TripPackageCardContent({
   onOpenChat,
   previewRole,
   disableChat = false,
-  allPackages = []
+  customerPackageCounts = {}
 }: TripPackageCardContentProps) {
   const isMobile = useIsMobile();
 
@@ -54,10 +53,9 @@ export function TripPackageCardContent({
       ) : (
         <div className={`${isMobile ? 'grid grid-cols-1 gap-3' : 'space-y-2'}`}>
           {packages.map((pkg) => {
-            const isFirstPackage = isFirstPackageForCustomer(
-              pkg.customer_id, 
-              allPackages.length > 0 ? allPackages : packages
-            );
+            // Verificar si es primer envío usando el conteo real de la BD
+            const packageCount = customerPackageCounts[pkg.customer_id] || 0;
+            const isFirstPackage = packageCount === 1;
             
             return (
               <PackageItem

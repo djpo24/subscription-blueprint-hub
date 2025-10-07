@@ -8,6 +8,7 @@ import { TripsListEmptyState } from './TripsListEmptyState';
 import { Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTripPackageStats } from '@/hooks/useTripPackageStats';
 
 interface TripsListViewProps {
   onViewTrip: (date: Date) => void;
@@ -17,14 +18,22 @@ type RouteFilter = 'all' | 'baq-cur' | 'cur-baq';
 
 export function TripsListView({ onViewTrip }: TripsListViewProps) {
   const { data: trips = [], isLoading } = useTrips();
+  const { data: tripStats = {} } = useTripPackageStats();
   const isMobile = useIsMobile();
   const [routeFilter, setRouteFilter] = useState<RouteFilter>('all');
 
-  // Filtrar viajes por ruta
+  // Filtrar viajes por ruta y que tengan al menos un paquete
   const filteredTrips = useMemo(() => {
-    if (routeFilter === 'all') return trips;
+    // Primero filtrar viajes que tienen al menos un paquete
+    const tripsWithPackages = trips.filter(trip => {
+      const stats = tripStats[trip.id];
+      return stats && stats.totalPackages > 0;
+    });
+
+    // Luego aplicar el filtro de ruta
+    if (routeFilter === 'all') return tripsWithPackages;
     
-    return trips.filter(trip => {
+    return tripsWithPackages.filter(trip => {
       const origin = trip.origin?.toLowerCase() || '';
       const destination = trip.destination?.toLowerCase() || '';
       
@@ -36,7 +45,7 @@ export function TripsListView({ onViewTrip }: TripsListViewProps) {
       
       return true;
     });
-  }, [trips, routeFilter]);
+  }, [trips, routeFilter, tripStats]);
 
   return (
     <Card>

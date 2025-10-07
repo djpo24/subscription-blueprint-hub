@@ -73,7 +73,6 @@ export function PackageItemMobile({
           <span className="text-sm text-gray-700">
             {pkg.customers?.name || 'Cliente no encontrado'}
           </span>
-          {isFirstPackage && <FirstPackageBadge />}
         </div>
 
         <p className="text-sm text-gray-600 line-clamp-2">{pkg.description}</p>
@@ -93,8 +92,11 @@ export function PackageItemMobile({
           </div>
         </div>
 
-        {canChat && (
-          <div className="flex justify-end pt-2">
+        <div className="flex justify-between items-center pt-2">
+          <div>
+            {isFirstPackage && <FirstPackageBadge />}
+          </div>
+          {canChat && (
             <Button
               variant="outline"
               size="sm"
@@ -104,8 +106,8 @@ export function PackageItemMobile({
               <MessageCircle className="h-3 w-3 mr-1" />
               Chat
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

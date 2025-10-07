@@ -8,7 +8,8 @@ export function usePackageStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('packages')
-        .select('status');
+        .select('status')
+        .range(0, 999999);
       
       if (error) throw error;
       

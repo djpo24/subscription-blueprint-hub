@@ -9,7 +9,8 @@ export function useTripPackageStats() {
       const { data: packages, error } = await supabase
         .from('packages')
         .select('id, trip_id, weight, freight, amount_to_collect, currency')
-        .not('trip_id', 'is', null);
+        .not('trip_id', 'is', null)
+        .range(0, 999999);
 
       if (error) {
         console.error('Error fetching packages for stats:', error);

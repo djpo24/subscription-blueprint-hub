@@ -28,7 +28,8 @@ export function useFinancialData() {
             name,
             phone
           )
-        `);
+        `)
+        .range(0, 999999);
 
       if (packagesError) {
         console.error('❌ [useFinancialData] Error fetching packages:', packagesError);
@@ -38,7 +39,8 @@ export function useFinancialData() {
       // Get payments data
       const { data: payments, error: paymentsError } = await supabase
         .from('customer_payments')
-        .select('*');
+        .select('*')
+        .range(0, 999999);
 
       if (paymentsError) {
         console.error('❌ [useFinancialData] Error fetching payments:', paymentsError);

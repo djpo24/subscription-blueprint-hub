@@ -11,7 +11,8 @@ export function usePackagesByTrip(tripId: string) {
         .from('packages')
         .select('*')
         .eq('trip_id', tripId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(0, 999999);
       
       if (packagesError) throw packagesError;
       

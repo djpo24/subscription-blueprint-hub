@@ -23,7 +23,7 @@ const EXAMPLE_TEMPLATES = [
 📱 ¡Contáctanos para reservar tu espacio!
 🚚 Servicio puerta a puerta disponible
 
-*Envíos Ojitos* - Tu conexión confiable entre Barranquilla y Curazao`
+*Envíos Ojito* - Tu conexión confiable entre Barranquilla y Curazao`
   },
   {
     name: "Plantilla Simple",

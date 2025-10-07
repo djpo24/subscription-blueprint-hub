@@ -59,7 +59,7 @@ export function AppSidebar({
       <SidebarHeader className="border-b border-gray-800 p-2 bg-zinc-950">
         <div className="flex items-center justify-between">
           <SidebarGroupLabel className="text-white font-bold text-sm sm:text-lg px-2 py-2 group-data-[collapsible=icon]:hidden truncate">
-            {isMobile ? "Ojitos" : "Envíos Ojitos"}
+            {isMobile ? "Ojito" : "Envíos Ojito"}
           </SidebarGroupLabel>
           {!isMobile && (
             <Button 

@@ -42,7 +42,7 @@ export function Header({ searchTerm, onSearchChange }: HeaderProps) {
               <SidebarTrigger className="bg-white text-black hover:bg-gray-100 hover:text-black rounded-full h-8 w-8 flex-shrink-0" />
             )}
             <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
-              {isMobile ? "Ojitos" : "Envíos Ojitos"}
+              {isMobile ? "Ojito" : "Envíos Ojito"}
             </h1>
           </div>
           

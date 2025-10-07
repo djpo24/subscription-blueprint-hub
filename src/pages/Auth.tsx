@@ -67,7 +67,7 @@ export default function Auth() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Package className="h-8 w-8 text-white" />
-              <h1 className="text-2xl font-bold text-white">Envíos Ojitos</h1>
+              <h1 className="text-2xl font-bold text-white">Envíos Ojito</h1>
             </div>
             <Link to="/">
               <Button variant="secondary" size="sm" className="flex items-center gap-2">

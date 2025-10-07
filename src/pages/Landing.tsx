@@ -15,7 +15,7 @@ export default function Landing() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-3">
               <Package className="h-6 w-6 md:h-8 md:w-8 text-white" />
-              <h1 className="text-lg md:text-2xl font-bold text-white">Envíos Ojitos</h1>
+              <h1 className="text-lg md:text-2xl font-bold text-white">Envíos Ojito</h1>
             </div>
             <Link to="/auth">
               <Button variant="secondary" size="sm" className="text-xs md:text-sm">
@@ -63,7 +63,7 @@ export default function Landing() {
       {/* Features Section */}
       <section className="py-10 md:py-16 px-4 bg-gray-50">
         <div className="container mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">¿Por qué elegir Envíos Ojitos?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">¿Por qué elegir Envíos Ojito?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
             <Card className="uber-card">
               <CardHeader className="pb-3 md:pb-6">
@@ -174,10 +174,12 @@ export default function Landing() {
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
             <Package className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="font-bold text-sm md:text-base">Envíos Ojitos</span>
+            <span className="font-bold text-sm md:text-base">Envíos Ojito</span>
+            <span className="text-sm md:text-base">|</span>
+            <span className="text-sm md:text-base">Barranquilla - Curazao</span>
           </div>
           <p className="text-gray-600 text-xs md:text-sm">
-            © 2024 Envíos Ojitos. Todos los derechos reservados.
+            © 2024 Envíos Ojito. Todos los derechos reservados.
           </p>
         </div>
       </footer>

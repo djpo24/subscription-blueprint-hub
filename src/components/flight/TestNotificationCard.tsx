@@ -12,7 +12,7 @@ interface TestNotificationCardProps {
 
 export function TestNotificationCard({ onSendTestNotification, isSendingTest }: TestNotificationCardProps) {
   const [testPhone, setTestPhone] = useState('');
-  const [testMessage, setTestMessage] = useState('Hola! Esta es una notificación de prueba del sistema de Envíos Ojitos.');
+  const [testMessage, setTestMessage] = useState('Hola! Esta es una notificación de prueba del sistema de Envíos Ojito.');
 
   const handleTestNotification = () => {
     if (!testPhone.trim()) {

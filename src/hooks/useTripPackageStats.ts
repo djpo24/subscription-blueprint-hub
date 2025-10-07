@@ -5,21 +5,31 @@ export function useTripPackageStats() {
   return useQuery({
     queryKey: ['trip-package-stats'],
     queryFn: async () => {
-      // Obtener todos los paquetes que tienen trip_id
+      console.log('📊 [useTripPackageStats] ===== START FETCHING =====');
+      
+      // Obtener TODOS los paquetes sin ningún filtro
       const { data: packages, error } = await supabase
         .from('packages')
-        .select('trip_id, weight, freight, amount_to_collect, currency')
-        .not('trip_id', 'is', null);
+        .select('id, trip_id, weight, freight, amount_to_collect, currency');
 
       if (error) {
-        console.error('❌ Error fetching trip package stats:', error);
+        console.error('❌ [useTripPackageStats] Error:', error);
         throw error;
       }
 
-      console.log('📊 [useTripPackageStats] Total packages fetched:', packages?.length || 0);
+      console.log('📊 [useTripPackageStats] Total packages in DB:', packages?.length || 0);
+
+      // Filtrar solo los que tienen trip_id
+      const packagesWithTrip = (packages || []).filter(pkg => pkg.trip_id);
+      console.log('📊 [useTripPackageStats] Packages with trip_id:', packagesWithTrip.length);
+
+      // ID del viaje del 1 de octubre para debugging
+      const octoberTripId = '02eaef47-744b-43fe-a014-2c4ee19bef02';
+      const octoberPackages = packagesWithTrip.filter(pkg => pkg.trip_id === octoberTripId);
+      console.log('📊 [useTripPackageStats] Oct 1 trip packages found:', octoberPackages.length);
 
       // Agrupar estadísticas por trip_id
-      const statsByTrip = (packages || []).reduce((acc, pkg) => {
+      const statsByTrip = packagesWithTrip.reduce((acc, pkg) => {
         if (!pkg.trip_id) return acc;
 
         if (!acc[pkg.trip_id]) {
@@ -48,11 +58,25 @@ export function useTripPackageStats() {
         amountsByCurrency: Record<string, number>;
       }>);
 
-      console.log('📊 [useTripPackageStats] Stats by trip calculated:', Object.keys(statsByTrip).length, 'trips');
+      console.log('📊 [useTripPackageStats] Total trips with stats:', Object.keys(statsByTrip).length);
+      
+      // Log específico para el viaje del 1 de octubre
+      if (statsByTrip[octoberTripId]) {
+        console.log('📊 [useTripPackageStats] Oct 1 trip final stats:', {
+          tripId: octoberTripId,
+          ...statsByTrip[octoberTripId]
+        });
+      } else {
+        console.error('❌ [useTripPackageStats] Oct 1 trip NOT FOUND in final stats!');
+      }
+
+      console.log('📊 [useTripPackageStats] ===== END FETCHING =====');
 
       return statsByTrip;
     },
-    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
+    staleTime: 0, // No cache - siempre fetch fresh
+    gcTime: 0, // No garbage collection cache
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }

@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Plane, Calendar, MapPin, User, ArrowRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Trip {
@@ -58,7 +58,7 @@ const getStatusLabel = (status: string | null) => {
 const formatDate = (date: string | null) => {
   if (!date) return '-';
   try {
-    return format(new Date(date), 'dd MMM yyyy', { locale: es });
+    return format(parseISO(date), 'dd MMM yyyy', { locale: es });
   } catch {
     return '-';
   }

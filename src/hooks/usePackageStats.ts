@@ -8,8 +8,7 @@ export function usePackageStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('packages')
-        .select('status')
-        .range(0, 10000);
+        .select('status');
       
       if (error) throw error;
       
@@ -23,7 +22,7 @@ export function usePackageStats() {
         delivered: data.filter(p => p.status === 'delivered').length,
         // Estados legacy para compatibilidad
         pending: data.filter(p => p.status === 'pending').length,
-        inTransit: data.filter(p => p.status === 'transito').length, // Corregido: usar 'transito' en lugar de 'in_transit'
+        inTransit: data.filter(p => p.status === 'transito').length,
       };
       
       return stats;

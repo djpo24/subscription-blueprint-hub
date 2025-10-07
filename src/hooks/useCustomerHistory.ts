@@ -46,8 +46,7 @@ export function useCustomerHistory(customerId: string | null) {
           )
         `)
         .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
-        .range(0, 10000);
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('❌ Error fetching customer history:', error);

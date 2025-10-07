@@ -7,17 +7,19 @@ export function useTripPackageStats() {
     queryFn: async () => {
       console.log('📊 [useTripPackageStats] ===== START FETCHING =====');
       
-      // Obtener TODOS los paquetes sin ningún filtro
-      const { data: packages, error } = await supabase
+      // Obtener TODOS los paquetes sin límite
+      const { data: packages, error, count } = await supabase
         .from('packages')
-        .select('id, trip_id, weight, freight, amount_to_collect, currency');
+        .select('id, trip_id, weight, freight, amount_to_collect, currency', { count: 'exact' })
+        .range(0, 10000); // Aumentar límite significativamente
 
       if (error) {
         console.error('❌ [useTripPackageStats] Error:', error);
         throw error;
       }
 
-      console.log('📊 [useTripPackageStats] Total packages in DB:', packages?.length || 0);
+      console.log('📊 [useTripPackageStats] Total packages in DB (count):', count);
+      console.log('📊 [useTripPackageStats] Total packages fetched:', packages?.length || 0);
 
       // Filtrar solo los que tienen trip_id
       const packagesWithTrip = (packages || []).filter(pkg => pkg.trip_id);

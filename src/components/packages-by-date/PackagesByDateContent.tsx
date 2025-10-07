@@ -11,6 +11,7 @@ import { filterPackagesBySearchTerm } from '@/utils/packageSearchUtils';
 import { Trip, Package } from './types';
 import { useCustomerPackageCounts } from '@/hooks/useCustomerPackageCounts';
 import { useMemo } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchRelation {
   id: string;
@@ -62,6 +63,7 @@ export function PackagesByDateContent({
   disableChat = false
 }: PackagesByDateContentProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const isMobile = useIsMobile();
 
   // Obtener todos los IDs de clientes únicos de todos los paquetes
   const uniqueCustomerIds = useMemo(() => {
@@ -112,7 +114,7 @@ export function PackagesByDateContent({
   }, {} as Record<string, number>);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 relative pb-20 sm:pb-0">
       <PackagesByDateHeader
         selectedDate={selectedDate}
         onBack={onBack}
@@ -120,6 +122,18 @@ export function PackagesByDateContent({
         onOpenLabelsDialog={onOpenLabelsDialog}
         dispatches={dispatches}
       />
+
+      {/* Botón flotante para móvil */}
+      {isMobile && (
+        <Button
+          onClick={onBack}
+          size="lg"
+          className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg h-14 w-14 p-0 bg-primary hover:bg-primary/90"
+          aria-label="Volver al calendario"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Resumen de totales - movido arriba del buscador */}
       <PackagesByDateSummary

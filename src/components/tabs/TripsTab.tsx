@@ -64,7 +64,7 @@ export function TripsTab({
           </TabsContent>
           
           <TabsContent value="list" className="mt-4">
-            <TripsListView />
+            <TripsListView onViewTrip={onViewPackagesByDate} />
           </TabsContent>
         </Tabs>
       )}

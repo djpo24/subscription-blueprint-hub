@@ -7,7 +7,11 @@ import { TripsListMobileView } from './TripsListMobileView';
 import { TripsListEmptyState } from './TripsListEmptyState';
 import { Loader2 } from 'lucide-react';
 
-export function TripsListView() {
+interface TripsListViewProps {
+  onViewTrip: (date: Date) => void;
+}
+
+export function TripsListView({ onViewTrip }: TripsListViewProps) {
   const { data: trips = [], isLoading } = useTrips();
   const isMobile = useIsMobile();
 
@@ -23,9 +27,9 @@ export function TripsListView() {
         ) : trips.length === 0 ? (
           <TripsListEmptyState isMobile={isMobile} />
         ) : isMobile ? (
-          <TripsListMobileView trips={trips} />
+          <TripsListMobileView trips={trips} onViewTrip={onViewTrip} />
         ) : (
-          <TripsListDesktopView trips={trips} />
+          <TripsListDesktopView trips={trips} onViewTrip={onViewTrip} />
         )}
       </CardContent>
     </Card>

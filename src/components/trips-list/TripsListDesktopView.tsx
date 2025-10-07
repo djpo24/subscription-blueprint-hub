@@ -23,6 +23,7 @@ interface Trip {
 
 interface TripsListDesktopViewProps {
   trips: Trip[];
+  onViewTrip: (date: Date) => void;
 }
 
 const getStatusColor = (status: string | null) => {
@@ -67,7 +68,7 @@ const formatDate = (date: string | null) => {
   }
 };
 
-export function TripsListDesktopView({ trips }: TripsListDesktopViewProps) {
+export function TripsListDesktopView({ trips, onViewTrip }: TripsListDesktopViewProps) {
   const { data: tripStats = {} } = useTripPackageStats();
 
   const formatAmountToCollectDisplay = (tripId: string) => {
@@ -110,7 +111,15 @@ export function TripsListDesktopView({ trips }: TripsListDesktopViewProps) {
           const stats = tripStats[trip.id] || { totalPackages: 0, totalWeight: 0, totalFreight: 0 };
           
           return (
-            <TableRow key={trip.id}>
+            <TableRow 
+              key={trip.id}
+              className="cursor-pointer hover:bg-gray-50"
+              onClick={() => {
+                if (trip.trip_date) {
+                  onViewTrip(new Date(trip.trip_date));
+                }
+              }}
+            >
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />

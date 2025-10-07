@@ -23,6 +23,7 @@ interface Trip {
 
 interface TripsListMobileViewProps {
   trips: Trip[];
+  onViewTrip: (date: Date) => void;
 }
 
 const getStatusColor = (status: string | null) => {
@@ -67,7 +68,7 @@ const formatDate = (date: string | null) => {
   }
 };
 
-export function TripsListMobileView({ trips }: TripsListMobileViewProps) {
+export function TripsListMobileView({ trips, onViewTrip }: TripsListMobileViewProps) {
   const { data: tripStats = {} } = useTripPackageStats();
 
   const formatAmountToCollectDisplay = (tripId: string) => {
@@ -98,7 +99,15 @@ export function TripsListMobileView({ trips }: TripsListMobileViewProps) {
         const stats = tripStats[trip.id] || { totalPackages: 0, totalWeight: 0, totalFreight: 0 };
         
         return (
-          <Card key={trip.id} className="border border-gray-200">
+          <Card 
+            key={trip.id} 
+            className="border border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
+            onClick={() => {
+              if (trip.trip_date) {
+                onViewTrip(new Date(trip.trip_date));
+              }
+            }}
+          >
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex items-start justify-between">

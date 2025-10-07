@@ -19,31 +19,66 @@ export function useFinancialData() {
     queryFn: async () => {
       console.log('🔍 [useFinancialData] Fetching financial data...');
 
-      // Get packages data with customer information
-      const { data: packages, error: packagesError } = await supabase
-        .from('packages')
-        .select(`
-          *,
-          customers!packages_customer_id_fkey (
-            name,
-            phone
-          )
-        `);
+      // Get packages data with customer information using pagination to bypass 1000 limit
+      let allPackages: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (packagesError) {
-        console.error('❌ [useFinancialData] Error fetching packages:', packagesError);
-        throw packagesError;
+      while (hasMore) {
+        const { data: packages, error: packagesError } = await supabase
+          .from('packages')
+          .select(`
+            *,
+            customers!packages_customer_id_fkey (
+              name,
+              phone
+            )
+          `)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (packagesError) {
+          console.error('❌ [useFinancialData] Error fetching packages:', packagesError);
+          throw packagesError;
+        }
+
+        if (packages && packages.length > 0) {
+          allPackages = [...allPackages, ...packages];
+          hasMore = packages.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
 
-      // Get payments data
-      const { data: payments, error: paymentsError } = await supabase
-        .from('customer_payments')
-        .select('*');
+      const packages = allPackages;
 
-      if (paymentsError) {
-        console.error('❌ [useFinancialData] Error fetching payments:', paymentsError);
-        throw paymentsError;
+      // Get payments data using pagination to bypass 1000 limit
+      let allPayments: any[] = [];
+      let paymentPage = 0;
+      let hasMorePayments = true;
+
+      while (hasMorePayments) {
+        const { data: payments, error: paymentsError } = await supabase
+          .from('customer_payments')
+          .select('*')
+          .range(paymentPage * pageSize, (paymentPage + 1) * pageSize - 1);
+
+        if (paymentsError) {
+          console.error('❌ [useFinancialData] Error fetching payments:', paymentsError);
+          throw paymentsError;
+        }
+
+        if (payments && payments.length > 0) {
+          allPayments = [...allPayments, ...payments];
+          hasMorePayments = payments.length === pageSize;
+          paymentPage++;
+        } else {
+          hasMorePayments = false;
+        }
       }
+
+      const payments = allPayments;
 
       console.log('📦 [useFinancialData] Packages found:', packages?.length || 0);
       console.log('💰 [useFinancialData] Payments found:', payments?.length || 0);

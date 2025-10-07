@@ -5,21 +5,37 @@ export function useTripPackageStats() {
   return useQuery({
     queryKey: ['trip-package-stats'],
     queryFn: async () => {
-      console.log('📊 [useTripPackageStats] Iniciando consulta SIN LÍMITES...');
+      console.log('📊 [useTripPackageStats] Iniciando consulta CON PAGINACIÓN...');
       
-      // Obtener TODOS los paquetes sin límite usando el parámetro head
-      const { data: packages, error, count } = await supabase
-        .from('packages')
-        .select('id, trip_id, weight, freight, amount_to_collect, currency', { count: 'exact', head: false })
-        .not('trip_id', 'is', null);
+      // Use pagination to bypass 1000 record limit
+      let allPackages: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error('❌ [useTripPackageStats] Error:', error);
-        throw error;
+      while (hasMore) {
+        const { data: packages, error } = await supabase
+          .from('packages')
+          .select('id, trip_id, weight, freight, amount_to_collect, currency')
+          .not('trip_id', 'is', null)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) {
+          console.error('❌ [useTripPackageStats] Error:', error);
+          throw error;
+        }
+
+        if (packages && packages.length > 0) {
+          allPackages = [...allPackages, ...packages];
+          hasMore = packages.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
 
+      const packages = allPackages;
       console.log('📊 [useTripPackageStats] Paquetes obtenidos:', packages?.length || 0);
-      console.log('📊 [useTripPackageStats] Count total en DB:', count);
 
       // Para el viaje del 1 de octubre
       const oct1TripId = '02eaef47-744b-43fe-a014-2c4ee19bef02';

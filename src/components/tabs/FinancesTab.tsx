@@ -24,17 +24,22 @@ export function FinancesTab() {
   const filteredData = useMemo(() => {
     if (!data || selectedTravelerId === 'all') return data;
 
-    console.log('🔍 [FinancesTab] Filtering by traveler:', selectedTravelerId);
-    console.log('🔍 [FinancesTab] Total packages:', data.packages.length);
-    console.log('🔍 [FinancesTab] Sample package:', data.packages[0]);
+    // Buscar el user_id del viajero seleccionado
+    const selectedTraveler = travelers.find(t => t.id === selectedTravelerId);
+    if (!selectedTraveler) {
+      console.warn('⚠️ [FinancesTab] Traveler not found:', selectedTravelerId);
+      return data;
+    }
+
+    const travelerUserId = selectedTraveler.user_id;
+    console.log('🔍 [FinancesTab] Filtering by traveler user_id:', travelerUserId);
     
-    // Filtrar paquetes por viajero
-    const filteredPackages = data.packages.filter(pkg => {
-      console.log('📦 Package delivered_by:', pkg.delivered_by, 'selected:', selectedTravelerId, 'match:', pkg.delivered_by === selectedTravelerId);
-      return pkg.delivered_by === selectedTravelerId;
-    });
+    // Filtrar paquetes por viajero usando el user_id
+    const filteredPackages = data.packages.filter(pkg => 
+      pkg.delivered_by === travelerUserId
+    );
     
-    console.log('✅ [FinancesTab] Filtered packages:', filteredPackages.length);
+    console.log('✅ [FinancesTab] Filtered packages:', filteredPackages.length, 'out of', data.packages.length);
 
     // Filtrar pagos relacionados a esos paquetes
     const packageIds = new Set(filteredPackages.map(p => p.id));
@@ -84,7 +89,7 @@ export function FinancesTab() {
       packages: filteredPackages,
       payments: filteredPayments
     };
-  }, [data, selectedTravelerId]);
+  }, [data, selectedTravelerId, travelers]);
 
   if (isLoading) {
     return (

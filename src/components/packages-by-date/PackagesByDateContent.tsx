@@ -137,6 +137,28 @@ export function PackagesByDateContent({
         </Button>
       )}
 
+      {/* Resumen de totales */}
+      <PackagesByDateSummary
+        totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
+        totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
+        totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
+        amountsByCurrency={searchTerm.trim() ? filteredAmountsByCurrency : amountsByCurrency}
+      />
+
+      {/* Buscador */}
+      <PackageSearchBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        className="max-w-md"
+      />
+
+      {/* Mostrar mensaje si hay búsqueda activa */}
+      {searchTerm.trim() && (
+        <div className="text-sm text-gray-600">
+          Mostrando {filteredTotalPackages} de {totalPackages} encomiendas
+        </div>
+      )}
+
       {/* Tabs for Paquetes and Bultos */}
       <Tabs defaultValue="packages" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -144,29 +166,7 @@ export function PackagesByDateContent({
           <TabsTrigger value="bultos">Bultos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="packages" className="space-y-4 sm:space-y-6">
-          {/* Resumen de totales - movido arriba del buscador */}
-          <PackagesByDateSummary
-            totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
-            totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
-            totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
-            amountsByCurrency={searchTerm.trim() ? filteredAmountsByCurrency : amountsByCurrency}
-          />
-
-          {/* Buscador */}
-          <PackageSearchBar
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            className="max-w-md"
-          />
-
-          {/* Mostrar mensaje si hay búsqueda activa */}
-          {searchTerm.trim() && (
-            <div className="text-sm text-gray-600">
-              Mostrando {filteredTotalPackages} de {totalPackages} encomiendas
-            </div>
-          )}
-
+        <TabsContent value="packages" className="space-y-4 sm:space-y-6 mt-4">
           {filteredTrips.length === 0 ? (
             searchTerm.trim() ? (
               <div className="text-center py-8">
@@ -197,7 +197,7 @@ export function PackagesByDateContent({
           )}
         </TabsContent>
 
-        <TabsContent value="bultos" className="space-y-4 sm:space-y-6">
+        <TabsContent value="bultos" className="space-y-4 sm:space-y-6 mt-4">
           <div className="grid gap-4 sm:gap-6">
             {trips.map((trip) => (
               <TripBultosView

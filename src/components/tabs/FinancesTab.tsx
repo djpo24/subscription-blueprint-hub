@@ -24,10 +24,17 @@ export function FinancesTab() {
   const filteredData = useMemo(() => {
     if (!data || selectedTravelerId === 'all') return data;
 
+    console.log('🔍 [FinancesTab] Filtering by traveler:', selectedTravelerId);
+    console.log('🔍 [FinancesTab] Total packages:', data.packages.length);
+    console.log('🔍 [FinancesTab] Sample package:', data.packages[0]);
+    
     // Filtrar paquetes por viajero
-    const filteredPackages = data.packages.filter(pkg => 
-      pkg.delivered_by === selectedTravelerId
-    );
+    const filteredPackages = data.packages.filter(pkg => {
+      console.log('📦 Package delivered_by:', pkg.delivered_by, 'selected:', selectedTravelerId, 'match:', pkg.delivered_by === selectedTravelerId);
+      return pkg.delivered_by === selectedTravelerId;
+    });
+    
+    console.log('✅ [FinancesTab] Filtered packages:', filteredPackages.length);
 
     // Filtrar pagos relacionados a esos paquetes
     const packageIds = new Set(filteredPackages.map(p => p.id));

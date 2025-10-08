@@ -1,12 +1,16 @@
-
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Package, Users, CheckCircle } from 'lucide-react';
 import { FinancesTabs } from '@/components/finances/FinancesTabs';
 import { useFinancialData } from '@/hooks/useFinancialData';
+import { useAvailableTravelers } from '@/hooks/useTravelers';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useMemo } from 'react';
 
 export function FinancesTab() {
   const { data, isLoading, error } = useFinancialData();
+  const { data: travelers = [] } = useAvailableTravelers();
+  const [selectedTravelerId, setSelectedTravelerId] = useState<string>('all');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -53,11 +57,92 @@ export function FinancesTab() {
     );
   }
 
-  const summary = data?.summary;
+  // Filtrar datos por viajero
+  const filteredData = useMemo(() => {
+    if (!data || selectedTravelerId === 'all') return data;
+
+    // Filtrar paquetes por viajero
+    const filteredPackages = data.packages.filter(pkg => 
+      pkg.delivered_by === selectedTravelerId
+    );
+
+    // Filtrar pagos relacionados a esos paquetes
+    const packageIds = new Set(filteredPackages.map(p => p.id));
+    const filteredPayments = data.payments.filter(payment => 
+      packageIds.has(payment.package_id)
+    );
+
+    // Recalcular métricas
+    const totalPackages = filteredPackages.length;
+    const deliveredPackages = filteredPackages.filter(p => p.status === 'delivered').length;
+    const totalFreight = filteredPackages.reduce((sum, p) => sum + (p.freight || 0), 0);
+
+    const eligiblePackages = filteredPackages.filter(p => 
+      (p.status === 'en_destino' || p.status === 'delivered') && 
+      p.amount_to_collect && 
+      p.amount_to_collect > 0
+    );
+
+    const totalAmountToCollect = eligiblePackages.reduce((sum, p) => 
+      sum + (p.amount_to_collect || 0), 0
+    );
+
+    const totalCollected = filteredPayments.reduce((sum, p) => {
+      const isEligiblePackage = eligiblePackages.some(pkg => pkg.id === p.package_id);
+      return isEligiblePackage ? sum + (p.amount || 0) : sum;
+    }, 0);
+
+    const pendingCollections = Math.max(0, totalAmountToCollect - totalCollected);
+
+    const totalPendingPackages = eligiblePackages.filter(p => {
+      const packagePayments = filteredPayments.filter(payment => payment.package_id === p.id);
+      const totalPaidForPackage = packagePayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+      return (p.amount_to_collect || 0) > totalPaidForPackage;
+    }).length;
+
+    return {
+      summary: {
+        totalCollected,
+        totalPending: pendingCollections,
+        totalPayments: filteredPayments.length,
+        totalPendingPackages,
+        totalFreight,
+        pendingCollections,
+        deliveredPackages,
+        totalPackages
+      },
+      packages: filteredPackages,
+      payments: filteredPayments
+    };
+  }, [data, selectedTravelerId]);
+
+  const summary = filteredData?.summary;
 
   return (
     <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       <div className="space-y-4 sm:space-y-6">
+        {/* Filtro de viajero */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium whitespace-nowrap">Filtrar por viajero:</label>
+              <Select value={selectedTravelerId} onValueChange={setSelectedTravelerId}>
+                <SelectTrigger className="w-full sm:w-[300px]">
+                  <SelectValue placeholder="Seleccionar viajero" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los viajeros</SelectItem>
+                  {travelers.map((traveler) => (
+                    <SelectItem key={traveler.id} value={traveler.id}>
+                      {traveler.first_name} {traveler.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <Card className="min-h-[100px] sm:min-h-auto">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">

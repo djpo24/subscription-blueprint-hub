@@ -27,31 +27,18 @@ export function FinancesTab() {
       return data;
     }
 
-    // Buscar el user_id del viajero seleccionado
-    const selectedTraveler = travelers.find(t => t.id === selectedTravelerId);
     console.log('🔍 [FinancesTab] Selected traveler ID:', selectedTravelerId);
-    console.log('🔍 [FinancesTab] Selected traveler object:', selectedTraveler);
-    
-    if (!selectedTraveler) {
-      console.warn('⚠️ [FinancesTab] Traveler not found:', selectedTravelerId);
-      return data;
-    }
-
-    const travelerUserId = selectedTraveler.user_id;
-    console.log('🔍 [FinancesTab] Filtering by traveler user_id:', travelerUserId);
     console.log('🔍 [FinancesTab] Total packages before filter:', data.packages.length);
     
-    // Verificar algunos paquetes de ejemplo
-    console.log('📦 [FinancesTab] Sample packages delivered_by values:', 
-      data.packages.slice(0, 5).map(p => ({ id: p.id, delivered_by: p.delivered_by }))
-    );
-    
-    // Filtrar paquetes por viajero usando el user_id
+    // Filtrar paquetes por los viajes del viajero seleccionado
     const filteredPackages = data.packages.filter(pkg => {
-      const matches = pkg.delivered_by === travelerUserId;
+      const tripTravelerId = pkg.trips?.traveler_id;
+      const matches = tripTravelerId === selectedTravelerId;
+      
       if (matches) {
-        console.log('✅ Package matches:', pkg.id, 'delivered_by:', pkg.delivered_by);
+        console.log('✅ Package matches:', pkg.id, 'trip_traveler_id:', tripTravelerId);
       }
+      
       return matches;
     });
     

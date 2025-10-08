@@ -33,6 +33,10 @@ export function useFinancialData() {
             customers!packages_customer_id_fkey (
               name,
               phone
+            ),
+            trips!packages_trip_id_fkey (
+              id,
+              traveler_id
             )
           `)
           .range(page * pageSize, (page + 1) * pageSize - 1);

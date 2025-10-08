@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { CreateBultoDialog } from '../bultos/CreateBultoDialog';
+import { ScanToBultoDialog } from '../bultos/ScanToBultoDialog';
 import { BultoDetailsDialog } from './BultoDetailsDialog';
 
 interface TripBultosViewProps {
@@ -17,6 +18,7 @@ interface TripBultosViewProps {
 
 export function TripBultosView({ tripId, tripDate, origin, destination }: TripBultosViewProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showScanDialog, setShowScanDialog] = useState(false);
   const [selectedBulto, setSelectedBulto] = useState<any>(null);
 
   const { data: bultos, refetch } = useQuery({
@@ -52,17 +54,6 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Box className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Bultos del Viaje</h3>
-        </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Crear Bulto
-        </Button>
-      </div>
-
       {unassignedCount > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="pt-6">
@@ -77,7 +68,38 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
       )}
 
       {bultos && bultos.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Box className="h-5 w-5" />
+                  Bultos - {origin} → {destination}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => setShowCreateDialog(true)} 
+                    size="sm"
+                    variant="default"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Bultos
+                  </Button>
+                  <Button 
+                    onClick={() => setShowScanDialog(true)} 
+                    size="sm"
+                    variant="outline"
+                    disabled={!bultos || bultos.length === 0}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Escanear
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {bultos.map((bulto) => (
             <Card key={bulto.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
@@ -112,9 +134,25 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        </>
       ) : (
         <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Box className="h-5 w-5" />
+                Bultos - {origin} → {destination}
+              </CardTitle>
+              <Button 
+                onClick={() => setShowCreateDialog(true)} 
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Bultos
+              </Button>
+            </div>
+          </CardHeader>
           <CardContent className="pt-12 pb-12">
             <div className="text-center text-muted-foreground">
               <Box className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -132,6 +170,13 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
         onOpenChange={setShowCreateDialog}
         onSuccess={refetch}
         preSelectedTripId={tripId}
+      />
+
+      <ScanToBultoDialog
+        open={showScanDialog}
+        onOpenChange={setShowScanDialog}
+        onSuccess={refetch}
+        tripId={tripId}
       />
 
       {selectedBulto && (

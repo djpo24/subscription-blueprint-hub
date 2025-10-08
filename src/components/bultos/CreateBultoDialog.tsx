@@ -27,6 +27,10 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [nextBultoNumber, setNextBultoNumber] = useState<number>(1);
+  const [showBultoOptions, setShowBultoOptions] = useState(false);
+  const [bultoQuantity, setBultoQuantity] = useState<number>(1);
+  const [selectedExistingBultoId, setSelectedExistingBultoId] = useState<string>('');
+  const [mode, setMode] = useState<'create' | 'select' | null>(null);
 
   const { lastScan, startConnection, stopConnection, isConnected } = useScannerConnection(sessionId, 'desktop');
 
@@ -49,6 +53,24 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
       if (error) throw error;
       return data;
     }
+  });
+
+  // Query existing bultos for the selected trip
+  const { data: existingBultos } = useQuery({
+    queryKey: ['existing-bultos', selectedTripId],
+    queryFn: async () => {
+      if (!selectedTripId) return [];
+      const { data, error } = await supabase
+        .from('bultos')
+        .select('*')
+        .eq('trip_id', selectedTripId)
+        .eq('status', 'open')
+        .order('bulto_number', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedTripId
   });
 
   // Get next bulto number when trip is selected
@@ -131,45 +153,91 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
       toast.error('Debes escanear al menos un paquete');
       return;
     }
-    setShowSummary(true);
+    
+    // Check if there are existing bultos
+    const hasBultos = existingBultos && existingBultos.length > 0;
+    
+    if (hasBultos) {
+      setShowBultoOptions(true);
+    } else {
+      setMode('create');
+      setShowSummary(true);
+    }
   };
 
   const createBultoMutation = useMutation({
     mutationFn: async () => {
-      // Create bulto
-      const { data: bulto, error: bultoError } = await supabase
-        .from('bultos')
-        .insert({
-          trip_id: selectedTripId,
-          bulto_number: nextBultoNumber,
-          notes,
-          total_packages: scannedPackages.length,
-          status: 'open'
-        })
-        .select()
-        .single();
+      if (mode === 'select' && selectedExistingBultoId) {
+        // Add packages to existing bulto
+        const packageIds = scannedPackages.map(p => p.id);
+        const { error: updateError } = await supabase
+          .from('packages')
+          .update({ bulto_id: selectedExistingBultoId })
+          .in('id', packageIds);
 
-      if (bultoError) throw bultoError;
+        if (updateError) throw updateError;
 
-      // Update packages
-      const packageIds = scannedPackages.map(p => p.id);
-      const { error: updateError } = await supabase
-        .from('packages')
-        .update({ bulto_id: bulto.id })
-        .in('id', packageIds);
+        // Update bulto package count
+        const { data: bulto } = await supabase
+          .from('bultos')
+          .select('total_packages')
+          .eq('id', selectedExistingBultoId)
+          .single();
 
-      if (updateError) throw updateError;
+        if (bulto) {
+          await supabase
+            .from('bultos')
+            .update({ total_packages: bulto.total_packages + scannedPackages.length })
+            .eq('id', selectedExistingBultoId);
+        }
 
-      return bulto;
+        return { id: selectedExistingBultoId };
+      } else {
+        // Create new bultos
+        const bultosToCreate = [];
+        for (let i = 0; i < bultoQuantity; i++) {
+          bultosToCreate.push({
+            trip_id: selectedTripId,
+            bulto_number: nextBultoNumber + i,
+            notes: i === 0 ? notes : '',
+            total_packages: i === 0 ? scannedPackages.length : 0,
+            status: 'open'
+          });
+        }
+
+        const { data: bultos, error: bultoError } = await supabase
+          .from('bultos')
+          .insert(bultosToCreate)
+          .select();
+
+        if (bultoError) throw bultoError;
+
+        // Update packages with first bulto
+        if (scannedPackages.length > 0 && bultos[0]) {
+          const packageIds = scannedPackages.map(p => p.id);
+          const { error: updateError } = await supabase
+            .from('packages')
+            .update({ bulto_id: bultos[0].id })
+            .in('id', packageIds);
+
+          if (updateError) throw updateError;
+        }
+
+        return bultos[0];
+      }
     },
     onSuccess: () => {
-      toast.success('Bulto creado exitosamente');
+      if (mode === 'select') {
+        toast.success('Paquetes agregados al bulto exitosamente');
+      } else {
+        toast.success(`${bultoQuantity} bulto(s) creado(s) exitosamente`);
+      }
       onSuccess();
       handleClose();
     },
     onError: (error) => {
-      console.error('Error creating bulto:', error);
-      toast.error('Error al crear bulto');
+      console.error('Error processing bulto:', error);
+      toast.error('Error al procesar bulto');
     }
   });
 
@@ -179,6 +247,10 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
     setSelectedTripId('');
     setNotes('');
     setShowSummary(false);
+    setShowBultoOptions(false);
+    setBultoQuantity(1);
+    setSelectedExistingBultoId('');
+    setMode(null);
     onOpenChange(false);
   };
 
@@ -187,11 +259,51 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {showSummary ? 'Confirmar Bulto' : 'Crear Nuevo Bulto'}
+            {showSummary ? 'Confirmar Bulto' : showBultoOptions ? 'Opciones de Bulto' : 'Crear Nuevo Bulto'}
           </DialogTitle>
         </DialogHeader>
 
-        {!showSummary ? (
+        {showBultoOptions ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ¿Qué deseas hacer con los {scannedPackages.length} paquete(s) escaneado(s)?
+            </p>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={() => {
+                  setMode('create');
+                  setShowBultoOptions(false);
+                  setShowSummary(true);
+                }}
+                className="w-full"
+                variant="default"
+              >
+                Crear Nuevo Bulto
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setMode('select');
+                  setShowBultoOptions(false);
+                  setShowSummary(true);
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Agregar a Bulto Existente
+              </Button>
+            </div>
+
+            <Button
+              onClick={() => setShowBultoOptions(false)}
+              variant="ghost"
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </div>
+        ) : !showSummary ? (
           <div className="space-y-6">
             {!preSelectedTripId && (
               <div className="space-y-2">
@@ -213,68 +325,144 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTr
 
             {selectedTripId && (
               <>
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Número de bulto: #{nextBultoNumber}</p>
-                </div>
-
-                <ScannerConnectionPanel 
-                  sessionId={sessionId}
-                  isConnected={isConnected}
-                  onConnect={startConnection}
-                  onDisconnect={stopConnection}
-                />
-
-                <ScannedPackagesList 
-                  packages={scannedPackages}
-                  onRemove={handleRemovePackage}
-                />
-
-                <div className="space-y-2">
-                  <Label>Notas (opcional)</Label>
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Notas adicionales sobre este bulto..."
+                {!isConnected ? (
+                  <ScannerConnectionPanel 
+                    sessionId={sessionId}
+                    isConnected={isConnected}
+                    onConnect={startConnection}
+                    onDisconnect={stopConnection}
                   />
-                </div>
+                ) : (
+                  <>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm font-medium">Número de bulto: #{nextBultoNumber}</p>
+                    </div>
 
-                <Button 
-                  onClick={handleCreateBulto}
-                  disabled={scannedPackages.length === 0}
-                  className="w-full"
-                >
-                  Crear Bulto con {scannedPackages.length} Paquete(s)
-                </Button>
+                    <ScannedPackagesList 
+                      packages={scannedPackages}
+                      onRemove={handleRemovePackage}
+                    />
+
+                    <div className="space-y-2">
+                      <Label>Notas (opcional)</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Notas adicionales sobre este bulto..."
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={handleCreateBulto}
+                      disabled={scannedPackages.length === 0}
+                      className="w-full"
+                    >
+                      Continuar con {scannedPackages.length} Paquete(s)
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
         ) : (
           <div className="space-y-6">
-            <BultoSummary 
-              bultoNumber={nextBultoNumber}
-              packages={scannedPackages}
-              notes={notes}
-            />
+            {mode === 'create' ? (
+              <>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>¿Cuántos bultos deseas crear?</Label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={bultoQuantity}
+                      onChange={(e) => setBultoQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Se crearán {bultoQuantity} bulto(s). Los paquetes escaneados se asignarán al primer bulto.
+                    </p>
+                  </div>
 
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowSummary(false)}
-                className="flex-1"
-              >
-                Volver
-              </Button>
-              <Button 
-                onClick={() => createBultoMutation.mutate()}
-                disabled={createBultoMutation.isPending}
-                className="flex-1"
-              >
-                {createBultoMutation.isPending && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
-                Confirmar y Crear Bulto
-              </Button>
-            </div>
+                  <BultoSummary 
+                    bultoNumber={nextBultoNumber}
+                    packages={scannedPackages}
+                    notes={notes}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowSummary(false);
+                      setShowBultoOptions(true);
+                    }}
+                    className="flex-1"
+                  >
+                    Volver
+                  </Button>
+                  <Button 
+                    onClick={() => createBultoMutation.mutate()}
+                    disabled={createBultoMutation.isPending}
+                    className="flex-1"
+                  >
+                    {createBultoMutation.isPending && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Crear {bultoQuantity} Bulto(s)
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Selecciona el bulto</Label>
+                    <Select value={selectedExistingBultoId} onValueChange={setSelectedExistingBultoId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un bulto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {existingBultos?.map((bulto) => (
+                          <SelectItem key={bulto.id} value={bulto.id}>
+                            Bulto #{bulto.bulto_number} ({bulto.total_packages} paquetes)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <BultoSummary 
+                    bultoNumber={existingBultos?.find(b => b.id === selectedExistingBultoId)?.bulto_number || 0}
+                    packages={scannedPackages}
+                    notes=""
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowSummary(false);
+                      setShowBultoOptions(true);
+                    }}
+                    className="flex-1"
+                  >
+                    Volver
+                  </Button>
+                  <Button 
+                    onClick={() => createBultoMutation.mutate()}
+                    disabled={createBultoMutation.isPending || !selectedExistingBultoId}
+                    className="flex-1"
+                  >
+                    {createBultoMutation.isPending && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Agregar a Bulto
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </DialogContent>

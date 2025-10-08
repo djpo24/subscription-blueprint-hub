@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plane, Calendar, MapPin, Package, Weight, DollarSign } from 'lucide-react';
+import { User, Calendar, MapPin, Package, Weight, DollarSign } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useTripPackageStats } from '@/hooks/useTripPackageStats';
@@ -124,10 +124,12 @@ export function TripsListMobileView({ trips, onViewTrip }: TripsListMobileViewPr
                         {trip.origin || '-'} → {trip.destination || '-'}
                       </span>
                     </div>
-                    {trip.flight_number && (
+                    {trip.travelers && (
                       <div className="flex items-center gap-2">
-                        <Plane className="h-3 w-3 text-indigo-500" />
-                        <span className="text-xs font-mono">{trip.flight_number}</span>
+                        <User className="h-3 w-3 text-indigo-500" />
+                        <span className="text-xs">
+                          {trip.travelers.first_name} {trip.travelers.last_name}
+                        </span>
                       </div>
                     )}
                   </div>

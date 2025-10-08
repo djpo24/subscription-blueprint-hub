@@ -27,6 +27,9 @@ verify_jwt = false
 [functions.migrate-profile-images]
 verify_jwt = false
 
+[functions.scanner-relay]
+verify_jwt = false
+
 [realtime]
 enabled = true
 port = 54323

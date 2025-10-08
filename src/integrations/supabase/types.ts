@@ -213,6 +213,47 @@ export type Database = {
         }
         Relationships: []
       }
+      bultos: {
+        Row: {
+          bulto_number: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          status: string
+          total_packages: number
+          trip_id: string | null
+        }
+        Insert: {
+          bulto_number: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          total_packages?: number
+          trip_id?: string | null
+        }
+        Update: {
+          bulto_number?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          total_packages?: number
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bultos_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_payments: {
         Row: {
           amount: number
@@ -726,9 +767,42 @@ export type Database = {
         }
         Relationships: []
       }
+      package_labels: {
+        Row: {
+          created_at: string
+          id: string
+          is_main: boolean
+          label_number: number
+          package_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          label_number: number
+          package_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          label_number?: number
+          package_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_labels_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packages: {
         Row: {
           amount_to_collect: number | null
+          bulto_id: string | null
           created_at: string | null
           currency: string | null
           customer_id: string | null
@@ -739,6 +813,7 @@ export type Database = {
           flight_number: string | null
           freight: number | null
           id: string
+          label_count: number
           origin: string | null
           status: string | null
           tracking_number: string | null
@@ -748,6 +823,7 @@ export type Database = {
         }
         Insert: {
           amount_to_collect?: number | null
+          bulto_id?: string | null
           created_at?: string | null
           currency?: string | null
           customer_id?: string | null
@@ -758,6 +834,7 @@ export type Database = {
           flight_number?: string | null
           freight?: number | null
           id?: string
+          label_count?: number
           origin?: string | null
           status?: string | null
           tracking_number?: string | null
@@ -767,6 +844,7 @@ export type Database = {
         }
         Update: {
           amount_to_collect?: number | null
+          bulto_id?: string | null
           created_at?: string | null
           currency?: string | null
           customer_id?: string | null
@@ -777,6 +855,7 @@ export type Database = {
           flight_number?: string | null
           freight?: number | null
           id?: string
+          label_count?: number
           origin?: string | null
           status?: string | null
           tracking_number?: string | null
@@ -785,6 +864,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "packages_bulto_id_fkey"
+            columns: ["bulto_id"]
+            isOneToOne: false
+            referencedRelation: "bultos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "packages_customer_id_fkey"
             columns: ["customer_id"]

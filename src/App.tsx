@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import MobileScanner from "./pages/MobileScanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,12 @@ function AppRoutes() {
             <Navigate to="/" replace />
           )
         } 
+      />
+      
+      {/* Escáner móvil - no requiere autenticación */}
+      <Route 
+        path="/mobile-scanner" 
+        element={<MobileScanner />} 
       />
       
       {/* Cualquier otra ruta */}

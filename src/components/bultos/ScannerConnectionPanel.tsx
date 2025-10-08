@@ -16,7 +16,8 @@ export function ScannerConnectionPanel({
   onConnect, 
   onDisconnect 
 }: ScannerConnectionPanelProps) {
-  const mobileUrl = `${window.location.origin}/mobile-scanner?sessionId=${sessionId}`;
+  // Use hash router format for mobile scanner URL
+  const mobileUrl = `${window.location.origin}${window.location.pathname}#/mobile-scanner?sessionId=${sessionId}`;
 
   return (
     <Card>
@@ -36,6 +37,9 @@ export function ScannerConnectionPanel({
                 <div className="flex justify-center p-4 bg-white rounded-lg">
                   <QRCodeSVG value={mobileUrl} size={150} />
                 </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Sesión: {sessionId}
+                </p>
                 <Button onClick={onConnect} className="w-full">
                   <Wifi className="h-4 w-4 mr-2" />
                   Activar Escáner

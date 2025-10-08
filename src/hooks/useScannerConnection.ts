@@ -16,65 +16,78 @@ export function useScannerConnection(sessionId: string, clientType: 'desktop' | 
   const [shouldConnect, setShouldConnect] = useState(false);
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log(`[Scanner] Already connected as ${clientType}`);
+      return;
+    }
 
     const wsUrl = `wss://tkwffswlgpzxyyuhdrrp.supabase.co/functions/v1/scanner-relay?sessionId=${sessionId}&type=${clientType}`;
     
     console.log(`[Scanner] Connecting as ${clientType} to session ${sessionId}`);
+    console.log(`[Scanner] WebSocket URL: ${wsUrl}`);
     
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      console.log(`[Scanner] Connected as ${clientType}`);
-      setIsConnected(true);
-      if (clientType === 'desktop') {
-        toast.success('Listo para escanear', {
-          description: 'Conecta tu celular para comenzar'
-        });
-      } else {
-        toast.success('Escáner conectado', {
-          description: 'Ahora puedes escanear códigos de barras'
-        });
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message: ScannerMessage = JSON.parse(event.data);
-        console.log('[Scanner] Message received:', message);
-
-        if (message.type === 'scan' && message.data) {
-          setLastScan(message.data);
-        } else if (message.type === 'mobile_connected') {
-          toast.success('Celular conectado', {
-            description: 'Ahora puedes escanear códigos'
+      ws.onopen = () => {
+        console.log(`[Scanner] ✅ Connected successfully as ${clientType}`);
+        setIsConnected(true);
+        if (clientType === 'desktop') {
+          toast.success('Listo para escanear', {
+            description: 'Conecta tu celular para comenzar'
           });
-        } else if (message.type === 'mobile_disconnected') {
-          toast.warning('Celular desconectado');
+        } else {
+          toast.success('Escáner conectado', {
+            description: 'Ahora puedes escanear códigos de barras'
+          });
         }
-      } catch (error) {
-        console.error('[Scanner] Error parsing message:', error);
-      }
-    };
+      };
 
-    ws.onerror = (error) => {
-      console.error('[Scanner] WebSocket error:', error);
-      toast.error('Error de conexión');
-    };
+      ws.onmessage = (event) => {
+        try {
+          const message: ScannerMessage = JSON.parse(event.data);
+          console.log('[Scanner] Message received:', message);
 
-    ws.onclose = () => {
-      console.log('[Scanner] Disconnected');
+          if (message.type === 'scan' && message.data) {
+            setLastScan(message.data);
+          } else if (message.type === 'mobile_connected') {
+            toast.success('Celular conectado', {
+              description: 'Ahora puedes escanear códigos'
+            });
+          } else if (message.type === 'mobile_disconnected') {
+            toast.warning('Celular desconectado');
+          }
+        } catch (error) {
+          console.error('[Scanner] Error parsing message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Scanner] ❌ WebSocket error:', error);
+        toast.error('Error de conexión', {
+          description: 'No se pudo conectar al servidor de escaneo'
+        });
+      };
+
+      ws.onclose = (event) => {
+        console.log(`[Scanner] Disconnected - Code: ${event.code}, Reason: ${event.reason}`);
+        setIsConnected(false);
+        wsRef.current = null;
+
+        if (shouldConnect && event.code !== 1000) {
+          console.log('[Scanner] Connection closed unexpectedly, attempting reconnect...');
+          reconnectTimeoutRef.current = window.setTimeout(() => {
+            console.log('[Scanner] Reconnecting...');
+            connect();
+          }, 3000);
+        }
+      };
+    } catch (error) {
+      console.error('[Scanner] ❌ Error creating WebSocket:', error);
+      toast.error('Error al crear conexión');
       setIsConnected(false);
-      wsRef.current = null;
-
-      if (shouldConnect) {
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          console.log('[Scanner] Attempting to reconnect...');
-          connect();
-        }, 3000);
-      }
-    };
+    }
   }, [sessionId, clientType, shouldConnect]);
 
   const disconnect = useCallback(() => {

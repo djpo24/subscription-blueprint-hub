@@ -11,12 +11,20 @@ export default function MobileScanner() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('sessionId') || '';
   const [showScanner, setShowScanner] = useState(false);
+  const [connectionError, setConnectionError] = useState<string>('');
   
   const { isConnected, sendScan, startConnection, stopConnection } = useScannerConnection(sessionId, 'mobile');
 
   useEffect(() => {
     if (sessionId) {
-      startConnection();
+      console.log('[Mobile Scanner] Starting connection with session:', sessionId);
+      setConnectionError('');
+      try {
+        startConnection();
+      } catch (error) {
+        console.error('[Mobile Scanner] Error starting connection:', error);
+        setConnectionError('Error al conectar con el servidor');
+      }
     }
     return () => {
       stopConnection();
@@ -63,6 +71,12 @@ export default function MobileScanner() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {sessionId && (
+              <div className="p-2 bg-muted rounded text-xs font-mono text-center">
+                Sesión: {sessionId}
+              </div>
+            )}
+
             <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
               <span className="text-sm font-medium">Estado de Conexión</span>
               <div className="flex items-center gap-2">
@@ -79,6 +93,12 @@ export default function MobileScanner() {
                 )}
               </div>
             </div>
+
+            {connectionError && (
+              <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                {connectionError}
+              </div>
+            )}
 
             {isConnected && (
               <div className="space-y-2">
@@ -101,8 +121,9 @@ export default function MobileScanner() {
               </div>
             )}
 
-            {!isConnected && (
+            {!isConnected && !connectionError && (
               <div className="text-center text-muted-foreground p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
                 <p className="text-sm">Conectando al sistema...</p>
                 <p className="text-xs mt-1">
                   Asegúrate de estar en la misma sesión del computador

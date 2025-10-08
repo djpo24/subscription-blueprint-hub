@@ -20,44 +20,7 @@ export function FinancesTab() {
     }).format(amount);
   };
 
-  if (isLoading) {
-    return (
-      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="min-h-[100px] sm:min-h-auto">
-              <CardContent className="p-4">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">Cargando datos financieros...</p>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    );
-  }
-
-  if (error) {
-    return (
-      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
-        <Card>
-          <CardContent className="p-8 text-center text-red-500">
-            <p>Error al cargar datos financieros</p>
-            <p className="text-sm text-gray-500 mt-2">{error.message}</p>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    );
-  }
-
-  // Filtrar datos por viajero
+  // Filtrar datos por viajero - DEBE estar antes de cualquier early return
   const filteredData = useMemo(() => {
     if (!data || selectedTravelerId === 'all') return data;
 
@@ -115,6 +78,43 @@ export function FinancesTab() {
       payments: filteredPayments
     };
   }, [data, selectedTravelerId]);
+
+  if (isLoading) {
+    return (
+      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="min-h-[100px] sm:min-h-auto">
+              <CardContent className="p-4">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">Cargando datos financieros...</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
+
+  if (error) {
+    return (
+      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+        <Card>
+          <CardContent className="p-8 text-center text-red-500">
+            <p>Error al cargar datos financieros</p>
+            <p className="text-sm text-gray-500 mt-2">{error.message}</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
 
   const summary = filteredData?.summary;
 

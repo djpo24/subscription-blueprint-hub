@@ -13,8 +13,7 @@ import {
   Megaphone,
   AlertTriangle,
   Search,
-  Trophy,
-  Box
+  Trophy
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -37,7 +36,6 @@ export const createMenuItems = (
     { value: 'dashboard', title: 'Dashboard', icon: Home },
     { value: 'trips', title: 'Viajes', icon: Package },
     { value: 'dispatches', title: 'Despachos', icon: Truck },
-    { value: 'bultos', title: 'Bultos', icon: Box },
   ];
 
   if (showFinancesTab) {

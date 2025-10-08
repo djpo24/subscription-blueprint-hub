@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, FileText, Tags, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PackagesByDateHeader } from './PackagesByDateHeader';
 import { TripPackageCard } from './TripPackageCard';
 import { PackagesByDateSummary } from './PackagesByDateSummary';
@@ -12,6 +13,7 @@ import { Trip, Package } from './types';
 import { useCustomerPackageCounts } from '@/hooks/useCustomerPackageCounts';
 import { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { TripBultosView } from './TripBultosView';
 
 interface DispatchRelation {
   id: string;
@@ -135,56 +137,80 @@ export function PackagesByDateContent({
         </Button>
       )}
 
-      {/* Resumen de totales - movido arriba del buscador */}
-      <PackagesByDateSummary
-        totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
-        totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
-        totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
-        amountsByCurrency={searchTerm.trim() ? filteredAmountsByCurrency : amountsByCurrency}
-      />
+      {/* Tabs for Paquetes and Bultos */}
+      <Tabs defaultValue="packages" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="packages">Paquetes</TabsTrigger>
+          <TabsTrigger value="bultos">Bultos</TabsTrigger>
+        </TabsList>
 
-      {/* Buscador */}
-      <PackageSearchBar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        className="max-w-md"
-      />
-
-      {/* Mostrar mensaje si hay búsqueda activa */}
-      {searchTerm.trim() && (
-        <div className="text-sm text-gray-600">
-          Mostrando {filteredTotalPackages} de {totalPackages} encomiendas
-        </div>
-      )}
-
-      {filteredTrips.length === 0 ? (
-        searchTerm.trim() ? (
-          <div className="text-center py-8">
-            <div className="text-gray-500">No se encontraron encomiendas que coincidan con la búsqueda</div>
-          </div>
-        ) : (
-          <EmptyTripsState 
-            selectedDate={selectedDate}
+        <TabsContent value="packages" className="space-y-4 sm:space-y-6">
+          {/* Resumen de totales - movido arriba del buscador */}
+          <PackagesByDateSummary
+            totalPackages={searchTerm.trim() ? filteredTotalPackages : totalPackages}
+            totalWeight={searchTerm.trim() ? filteredTotalWeight : totalWeight}
+            totalFreight={searchTerm.trim() ? filteredTotalFreight : totalFreight}
+            amountsByCurrency={searchTerm.trim() ? filteredAmountsByCurrency : amountsByCurrency}
           />
-        )
-      ) : (
-        <div className="grid gap-4 sm:gap-6">
-          {filteredTrips.map((trip) => (
-            <TripPackageCard
-              key={trip.id}
-              trip={trip}
-              onAddPackage={onAddPackage}
-              onPackageClick={onPackageClick}
-              onOpenChat={onOpenChat}
-              previewRole={previewRole}
-              disableChat={disableChat}
-              tripDate={selectedDate}
-              showSummary={true}
-              customerPackageCounts={customerPackageCounts}
-            />
-          ))}
-        </div>
-      )}
+
+          {/* Buscador */}
+          <PackageSearchBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            className="max-w-md"
+          />
+
+          {/* Mostrar mensaje si hay búsqueda activa */}
+          {searchTerm.trim() && (
+            <div className="text-sm text-gray-600">
+              Mostrando {filteredTotalPackages} de {totalPackages} encomiendas
+            </div>
+          )}
+
+          {filteredTrips.length === 0 ? (
+            searchTerm.trim() ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500">No se encontraron encomiendas que coincidan con la búsqueda</div>
+              </div>
+            ) : (
+              <EmptyTripsState 
+                selectedDate={selectedDate}
+              />
+            )
+          ) : (
+            <div className="grid gap-4 sm:gap-6">
+              {filteredTrips.map((trip) => (
+                <TripPackageCard
+                  key={trip.id}
+                  trip={trip}
+                  onAddPackage={onAddPackage}
+                  onPackageClick={onPackageClick}
+                  onOpenChat={onOpenChat}
+                  previewRole={previewRole}
+                  disableChat={disableChat}
+                  tripDate={selectedDate}
+                  showSummary={true}
+                  customerPackageCounts={customerPackageCounts}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bultos" className="space-y-4 sm:space-y-6">
+          <div className="grid gap-4 sm:gap-6">
+            {trips.map((trip) => (
+              <TripBultosView
+                key={trip.id}
+                tripId={trip.id}
+                tripDate={selectedDate}
+                origin={trip.origin}
+                destination={trip.destination}
+              />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

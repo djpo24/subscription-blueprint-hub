@@ -17,17 +17,25 @@ interface CreateBultoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  preSelectedTripId?: string;
 }
 
-export function CreateBultoDialog({ open, onOpenChange, onSuccess }: CreateBultoDialogProps) {
+export function CreateBultoDialog({ open, onOpenChange, onSuccess, preSelectedTripId }: CreateBultoDialogProps) {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
-  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [selectedTripId, setSelectedTripId] = useState<string>(preSelectedTripId || '');
   const [notes, setNotes] = useState('');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [nextBultoNumber, setNextBultoNumber] = useState<number>(1);
 
   const { lastScan, startConnection, stopConnection, isConnected } = useScannerConnection(sessionId, 'desktop');
+
+  // Initialize selectedTripId from preSelectedTripId
+  useEffect(() => {
+    if (preSelectedTripId) {
+      setSelectedTripId(preSelectedTripId);
+    }
+  }, [preSelectedTripId]);
 
   const { data: trips } = useQuery({
     queryKey: ['trips-for-bulto'],
@@ -185,21 +193,23 @@ export function CreateBultoDialog({ open, onOpenChange, onSuccess }: CreateBulto
 
         {!showSummary ? (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Viaje</Label>
-              <Select value={selectedTripId} onValueChange={setSelectedTripId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un viaje" />
-                </SelectTrigger>
-                <SelectContent>
-                  {trips?.map((trip) => (
-                    <SelectItem key={trip.id} value={trip.id}>
-                      {trip.origin} → {trip.destination} - {new Date(trip.trip_date).toLocaleDateString()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!preSelectedTripId && (
+              <div className="space-y-2">
+                <Label>Viaje</Label>
+                <Select value={selectedTripId} onValueChange={setSelectedTripId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un viaje" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trips?.map((trip) => (
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {trip.origin} → {trip.destination} - {new Date(trip.trip_date).toLocaleDateString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {selectedTripId && (
               <>

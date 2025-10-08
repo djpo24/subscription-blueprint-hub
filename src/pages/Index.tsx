@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
 import { DispatchesTab } from '@/components/tabs/DispatchesTab';
-import { BultosTab } from '@/components/tabs/BultosTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { EscalationTab } from '@/components/tabs/EscalationTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
@@ -126,7 +125,6 @@ export default function Index() {
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'trips' && 'Viajes'}
                 {activeTab === 'dispatches' && 'Despachos'}
-                {activeTab === 'bultos' && 'Bultos'}
                 {activeTab === 'finances' && 'Finanzas'}
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'escalations' && 'Escalaciones'}
@@ -166,7 +164,6 @@ export default function Index() {
                 onBack={handleBackToCalendar}
               />
               <DispatchesTab />
-              <BultosTab />
               <FinancesTab />
               <ChatTab />
               <EscalationTab />

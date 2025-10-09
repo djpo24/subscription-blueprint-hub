@@ -254,7 +254,24 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Increment the current bulto count (package stays in original bulto)
+    // Create a new label entry for this package in the current bulto
+    const { error: labelError } = await supabase
+      .from('package_labels')
+      .insert({
+        package_id: conflictPackage.id,
+        bulto_id: selectedBultoId,
+        label_number: newLabelCount,
+        is_main: false
+      });
+
+    if (labelError) {
+      toast.error('Error al crear etiqueta adicional');
+      setShowConflictDialog(false);
+      setConflictPackage(null);
+      return;
+    }
+
+    // Increment the current bulto count
     const { data: currentBulto } = await supabase
       .from('bultos')
       .select('total_packages')
@@ -271,6 +288,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
     // Invalidate queries to refresh the UI
     queryClient.invalidateQueries({ queryKey: ['packages'] });
     queryClient.invalidateQueries({ queryKey: ['open-bultos'] });
+    queryClient.invalidateQueries({ queryKey: ['bulto-packages'] });
     
     toast.success('Paquete adicional agregado', {
       description: `El paquete ahora tiene ${newLabelCount} etiquetas y está en ambos bultos`
@@ -290,15 +308,25 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
         throw new Error('No hay paquetes para guardar');
       }
 
-      const packageIds = scannedPackages.map(p => p.id);
-      
-      // Update packages with selected bulto
-      const { error: updateError } = await supabase
-        .from('packages')
-        .update({ bulto_id: selectedBultoId })
-        .in('id', packageIds);
+      // For each scanned package, create a label entry
+      for (const pkg of scannedPackages) {
+        // Update package bulto_id for the main reference
+        await supabase
+          .from('packages')
+          .update({ bulto_id: selectedBultoId })
+          .eq('id', pkg.id);
 
-      if (updateError) throw updateError;
+        // Create a label entry for this package in this bulto
+        const labelNumber = (pkg.label_count || 1);
+        await supabase
+          .from('package_labels')
+          .insert({
+            package_id: pkg.id,
+            bulto_id: selectedBultoId,
+            label_number: labelNumber,
+            is_main: true
+          });
+      }
 
       // Update bulto package count
       const { data: bulto } = await supabase

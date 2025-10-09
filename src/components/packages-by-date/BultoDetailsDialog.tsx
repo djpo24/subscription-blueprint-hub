@@ -19,13 +19,25 @@ export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: Bult
   const { data: packages, isLoading } = useQuery({
     queryKey: ['bulto-packages', bulto.id],
     queryFn: async () => {
+      // Get all labels for this bulto
+      const { data: labels, error: labelsError } = await supabase
+        .from('package_labels')
+        .select('package_id')
+        .eq('bulto_id', bulto.id);
+
+      if (labelsError) throw labelsError;
+      if (!labels || labels.length === 0) return [];
+
+      const packageIds = labels.map(l => l.package_id);
+
+      // Get packages details
       const { data, error } = await supabase
         .from('packages')
         .select(`
           *,
           customers!packages_customer_id_fkey(name, email, phone)
         `)
-        .eq('bulto_id', bulto.id)
+        .in('id', packageIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

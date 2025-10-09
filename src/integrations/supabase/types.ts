@@ -769,6 +769,7 @@ export type Database = {
       }
       package_labels: {
         Row: {
+          bulto_id: string | null
           created_at: string
           id: string
           is_main: boolean
@@ -776,6 +777,7 @@ export type Database = {
           package_id: string
         }
         Insert: {
+          bulto_id?: string | null
           created_at?: string
           id?: string
           is_main?: boolean
@@ -783,6 +785,7 @@ export type Database = {
           package_id: string
         }
         Update: {
+          bulto_id?: string | null
           created_at?: string
           id?: string
           is_main?: boolean
@@ -790,6 +793,13 @@ export type Database = {
           package_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "package_labels_bulto_id_fkey"
+            columns: ["bulto_id"]
+            isOneToOne: false
+            referencedRelation: "bultos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "package_labels_package_id_fkey"
             columns: ["package_id"]

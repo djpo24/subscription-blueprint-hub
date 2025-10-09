@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 export function useDispatchReport() {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateReport = async (packages: PackageInDispatch[]) => {
+  const generateReport = async (packages: PackageInDispatch[], travelerName?: string) => {
     if (packages.length === 0) {
       toast.error('No hay encomiendas para generar el reporte');
       return;
@@ -16,7 +16,7 @@ export function useDispatchReport() {
     setIsGenerating(true);
     
     try {
-      await DispatchReportPDFService.printDispatchReport(packages);
+      await DispatchReportPDFService.printDispatchReport(packages, travelerName);
       toast.success(`Reporte generado con ${packages.length} encomiendas`);
     } catch (error) {
       console.error('Error generando reporte:', error);

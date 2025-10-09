@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 export class DispatchReportPDFService {
-  static generateDispatchReport(packages: PackageInDispatch[]): jsPDF {
+  static generateDispatchReport(packages: PackageInDispatch[], travelerName?: string): jsPDF {
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -13,14 +13,29 @@ export class DispatchReportPDFService {
     // Configuración
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10;
-    const startY = 25;
+    const margin = 5; // Reducir márgenes para aprovechar más espacio
+    const startY = 30;
     let currentY = startY;
 
-    // Título
+    // Título centrado
     pdf.setFontSize(16);
     pdf.setFont(undefined, 'bold');
-    pdf.text('Reporte de Despacho', pageWidth / 2, 15, { align: 'center' });
+    pdf.text('Reporte de Despacho', pageWidth / 2, 12, { align: 'center' });
+
+    // Nombre del viajero en la parte superior derecha
+    if (travelerName) {
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Viajero:', pageWidth - margin - 55, 10, { align: 'left' });
+      pdf.setFont(undefined, 'normal');
+      pdf.text(travelerName, pageWidth - margin - 55, 15, { align: 'left' });
+    }
+
+    // Fecha de generación en la parte superior izquierda
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'normal');
+    pdf.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, margin, 10);
+    pdf.text(`Hora: ${new Date().toLocaleTimeString('es-CO')}`, margin, 15);
 
     // Headers de la tabla
     const headers = [
@@ -35,8 +50,9 @@ export class DispatchReportPDFService {
       'Método de pago'
     ];
 
-    // Anchos de columnas (ajustados para landscape)
-    const colWidths = [30, 22, 50, 18, 18, 13, 22, 18, 22];
+    // Anchos de columnas optimizados para usar todo el ancho (287mm disponible con márgenes de 5mm)
+    const totalWidth = pageWidth - (margin * 2); // ~287mm
+    const colWidths = [40, 25, 70, 18, 20, 15, 28, 28, 43]; // Total: 287mm
     const startX = margin;
 
     // Dibujar headers
@@ -141,25 +157,20 @@ export class DispatchReportPDFService {
     pdf.setFont(undefined, 'bold');
     pdf.setFontSize(10);
     
+    // Distribuir los totales horizontalmente usando todo el ancho
     pdf.text(`Total Encomiendas: ${totalPackages}`, margin, currentY);
-    pdf.text(`Peso Total: ${totalWeight} kg`, margin + 60, currentY);
-    pdf.text(`Flete Total: $${totalFreight.toLocaleString('es-CO')}`, margin + 120, currentY);
-    pdf.text(`Total a Cobrar: $${totalAmountToCollect.toLocaleString('es-CO')}`, margin + 180, currentY);
-
-    // Fecha de generación
-    currentY += 10;
-    pdf.setFont(undefined, 'normal');
-    pdf.setFontSize(8);
-    pdf.text(`Generado el: ${new Date().toLocaleString('es-CO')}`, margin, currentY);
+    pdf.text(`Peso Total: ${totalWeight.toFixed(1)} kg`, margin + 70, currentY);
+    pdf.text(`Flete Total: $${totalFreight.toLocaleString('es-CO')}`, margin + 140, currentY);
+    pdf.text(`Total a Cobrar: $${totalAmountToCollect.toLocaleString('es-CO')}`, margin + 210, currentY);
 
     return pdf;
   }
 
-  static async printDispatchReport(packages: PackageInDispatch[]): Promise<void> {
+  static async printDispatchReport(packages: PackageInDispatch[], travelerName?: string): Promise<void> {
     try {
       console.log('📊 Generando reporte de despacho para', packages.length, 'encomiendas');
       
-      const pdf = this.generateDispatchReport(packages);
+      const pdf = this.generateDispatchReport(packages, travelerName);
       
       // Abrir el PDF en una nueva ventana para imprimir
       const pdfBlob = pdf.output('blob');

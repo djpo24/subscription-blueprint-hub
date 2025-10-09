@@ -1,6 +1,7 @@
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
 import { useDispatchReport } from '@/hooks/useDispatchReport';
+import { useTrips } from '@/hooks/useTrips';
 import { DispatchDetailsHeader } from './DispatchDetailsHeader';
 import { DispatchSummaryCards } from './DispatchSummaryCards';
 import { DispatchPackagesTable } from './DispatchPackagesTable';
@@ -14,6 +15,7 @@ interface DispatchDetailsViewProps {
 export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   const { data: packages = [], isLoading } = useDispatchPackages(dispatchId || '');
   const { data: dispatches = [] } = useDispatchRelations();
+  const { data: trips = [] } = useTrips();
   const { generateReport, isGenerating } = useDispatchReport();
   const isMobile = useIsMobile();
   const { 
@@ -102,7 +104,20 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   };
 
   const handleGenerateReport = () => {
-    generateReport(packages);
+    // Obtener el nombre del viajero desde el primer paquete que tenga trip_id
+    let travelerName: string | undefined;
+    
+    for (const pkg of packages) {
+      if (pkg.trip_id) {
+        const trip = trips.find(t => t.id === pkg.trip_id);
+        if (trip?.travelers) {
+          travelerName = `${trip.travelers.first_name} ${trip.travelers.last_name}`;
+          break;
+        }
+      }
+    }
+    
+    generateReport(packages, travelerName);
   };
 
   if (isLoading) {

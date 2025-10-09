@@ -47,19 +47,23 @@ export function useScannerConnection(sessionId: string, clientType: 'desktop' | 
       ws.onmessage = (event) => {
         try {
           const message: ScannerMessage = JSON.parse(event.data);
-          console.log('[Scanner] Message received:', message);
+          console.log('[Scanner] ✉️ Message received:', message);
 
           if (message.type === 'scan' && message.data) {
-            setLastScan(message.data);
+            console.log('[Scanner] 📦 Scan data received:', message.data);
+            // Use timestamp to ensure each scan triggers an update
+            setLastScan(`${message.data}||${Date.now()}`);
           } else if (message.type === 'mobile_connected') {
+            console.log('[Scanner] 📱 Mobile connected');
             toast.success('Celular conectado', {
               description: 'Ahora puedes escanear códigos'
             });
           } else if (message.type === 'mobile_disconnected') {
+            console.log('[Scanner] 📱 Mobile disconnected');
             toast.warning('Celular desconectado');
           }
         } catch (error) {
-          console.error('[Scanner] Error parsing message:', error);
+          console.error('[Scanner] ❌ Error parsing message:', error);
         }
       };
 

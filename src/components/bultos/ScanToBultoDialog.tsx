@@ -66,8 +66,14 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
 
   // Handle scanned barcode
   useEffect(() => {
+    console.log('[ScanToBultoDialog] 🔄 lastScan changed:', lastScan);
+    console.log('[ScanToBultoDialog] 📦 selectedBultoId:', selectedBultoId);
+    
     if (lastScan && selectedBultoId) {
-      handleScan(lastScan);
+      // Extract barcode from the timestamp format (barcode||timestamp)
+      const barcode = lastScan.split('||')[0];
+      console.log('[ScanToBultoDialog] ✅ Processing scan:', barcode);
+      handleScan(barcode);
     }
   }, [lastScan, selectedBultoId]);
 

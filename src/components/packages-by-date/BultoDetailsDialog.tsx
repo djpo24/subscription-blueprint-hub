@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PDFBultoLabelService } from '@/services/pdfBultoLabelService';
+import { toast } from 'sonner';
 
 interface BultoDetailsDialogProps {
   open: boolean;
@@ -32,8 +34,17 @@ export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: Bult
     enabled: open
   });
 
-  const handlePrintLabel = () => {
-    window.print();
+  const handlePrintLabel = async () => {
+    try {
+      await PDFBultoLabelService.printPDF({
+        id: bulto.id,
+        bulto_number: bulto.bulto_number
+      });
+      toast.success('Etiqueta enviada a impresión');
+    } catch (error) {
+      console.error('Error al imprimir etiqueta de bulto:', error);
+      toast.error('Error al generar la etiqueta');
+    }
   };
 
   return (

@@ -29,6 +29,7 @@ export interface PackageInDispatch {
   trip_id: string | null;
   delivered_at: string | null;
   delivered_by: string | null;
+  bultos: string | null; // Números de bultos separados por comas
   customers: {
     name: string;
     email: string;

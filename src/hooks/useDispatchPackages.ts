@@ -34,10 +34,45 @@ export function useDispatchPackages(dispatchId: string) {
 
         console.log('✅ Raw dispatch packages data:', data);
 
+        // Get all package IDs to fetch bultos information
+        const packageIds = (data || [])
+          .map(dp => dp.packages?.id)
+          .filter(Boolean);
+
+        // Fetch bultos information for all packages
+        const { data: packageLabelsData } = await supabase
+          .from('package_labels')
+          .select(`
+            package_id,
+            bultos!bulto_id (
+              bulto_number
+            )
+          `)
+          .in('package_id', packageIds);
+
+        console.log('📦 Package labels data:', packageLabelsData);
+
+        // Create a map of package_id to bulto numbers
+        const packageBultosMap = new Map<string, number[]>();
+        
+        (packageLabelsData || []).forEach(label => {
+          if (label.package_id && label.bultos?.bulto_number) {
+            const existing = packageBultosMap.get(label.package_id) || [];
+            existing.push(label.bultos.bulto_number);
+            packageBultosMap.set(label.package_id, existing);
+          }
+        });
+
         // Transform data to match PackageInDispatch interface
         const transformedPackages = (data || []).map(dispatchPackage => {
           const pkg = dispatchPackage.packages;
           if (!pkg) return null;
+          
+          // Get bultos for this package and sort them
+          const bultosNumbers = packageBultosMap.get(pkg.id) || [];
+          const bultosString = bultosNumbers.length > 0 
+            ? bultosNumbers.sort((a, b) => a - b).join(', ') 
+            : null;
           
           const transformed = {
             id: pkg.id,
@@ -53,6 +88,7 @@ export function useDispatchPackages(dispatchId: string) {
             trip_id: pkg.trip_id,
             delivered_at: pkg.delivered_at,
             delivered_by: pkg.delivered_by,
+            bultos: bultosString,
             customers: pkg.customers
           };
           

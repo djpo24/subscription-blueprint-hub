@@ -39,6 +39,7 @@ export function SimpleCustomersPendingTable() {
       trip_id: null,
       delivered_at: customer.delivery_date,
       delivered_by: null,
+      bultos: null,
       customers: {
         name: customer.customer_name,
         email: '',

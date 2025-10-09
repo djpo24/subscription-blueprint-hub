@@ -40,6 +40,7 @@ export function PendingDeliveryTable() {
       trip_id: null,
       delivered_at: null,
       delivered_by: null,
+      bultos: null,
       customers: {
         name: pkg.customer_name,
         email: '',

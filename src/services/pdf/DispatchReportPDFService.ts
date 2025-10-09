@@ -27,6 +27,7 @@ export class DispatchReportPDFService {
       'Nombre',
       'Teléfono', 
       'Detalles',
+      'Bultos',
       'Flete',
       'Peso',
       'Valor a cobrar',
@@ -35,7 +36,7 @@ export class DispatchReportPDFService {
     ];
 
     // Anchos de columnas (ajustados para landscape)
-    const colWidths = [35, 25, 60, 20, 15, 25, 20, 25];
+    const colWidths = [30, 22, 50, 18, 18, 13, 22, 18, 22];
     const startX = margin;
 
     // Dibujar headers
@@ -74,6 +75,7 @@ export class DispatchReportPDFService {
       const customerName = pkg.customers?.name || 'N/A';
       const customerPhone = pkg.customers?.phone || 'N/A';
       const details = pkg.description || 'N/A';
+      const bultos = pkg.bultos || 'N/A';
       const freight = pkg.freight ? `$${pkg.freight.toLocaleString('es-CO')}` : '$0';
       const weight = pkg.weight ? `${pkg.weight} kg` : 'N/A';
       const amountToCollect = pkg.amount_to_collect ? `$${pkg.amount_to_collect.toLocaleString('es-CO')}` : '$0';
@@ -84,6 +86,7 @@ export class DispatchReportPDFService {
         customerName,
         customerPhone,
         details,
+        bultos,
         freight,
         weight,
         amountToCollect,

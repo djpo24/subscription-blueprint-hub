@@ -239,59 +239,16 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   const handleAddAdditionalPackage = async () => {
     if (!conflictPackage) return;
 
-    // Increment label_count for the package
-    const newLabelCount = (conflictPackage.label_count || 1) + 1;
+    // Add to scan list first (like normal scan flow)
+    addPackageToList({ 
+      ...conflictPackage, 
+      bulto_id: selectedBultoId,
+      label_count: (conflictPackage.label_count || 1) + 1,
+      is_additional: true 
+    });
     
-    const { error: updateError } = await supabase
-      .from('packages')
-      .update({ label_count: newLabelCount })
-      .eq('id', conflictPackage.id);
-
-    if (updateError) {
-      toast.error('Error al agregar paquete adicional');
-      setShowConflictDialog(false);
-      setConflictPackage(null);
-      return;
-    }
-
-    // Create a new label entry for this package in the current bulto IMMEDIATELY
-    const { error: labelError } = await supabase
-      .from('package_labels')
-      .insert({
-        package_id: conflictPackage.id,
-        bulto_id: selectedBultoId,
-        label_number: newLabelCount,
-        is_main: false
-      });
-
-    if (labelError) {
-      toast.error('Error al crear etiqueta adicional');
-      setShowConflictDialog(false);
-      setConflictPackage(null);
-      return;
-    }
-
-    // Increment the current bulto count IMMEDIATELY
-    const { data: currentBulto } = await supabase
-      .from('bultos')
-      .select('total_packages')
-      .eq('id', selectedBultoId)
-      .single();
-
-    if (currentBulto) {
-      await supabase
-        .from('bultos')
-        .update({ total_packages: currentBulto.total_packages + 1 })
-        .eq('id', selectedBultoId);
-    }
-
-    // Invalidate queries to refresh the UI immediately
-    queryClient.invalidateQueries({ queryKey: ['packages'] });
-    queryClient.invalidateQueries({ queryKey: ['open-bultos'] });
-    queryClient.invalidateQueries({ queryKey: ['bulto-packages'] });
-    
-    toast.success('Paquete adicional agregado', {
-      description: `El paquete ahora tiene ${newLabelCount} etiquetas y está en ambos bultos`
+    toast.success('Paquete adicional agregado a la lista', {
+      description: `Se agregará como etiqueta adicional al guardar`
     });
 
     setShowConflictDialog(false);
@@ -310,22 +267,41 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
 
       // For each scanned package, create a label entry
       for (const pkg of scannedPackages) {
-        // Update package bulto_id for the main reference
-        await supabase
-          .from('packages')
-          .update({ bulto_id: selectedBultoId })
-          .eq('id', pkg.id);
+        const isAdditional = pkg.is_additional === true;
+        
+        if (isAdditional) {
+          // For additional packages: increment label_count and create new label
+          const newLabelCount = pkg.label_count;
+          
+          await supabase
+            .from('packages')
+            .update({ label_count: newLabelCount })
+            .eq('id', pkg.id);
+          
+          await supabase
+            .from('package_labels')
+            .insert({
+              package_id: pkg.id,
+              bulto_id: selectedBultoId,
+              label_number: newLabelCount,
+              is_main: false
+            });
+        } else {
+          // For normal packages: update bulto_id and create main label
+          await supabase
+            .from('packages')
+            .update({ bulto_id: selectedBultoId })
+            .eq('id', pkg.id);
 
-        // Create a label entry for this package in this bulto
-        const labelNumber = (pkg.label_count || 1);
-        await supabase
-          .from('package_labels')
-          .insert({
-            package_id: pkg.id,
-            bulto_id: selectedBultoId,
-            label_number: labelNumber,
-            is_main: true
-          });
+          await supabase
+            .from('package_labels')
+            .insert({
+              package_id: pkg.id,
+              bulto_id: selectedBultoId,
+              label_number: 1,
+              is_main: true
+            });
+        }
       }
 
       // Update bulto package count

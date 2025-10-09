@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Box, Plus, Eye } from 'lucide-react';
+import { Package, Box, Plus, Eye, Scan } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ interface TripBultosViewProps {
 export function TripBultosView({ tripId, tripDate, origin, destination }: TripBultosViewProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showScanDialog, setShowScanDialog] = useState(false);
+  const [selectedBultoForScan, setSelectedBultoForScan] = useState<string | null>(null);
   const [selectedBulto, setSelectedBulto] = useState<any>(null);
 
   const { data: bultos, refetch } = useQuery({
@@ -85,15 +86,6 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
                     <Plus className="h-4 w-4 mr-2" />
                     Crear Bultos
                   </Button>
-                  <Button 
-                    onClick={() => setShowScanDialog(true)} 
-                    size="sm"
-                    variant="outline"
-                    disabled={!bultos || bultos.length === 0}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Escanear
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -122,15 +114,29 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
                   </p>
                 )}
 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => setSelectedBulto(bulto)}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Detalles
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedBultoForScan(bulto.id);
+                      setShowScanDialog(true);
+                    }}
+                  >
+                    <Scan className="h-4 w-4 mr-2" />
+                    Escanear
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => setSelectedBulto(bulto)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalles
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -174,9 +180,13 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
 
       <ScanToBultoDialog
         open={showScanDialog}
-        onOpenChange={setShowScanDialog}
+        onOpenChange={(open) => {
+          setShowScanDialog(open);
+          if (!open) setSelectedBultoForScan(null);
+        }}
         onSuccess={refetch}
         tripId={tripId}
+        preSelectedBultoId={selectedBultoForScan || undefined}
       />
 
       {selectedBulto && (

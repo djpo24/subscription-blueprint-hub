@@ -15,9 +15,10 @@ interface ScanToBultoDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   tripId: string;
+  preSelectedBultoId?: string;
 }
 
-export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId }: ScanToBultoDialogProps) {
+export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSelectedBultoId }: ScanToBultoDialogProps) {
   const queryClient = useQueryClient();
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [selectedBultoId, setSelectedBultoId] = useState<string>('');
@@ -42,12 +43,16 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId }: Sca
     enabled: !!tripId && open
   });
 
-  // Auto-select first bulto if available
+  // Auto-select bulto: prioritize preSelectedBultoId, otherwise first bulto
   useEffect(() => {
     if (openBultos && openBultos.length > 0 && !selectedBultoId) {
-      setSelectedBultoId(openBultos[0].id);
+      if (preSelectedBultoId && openBultos.some(b => b.id === preSelectedBultoId)) {
+        setSelectedBultoId(preSelectedBultoId);
+      } else {
+        setSelectedBultoId(openBultos[0].id);
+      }
     }
-  }, [openBultos, selectedBultoId]);
+  }, [openBultos, selectedBultoId, preSelectedBultoId]);
 
   // Handle scanned barcode
   useEffect(() => {

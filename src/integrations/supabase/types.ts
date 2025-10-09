@@ -296,6 +296,13 @@ export type Database = {
             foreignKeyName: "customer_payments_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
+            referencedRelation: "deleted_packages_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]
           },
@@ -389,6 +396,13 @@ export type Database = {
             columns: ["dispatch_id"]
             isOneToOne: false
             referencedRelation: "dispatch_relations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_packages_view"
             referencedColumns: ["id"]
           },
           {
@@ -731,7 +745,21 @@ export type Database = {
             foreignKeyName: "fk_notification_log_package"
             columns: ["package_id"]
             isOneToOne: false
+            referencedRelation: "deleted_packages_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notification_log_package"
+            columns: ["package_id"]
+            isOneToOne: false
             referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_packages_view"
             referencedColumns: ["id"]
           },
           {
@@ -794,6 +822,13 @@ export type Database = {
             foreignKeyName: "package_labels_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
+            referencedRelation: "deleted_packages_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_labels_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]
           },
@@ -806,6 +841,8 @@ export type Database = {
           created_at: string | null
           currency: string | null
           customer_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           delivered_at: string | null
           delivered_by: string | null
           description: string | null
@@ -827,6 +864,8 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           delivered_at?: string | null
           delivered_by?: string | null
           description?: string | null
@@ -848,6 +887,8 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           delivered_at?: string | null
           delivered_by?: string | null
           description?: string | null
@@ -1005,6 +1046,13 @@ export type Database = {
           package_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tracking_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_packages_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tracking_events_package_id_fkey"
             columns: ["package_id"]
@@ -1323,7 +1371,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      deleted_packages_view: {
+        Row: {
+          amount_to_collect: number | null
+          created_at: string | null
+          currency: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          description: string | null
+          destination: string | null
+          freight: number | null
+          id: string | null
+          origin: string | null
+          status: string | null
+          tracking_number: string | null
+          trip_date: string | null
+          weight: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_first_admin_user: {
@@ -1402,6 +1471,14 @@ export type Database = {
       }
       is_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      restore_deleted_package: {
+        Args: { package_id: string }
+        Returns: boolean
+      }
+      soft_delete_package: {
+        Args: { package_id: string }
         Returns: boolean
       }
       update_app_secret: {

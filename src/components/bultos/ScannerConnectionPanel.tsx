@@ -6,15 +6,11 @@ import { QRCodeSVG } from 'qrcode.react';
 interface ScannerConnectionPanelProps {
   sessionId: string;
   isConnected: boolean;
-  onConnect: () => void;
-  onDisconnect: () => void;
 }
 
 export function ScannerConnectionPanel({ 
   sessionId, 
-  isConnected, 
-  onConnect, 
-  onDisconnect 
+  isConnected
 }: ScannerConnectionPanelProps) {
   // Use hash router format for mobile scanner URL
   const mobileUrl = `${window.location.origin}${window.location.pathname}#/mobile-scanner?sessionId=${sessionId}`;
@@ -26,40 +22,29 @@ export function ScannerConnectionPanel({
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2">
               <Smartphone className="h-5 w-5" />
-              <h3 className="font-semibold">Conexión del Escáner</h3>
+              <h3 className="font-semibold">
+                {isConnected ? 'Escáner Conectado' : 'Escanea para Conectar'}
+              </h3>
             </div>
 
-            {!isConnected ? (
-              <div className="space-y-3">
+            <div className="space-y-3">
+              {!isConnected && (
                 <p className="text-sm text-muted-foreground">
-                  Escanea este código QR con tu celular para conectar el escáner
+                  Escanea este código QR con tu celular
                 </p>
-                <div className="flex justify-center p-4 bg-white rounded-lg">
-                  <QRCodeSVG value={mobileUrl} size={150} />
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  Sesión: {sessionId}
-                </p>
-                <Button onClick={onConnect} className="w-full">
-                  <Wifi className="h-4 w-4 mr-2" />
-                  Activar Escáner
-                </Button>
+              )}
+              
+              <div className="flex justify-center p-4 bg-white rounded-lg">
+                <QRCodeSVG value={mobileUrl} size={200} />
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-600">
+              
+              {isConnected && (
+                <div className="flex items-center justify-center gap-2 text-green-600">
                   <Wifi className="h-5 w-5" />
-                  <span className="font-medium">Escáner conectado</span>
+                  <span className="font-medium">Listo para escanear códigos</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Ahora puedes escanear códigos de barras con tu celular
-                </p>
-                <Button onClick={onDisconnect} variant="outline" className="w-full">
-                  <WifiOff className="h-4 w-4 mr-2" />
-                  Desconectar
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

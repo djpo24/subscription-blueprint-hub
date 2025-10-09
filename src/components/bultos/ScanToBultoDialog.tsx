@@ -26,6 +26,16 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
 
   const { lastScan, startConnection, stopConnection, isConnected } = useScannerConnection(sessionId, 'desktop');
 
+  // Auto-start connection when dialog opens
+  useEffect(() => {
+    if (open) {
+      startConnection();
+    }
+    return () => {
+      stopConnection();
+    };
+  }, [open, startConnection, stopConnection]);
+
   // Query open bultos for the selected trip
   const { data: openBultos } = useQuery({
     queryKey: ['open-bultos', tripId],
@@ -167,16 +177,12 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
         </DialogHeader>
 
         <div className="space-y-6">
-          {!isConnected ? (
-            <ScannerConnectionPanel 
-              sessionId={sessionId}
-              isConnected={isConnected}
-              onConnect={startConnection}
-              onDisconnect={stopConnection}
-            />
-          ) : (
-            <>
-              <div className="space-y-4">
+          <ScannerConnectionPanel 
+            sessionId={sessionId}
+            isConnected={isConnected}
+          />
+
+          <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">
                     Selecciona el Bulto
@@ -207,32 +213,30 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
                 )}
               </div>
 
-              <ScannedPackagesList 
-                packages={scannedPackages}
-                onRemove={handleRemovePackage}
-              />
+          <ScannedPackagesList 
+            packages={scannedPackages}
+            onRemove={handleRemovePackage}
+          />
 
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleClose}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={() => saveMutation.mutate()}
-                  disabled={saveMutation.isPending || scannedPackages.length === 0}
-                  className="flex-1"
-                >
-                  {saveMutation.isPending && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  )}
-                  Guardar {scannedPackages.length} Paquete(s)
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending || scannedPackages.length === 0}
+              className="flex-1"
+            >
+              {saveMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Guardar {scannedPackages.length} Paquete(s)
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -254,7 +254,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Create a new label entry for this package in the current bulto
+    // Create a new label entry for this package in the current bulto IMMEDIATELY
     const { error: labelError } = await supabase
       .from('package_labels')
       .insert({
@@ -271,7 +271,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Increment the current bulto count
+    // Increment the current bulto count IMMEDIATELY
     const { data: currentBulto } = await supabase
       .from('bultos')
       .select('total_packages')
@@ -285,7 +285,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
         .eq('id', selectedBultoId);
     }
 
-    // Invalidate queries to refresh the UI
+    // Invalidate queries to refresh the UI immediately
     queryClient.invalidateQueries({ queryKey: ['packages'] });
     queryClient.invalidateQueries({ queryKey: ['open-bultos'] });
     queryClient.invalidateQueries({ queryKey: ['bulto-packages'] });

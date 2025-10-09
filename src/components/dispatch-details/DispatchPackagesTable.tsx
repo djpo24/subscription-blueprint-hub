@@ -5,6 +5,7 @@ import { PackageInfoDialog } from './PackageInfoDialog';
 import { DispatchPackagesMobile } from './DispatchPackagesMobile';
 import { DispatchPackagesTableEmpty } from './DispatchPackagesTableEmpty';
 import { DispatchPackagesTableDesktop } from './DispatchPackagesTableDesktop';
+import { DispatchPackagesTablePagination } from './DispatchPackagesTablePagination';
 import { useDispatchPackagesTableLogic } from './DispatchPackagesTableLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -23,6 +24,15 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
     hasAnyActions,
     handleDeliverPackage,
     handlePackageClick,
+    paginatedPackages,
+    currentPage,
+    totalPages,
+    totalItems,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    startIndex,
+    endIndex,
   } = useDispatchPackagesTableLogic(packages);
 
   if (packages.length === 0) {
@@ -33,12 +43,24 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
   if (isMobile) {
     return (
       <>
-        <DispatchPackagesMobile 
-          packages={packages} 
-          onDeliverPackage={handleDeliverPackage}
-          onPackageClick={handlePackageClick}
-          hasAnyActions={hasAnyActions}
-        />
+        <div className="space-y-4">
+          <DispatchPackagesMobile 
+            packages={paginatedPackages} 
+            onDeliverPackage={handleDeliverPackage}
+            onPackageClick={handlePackageClick}
+            hasAnyActions={hasAnyActions}
+          />
+          <DispatchPackagesTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={goToPage}
+            onNextPage={goToNextPage}
+            onPreviousPage={goToPreviousPage}
+          />
+        </div>
         <DeliverPackageDialog
           open={showDeliveryDialog}
           onOpenChange={setShowDeliveryDialog}
@@ -56,12 +78,24 @@ export function DispatchPackagesTable({ packages }: DispatchPackagesTableProps) 
   // Desktop table view
   return (
     <>
-      <DispatchPackagesTableDesktop
-        packages={packages}
-        hasAnyActions={hasAnyActions}
-        onDeliverPackage={handleDeliverPackage}
-        onPackageClick={handlePackageClick}
-      />
+      <div className="space-y-4">
+        <DispatchPackagesTableDesktop
+          packages={paginatedPackages}
+          hasAnyActions={hasAnyActions}
+          onDeliverPackage={handleDeliverPackage}
+          onPackageClick={handlePackageClick}
+        />
+        <DispatchPackagesTablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          onPageChange={goToPage}
+          onNextPage={goToNextPage}
+          onPreviousPage={goToPreviousPage}
+        />
+      </div>
 
       <DeliverPackageDialog
         open={showDeliveryDialog}

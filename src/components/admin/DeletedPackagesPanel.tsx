@@ -19,9 +19,15 @@ import {
 import { useState } from 'react';
 
 export function DeletedPackagesPanel() {
-  const { deletedPackages, isLoading, restorePackage, isRestoring } = useDeletedPackages();
+  const { deletedPackages, isLoading, error, restorePackage, isRestoring } = useDeletedPackages();
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  console.log('🗑️ [DeletedPackagesPanel] Rendering with:', { 
+    deletedPackagesCount: deletedPackages?.length, 
+    isLoading, 
+    hasError: !!error 
+  });
 
   const handleRestoreClick = (packageId: string) => {
     setSelectedPackageId(packageId);
@@ -38,9 +44,37 @@ export function DeletedPackagesPanel() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Paquetes Eliminados</CardTitle>
+          <CardDescription>
+            Cargando paquetes eliminados...
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Paquetes Eliminados</CardTitle>
+          <CardDescription>
+            Error al cargar paquetes eliminados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-destructive">
+            {error.message || 'Ocurrió un error al cargar los paquetes eliminados'}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

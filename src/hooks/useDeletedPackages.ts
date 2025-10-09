@@ -29,19 +29,30 @@ export function useDeletedPackages() {
   const { data: deletedPackages = [], isLoading, error } = useQuery({
     queryKey: ['deleted-packages'],
     queryFn: async (): Promise<DeletedPackage[]> => {
-      console.log('🔍 Fetching deleted packages...');
+      console.log('🗑️ [useDeletedPackages] Fetching deleted packages...');
       
-      const { data, error } = await supabase.rpc('get_deleted_packages');
+      try {
+        const { data, error } = await supabase.rpc('get_deleted_packages');
 
-      if (error) {
-        console.error('❌ Error fetching deleted packages:', error);
-        throw error;
+        if (error) {
+          console.error('❌ [useDeletedPackages] Error fetching deleted packages:', error);
+          toast({
+            title: "Error al cargar paquetes eliminados",
+            description: error.message || "No se pudieron cargar los paquetes eliminados",
+            variant: "destructive",
+          });
+          throw error;
+        }
+
+        console.log('📦 [useDeletedPackages] Deleted packages fetched:', data?.length || 0, data);
+        return data || [];
+      } catch (err) {
+        console.error('❌ [useDeletedPackages] Unexpected error:', err);
+        throw err;
       }
-
-      console.log('📦 Deleted packages fetched:', data?.length || 0);
-      return data || [];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
+    retry: 1,
   });
 
   const restorePackageMutation = useMutation({

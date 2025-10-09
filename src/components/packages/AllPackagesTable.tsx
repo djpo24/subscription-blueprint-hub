@@ -1,12 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Search, Package, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, Search, Package, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from '@/components/ui/pagination';
 import { usePackages } from '@/hooks/usePackages';
 import { PackageActionsDropdown } from '@/components/PackageActionsDropdown';
 import { PackageLabelDialog } from '@/components/PackageLabelDialog';
@@ -35,20 +36,48 @@ interface PackageDialogData {
   };
 }
 
+const ITEMS_PER_PAGE = 100;
+
 export function AllPackagesTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const { data: packages = [], isLoading } = usePackages();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
-  const filteredPackages = packages.filter(pkg => 
-    pkg.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.customers?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPackages = useMemo(() => {
+    return packages.filter(pkg => 
+      pkg.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pkg.customers?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pkg.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [packages, searchTerm]);
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(filteredPackages.length / ITEMS_PER_PAGE);
+  
+  const paginatedPackages = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredPackages.slice(startIndex, endIndex);
+  }, [filteredPackages, currentPage]);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, filteredPackages.length);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -162,7 +191,7 @@ export function AllPackagesTable() {
               <Input
                 placeholder="Buscar encomiendas..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -189,7 +218,7 @@ export function AllPackagesTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPackages.map((pkg) => (
+                  {paginatedPackages.map((pkg) => (
                     <TableRow key={pkg.id} className="hover:bg-gray-50">
                       <TableCell>
                         <span className="font-mono text-sm">
@@ -250,6 +279,86 @@ export function AllPackagesTable() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {filteredPackages.length > ITEMS_PER_PAGE && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {startItem} a {endItem} de {filteredPackages.length} encomiendas
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => goToPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </PaginationItem>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => goToPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => goToPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>

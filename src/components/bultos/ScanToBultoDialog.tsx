@@ -25,10 +25,24 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   const [scanSessionId] = useState(() => `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isMobileConnected, setIsMobileConnected] = useState(false);
-  const [selectedBultoId, setSelectedBultoId] = useState<string>(preSelectedBultoId || '');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
   const [conflictPackage, setConflictPackage] = useState<any>(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [manualSelectedBultoId, setManualSelectedBultoId] = useState<string>('');
+  
+  // Use preSelectedBultoId if provided, otherwise use manual selection
+  const selectedBultoId = preSelectedBultoId || manualSelectedBultoId;
+
+  // Log for debugging
+  useEffect(() => {
+    if (open) {
+      console.log('[ScanToBulto] 🔍 Dialog opened with:');
+      console.log('  - preSelectedBultoId:', preSelectedBultoId);
+      console.log('  - manualSelectedBultoId:', manualSelectedBultoId);
+      console.log('  - selectedBultoId:', selectedBultoId);
+      console.log('  - tripId:', tripId);
+    }
+  }, [open, preSelectedBultoId, manualSelectedBultoId, selectedBultoId, tripId]);
 
   // Generate QR code and setup Realtime when dialog opens
   useEffect(() => {
@@ -133,12 +147,12 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
     enabled: !!tripId && open
   });
 
-  // Auto-select bulto: only if no preSelectedBultoId was provided
+  // Auto-select first bulto only if no preSelectedBultoId
   useEffect(() => {
-    if (!preSelectedBultoId && openBultos && openBultos.length > 0 && !selectedBultoId) {
-      setSelectedBultoId(openBultos[0].id);
+    if (!preSelectedBultoId && openBultos && openBultos.length > 0 && !manualSelectedBultoId) {
+      setManualSelectedBultoId(openBultos[0].id);
     }
-  }, [openBultos, selectedBultoId, preSelectedBultoId]);
+  }, [openBultos, manualSelectedBultoId, preSelectedBultoId]);
 
   const handleScan = async (barcode: string) => {
     console.log('[ScanToBulto] Processing scan:', barcode);
@@ -345,7 +359,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
 
   const handleClose = () => {
     setScannedPackages([]);
-    setSelectedBultoId('');
+    setManualSelectedBultoId('');
     setIsMobileConnected(false);
     setQrCodeUrl('');
     onOpenChange(false);
@@ -372,7 +386,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
                     <label className="text-sm font-medium mb-2 block">
                       Selecciona el Bulto
                     </label>
-                    <Select value={selectedBultoId} onValueChange={setSelectedBultoId}>
+                    <Select value={selectedBultoId} onValueChange={setManualSelectedBultoId}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un bulto" />
                       </SelectTrigger>
@@ -387,13 +401,25 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
                   </div>
                 )}
 
-                {selectedBulto && (
+                {selectedBulto ? (
                   <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg">
                     <p className="text-base font-semibold text-primary">
                       📦 Escaneando para Bulto #{selectedBulto.bulto_number}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {scannedPackages.length} paquete(s) escaneados en esta sesión
+                    </p>
+                  </div>
+                ) : selectedBultoId ? (
+                  <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                    <p className="text-sm font-medium text-yellow-700">
+                      ⚠️ Cargando información del bulto...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
+                    <p className="text-sm font-medium text-orange-700">
+                      ⚠️ Selecciona un bulto para comenzar a escanear
                     </p>
                   </div>
                 )}

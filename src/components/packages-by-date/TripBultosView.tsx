@@ -124,8 +124,10 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
                   className="w-full"
                   onClick={(e) => {
                     e.stopPropagation();
+                    // Set both states together to ensure sync
                     setSelectedBultoForScan(bulto.id);
-                    setShowScanDialog(true);
+                    // Use setTimeout to ensure state is updated before opening dialog
+                    setTimeout(() => setShowScanDialog(true), 0);
                   }}
                 >
                   <Scan className="h-4 w-4 mr-2" />

@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useScannerConnection } from '@/hooks/useScannerConnection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ScannerConnectionPanel } from './ScannerConnectionPanel';
 import { ScannedPackagesList } from './ScannedPackagesList';
 import { Loader2 } from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface ScanToBultoDialogProps {
   open: boolean;
@@ -21,29 +21,77 @@ interface ScanToBultoDialogProps {
 export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSelectedBultoId }: ScanToBultoDialogProps) {
   const queryClient = useQueryClient();
   
-  // Use persistent sessionId from localStorage
-  const [sessionId] = useState(() => {
-    const stored = localStorage.getItem('scanner-session-id');
-    if (stored) return stored;
-    const newId = Math.random().toString(36).substring(7);
-    localStorage.setItem('scanner-session-id', newId);
-    return newId;
-  });
-  
+  const [scanSessionId] = useState(() => `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [isMobileConnected, setIsMobileConnected] = useState(false);
   const [selectedBultoId, setSelectedBultoId] = useState<string>('');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
 
-  const { lastScan, startConnection, stopConnection, isConnected } = useScannerConnection(sessionId, 'desktop');
-
-  // Auto-start connection when dialog opens
+  // Generate QR code and setup Realtime when dialog opens
   useEffect(() => {
-    if (open) {
-      startConnection();
-    }
-    return () => {
-      stopConnection();
+    if (!open) return;
+
+    const setupScanner = async () => {
+      try {
+        // Generate QR code
+        const url = `${window.location.origin}${window.location.pathname}#/mobile-scanner?session=${scanSessionId}`;
+        const qr = await QRCode.toDataURL(url, { width: 300 });
+        setQrCodeUrl(qr);
+
+        // Setup Realtime channel
+        const channel = supabase
+          .channel(`scan_session_${scanSessionId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'scan_sessions',
+              filter: `session_id=eq.${scanSessionId}`
+            },
+            async (payload) => {
+              const barcode = payload.new.barcode;
+              
+              console.log('[ScanToBulto] 📦 Received scan:', barcode);
+              
+              // Detectar handshake de conexión
+              if (barcode === '__connected__') {
+                setIsMobileConnected(true);
+                toast.success('📱 Celular conectado');
+                return;
+              }
+              
+              // Filtrar URLs (QR codes)
+              if (barcode.startsWith('http://') || barcode.startsWith('https://')) {
+                console.log('[ScanToBulto] ⚠️ Ignoring URL scan');
+                return;
+              }
+              
+              // Buscar y agregar paquete
+              if (selectedBultoId) {
+                await handleScan(barcode);
+                
+                // Marcar como procesado
+                await supabase
+                  .from('scan_sessions')
+                  .update({ processed: true })
+                  .eq('id', payload.new.id);
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.error('Error setting up scanner:', error);
+        toast.error('Error al configurar escáner');
+      }
     };
-  }, [open, startConnection, stopConnection]);
+
+    setupScanner();
+  }, [open, scanSessionId, selectedBultoId]);
 
   // Query open bultos for the selected trip
   const { data: openBultos } = useQuery({
@@ -72,19 +120,6 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       }
     }
   }, [openBultos, selectedBultoId, preSelectedBultoId]);
-
-  // Handle scanned barcode
-  useEffect(() => {
-    console.log('[ScanToBultoDialog] 🔄 lastScan changed:', lastScan);
-    console.log('[ScanToBultoDialog] 📦 selectedBultoId:', selectedBultoId);
-    
-    if (lastScan && selectedBultoId) {
-      // Extract barcode from the timestamp format (barcode||timestamp)
-      const barcode = lastScan.split('||')[0];
-      console.log('[ScanToBultoDialog] ✅ Processing scan:', barcode);
-      handleScan(barcode);
-    }
-  }, [lastScan, selectedBultoId]);
 
   const handleScan = async (barcode: string) => {
     console.log('[ScanToBulto] Processing scan:', barcode);
@@ -176,9 +211,10 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   });
 
   const handleClose = () => {
-    stopConnection();
     setScannedPackages([]);
     setSelectedBultoId('');
+    setIsMobileConnected(false);
+    setQrCodeUrl('');
     onOpenChange(false);
   };
 
@@ -193,8 +229,8 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
 
         <div className="space-y-6">
           <ScannerConnectionPanel 
-            sessionId={sessionId}
-            isConnected={isConnected}
+            qrCodeUrl={qrCodeUrl}
+            isMobileConnected={isMobileConnected}
           />
 
           <div className="space-y-4">

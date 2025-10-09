@@ -1,20 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Smartphone, Wifi, WifiOff } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Smartphone, Wifi } from 'lucide-react';
 
 interface ScannerConnectionPanelProps {
-  sessionId: string;
-  isConnected: boolean;
+  qrCodeUrl: string;
+  isMobileConnected: boolean;
 }
 
 export function ScannerConnectionPanel({ 
-  sessionId, 
-  isConnected
+  qrCodeUrl, 
+  isMobileConnected
 }: ScannerConnectionPanelProps) {
-  // Use hash router format for mobile scanner URL
-  const mobileUrl = `${window.location.origin}${window.location.pathname}#/mobile-scanner?sessionId=${sessionId}`;
-
   return (
     <Card>
       <CardContent className="pt-6">
@@ -23,22 +18,24 @@ export function ScannerConnectionPanel({
             <div className="flex items-center gap-2">
               <Smartphone className="h-5 w-5" />
               <h3 className="font-semibold">
-                {isConnected ? 'Escáner Conectado' : 'Escanea para Conectar'}
+                {isMobileConnected ? 'Escáner Conectado' : 'Escanea para Conectar'}
               </h3>
             </div>
 
             <div className="space-y-3">
-              {!isConnected && (
+              {!isMobileConnected && (
                 <p className="text-sm text-muted-foreground">
                   Escanea este código QR con tu celular
                 </p>
               )}
               
-              <div className="flex justify-center p-4 bg-white rounded-lg">
-                <QRCodeSVG value={mobileUrl} size={200} />
-              </div>
+              {qrCodeUrl && (
+                <div className="flex justify-center p-4 bg-white rounded-lg">
+                  <img src={qrCodeUrl} alt="QR Code" className="w-[200px] h-[200px]" />
+                </div>
+              )}
               
-              {isConnected && (
+              {isMobileConnected && (
                 <div className="flex items-center justify-center gap-2 text-green-600">
                   <Wifi className="h-5 w-5" />
                   <span className="font-medium">Listo para escanear códigos</span>

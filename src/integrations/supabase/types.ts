@@ -938,6 +938,33 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_sessions: {
+        Row: {
+          barcode: string
+          created_by: string | null
+          id: string
+          processed: boolean | null
+          scanned_at: string | null
+          session_id: string
+        }
+        Insert: {
+          barcode: string
+          created_by?: string | null
+          id?: string
+          processed?: boolean | null
+          scanned_at?: string | null
+          session_id: string
+        }
+        Update: {
+          barcode?: string
+          created_by?: string | null
+          id?: string
+          processed?: boolean | null
+          scanned_at?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
       sent_messages: {
         Row: {
           created_at: string | null

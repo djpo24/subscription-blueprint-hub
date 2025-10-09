@@ -1383,6 +1383,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      fix_bulto_package_count: {
+        Args: { bulto_id_param: string }
+        Returns: number
+      }
       generate_marketing_message: {
         Args: {
           customer_name_param: string

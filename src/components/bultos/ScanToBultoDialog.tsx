@@ -20,7 +20,16 @@ interface ScanToBultoDialogProps {
 
 export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSelectedBultoId }: ScanToBultoDialogProps) {
   const queryClient = useQueryClient();
-  const [sessionId] = useState(() => Math.random().toString(36).substring(7));
+  
+  // Use persistent sessionId from localStorage
+  const [sessionId] = useState(() => {
+    const stored = localStorage.getItem('scanner-session-id');
+    if (stored) return stored;
+    const newId = Math.random().toString(36).substring(7);
+    localStorage.setItem('scanner-session-id', newId);
+    return newId;
+  });
+  
   const [selectedBultoId, setSelectedBultoId] = useState<string>('');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
 

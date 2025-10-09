@@ -37,6 +37,20 @@ export class DispatchReportPDFService {
     pdf.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, margin, 10);
     pdf.text(`Hora: ${new Date().toLocaleTimeString('es-CO')}`, margin, 15);
 
+    // Cantidad de bultos en la parte superior (sutilmente, junto a la fecha)
+    const uniqueBultos = new Set(
+      packages
+        .filter(pkg => pkg.bultos)
+        .flatMap(pkg => pkg.bultos?.split(',').map(b => b.trim()) || [])
+    );
+    const totalBultos = uniqueBultos.size;
+    if (totalBultos > 0) {
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Total Bultos: ${totalBultos}`, margin, 20);
+      pdf.setTextColor(0, 0, 0);
+    }
+
     // Headers de la tabla
     const headers = [
       'Nombre',

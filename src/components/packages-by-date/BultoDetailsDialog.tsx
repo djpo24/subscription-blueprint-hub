@@ -1,12 +1,15 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Package, Printer, Plus } from 'lucide-react';
+import { Package, Printer, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PDFBultoLabelService } from '@/services/pdfBultoLabelService';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { DeleteBultoDialog } from '../bultos/DeleteBultoDialog';
+import { useDeleteBulto } from '@/hooks/useDeleteBulto';
 
 interface BultoDetailsDialogProps {
   open: boolean;
@@ -16,6 +19,9 @@ interface BultoDetailsDialogProps {
 }
 
 export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: BultoDetailsDialogProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { deleteBulto, isDeleting } = useDeleteBulto();
+
   const { data: packages, isLoading } = useQuery({
     queryKey: ['bulto-packages', bulto.id],
     queryFn: async () => {
@@ -59,6 +65,15 @@ export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: Bult
     }
   };
 
+  const handleDeleteBulto = async () => {
+    const success = await deleteBulto(bulto.id);
+    if (success) {
+      setShowDeleteDialog(false);
+      onOpenChange(false);
+      onUpdate();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -72,6 +87,15 @@ export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: Bult
               <Button variant="outline" size="sm" onClick={handlePrintLabel}>
                 <Printer className="h-4 w-4 mr-2" />
                 Imprimir Etiqueta
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
               </Button>
             </div>
           </div>
@@ -160,6 +184,15 @@ export function BultoDetailsDialog({ open, onOpenChange, bulto, onUpdate }: Bult
             )}
           </div>
         </div>
+
+        <DeleteBultoDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          bultoNumber={bulto.bulto_number}
+          packages={packages || []}
+          onConfirm={handleDeleteBulto}
+          isDeleting={isDeleting}
+        />
       </DialogContent>
     </Dialog>
   );

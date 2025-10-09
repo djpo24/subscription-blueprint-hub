@@ -193,43 +193,16 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   const handleMovePackage = async () => {
     if (!conflictPackage) return;
 
-    // Get old bulto for count update
-    const oldBultoId = conflictPackage.bulto_id;
-
-    // Update package to new bulto
-    const { error: updateError } = await supabase
-      .from('packages')
-      .update({ bulto_id: selectedBultoId })
-      .eq('id', conflictPackage.id);
-
-    if (updateError) {
-      toast.error('Error al trasladar paquete');
-      setShowConflictDialog(false);
-      setConflictPackage(null);
-      return;
-    }
-
-    // Update old bulto count (decrease)
-    if (oldBultoId) {
-      const { data: oldBulto } = await supabase
-        .from('bultos')
-        .select('total_packages')
-        .eq('id', oldBultoId)
-        .single();
-
-      if (oldBulto && oldBulto.total_packages > 0) {
-        await supabase
-          .from('bultos')
-          .update({ total_packages: oldBulto.total_packages - 1 })
-          .eq('id', oldBultoId);
-      }
-    }
-
-    // Add to current list with updated bulto_id
-    addPackageToList({ ...conflictPackage, bulto_id: selectedBultoId });
+    // Add to current list marked for moving
+    addPackageToList({ 
+      ...conflictPackage, 
+      bulto_id: selectedBultoId,
+      is_moved: true,
+      old_bulto_id: conflictPackage.bulto_id
+    });
     
-    toast.success('Paquete trasladado', {
-      description: `El paquete se movió al bulto actual`
+    toast.success('Paquete marcado para trasladar', {
+      description: `Se trasladará al guardar`
     });
 
     setShowConflictDialog(false);
@@ -268,9 +241,10 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       // For each scanned package, create a label entry
       for (const pkg of scannedPackages) {
         const isAdditional = pkg.is_additional === true;
+        const isMoved = pkg.is_moved === true;
         
         if (isAdditional) {
-          // For additional packages: increment label_count and create new label
+          // For additional packages: increment label_count and create new label WITHOUT moving
           const newLabelCount = pkg.label_count;
           
           await supabase
@@ -286,8 +260,50 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
               label_number: newLabelCount,
               is_main: false
             });
+        } else if (isMoved) {
+          // For moved packages: update bulto_id, update old bulto count, and manage labels
+          const oldBultoId = pkg.old_bulto_id;
+          
+          // Update package to new bulto
+          await supabase
+            .from('packages')
+            .update({ bulto_id: selectedBultoId })
+            .eq('id', pkg.id);
+          
+          // Delete old label from previous bulto
+          if (oldBultoId) {
+            await supabase
+              .from('package_labels')
+              .delete()
+              .eq('package_id', pkg.id)
+              .eq('bulto_id', oldBultoId);
+            
+            // Decrease old bulto count
+            const { data: oldBulto } = await supabase
+              .from('bultos')
+              .select('total_packages')
+              .eq('id', oldBultoId)
+              .single();
+            
+            if (oldBulto && oldBulto.total_packages > 0) {
+              await supabase
+                .from('bultos')
+                .update({ total_packages: oldBulto.total_packages - 1 })
+                .eq('id', oldBultoId);
+            }
+          }
+          
+          // Create new label in current bulto
+          await supabase
+            .from('package_labels')
+            .insert({
+              package_id: pkg.id,
+              bulto_id: selectedBultoId,
+              label_number: 1,
+              is_main: true
+            });
         } else {
-          // For normal packages: update bulto_id and create main label
+          // For normal packages (first time or no previous bulto): update bulto_id and create main label
           await supabase
             .from('packages')
             .update({ bulto_id: selectedBultoId })

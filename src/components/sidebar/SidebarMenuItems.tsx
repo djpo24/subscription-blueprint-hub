@@ -13,7 +13,8 @@ import {
   Megaphone,
   AlertTriangle,
   Search,
-  Trophy
+  Trophy,
+  Trash2
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -74,6 +75,8 @@ export const createMenuItems = (
     items.push({ value: 'users', title: 'Usuarios', icon: Users });
     // Add Investigation tab for admins
     items.push({ value: 'admin-investigation', title: 'Investigación', icon: Search });
+    // Add Deleted Packages tab for admins
+    items.push({ value: 'deleted-packages', title: 'Paquetes Eliminados', icon: Trash2 });
   }
 
   if (showSettingsTab) {

@@ -12,6 +12,7 @@ import { MarketingTab } from './tabs/MarketingTab';
 import { UsersTab } from './tabs/UsersTab';
 import { DeveloperTab } from './tabs/DeveloperTab';
 import { AdminInvestigationTab } from './tabs/AdminInvestigationTab';
+import { DeletedPackagesTab } from './tabs/DeletedPackagesTab';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { 
   BarChart3, 
@@ -25,7 +26,8 @@ import {
   Megaphone,
   Shield,
   Code,
-  Search
+  Search,
+  Trash2
 } from 'lucide-react';
 
 interface MainTabsProps {
@@ -146,6 +148,11 @@ export function MainTabs({
               <Search className="h-4 w-4" />
               <span className="hidden sm:inline">Investigación</span>
             </TabsTrigger>
+            
+            <TabsTrigger value="deleted-packages" className="flex items-center gap-2 py-2 px-3">
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Eliminados</span>
+            </TabsTrigger>
           </>
         )}
       </TabsList>
@@ -185,6 +192,7 @@ export function MainTabs({
           <UsersTab />
           <DeveloperTab />
           <AdminInvestigationTab />
+          <DeletedPackagesTab />
         </>
       )}
     </Tabs>

@@ -296,13 +296,6 @@ export type Database = {
             foreignKeyName: "customer_payments_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
-            referencedRelation: "deleted_packages_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customer_payments_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]
           },
@@ -396,13 +389,6 @@ export type Database = {
             columns: ["dispatch_id"]
             isOneToOne: false
             referencedRelation: "dispatch_relations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dispatch_packages_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "deleted_packages_view"
             referencedColumns: ["id"]
           },
           {
@@ -745,21 +731,7 @@ export type Database = {
             foreignKeyName: "fk_notification_log_package"
             columns: ["package_id"]
             isOneToOne: false
-            referencedRelation: "deleted_packages_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_notification_log_package"
-            columns: ["package_id"]
-            isOneToOne: false
             referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_log_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "deleted_packages_view"
             referencedColumns: ["id"]
           },
           {
@@ -818,13 +790,6 @@ export type Database = {
           package_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "package_labels_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "deleted_packages_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "package_labels_package_id_fkey"
             columns: ["package_id"]
@@ -1046,13 +1011,6 @@ export type Database = {
           package_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "tracking_events_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "deleted_packages_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "tracking_events_package_id_fkey"
             columns: ["package_id"]
@@ -1371,28 +1329,7 @@ export type Database = {
       }
     }
     Views: {
-      deleted_packages_view: {
-        Row: {
-          amount_to_collect: number | null
-          created_at: string | null
-          currency: string | null
-          customer_name: string | null
-          customer_phone: string | null
-          deleted_at: string | null
-          deleted_by: string | null
-          deleted_by_name: string | null
-          description: string | null
-          destination: string | null
-          freight: number | null
-          id: string | null
-          origin: string | null
-          status: string | null
-          tracking_number: string | null
-          trip_date: string | null
-          weight: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       create_first_admin_user: {
@@ -1457,6 +1394,28 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_deleted_packages: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          amount_to_collect: number
+          created_at: string
+          currency: string
+          customer_name: string
+          customer_phone: string
+          deleted_at: string
+          deleted_by: string
+          deleted_by_name: string
+          description: string
+          destination: string
+          freight: number
+          id: string
+          origin: string
+          status: string
+          tracking_number: string
+          trip_date: string
+          weight: number
+        }[]
       }
       get_trips_for_marketing_period: {
         Args: { end_date: string; start_date: string }

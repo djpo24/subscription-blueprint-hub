@@ -25,23 +25,16 @@ export function EditPackageFormDelete({ package: pkg, onSuccess }: EditPackageFo
     setIsLoading(true);
     
     try {
-      // Delete tracking events first
-      await supabase
-        .from('tracking_events')
-        .delete()
-        .eq('package_id', pkg.id);
-
-      // Delete the package
-      const { error } = await supabase
-        .from('packages')
-        .delete()
-        .eq('id', pkg.id);
+      // Use soft delete function
+      const { data, error } = await supabase.rpc('soft_delete_package', {
+        package_id: pkg.id
+      });
 
       if (error) throw error;
 
       toast({
         title: "Encomienda eliminada",
-        description: "La encomienda ha sido eliminada correctamente"
+        description: "La encomienda ha sido marcada como eliminada y puede ser recuperada por un administrador"
       });
 
       setShowDeleteDialog(false);
@@ -75,8 +68,8 @@ export function EditPackageFormDelete({ package: pkg, onSuccess }: EditPackageFo
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente la encomienda {pkg.tracking_number}. 
-              Esta acción no se puede deshacer.
+              Esta acción marcará la encomienda {pkg.tracking_number} como eliminada. 
+              Los administradores podrán recuperarla si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

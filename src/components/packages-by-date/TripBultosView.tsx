@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Box, Plus, Eye, Scan } from 'lucide-react';
+import { Package, Box, Plus, Scan } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -93,7 +93,11 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {bultos.map((bulto) => (
-            <Card key={bulto.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={bulto.id} 
+              className="hover:shadow-lg transition-all cursor-pointer"
+              onClick={() => setSelectedBulto(bulto)}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Bulto #{bulto.bulto_number}</CardTitle>
@@ -114,29 +118,19 @@ export function TripBultosView({ tripId, tripDate, origin, destination }: TripBu
                   </p>
                 )}
 
-                <div className="flex gap-2">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedBultoForScan(bulto.id);
-                      setShowScanDialog(true);
-                    }}
-                  >
-                    <Scan className="h-4 w-4 mr-2" />
-                    Escanear
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => setSelectedBulto(bulto)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Detalles
-                  </Button>
-                </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedBultoForScan(bulto.id);
+                    setShowScanDialog(true);
+                  }}
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  Escanear
+                </Button>
               </CardContent>
             </Card>
           ))}

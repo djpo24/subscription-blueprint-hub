@@ -25,7 +25,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   const [scanSessionId] = useState(() => `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isMobileConnected, setIsMobileConnected] = useState(false);
-  const [selectedBultoId, setSelectedBultoId] = useState<string>('');
+  const [selectedBultoId, setSelectedBultoId] = useState<string>(preSelectedBultoId || '');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
   const [conflictPackage, setConflictPackage] = useState<any>(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -133,14 +133,10 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
     enabled: !!tripId && open
   });
 
-  // Auto-select bulto: prioritize preSelectedBultoId, otherwise first bulto
+  // Auto-select bulto: only if no preSelectedBultoId was provided
   useEffect(() => {
-    if (openBultos && openBultos.length > 0 && !selectedBultoId) {
-      if (preSelectedBultoId && openBultos.some(b => b.id === preSelectedBultoId)) {
-        setSelectedBultoId(preSelectedBultoId);
-      } else {
-        setSelectedBultoId(openBultos[0].id);
-      }
+    if (!preSelectedBultoId && openBultos && openBultos.length > 0 && !selectedBultoId) {
+      setSelectedBultoId(openBultos[0].id);
     }
   }, [openBultos, selectedBultoId, preSelectedBultoId]);
 
@@ -371,31 +367,33 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
           />
 
           <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Selecciona el Bulto
-                  </label>
-                  <Select value={selectedBultoId} onValueChange={setSelectedBultoId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un bulto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {openBultos?.map((bulto) => (
-                        <SelectItem key={bulto.id} value={bulto.id}>
-                          Bulto #{bulto.bulto_number} ({bulto.total_packages} paquetes)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!preSelectedBultoId && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Selecciona el Bulto
+                    </label>
+                    <Select value={selectedBultoId} onValueChange={setSelectedBultoId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un bulto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {openBultos?.map((bulto) => (
+                          <SelectItem key={bulto.id} value={bulto.id}>
+                            Bulto #{bulto.bulto_number} ({bulto.total_packages} paquetes)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {selectedBulto && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm font-medium">
-                      Escaneando para Bulto #{selectedBulto.bulto_number}
+                  <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg">
+                    <p className="text-base font-semibold text-primary">
+                      📦 Escaneando para Bulto #{selectedBulto.bulto_number}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {scannedPackages.length} paquete(s) escaneados
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {scannedPackages.length} paquete(s) escaneados en esta sesión
                     </p>
                   </div>
                 )}

@@ -1,11 +1,11 @@
 
-import { TabsContent } from '@/components/ui/tabs';
+import React from 'react';
 import { CustomersList } from '@/components/customer-list/CustomersList';
 import { DebugCustomersStatus } from '@/components/DebugCustomersStatus';
 
 export function CustomersTab() {
   return (
-    <TabsContent value="customers" className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -19,6 +19,6 @@ export function CustomersTab() {
         <DebugCustomersStatus />
         <CustomersList />
       </div>
-    </TabsContent>
+    </div>
   );
 }

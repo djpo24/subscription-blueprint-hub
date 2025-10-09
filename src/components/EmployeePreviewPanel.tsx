@@ -44,11 +44,11 @@ export function EmployeePreviewPanel({ onBack }: EmployeePreviewPanelProps) {
     setSelectedTripId,
     selectedDate,
     setSelectedDate,
-    activeTab,
-    setActiveTab,
     viewingPackagesByDate,
     setViewingPackagesByDate,
   } = useIndexState();
+
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const {
     handleNewPackage,

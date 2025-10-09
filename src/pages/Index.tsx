@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
@@ -28,6 +29,18 @@ import { useIsMobile } from '@/hooks/use-mobile';
 export default function Index() {
   const [showMobileDelivery, setShowMobileDelivery] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Derive activeTab from current route
+  const getActiveTabFromPath = () => {
+    const path = location.pathname;
+    if (path === '/dashboard' || path === '/dashboard/') return 'dashboard';
+    const tabMatch = path.match(/\/dashboard\/([^/]+)/);
+    return tabMatch ? tabMatch[1] : 'dashboard';
+  };
+
+  const activeTab = getActiveTabFromPath();
 
   const {
     packagesData,
@@ -51,11 +64,15 @@ export default function Index() {
     setSelectedTripId,
     selectedDate,
     setSelectedDate,
-    activeTab,
-    setActiveTab,
     viewingPackagesByDate,
     setViewingPackagesByDate,
   } = useIndexState();
+
+  // Function to change tab by navigating to the route
+  const setActiveTab = (tab: string) => {
+    const route = tab === 'dashboard' ? '/dashboard' : `/dashboard/${tab}`;
+    navigate(route);
+  };
 
   const {
     handleNewPackage,
@@ -139,43 +156,50 @@ export default function Index() {
               </h2>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <DashboardTab
-                packageStats={packageStats}
-                customersCount={customersCount}
-                onNewPackage={handleNewPackage}
-                onNewTrip={() => handleCreateTripFromCalendar(new Date())}
-                onViewNotifications={handleViewNotifications}
-                onMobileDelivery={handleMobileDelivery}
-                packages={packages}
-                filteredPackages={filteredPackages}
-                isLoading={isLoading}
-                onUpdate={handlePackagesUpdate}
-                onTabChange={setActiveTab}
-              />
+            <Routes>
+              <Route index element={
+                <DashboardTab
+                  packageStats={packageStats}
+                  customersCount={customersCount}
+                  onNewPackage={handleNewPackage}
+                  onNewTrip={() => handleCreateTripFromCalendar(new Date())}
+                  onViewNotifications={handleViewNotifications}
+                  onMobileDelivery={handleMobileDelivery}
+                  packages={packages}
+                  filteredPackages={filteredPackages}
+                  isLoading={isLoading}
+                  onUpdate={handlePackagesUpdate}
+                  onTabChange={setActiveTab}
+                />
+              } />
               
-              <TripsTab 
-                viewingPackagesByDate={viewingPackagesByDate}
-                trips={trips}
-                tripsLoading={tripsLoading}
-                onAddPackage={handleAddPackageToTrip}
-                onCreateTrip={handleCreateTripFromCalendar}
-                onViewPackagesByDate={handleViewPackagesByDate}
-                onBack={handleBackToCalendar}
-              />
-              <DispatchesTab />
-              <FinancesTab />
-              <ChatTab />
-              <EscalationTab />
-              <MarketingTab />
-              <NotificationsTab />
-              <CustomersTab />
-              <FidelizationTab />
-              <UsersTab />
-              <AdminInvestigationTab />
-              <SettingsTab />
-              <DeveloperTab />
-            </Tabs>
+              <Route path="trips" element={
+                <TripsTab 
+                  viewingPackagesByDate={viewingPackagesByDate}
+                  trips={trips}
+                  tripsLoading={tripsLoading}
+                  onAddPackage={handleAddPackageToTrip}
+                  onCreateTrip={handleCreateTripFromCalendar}
+                  onViewPackagesByDate={handleViewPackagesByDate}
+                  onBack={handleBackToCalendar}
+                />
+              } />
+              
+              <Route path="dispatches" element={<DispatchesTab />} />
+              <Route path="finances" element={<FinancesTab />} />
+              <Route path="chat" element={<ChatTab />} />
+              <Route path="escalations" element={<EscalationTab />} />
+              <Route path="marketing" element={<MarketingTab />} />
+              <Route path="notifications" element={<NotificationsTab />} />
+              <Route path="customers" element={<CustomersTab />} />
+              <Route path="fidelization" element={<FidelizationTab />} />
+              <Route path="users" element={<UsersTab />} />
+              <Route path="admin-investigation" element={<AdminInvestigationTab />} />
+              <Route path="settings" element={<SettingsTab />} />
+              <Route path="developer" element={<DeveloperTab />} />
+              
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
 
             <DialogsContainer
               packageDialogOpen={packageDialogOpen}

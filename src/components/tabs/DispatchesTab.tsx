@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { TabsContent } from '@/components/ui/tabs';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatchesTable } from '@/components/DispatchesTable';
 import { DispatchDetailsView } from '@/components/dispatch-details/DispatchDetailsView';
 import { AllPackagesTable } from '@/components/packages/AllPackagesTable';
@@ -26,7 +25,7 @@ export function DispatchesTab() {
   };
 
   return (
-    <TabsContent value="dispatches" className={`space-y-4 ${isMobile ? 'px-2' : 'sm:space-y-8 px-2 sm:px-0'}`}>
+    <div className={`space-y-4 ${isMobile ? 'px-2' : 'sm:space-y-8 px-2 sm:px-0'}`}>
       {viewMode === 'list' ? (
         <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -58,6 +57,6 @@ export function DispatchesTab() {
           <DispatchDetailsView dispatchId={selectedDispatchId} />
         </div>
       )}
-    </TabsContent>
+    </div>
   );
 }

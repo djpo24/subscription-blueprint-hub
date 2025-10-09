@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CalendarView } from '@/components/CalendarView';
 import { PackagesByDateView } from '@/components/PackagesByDateView';
 import { TripsWithFlightsView } from '@/components/TripsWithFlightsView';
-import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TripsListView } from '@/components/trips-list/TripsListView';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -33,7 +33,7 @@ export function TripsTab({
   const isMobile = useIsMobile();
 
   return (
-    <TabsContent value="trips" className={`space-y-4 ${isMobile ? 'px-2' : 'sm:space-y-8 px-2 sm:px-0'}`}>
+    <div className={`space-y-4 ${isMobile ? 'px-2' : 'sm:space-y-8 px-2 sm:px-0'}`}>
       {viewingPackagesByDate ? (
         <PackagesByDateView 
           selectedDate={viewingPackagesByDate}
@@ -68,6 +68,6 @@ export function TripsTab({
           </TabsContent>
         </Tabs>
       )}
-    </TabsContent>
+    </div>
   );
 }

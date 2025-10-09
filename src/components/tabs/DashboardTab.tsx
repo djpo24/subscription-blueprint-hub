@@ -1,5 +1,5 @@
 
-import { TabsContent } from '@/components/ui/tabs';
+import React from 'react';
 import { StatsGrid } from '@/components/StatsGrid';
 import { QuickActions } from '@/components/QuickActions';
 import { PackagesTable } from '@/components/PackagesTable';
@@ -65,7 +65,7 @@ export function DashboardTab({
   };
 
   return (
-    <TabsContent value="dashboard" className="space-y-3 sm:space-y-4 lg:space-y-6 mt-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 mt-4">
       <StatsGrid
         packageStats={packageStats}
         customersCount={customersCount}
@@ -89,6 +89,6 @@ export function DashboardTab({
           previewRole={previewRole}
         />
       </div>
-    </TabsContent>
+    </div>
   );
 }

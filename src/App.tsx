@@ -55,9 +55,9 @@ function AppRoutes() {
         element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
       />
       
-      {/* Dashboard principal protegido */}
+      {/* Dashboard principal protegido con rutas anidadas */}
       <Route 
-        path="/dashboard" 
+        path="/dashboard/*" 
         element={
           user ? (
             <ProtectedRoute>

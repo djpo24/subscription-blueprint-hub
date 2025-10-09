@@ -8,14 +8,13 @@ import { WhatsAppTemplateTest } from '@/components/flight/WhatsAppTemplateTest';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
 import { WebhookDiagnostic } from '@/components/WebhookDiagnostic';
 import { ChatbotConfigPanel } from '@/components/settings/ChatbotConfigPanel';
-import { TabsContent } from '@/components/ui/tabs';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, Shield, MapPin, MessageSquare, Bell, Bug, Bot } from 'lucide-react';
 
 export function SettingsTab() {
   return (
-    <TabsContent value="settings" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+    <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="general" className="flex items-center gap-2">
@@ -125,6 +124,6 @@ export function SettingsTab() {
           <WebhookDiagnostic />
         </TabsContent>
       </Tabs>
-    </TabsContent>
+    </div>
   );
 }

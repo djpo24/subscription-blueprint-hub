@@ -1,13 +1,12 @@
 
-import { TabsContent } from '@/components/ui/tabs';
 import { AdminInvestigationPanel } from '@/components/admin/AdminInvestigationPanel';
 import { DeliveryErrorsTable } from '@/components/DeliveryErrorsTable';
 import { WhatsAppErrorLogsTable } from '@/components/WhatsAppErrorLogsTable';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export function AdminInvestigationTab() {
   return (
-    <TabsContent value="admin-investigation" className="space-y-6">
+    <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general">Investigación General</TabsTrigger>
@@ -29,6 +28,6 @@ export function AdminInvestigationTab() {
           </TabsContent>
         </div>
       </Tabs>
-    </TabsContent>
+    </div>
   );
 }

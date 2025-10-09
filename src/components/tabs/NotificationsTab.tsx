@@ -1,8 +1,7 @@
 
 import { FlightNotificationPanel } from '@/components/FlightNotificationPanel';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
-import { TabsContent } from '@/components/ui/tabs';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ArrivalNotificationsPanel } from '@/components/flight/ArrivalNotificationsPanel';
 import { CampaignNotificationsPanel } from '@/components/flight/CampaignNotificationsPanel';
 import { ProximosViajesTestPanel } from '@/components/flight/ProximosViajesTestPanel';
@@ -10,7 +9,7 @@ import { Bell, Plane, Megaphone, TestTube } from 'lucide-react';
 
 export function NotificationsTab() {
   return (
-    <TabsContent value="notifications" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+    <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       <Tabs defaultValue="arrival" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="arrival" className="flex items-center gap-2">
@@ -48,6 +47,6 @@ export function NotificationsTab() {
           <NotificationLogTable />
         </TabsContent>
       </Tabs>
-    </TabsContent>
+    </div>
   );
 }

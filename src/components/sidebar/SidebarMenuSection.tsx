@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { MenuItem } from "./SidebarMenuItems";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarMenuSectionProps {
   menuItems: MenuItem[];
@@ -14,6 +15,14 @@ interface SidebarMenuSectionProps {
 }
 
 export function SidebarMenuSection({ menuItems, activeTab, onTabChange }: SidebarMenuSectionProps) {
+  const navigate = useNavigate();
+
+  const handleTabClick = (tabValue: string) => {
+    const route = tabValue === 'dashboard' ? '/dashboard' : `/dashboard/${tabValue}`;
+    navigate(route);
+    onTabChange(tabValue); // Still call this to close mobile sidebar
+  };
+
   return (
     <SidebarMenu>
       {menuItems.map((item) => (
@@ -21,7 +30,7 @@ export function SidebarMenuSection({ menuItems, activeTab, onTabChange }: Sideba
           <SidebarMenuButton
             isActive={activeTab === item.value}
             className="w-full text-gray-300 hover:text-white hover:bg-gray-800 data-[state=open]:bg-gray-800 data-[state=open]:text-white relative"
-            onClick={() => onTabChange(item.value)}
+            onClick={() => handleTabClick(item.value)}
           >
             <div className="relative">
               <item.icon className="h-4 w-4" />

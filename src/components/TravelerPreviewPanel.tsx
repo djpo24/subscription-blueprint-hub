@@ -38,11 +38,11 @@ export function TravelerPreviewPanel({ onBack }: TravelerPreviewPanelProps) {
     setSelectedTripId,
     selectedDate,
     setSelectedDate,
-    activeTab,
-    setActiveTab,
     viewingPackagesByDate,
     setViewingPackagesByDate,
   } = useIndexState();
+
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const {
     handleNewPackage,

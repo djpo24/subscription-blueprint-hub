@@ -1,4 +1,3 @@
-import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Package, Users, CheckCircle } from 'lucide-react';
 import { FinancesTabs } from '@/components/finances/FinancesTabs';
@@ -96,7 +95,7 @@ export function FinancesTab() {
 
   if (isLoading) {
     return (
-      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+      <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="min-h-[100px] sm:min-h-auto">
@@ -114,27 +113,27 @@ export function FinancesTab() {
             <p className="text-gray-500">Cargando datos financieros...</p>
           </CardContent>
         </Card>
-      </TabsContent>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+      <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
         <Card>
           <CardContent className="p-8 text-center text-red-500">
             <p>Error al cargar datos financieros</p>
             <p className="text-sm text-gray-500 mt-2">{error.message}</p>
           </CardContent>
         </Card>
-      </TabsContent>
+      </div>
     );
   }
 
   const summary = filteredData?.summary;
 
   return (
-    <TabsContent value="finances" className="space-y-4 sm:space-y-8 px-2 sm:px-0">
+    <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
       <div className="space-y-4 sm:space-y-6">
         {/* Filtro de viajero */}
         <Card>
@@ -234,6 +233,6 @@ export function FinancesTab() {
 
         <FinancesTabs />
       </div>
-    </TabsContent>
+    </div>
   );
 }

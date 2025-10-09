@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
@@ -39,7 +38,7 @@ export function FidelizationTab() {
 
   if (error) {
     return (
-      <TabsContent value="fidelization" className="space-y-4">
+      <div className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-red-600">Error al cargar datos</CardTitle>
@@ -48,12 +47,12 @@ export function FidelizationTab() {
             <p>No se pudieron cargar los datos de fidelización. Por favor, intenta de nuevo.</p>
           </CardContent>
         </Card>
-      </TabsContent>
+      </div>
     );
   }
 
   return (
-    <TabsContent value="fidelization" className="space-y-4">
+    <div className="space-y-4">
       {/* Header with stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -157,6 +156,6 @@ export function FidelizationTab() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
-    </TabsContent>
+    </div>
   );
 }

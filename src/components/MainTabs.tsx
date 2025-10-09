@@ -1,5 +1,5 @@
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DashboardTab } from './tabs/DashboardTab';
 import { CustomersTab } from './tabs/CustomersTab';
 import { FinancesTab } from './tabs/FinancesTab';
@@ -157,42 +157,79 @@ export function MainTabs({
         )}
       </TabsList>
 
-      <DashboardTab
-        packageStats={packageStats}
-        customersCount={customersCount}
-        onNewPackage={onNewPackage}
-        onNewTrip={onNewTrip}
-        onViewNotifications={onViewNotifications}
-        onMobileDelivery={onMobileDelivery}
-        packages={packages}
-        filteredPackages={filteredPackages}
-        isLoading={isLoading}
-        onUpdate={onUpdate}
-        onTabChange={onTabChange}
-      />
-      <CustomersTab />
-      <FinancesTab />
-      <DispatchesTab />
-      <ChatTab />
-      <TripsTab 
-        viewingPackagesByDate={viewingPackagesByDate}
-        trips={trips}
-        tripsLoading={tripsLoading}
-        onAddPackage={onAddPackage}
-        onCreateTrip={onCreateTrip}
-        onViewPackagesByDate={onViewPackagesByDate}
-        onBack={onBack}
-      />
-      <MarketingTab />
-      <NotificationsTab />
-      <SettingsTab />
+      <TabsContent value="dashboard">
+        <DashboardTab
+          packageStats={packageStats}
+          customersCount={customersCount}
+          onNewPackage={onNewPackage}
+          onNewTrip={onNewTrip}
+          onViewNotifications={onViewNotifications}
+          onMobileDelivery={onMobileDelivery}
+          packages={packages}
+          filteredPackages={filteredPackages}
+          isLoading={isLoading}
+          onUpdate={onUpdate}
+          onTabChange={onTabChange}
+        />
+      </TabsContent>
+      
+      <TabsContent value="customers">
+        <CustomersTab />
+      </TabsContent>
+      
+      <TabsContent value="finances">
+        <FinancesTab />
+      </TabsContent>
+      
+      <TabsContent value="dispatches">
+        <DispatchesTab />
+      </TabsContent>
+      
+      <TabsContent value="chat">
+        <ChatTab />
+      </TabsContent>
+      
+      <TabsContent value="trips">
+        <TripsTab 
+          viewingPackagesByDate={viewingPackagesByDate}
+          trips={trips}
+          tripsLoading={tripsLoading}
+          onAddPackage={onAddPackage}
+          onCreateTrip={onCreateTrip}
+          onViewPackagesByDate={onViewPackagesByDate}
+          onBack={onBack}
+        />
+      </TabsContent>
+      
+      <TabsContent value="marketing">
+        <MarketingTab />
+      </TabsContent>
+      
+      <TabsContent value="notifications">
+        <NotificationsTab />
+      </TabsContent>
+      
+      <TabsContent value="settings">
+        <SettingsTab />
+      </TabsContent>
       
       {effectiveRole === 'admin' && (
         <>
-          <UsersTab />
-          <DeveloperTab />
-          <AdminInvestigationTab />
-          <DeletedPackagesTab />
+          <TabsContent value="users">
+            <UsersTab />
+          </TabsContent>
+          
+          <TabsContent value="developer">
+            <DeveloperTab />
+          </TabsContent>
+          
+          <TabsContent value="admin-investigation">
+            <AdminInvestigationTab />
+          </TabsContent>
+          
+          <TabsContent value="deleted-packages">
+            <DeletedPackagesTab />
+          </TabsContent>
         </>
       )}
     </Tabs>

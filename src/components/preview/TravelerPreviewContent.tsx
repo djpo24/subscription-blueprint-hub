@@ -6,7 +6,7 @@ import { FinancesTab } from '@/components/tabs/FinancesTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
 import { CustomersTab } from '@/components/tabs/CustomersTab';
-import { Tabs } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { DialogsContainer } from '@/components/dialogs/DialogsContainer';
@@ -98,35 +98,53 @@ export function TravelerPreviewContent({
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <DashboardTab
-                packageStats={packageStats}
-                customersCount={customersCount}
-                onNewPackage={onNewPackage}
-                onNewTrip={onNewTrip}
-                onViewNotifications={() => {}}
-                onMobileDelivery={onMobileDelivery}
-                packages={packages}
-                filteredPackages={filteredPackages}
-                isLoading={isLoading}
-                onUpdate={onPackagesUpdate}
-                onTabChange={setActiveTab}
-              />
+              <TabsContent value="dashboard">
+                <DashboardTab
+                  packageStats={packageStats}
+                  customersCount={customersCount}
+                  onNewPackage={onNewPackage}
+                  onNewTrip={onNewTrip}
+                  onViewNotifications={() => {}}
+                  onMobileDelivery={onMobileDelivery}
+                  packages={packages}
+                  filteredPackages={filteredPackages}
+                  isLoading={isLoading}
+                  onUpdate={onPackagesUpdate}
+                  onTabChange={setActiveTab}
+                />
+              </TabsContent>
               
-              <TripsTab 
-                viewingPackagesByDate={viewingPackagesByDate}
-                trips={trips}
-                tripsLoading={tripsLoading}
-                onAddPackage={onAddPackageToTrip}
-                onCreateTrip={onCreateTripFromCalendar}
-                onViewPackagesByDate={onViewPackagesByDate}
-                onBack={onBackToCalendar}
-              />
+              <TabsContent value="trips">
+                <TripsTab 
+                  viewingPackagesByDate={viewingPackagesByDate}
+                  trips={trips}
+                  tripsLoading={tripsLoading}
+                  onAddPackage={onAddPackageToTrip}
+                  onCreateTrip={onCreateTripFromCalendar}
+                  onViewPackagesByDate={onViewPackagesByDate}
+                  onBack={onBackToCalendar}
+                />
+              </TabsContent>
               
-              <DispatchesTab />
-              <FinancesTab />
-              <CustomersTab />
-              <ChatTab />
-              <NotificationsTab />
+              <TabsContent value="dispatches">
+                <DispatchesTab />
+              </TabsContent>
+              
+              <TabsContent value="finances">
+                <FinancesTab />
+              </TabsContent>
+              
+              <TabsContent value="customers">
+                <CustomersTab />
+              </TabsContent>
+              
+              <TabsContent value="chat">
+                <ChatTab />
+              </TabsContent>
+              
+              <TabsContent value="notifications">
+                <NotificationsTab />
+              </TabsContent>
             </Tabs>
 
             <DialogsContainer

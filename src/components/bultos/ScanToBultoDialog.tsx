@@ -254,11 +254,26 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Add to current list (keeping it in both bultos)
-    addPackageToList({ ...conflictPackage, label_count: newLabelCount });
+    // Increment the current bulto count (package stays in original bulto)
+    const { data: currentBulto } = await supabase
+      .from('bultos')
+      .select('total_packages')
+      .eq('id', selectedBultoId)
+      .single();
+
+    if (currentBulto) {
+      await supabase
+        .from('bultos')
+        .update({ total_packages: currentBulto.total_packages + 1 })
+        .eq('id', selectedBultoId);
+    }
+
+    // Invalidate queries to refresh the UI
+    queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['open-bultos'] });
     
     toast.success('Paquete adicional agregado', {
-      description: `Este paquete ahora tiene ${newLabelCount} etiquetas`
+      description: `El paquete ahora tiene ${newLabelCount} etiquetas y está en ambos bultos`
     });
 
     setShowConflictDialog(false);

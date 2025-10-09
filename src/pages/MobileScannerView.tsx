@@ -113,6 +113,11 @@ export default function MobileScannerView() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-4">
+        <BarcodeScanner 
+          onScanSuccess={handleScanSuccess}
+          mode="camera"
+        />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -139,21 +144,6 @@ export default function MobileScannerView() {
               <p className="text-2xl font-bold">
                 {scannedCount} producto{scannedCount !== 1 ? 's' : ''} escaneado{scannedCount !== 1 ? 's' : ''}
               </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <BarcodeScanner 
-          onScanSuccess={handleScanSuccess}
-          mode="camera"
-        />
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p>📱 Mantén la cámara estable sobre el código de barras</p>
-              <p>✨ El escaneo es automático</p>
-              <p>🔊 Escucharás un beep al escanear</p>
             </div>
           </CardContent>
         </Card>

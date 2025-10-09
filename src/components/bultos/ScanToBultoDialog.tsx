@@ -31,15 +31,20 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   useEffect(() => {
     if (!open) return;
 
+    let channel: any = null;
+
     const setupScanner = async () => {
       try {
+        console.log('[ScanToBulto] 🚀 Setting up scanner with session:', scanSessionId);
+        
         // Generate QR code
         const url = `${window.location.origin}${window.location.pathname}#/mobile-scanner?session=${scanSessionId}`;
+        console.log('[ScanToBulto] 📱 QR URL:', url);
         const qr = await QRCode.toDataURL(url, { width: 300 });
         setQrCodeUrl(qr);
 
         // Setup Realtime channel
-        const channel = supabase
+        channel = supabase
           .channel(`scan_session_${scanSessionId}`)
           .on(
             'postgres_changes',
@@ -53,6 +58,8 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
               const barcode = payload.new.barcode;
               
               console.log('[ScanToBulto] 📦 Received scan:', barcode);
+              console.log('[ScanToBulto] 📋 Current selectedBultoId:', selectedBultoId);
+              console.log('[ScanToBulto] 📋 Payload:', payload);
               
               // Detectar handshake de conexión
               if (barcode === '__connected__') {
@@ -69,6 +76,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
               
               // Buscar y agregar paquete
               if (selectedBultoId) {
+                console.log('[ScanToBulto] ✅ Processing barcode:', barcode);
                 await handleScan(barcode);
                 
                 // Marcar como procesado
@@ -76,21 +84,33 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
                   .from('scan_sessions')
                   .update({ processed: true })
                   .eq('id', payload.new.id);
+              } else {
+                console.log('[ScanToBulto] ⚠️ No bulto selected, skipping scan');
               }
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log('[ScanToBulto] 📡 Channel status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('[ScanToBulto] ✅ Successfully subscribed to Realtime');
+            }
+          });
 
-        return () => {
-          supabase.removeChannel(channel);
-        };
+        console.log('[ScanToBulto] 📡 Channel created and subscribing...');
       } catch (error) {
-        console.error('Error setting up scanner:', error);
+        console.error('[ScanToBulto] ❌ Error setting up scanner:', error);
         toast.error('Error al configurar escáner');
       }
     };
 
     setupScanner();
+
+    return () => {
+      console.log('[ScanToBulto] 🧹 Cleaning up Realtime channel');
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [open, scanSessionId, selectedBultoId]);
 
   // Query open bultos for the selected trip

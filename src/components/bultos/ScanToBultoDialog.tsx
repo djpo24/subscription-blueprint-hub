@@ -162,8 +162,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       .from('packages')
       .select(`
         *,
-        customers!packages_customer_id_fkey(name, email),
-        bultos!packages_bulto_id_fkey(id, bulto_number)
+        customers!packages_customer_id_fkey(name, email)
       `)
       .eq('tracking_number', barcode)
       .single();
@@ -182,9 +181,31 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Check if package is in another bulto - show conflict dialog
-    if (pkg.bulto_id && pkg.bulto_id !== selectedBultoId) {
-      setConflictPackage(pkg);
+    // Check ALL bultos where this package appears (via package_labels)
+    const { data: packageLabels } = await supabase
+      .from('package_labels')
+      .select(`
+        *,
+        bultos!package_labels_bulto_id_fkey(id, bulto_number)
+      `)
+      .eq('package_id', pkg.id);
+
+    // Filter out current bulto
+    const otherBultos = packageLabels?.filter(label => label.bulto_id !== selectedBultoId) || [];
+
+    // If package is in other bultos, show conflict dialog
+    if (otherBultos.length > 0) {
+      setConflictPackage({
+        ...pkg,
+        existingLabels: packageLabels,
+        otherBultos: otherBultos.map(label => ({
+          id: label.bulto_id,
+          bulto_number: label.bultos?.bulto_number,
+          label_id: label.id,
+          label_number: label.label_number,
+          is_main: label.is_main
+        }))
+      });
       setShowConflictDialog(true);
       return;
     }
@@ -200,19 +221,19 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
     });
   };
 
-  const handleMovePackage = async () => {
+  const handleMovePackage = async (selectedBultoIds: string[]) => {
     if (!conflictPackage) return;
 
-    // Add to current list marked for moving
+    // Add to current list marked for moving from multiple bultos
     addPackageToList({ 
       ...conflictPackage, 
       bulto_id: selectedBultoId,
       is_moved: true,
-      old_bulto_id: conflictPackage.bulto_id
+      old_bulto_ids: selectedBultoIds // Array of bulto IDs to move from
     });
     
     toast.success('Paquete marcado para trasladar', {
-      description: `Se trasladará al guardar`
+      description: `Se trasladará desde ${selectedBultoIds.length} bulto(s) al guardar`
     });
 
     setShowConflictDialog(false);
@@ -271,17 +292,11 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
               is_main: false
             });
         } else if (isMoved) {
-          // For moved packages: update bulto_id, update old bulto count, and manage labels
-          const oldBultoId = pkg.old_bulto_id;
+          // For moved packages: handle moving from multiple bultos
+          const oldBultoIds = pkg.old_bulto_ids || [];
           
-          // Update package to new bulto
-          await supabase
-            .from('packages')
-            .update({ bulto_id: selectedBultoId })
-            .eq('id', pkg.id);
-          
-          // Delete old label from previous bulto
-          if (oldBultoId) {
+          // Delete labels from selected old bultos
+          for (const oldBultoId of oldBultoIds) {
             await supabase
               .from('package_labels')
               .delete()
@@ -303,6 +318,20 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
             }
           }
           
+          // Check if package still has labels in other bultos
+          const { data: remainingLabels } = await supabase
+            .from('package_labels')
+            .select('*')
+            .eq('package_id', pkg.id);
+          
+          // If no remaining labels, update main bulto_id
+          if (!remainingLabels || remainingLabels.length === 0) {
+            await supabase
+              .from('packages')
+              .update({ bulto_id: selectedBultoId })
+              .eq('id', pkg.id);
+          }
+          
           // Create new label in current bulto
           await supabase
             .from('package_labels')
@@ -310,7 +339,7 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
               package_id: pkg.id,
               bulto_id: selectedBultoId,
               label_number: 1,
-              is_main: true
+              is_main: remainingLabels?.length === 0
             });
         } else {
           // For normal packages (first time or no previous bulto): update bulto_id and create main label
@@ -434,8 +463,8 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
             open={showConflictDialog}
             packageInfo={conflictPackage ? {
               tracking_number: conflictPackage.tracking_number,
-              bulto_number: conflictPackage.bultos?.bulto_number,
-              customer_name: conflictPackage.customers?.name
+              customer_name: conflictPackage.customers?.name,
+              otherBultos: conflictPackage.otherBultos
             } : null}
             onMove={handleMovePackage}
             onAddAdditional={handleAddAdditionalPackage}

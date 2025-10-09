@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ScannerConnectionPanel } from './ScannerConnectionPanel';
 import { ScannedPackagesList } from './ScannedPackagesList';
+import { PackageConflictDialog } from './PackageConflictDialog';
 import { Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -26,6 +27,8 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   const [isMobileConnected, setIsMobileConnected] = useState(false);
   const [selectedBultoId, setSelectedBultoId] = useState<string>('');
   const [scannedPackages, setScannedPackages] = useState<any[]>([]);
+  const [conflictPackage, setConflictPackage] = useState<any>(null);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
 
   // Generate QR code and setup Realtime when dialog opens
   useEffect(() => {
@@ -169,18 +172,97 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       return;
     }
 
-    // Check if package is in another bulto
+    // Check if package is in another bulto - show conflict dialog
     if (pkg.bulto_id && pkg.bulto_id !== selectedBultoId) {
-      const bultoInfo = pkg.bultos ? `Bulto #${pkg.bultos.bulto_number}` : 'otro bulto';
-      toast.warning('Paquete en otro bulto', {
-        description: `Este paquete está en ${bultoInfo}. Se moverá al bulto seleccionado.`
-      });
+      setConflictPackage(pkg);
+      setShowConflictDialog(true);
+      return;
     }
 
+    // Add package normally
+    addPackageToList(pkg);
+  };
+
+  const addPackageToList = (pkg: any) => {
     setScannedPackages(prev => [...prev, pkg]);
     toast.success('Paquete agregado', {
       description: `${pkg.tracking_number} - ${pkg.customers?.name}`
     });
+  };
+
+  const handleMovePackage = async () => {
+    if (!conflictPackage) return;
+
+    // Get old bulto for count update
+    const oldBultoId = conflictPackage.bulto_id;
+
+    // Update package to new bulto
+    const { error: updateError } = await supabase
+      .from('packages')
+      .update({ bulto_id: selectedBultoId })
+      .eq('id', conflictPackage.id);
+
+    if (updateError) {
+      toast.error('Error al trasladar paquete');
+      setShowConflictDialog(false);
+      setConflictPackage(null);
+      return;
+    }
+
+    // Update old bulto count (decrease)
+    if (oldBultoId) {
+      const { data: oldBulto } = await supabase
+        .from('bultos')
+        .select('total_packages')
+        .eq('id', oldBultoId)
+        .single();
+
+      if (oldBulto && oldBulto.total_packages > 0) {
+        await supabase
+          .from('bultos')
+          .update({ total_packages: oldBulto.total_packages - 1 })
+          .eq('id', oldBultoId);
+      }
+    }
+
+    // Add to current list with updated bulto_id
+    addPackageToList({ ...conflictPackage, bulto_id: selectedBultoId });
+    
+    toast.success('Paquete trasladado', {
+      description: `El paquete se movió al bulto actual`
+    });
+
+    setShowConflictDialog(false);
+    setConflictPackage(null);
+  };
+
+  const handleAddAdditionalPackage = async () => {
+    if (!conflictPackage) return;
+
+    // Increment label_count for the package
+    const newLabelCount = (conflictPackage.label_count || 1) + 1;
+    
+    const { error: updateError } = await supabase
+      .from('packages')
+      .update({ label_count: newLabelCount })
+      .eq('id', conflictPackage.id);
+
+    if (updateError) {
+      toast.error('Error al agregar paquete adicional');
+      setShowConflictDialog(false);
+      setConflictPackage(null);
+      return;
+    }
+
+    // Add to current list (keeping it in both bultos)
+    addPackageToList({ ...conflictPackage, label_count: newLabelCount });
+    
+    toast.success('Paquete adicional agregado', {
+      description: `Este paquete ahora tiene ${newLabelCount} etiquetas`
+    });
+
+    setShowConflictDialog(false);
+    setConflictPackage(null);
   };
 
   const handleRemovePackage = (packageId: string) => {
@@ -287,6 +369,21 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
           <ScannedPackagesList 
             packages={scannedPackages}
             onRemove={handleRemovePackage}
+          />
+
+          <PackageConflictDialog
+            open={showConflictDialog}
+            packageInfo={conflictPackage ? {
+              tracking_number: conflictPackage.tracking_number,
+              bulto_number: conflictPackage.bultos?.bulto_number,
+              customer_name: conflictPackage.customers?.name
+            } : null}
+            onMove={handleMovePackage}
+            onAddAdditional={handleAddAdditionalPackage}
+            onCancel={() => {
+              setShowConflictDialog(false);
+              setConflictPackage(null);
+            }}
           />
 
           <div className="flex gap-2">

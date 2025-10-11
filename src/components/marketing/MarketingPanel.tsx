@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketingSettings } from './MarketingSettings';
 import { MarketingContacts } from './MarketingContacts';
 import { MarketingCampaigns } from './MarketingCampaigns';
+import { MarketingFailedMessagesPanel } from './MarketingFailedMessagesPanel';
 import { MarketingStats } from './MarketingStats';
 import { FreightRatesManager } from './FreightRatesManager';
 import { TripNotificationsManager } from './TripNotificationsManager';
-import { Send, Settings, Users, BarChart3, DollarSign, Plane } from 'lucide-react';
+import { Send, Settings, Users, BarChart3, DollarSign, Plane, AlertCircle } from 'lucide-react';
 
 export function MarketingPanel() {
   return (
@@ -24,8 +25,12 @@ export function MarketingPanel() {
 
       <MarketingStats />
 
-      <Tabs defaultValue="campaigns" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="failed" className="w-full">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="failed" className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Fallidos
+          </TabsTrigger>
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Campañas
@@ -51,6 +56,10 @@ export function MarketingPanel() {
             Análisis
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="failed" className="space-y-6">
+          <MarketingFailedMessagesPanel />
+        </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6">
           <MarketingCampaigns />

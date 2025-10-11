@@ -197,6 +197,10 @@ export function CampaignNotificationsPanel() {
   const handleLoadFailedMessages = async () => {
     setIsLoadingFailed(true);
     try {
+      // Calcular fecha límite (48 horas atrás)
+      const fortyEightHoursAgo = new Date();
+      fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+
       const { data: failedNotifications, error } = await supabase
         .from('notification_log')
         .select(`
@@ -210,6 +214,7 @@ export function CampaignNotificationsPanel() {
         `)
         .eq('status', 'failed')
         .eq('notification_type', 'trip_campaign')
+        .gte('created_at', fortyEightHoursAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(500);
 
@@ -220,7 +225,7 @@ export function CampaignNotificationsPanel() {
       if (!failedNotifications || failedNotifications.length === 0) {
         toast({
           title: "Sin mensajes fallidos",
-          description: "No se encontraron mensajes fallidos de campañas anteriores",
+          description: "No se encontraron mensajes fallidos en las últimas 48 horas",
         });
         setIsLoadingFailed(false);
         return;
@@ -245,7 +250,7 @@ export function CampaignNotificationsPanel() {
 
       toast({
         title: "Mensajes fallidos cargados",
-        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de campañas anteriores`,
+        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de las últimas 48 horas`,
       });
     } catch (error: any) {
       console.error('Error loading failed messages:', error);

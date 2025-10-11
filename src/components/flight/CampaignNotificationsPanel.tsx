@@ -197,7 +197,7 @@ export function CampaignNotificationsPanel() {
   const handleLoadFailedMessages = async () => {
     setIsLoadingFailed(true);
     try {
-      console.log('🔍 Identificando la última campaña enviada...');
+      console.log('🔍 Identificando clientes sin mensaje en la última campaña...');
 
       // Primero, identificar la fecha de la última campaña
       const { data: lastCampaignData, error: lastCampaignError } = await supabase
@@ -217,75 +217,64 @@ export function CampaignNotificationsPanel() {
       
       console.log(`📅 Última campaña: ${campaignDateStr}`);
 
-      // Buscar mensajes fallidos solo de esa fecha (mismo día)
-      const startOfDay = new Date(campaignDateStr + 'T00:00:00Z');
-      const endOfDay = new Date(campaignDateStr + 'T23:59:59Z');
-
-      const { data: failedNotifications, error } = await supabase
-        .from('notification_log')
-        .select(`
-          *,
-          customers!customer_id (
-            id,
-            name,
-            phone,
-            whatsapp_number
-          )
-        `)
-        .eq('status', 'failed')
-        .eq('notification_type', 'trip_campaign')
-        .gte('created_at', startOfDay.toISOString())
-        .lte('created_at', endOfDay.toISOString())
-        .order('created_at', { ascending: false });
+      // Buscar clientes que NO recibieron mensaje en esa fecha
+      const { data: customersWithoutMessage, error } = await supabase
+        .from('customers')
+        .select('*')
+        .not('name', 'like', '%TEST_USER%')
+        .neq('phone', '0000000000')
+        .neq('phone', '0');
 
       if (error) {
         throw error;
       }
 
-      console.log(`📊 Encontrados ${failedNotifications?.length || 0} mensajes fallidos en la campaña del ${campaignDateStr}`);
+      // Filtrar los que no tienen registro en notification_log para esa fecha
+      const { data: sentMessages } = await supabase
+        .from('notification_log')
+        .select('customer_id')
+        .eq('notification_type', 'trip_campaign')
+        .gte('created_at', campaignDateStr + 'T00:00:00Z')
+        .lte('created_at', campaignDateStr + 'T23:59:59Z');
 
-      if (!failedNotifications || failedNotifications.length === 0) {
+      const sentCustomerIds = new Set(sentMessages?.map(m => m.customer_id) || []);
+      
+      const customersToRetry = customersWithoutMessage.filter(customer => 
+        !sentCustomerIds.has(customer.id) &&
+        (customer.whatsapp_number || customer.phone)
+      );
+
+      console.log(`📊 Encontrados ${customersToRetry.length} clientes sin mensaje en la campaña del ${campaignDateStr}`);
+
+      if (!customersToRetry || customersToRetry.length === 0) {
         toast({
-          title: "Sin mensajes fallidos",
-          description: `No se encontraron mensajes fallidos en la última campaña (${campaignDateStr})`,
+          title: "Sin clientes pendientes",
+          description: `Todos los clientes recibieron el mensaje en la última campaña (${campaignDateStr})`,
         });
         setIsLoadingFailed(false);
         return;
       }
 
-      // Filtrar usuarios de prueba y convertir a formato PreparedMessage
-      const failedMessages: PreparedMessage[] = failedNotifications
-        .filter(n => {
-          if (!n.customers) return false;
-          
-          // Filtrar usuarios de prueba
-          const isTestUser = n.customers.name?.includes('TEST_USER_DO_NOT_SAVE') || 
-                            n.customers.phone === '0000000000' || 
-                            n.customers.whatsapp_number === '0000000000' ||
-                            n.customers.phone === '0' ||
-                            n.customers.whatsapp_number === '0';
-          
-          return !isTestUser;
-        })
-        .map(notification => ({
-          customer: {
-            id: notification.customers.id,
-            name: notification.customers.name,
-            phone: notification.customers.phone,
-            whatsapp_number: notification.customers.whatsapp_number
-          },
-          message: notification.message
-        }));
+      // Convertir a formato PreparedMessage generando los mensajes personalizados
+      const failedMessages: PreparedMessage[] = customersToRetry.map(customer => ({
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          whatsapp_number: customer.whatsapp_number
+        },
+        message: generatePersonalizedMessage(customer)
+      }));
 
-      console.log(`✅ Mensajes válidos después de filtrar pruebas: ${failedMessages.length}`);
+      console.log(`✅ Clientes recuperados para reenvío: ${failedMessages.length}`);
 
       setFailedMessagesLoaded(failedMessages);
       setPreparedMessages(failedMessages);
       setLoadedCustomers(failedMessages.map(m => m.customer));
 
       toast({
-        title: "Mensajes fallidos recuperados",
-        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de la última campaña (${campaignDateStr})`,
+        title: "Clientes recuperados",
+        description: `Se recuperaron ${failedMessages.length} clientes que no recibieron mensaje en la última campaña (${campaignDateStr})`,
       });
     } catch (error: any) {
       console.error('Error loading failed messages:', error);

@@ -197,9 +197,7 @@ export function CampaignNotificationsPanel() {
   const handleLoadFailedMessages = async () => {
     setIsLoadingFailed(true);
     try {
-      // Calcular fecha límite (48 horas atrás)
-      const fortyEightHoursAgo = new Date();
-      fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+      console.log('🔍 Buscando todos los mensajes fallidos de campañas...');
 
       const { data: failedNotifications, error } = await supabase
         .from('notification_log')
@@ -214,26 +212,38 @@ export function CampaignNotificationsPanel() {
         `)
         .eq('status', 'failed')
         .eq('notification_type', 'trip_campaign')
-        .gte('created_at', fortyEightHoursAgo.toISOString())
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(1500);
 
       if (error) {
         throw error;
       }
 
+      console.log(`📊 Encontrados ${failedNotifications?.length || 0} mensajes fallidos en total`);
+
       if (!failedNotifications || failedNotifications.length === 0) {
         toast({
           title: "Sin mensajes fallidos",
-          description: "No se encontraron mensajes fallidos en las últimas 48 horas",
+          description: "No se encontraron mensajes fallidos de campañas anteriores",
         });
         setIsLoadingFailed(false);
         return;
       }
 
-      // Convertir a formato PreparedMessage
+      // Filtrar usuarios de prueba y convertir a formato PreparedMessage
       const failedMessages: PreparedMessage[] = failedNotifications
-        .filter(n => n.customers)
+        .filter(n => {
+          if (!n.customers) return false;
+          
+          // Filtrar usuarios de prueba
+          const isTestUser = n.customers.name?.includes('TEST_USER_DO_NOT_SAVE') || 
+                            n.customers.phone === '0000000000' || 
+                            n.customers.whatsapp_number === '0000000000' ||
+                            n.customers.phone === '0' ||
+                            n.customers.whatsapp_number === '0';
+          
+          return !isTestUser;
+        })
         .map(notification => ({
           customer: {
             id: notification.customers.id,
@@ -244,13 +254,15 @@ export function CampaignNotificationsPanel() {
           message: notification.message
         }));
 
+      console.log(`✅ Mensajes válidos después de filtrar pruebas: ${failedMessages.length}`);
+
       setFailedMessagesLoaded(failedMessages);
       setPreparedMessages(failedMessages);
       setLoadedCustomers(failedMessages.map(m => m.customer));
 
       toast({
-        title: "Mensajes fallidos cargados",
-        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de las últimas 48 horas`,
+        title: "Mensajes fallidos recuperados",
+        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de campañas anteriores (${failedNotifications.length} totales, filtrados usuarios de prueba)`,
       });
     } catch (error: any) {
       console.error('Error loading failed messages:', error);

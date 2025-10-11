@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Megaphone, Send, Eye, Users, MessageSquare, TestTube, Package, Trash2, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerData } from '@/hooks/useCustomerData';
 import { useTrips } from '@/hooks/useTrips';
@@ -64,6 +64,8 @@ export function CampaignNotificationsPanel() {
   const [sendingStatus, setSendingStatus] = useState<SendingStatus[]>([]);
   const [sentCount, setSentCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const [failedMessagesLoaded, setFailedMessagesLoaded] = useState<any[]>([]);
+  const [isLoadingFailed, setIsLoadingFailed] = useState(false);
   
   const { toast } = useToast();
   const { data: customers, isLoading: loadingCustomers } = useCustomerData();
@@ -192,15 +194,81 @@ export function CampaignNotificationsPanel() {
     cleanTestContacts.mutate();
   };
 
+  const handleLoadFailedMessages = async () => {
+    setIsLoadingFailed(true);
+    try {
+      const { data: failedNotifications, error } = await supabase
+        .from('notification_log')
+        .select(`
+          *,
+          customers!customer_id (
+            id,
+            name,
+            phone,
+            whatsapp_number
+          )
+        `)
+        .eq('status', 'failed')
+        .eq('notification_type', 'trip_campaign')
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (error) {
+        throw error;
+      }
+
+      if (!failedNotifications || failedNotifications.length === 0) {
+        toast({
+          title: "Sin mensajes fallidos",
+          description: "No se encontraron mensajes fallidos de campañas anteriores",
+        });
+        setIsLoadingFailed(false);
+        return;
+      }
+
+      // Convertir a formato PreparedMessage
+      const failedMessages: PreparedMessage[] = failedNotifications
+        .filter(n => n.customers)
+        .map(notification => ({
+          customer: {
+            id: notification.customers.id,
+            name: notification.customers.name,
+            phone: notification.customers.phone,
+            whatsapp_number: notification.customers.whatsapp_number
+          },
+          message: notification.message
+        }));
+
+      setFailedMessagesLoaded(failedMessages);
+      setPreparedMessages(failedMessages);
+      setLoadedCustomers(failedMessages.map(m => m.customer));
+
+      toast({
+        title: "Mensajes fallidos cargados",
+        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de campañas anteriores`,
+      });
+    } catch (error: any) {
+      console.error('Error loading failed messages:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los mensajes fallidos",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingFailed(false);
+    }
+  };
+
   const handleClearMessages = () => {
     setLoadedCustomers([]);
     setPreparedMessages([]);
+    setFailedMessagesLoaded([]);
     setSendingStatus([]);
     setSentCount(0);
     setFailedCount(0);
     toast({
       title: "Mensajes limpiados",
-      description: "Se han eliminado todos los mensajes preparados",
+      description: "Se han eliminado todos los mensajes preparados y recuperados",
     });
   };
 
@@ -482,6 +550,29 @@ export function CampaignNotificationsPanel() {
             </Select>
           </div>
 
+          <div className="p-4 bg-orange-50 border border-orange-200 rounded-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-orange-900 mb-1 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Recuperar Mensajes Fallidos
+                </h4>
+                <p className="text-sm text-orange-700">
+                  Carga los mensajes de campañas anteriores que no pudieron ser enviados para reintentarlos
+                </p>
+              </div>
+              <Button
+                onClick={handleLoadFailedMessages}
+                disabled={isLoadingFailed || isSendingCampaign}
+                variant="outline"
+                className="flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-100"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingFailed ? 'animate-spin' : ''}`} />
+                {isLoadingFailed ? 'Cargando...' : 'Recuperar Fallidos'}
+              </Button>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -494,9 +585,12 @@ export function CampaignNotificationsPanel() {
                 {loadingCustomers ? 'Cargando...' : 'Cargar Mensajes'}
               </Button>
               {loadedCustomers.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
+                <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4" />
-                  <span>{loadedCustomers.length} mensajes preparados</span>
+                  <span className={failedMessagesLoaded.length > 0 ? "text-orange-600 font-medium" : "text-green-600"}>
+                    {loadedCustomers.length} mensajes preparados
+                    {failedMessagesLoaded.length > 0 && " (recuperados)"}
+                  </span>
                 </div>
               )}
             </div>
@@ -508,7 +602,7 @@ export function CampaignNotificationsPanel() {
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Limpiar Mensajes
+                Limpiar
               </Button>
             )}
           </div>

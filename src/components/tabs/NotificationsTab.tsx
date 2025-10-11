@@ -1,17 +1,22 @@
 
 import { FlightNotificationPanel } from '@/components/FlightNotificationPanel';
 import { NotificationLogTable } from '@/components/NotificationLogTable';
+import { FailedNotificationsPanel } from '@/components/FailedNotificationsPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ArrivalNotificationsPanel } from '@/components/flight/ArrivalNotificationsPanel';
 import { CampaignNotificationsPanel } from '@/components/flight/CampaignNotificationsPanel';
 import { ProximosViajesTestPanel } from '@/components/flight/ProximosViajesTestPanel';
-import { Bell, Plane, Megaphone, TestTube } from 'lucide-react';
+import { Bell, Plane, Megaphone, TestTube, AlertCircle } from 'lucide-react';
 
 export function NotificationsTab() {
   return (
     <div className="space-y-4 sm:space-y-8 px-2 sm:px-0">
-      <Tabs defaultValue="arrival" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="failed" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="failed" className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Fallidos
+          </TabsTrigger>
           <TabsTrigger value="arrival" className="flex items-center gap-2">
             <Plane className="h-4 w-4" />
             Llegadas
@@ -29,6 +34,10 @@ export function NotificationsTab() {
             Registro
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="failed" className="space-y-6">
+          <FailedNotificationsPanel />
+        </TabsContent>
 
         <TabsContent value="arrival" className="space-y-6">
           <ArrivalNotificationsPanel />

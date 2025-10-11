@@ -1,8 +1,10 @@
 
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Download } from 'lucide-react';
+import { Eye, Download, AlertCircle } from 'lucide-react';
+import { CampaignFailedMessagesDialog } from './CampaignFailedMessagesDialog';
 
 interface MarketingCampaign {
   id: string;
@@ -21,6 +23,14 @@ interface MarketingCampaignsTableProps {
 }
 
 export function MarketingCampaignsTable({ campaigns, isLoading }: MarketingCampaignsTableProps) {
+  const [selectedCampaign, setSelectedCampaign] = useState<{ id: string; name: string } | null>(null);
+  const [isFailedDialogOpen, setIsFailedDialogOpen] = useState(false);
+
+  const handleViewFailedMessages = (campaignId: string, campaignName: string) => {
+    setSelectedCampaign({ id: campaignId, name: campaignName });
+    setIsFailedDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -45,6 +55,7 @@ export function MarketingCampaignsTable({ campaigns, isLoading }: MarketingCampa
   };
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -95,6 +106,16 @@ export function MarketingCampaignsTable({ campaigns, isLoading }: MarketingCampa
                 <Button variant="ghost" size="sm">
                   <Eye className="h-4 w-4" />
                 </Button>
+                {campaign.failed_count > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewFailedMessages(campaign.id, campaign.campaign_name)}
+                    title="Ver mensajes fallidos"
+                  >
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm">
                   <Download className="h-4 w-4" />
                 </Button>
@@ -104,5 +125,15 @@ export function MarketingCampaignsTable({ campaigns, isLoading }: MarketingCampa
         ))}
       </TableBody>
     </Table>
+    
+    {selectedCampaign && (
+      <CampaignFailedMessagesDialog
+        isOpen={isFailedDialogOpen}
+        onOpenChange={setIsFailedDialogOpen}
+        campaignId={selectedCampaign.id}
+        campaignName={selectedCampaign.name}
+      />
+    )}
+  </>
   );
 }

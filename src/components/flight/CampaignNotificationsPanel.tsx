@@ -197,7 +197,29 @@ export function CampaignNotificationsPanel() {
   const handleLoadFailedMessages = async () => {
     setIsLoadingFailed(true);
     try {
-      console.log('🔍 Buscando todos los mensajes fallidos de campañas...');
+      console.log('🔍 Identificando la última campaña enviada...');
+
+      // Primero, identificar la fecha de la última campaña
+      const { data: lastCampaignData, error: lastCampaignError } = await supabase
+        .from('notification_log')
+        .select('created_at')
+        .eq('notification_type', 'trip_campaign')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastCampaignError || !lastCampaignData) {
+        throw new Error('No se encontró ninguna campaña');
+      }
+
+      const lastCampaignDate = new Date(lastCampaignData.created_at);
+      const campaignDateStr = lastCampaignDate.toISOString().split('T')[0];
+      
+      console.log(`📅 Última campaña: ${campaignDateStr}`);
+
+      // Buscar mensajes fallidos solo de esa fecha (mismo día)
+      const startOfDay = new Date(campaignDateStr + 'T00:00:00Z');
+      const endOfDay = new Date(campaignDateStr + 'T23:59:59Z');
 
       const { data: failedNotifications, error } = await supabase
         .from('notification_log')
@@ -212,19 +234,20 @@ export function CampaignNotificationsPanel() {
         `)
         .eq('status', 'failed')
         .eq('notification_type', 'trip_campaign')
-        .order('created_at', { ascending: false })
-        .limit(1500);
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString())
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      console.log(`📊 Encontrados ${failedNotifications?.length || 0} mensajes fallidos en total`);
+      console.log(`📊 Encontrados ${failedNotifications?.length || 0} mensajes fallidos en la campaña del ${campaignDateStr}`);
 
       if (!failedNotifications || failedNotifications.length === 0) {
         toast({
           title: "Sin mensajes fallidos",
-          description: "No se encontraron mensajes fallidos de campañas anteriores",
+          description: `No se encontraron mensajes fallidos en la última campaña (${campaignDateStr})`,
         });
         setIsLoadingFailed(false);
         return;
@@ -262,7 +285,7 @@ export function CampaignNotificationsPanel() {
 
       toast({
         title: "Mensajes fallidos recuperados",
-        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de campañas anteriores (${failedNotifications.length} totales, filtrados usuarios de prueba)`,
+        description: `Se recuperaron ${failedMessages.length} mensajes fallidos de la última campaña (${campaignDateStr})`,
       });
     } catch (error: any) {
       console.error('Error loading failed messages:', error);

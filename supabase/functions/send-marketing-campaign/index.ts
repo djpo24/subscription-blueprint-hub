@@ -128,8 +128,8 @@ serve(async (req) => {
     let successCount = 0;
     let failedCount = 0;
 
-    // Enviar mensajes a cada contacto
-    for (const contact of contacts) {
+    // Función para procesar un contacto individual
+    const processContact = async (contact: any) => {
       try {
         console.log(`📱 Sending message to ${contact.customer_name} (${contact.phone_number})`);
 
@@ -144,8 +144,7 @@ serve(async (req) => {
 
         if (messageError || !messageContent) {
           console.error(`❌ Error generating message for ${contact.customer_name}:`, messageError);
-          failedCount++;
-          continue;
+          return { success: false, contact };
         }
 
         // Crear registro en el log de mensajes de marketing
@@ -163,8 +162,7 @@ serve(async (req) => {
 
         if (logError) {
           console.error(`❌ Error creating message log for ${contact.customer_name}:`, logError);
-          failedCount++;
-          continue;
+          return { success: false, contact };
         }
 
         // Enviar mensaje por WhatsApp
@@ -192,8 +190,7 @@ serve(async (req) => {
             })
             .eq('id', messageLog.id);
           
-          failedCount++;
-          continue;
+          return { success: false, contact };
         }
 
         // Actualizar log como exitoso
@@ -214,12 +211,41 @@ serve(async (req) => {
           })
           .eq('id', contact.id);
 
-        successCount++;
         console.log(`✅ Message sent successfully to ${contact.customer_name}`);
+        return { success: true, contact };
 
       } catch (error) {
         console.error(`❌ Error processing contact ${contact.customer_name}:`, error);
-        failedCount++;
+        return { success: false, contact };
+      }
+    };
+
+    // Procesar contactos en lotes paralelos de 10
+    const BATCH_SIZE = 10;
+    console.log(`📦 Processing ${contacts.length} contacts in batches of ${BATCH_SIZE}`);
+    
+    for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
+      const batch = contacts.slice(i, i + BATCH_SIZE);
+      console.log(`🔄 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(contacts.length / BATCH_SIZE)}`);
+      
+      const results = await Promise.allSettled(
+        batch.map(contact => processContact(contact))
+      );
+
+      // Contar resultados
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value.success) {
+          successCount++;
+        } else {
+          failedCount++;
+        }
+      });
+
+      console.log(`✅ Batch completed: ${successCount} sent, ${failedCount} failed so far`);
+      
+      // Pequeña pausa entre lotes para no saturar la API de WhatsApp
+      if (i + BATCH_SIZE < contacts.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 

@@ -169,17 +169,18 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
     const cleanBarcode = barcode.trim();
     console.log('[ScanToBulto] Processing scan:', cleanBarcode, '(original:', barcode, ')');
     
-    // Check if package exists - buscar sin importar mayúsculas/minúsculas y solo paquetes NO eliminados
-    const { data: packages, error: searchError } = await supabase
+    // Check if package exists - búsqueda exacta por tracking_number
+    const { data: pkg, error: searchError } = await supabase
       .from('packages')
       .select(`
         *,
         customers!packages_customer_id_fkey(name, email)
       `)
-      .ilike('tracking_number', cleanBarcode)
-      .is('deleted_at', null);
+      .eq('tracking_number', cleanBarcode)
+      .is('deleted_at', null)
+      .maybeSingle();
 
-    console.log('[ScanToBulto] Search result:', { packages, searchError, cleanBarcode });
+    console.log('[ScanToBulto] Search result:', { pkg, searchError, cleanBarcode });
 
     if (searchError) {
       console.error('[ScanToBulto] ❌ Database error:', searchError);
@@ -200,8 +201,6 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       
       return;
     }
-    
-    const pkg = packages && packages.length > 0 ? packages[0] : null;
     
     if (!pkg) {
       const errorMsg = `No se encontró paquete con código ${cleanBarcode}`;

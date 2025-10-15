@@ -85,6 +85,13 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
                 return;
               }
               
+              // Detectar mensajes de error del escritorio
+              if (barcode.startsWith('ERROR:')) {
+                const errorMessage = barcode.replace('ERROR: ', '');
+                toast.error(errorMessage, { duration: 3000 });
+                return;
+              }
+              
               // Filtrar URLs (QR codes)
               if (barcode.startsWith('http://') || barcode.startsWith('https://')) {
                 console.log('[ScanToBulto] ⚠️ Ignoring URL scan');
@@ -165,12 +172,25 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
         customers!packages_customer_id_fkey(name, email)
       `)
       .eq('tracking_number', barcode)
-      .single();
+      .maybeSingle();
 
     if (error || !pkg) {
+      const errorMsg = `No se encontró paquete con código ${barcode}`;
+      console.log('[ScanToBulto] ❌ Package not found:', barcode);
       toast.error('Paquete no encontrado', {
-        description: `No se encontró paquete con código ${barcode}`
+        description: errorMsg
       });
+      
+      // Send error feedback to mobile by inserting error notification
+      await supabase
+        .from('scan_sessions')
+        .insert({
+          session_id: scanSessionId,
+          barcode: `ERROR: ${errorMsg}`,
+          processed: true,
+          created_by: null
+        });
+      
       return;
     }
 

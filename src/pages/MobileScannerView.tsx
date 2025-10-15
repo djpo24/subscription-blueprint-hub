@@ -79,6 +79,14 @@ export default function MobileScannerView() {
     console.log('[MobileScanner] 📦 Scanned barcode:', barcode);
     console.log('[MobileScanner] 📋 Session ID:', sessionId);
 
+    // Detectar mensajes de error del servidor
+    if (barcode.startsWith('ERROR:')) {
+      const errorMessage = barcode.replace('ERROR: ', '');
+      console.log('[MobileScanner] ❌ Error from server:', errorMessage);
+      toast.error(errorMessage, { duration: 3000 });
+      return;
+    }
+    
     // Filtrar URLs (QR codes)
     if (barcode.startsWith('http://') || barcode.startsWith('https://')) {
       console.log('[MobileScanner] ⚠️ Ignoring QR code URL');

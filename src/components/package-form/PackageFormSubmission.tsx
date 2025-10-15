@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { parseFormattedNumber } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -51,14 +52,18 @@ export function usePackageFormSubmission() {
         finalDescription = `${formData.description.trim()} - ${finalDescription}`;
       }
 
+      // Parse formatted numbers (remove thousand separators before parseFloat)
+      const freightValue = formData.freight ? parseFloat(parseFormattedNumber(formData.freight)) : 0;
+      const amountValue = formData.amountToCollect ? parseFloat(parseFormattedNumber(formData.amountToCollect)) : 0;
+
       // Preparar los datos para insertar
       const packageData = {
         tracking_number: trackingNumber,
         customer_id: customerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        freight: formData.freight ? parseFloat(formData.freight) : 0, // El flete siempre en COP
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        freight: freightValue, // El flete siempre en COP
+        amount_to_collect: amountValue,
         currency: formData.currency, // Esta es la divisa para el monto a cobrar, NO para el flete
         origin: tripData.origin,
         destination: tripData.destination,
@@ -71,6 +76,12 @@ export function usePackageFormSubmission() {
       console.log('💰 [PackageFormSubmission] Divisa para monto a cobrar:', packageData.currency);
       console.log('💰 [PackageFormSubmission] Monto a cobrar:', packageData.amount_to_collect);
       console.log('🚢 [PackageFormSubmission] Flete (siempre en COP):', packageData.freight);
+      console.log('🔍 [PackageFormSubmission] Raw values:', {
+        freightRaw: formData.freight,
+        freightParsed: freightValue,
+        amountRaw: formData.amountToCollect,
+        amountParsed: amountValue
+      });
 
       const { error } = await supabase
         .from('packages')

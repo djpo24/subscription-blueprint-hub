@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { parseFormattedNumber } from '@/utils/numberFormatter';
 
 interface Package {
   id: string;
@@ -88,6 +89,10 @@ export function useEditPackageFormSubmission({
       // FIXED: Use the currency directly from the form data (already validated)
       const currencyToSave = formData.currency;
 
+      // Parse formatted numbers (remove thousand separators before parseFloat)
+      const freightValue = formData.freight ? parseFloat(parseFormattedNumber(formData.freight)) : 0;
+      const amountValue = formData.amountToCollect ? parseFloat(parseFormattedNumber(formData.amountToCollect)) : 0;
+
       console.log('📤 [EditPackageFormSubmission] DATOS FINALES PARA GUARDAR:', {
         packageId: pkg.id,
         trackingNumber: pkg.tracking_number,
@@ -95,8 +100,10 @@ export function useEditPackageFormSubmission({
         currencyForm: formData.currency,
         currencyFinal: currencyToSave,
         currentStatus: pkg.status,
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+        freightRaw: formData.freight,
+        freightParsed: freightValue,
+        amountRaw: formData.amountToCollect,
+        amountParsed: amountValue
       });
 
       // CRITICAL: Preserve the current status during updates
@@ -104,8 +111,8 @@ export function useEditPackageFormSubmission({
         customer_id: customerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        freight: freightValue,
+        amount_to_collect: amountValue,
         currency: currencyToSave,
         origin: tripData.origin,
         destination: tripData.destination,

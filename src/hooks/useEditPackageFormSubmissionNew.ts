@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { parseFormattedNumber } from '@/utils/numberFormatter';
 
 type Currency = 'COP' | 'AWG';
 
@@ -111,6 +112,10 @@ export function useEditPackageFormSubmissionNew({
       // Ensure currency is valid
       const validCurrency: Currency = formData.currency === 'AWG' ? 'AWG' : 'COP';
 
+      // Parse formatted numbers (remove thousand separators before parseFloat)
+      const freightValue = formData.freight ? parseFloat(parseFormattedNumber(formData.freight)) : 0;
+      const amountValue = formData.amountToCollect ? parseFloat(parseFormattedNumber(formData.amountToCollect)) : 0;
+
       console.log('📤 [useEditPackageFormSubmissionNew] FINAL DATA TO SAVE:', {
         packageId: pkg.id,
         trackingNumber: pkg.tracking_number,
@@ -120,8 +125,10 @@ export function useEditPackageFormSubmissionNew({
         finalCustomerId,
         finalTripId,
         currentStatus: pkg.status,
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0
+        freightRaw: formData.freight,
+        freightParsed: freightValue,
+        amountRaw: formData.amountToCollect,
+        amountParsed: amountValue
       });
 
       // CRITICAL: Preserve the current status - do not change it during updates
@@ -129,8 +136,8 @@ export function useEditPackageFormSubmissionNew({
         customer_id: finalCustomerId,
         description: finalDescription,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        freight: formData.freight ? parseFloat(formData.freight) : 0,
-        amount_to_collect: formData.amountToCollect ? parseFloat(formData.amountToCollect) : 0,
+        freight: freightValue,
+        amount_to_collect: amountValue,
         currency: validCurrency,
         origin: tripData.origin,
         destination: tripData.destination,

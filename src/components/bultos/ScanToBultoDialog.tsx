@@ -74,34 +74,37 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
             async (payload) => {
               const barcode = payload.new.barcode;
               
-              console.log('[ScanToBulto] 📦 Received scan:', barcode);
+              // Limpiar el código de espacios y convertir a mayúsculas
+              const cleanBarcode = barcode.trim().toUpperCase();
+              
+              console.log('[ScanToBulto] 📦 Received scan:', cleanBarcode, '(original:', barcode, ')');
               console.log('[ScanToBulto] 📋 Current selectedBultoId:', selectedBultoId);
               console.log('[ScanToBulto] 📋 Payload:', payload);
               
               // Detectar handshake de conexión
-              if (barcode === '__connected__') {
+              if (cleanBarcode === '__CONNECTED__') {
                 setIsMobileConnected(true);
                 toast.success('📱 Celular conectado');
                 return;
               }
               
               // Detectar mensajes de error del escritorio
-              if (barcode.startsWith('ERROR:')) {
-                const errorMessage = barcode.replace('ERROR: ', '');
+              if (cleanBarcode.startsWith('ERROR:')) {
+                const errorMessage = cleanBarcode.replace('ERROR: ', '');
                 toast.error(errorMessage, { duration: 3000 });
                 return;
               }
               
               // Filtrar URLs (QR codes)
-              if (barcode.startsWith('http://') || barcode.startsWith('https://')) {
+              if (cleanBarcode.startsWith('HTTP://') || cleanBarcode.startsWith('HTTPS://')) {
                 console.log('[ScanToBulto] ⚠️ Ignoring URL scan');
                 return;
               }
               
               // Buscar y agregar paquete
               if (selectedBultoId) {
-                console.log('[ScanToBulto] ✅ Processing barcode:', barcode);
-                await handleScan(barcode);
+                console.log('[ScanToBulto] ✅ Processing barcode:', cleanBarcode);
+                await handleScan(cleanBarcode);
                 
                 // Marcar como procesado
                 await supabase
@@ -162,26 +165,31 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
   }, [openBultos, manualSelectedBultoId, preSelectedBultoId]);
 
   const handleScan = async (barcode: string) => {
-    console.log('[ScanToBulto] Processing scan:', barcode);
+    // Limpiar el código escaneado de espacios en blanco
+    const cleanBarcode = barcode.trim().toUpperCase();
+    console.log('[ScanToBulto] Processing scan:', cleanBarcode, '(original:', barcode, ')');
     
-    // Check if package exists
+    // Check if package exists - buscar sin importar mayúsculas/minúsculas y solo paquetes NO eliminados
     const { data: pkg, error } = await supabase
       .from('packages')
       .select(`
         *,
         customers!packages_customer_id_fkey(name, email)
       `)
-      .eq('tracking_number', barcode)
+      .ilike('tracking_number', cleanBarcode)
+      .is('deleted_at', null)
       .maybeSingle();
 
-    if (error || !pkg) {
-      const errorMsg = `No se encontró paquete con código ${barcode}`;
-      console.log('[ScanToBulto] ❌ Package not found:', barcode);
-      toast.error('Paquete no encontrado', {
+    console.log('[ScanToBulto] Search result:', { pkg, error, cleanBarcode });
+
+    if (error) {
+      console.error('[ScanToBulto] ❌ Database error:', error);
+      const errorMsg = `Error de base de datos: ${error.message}`;
+      toast.error('Error al buscar paquete', {
         description: errorMsg
       });
       
-      // Send error feedback to mobile by inserting error notification
+      // Send error feedback to mobile
       await supabase
         .from('scan_sessions')
         .insert({
@@ -193,6 +201,28 @@ export function ScanToBultoDialog({ open, onOpenChange, onSuccess, tripId, preSe
       
       return;
     }
+    
+    if (!pkg) {
+      const errorMsg = `No se encontró paquete con código ${cleanBarcode}`;
+      console.log('[ScanToBulto] ❌ Package not found:', cleanBarcode);
+      toast.error('Paquete no encontrado', {
+        description: errorMsg
+      });
+      
+      // Send error feedback to mobile
+      await supabase
+        .from('scan_sessions')
+        .insert({
+          session_id: scanSessionId,
+          barcode: `ERROR: ${errorMsg}`,
+          processed: true,
+          created_by: null
+        });
+      
+      return;
+    }
+    
+    console.log('[ScanToBulto] ✅ Package found:', pkg.tracking_number, pkg.id);
 
     // Check if already in current scan list
     const alreadyScanned = scannedPackages.some(p => p.id === pkg.id);

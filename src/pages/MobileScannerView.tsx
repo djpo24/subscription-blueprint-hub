@@ -62,6 +62,9 @@ export default function MobileScannerView() {
       return;
     }
 
+    // Limpiar el código escaneado de espacios y convertir a mayúsculas
+    const cleanBarcode = barcode.trim().toUpperCase();
+    
     // Verificar cooldown para prevenir escaneos demasiado rápidos
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTimeRef.current;
@@ -76,19 +79,19 @@ export default function MobileScannerView() {
       return;
     }
 
-    console.log('[MobileScanner] 📦 Scanned barcode:', barcode);
+    console.log('[MobileScanner] 📦 Scanned barcode:', cleanBarcode, '(original:', barcode, ')');
     console.log('[MobileScanner] 📋 Session ID:', sessionId);
 
     // Detectar mensajes de error del servidor
-    if (barcode.startsWith('ERROR:')) {
-      const errorMessage = barcode.replace('ERROR: ', '');
+    if (cleanBarcode.startsWith('ERROR:')) {
+      const errorMessage = cleanBarcode.replace('ERROR: ', '');
       console.log('[MobileScanner] ❌ Error from server:', errorMessage);
       toast.error(errorMessage, { duration: 3000 });
       return;
     }
     
     // Filtrar URLs (QR codes)
-    if (barcode.startsWith('http://') || barcode.startsWith('https://')) {
+    if (cleanBarcode.startsWith('HTTP://') || cleanBarcode.startsWith('HTTPS://')) {
       console.log('[MobileScanner] ⚠️ Ignoring QR code URL');
       toast.info('QR detectado - continúa escaneando productos');
       return;
@@ -107,7 +110,7 @@ export default function MobileScannerView() {
             .from('scan_sessions')
             .insert({
               session_id: sessionId,
-              barcode: barcode,
+              barcode: cleanBarcode, // Usar el código limpio
               processed: false,
               created_by: null
             })
@@ -138,7 +141,7 @@ export default function MobileScannerView() {
       const success = await saveWithRetry();
       if (success) {
         setScannedCount(prev => prev + 1);
-        toast.success(`✓ ${barcode}`, { duration: 1500 });
+        toast.success(`✓ ${cleanBarcode}`, { duration: 1500 });
       }
     } catch (error: any) {
       console.error('[MobileScanner] ❌ Error saving scan after retries:', error);

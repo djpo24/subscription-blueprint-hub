@@ -130,9 +130,9 @@ export function useChatData(): ChatData {
         return [];
       }
     },
-    staleTime: 30 * 1000, // 30 segundos - datos considerados frescos
+    staleTime: 5 * 1000, // 5 segundos - datos considerados frescos (más rápido para ver cambios)
     gcTime: 2 * 60 * 1000, // 2 minutos - tiempo en cache
-    refetchInterval: 10 * 1000, // Actualizar cada 10 segundos
+    refetchInterval: 5 * 1000, // Actualizar cada 5 segundos (más rápido)
     retry: 2, // Solo 2 reintentos
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

@@ -6,14 +6,14 @@ import { ChatViewDesktop } from './chat/ChatViewDesktop';
 import { ChatViewEmptyState } from './chat/ChatViewEmptyState';
 import { AutoResponseProvider } from './chat/AutoResponseProvider';
 import { useChatData } from '@/hooks/useChatData';
-import { useChatMessages } from '@/hooks/useChatMessages';
+import { useChatMessagesWithRefetch } from '@/hooks/useChatMessagesWithRefetch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ChatMessage } from '@/types/chatMessage';
 
 export function ChatView() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const { chatList, conversationsByPhone, isLoading } = useChatData();
-  const { handleSendMessage, isManualSending } = useChatMessages();
+  const { handleSendMessage, isManualSending } = useChatMessagesWithRefetch();
   const isMobile = useIsMobile();
 
   // Marcar como visitado cuando se accede a la vista de chat

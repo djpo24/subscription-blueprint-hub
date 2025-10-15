@@ -122,12 +122,6 @@ export function useChatMessages() {
         }
 
         console.log('✅ WhatsApp message sent successfully');
-        
-        // Show success toast for unregistered customers too
-        toast({
-          title: "¡Mensaje enviado!",
-          description: "Su mensaje ha sido enviado por WhatsApp correctamente",
-        });
       }
 
       console.log('🎉 Message sent successfully!');

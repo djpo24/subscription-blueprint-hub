@@ -260,12 +260,25 @@ export function ChatMessage({
               {/* Reacciones si las hay */}
               <ReactionOverlay reactions={message.reactions || []} />
 
-              {/* Timestamp detallado */}
-              <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200">
-                <Clock className="h-3 w-3 text-gray-400" />
-                <span className="text-xs text-gray-400">
-                  {messageDate} a las {messageTime}
-                </span>
+              {/* Timestamp detallado con checkmarks para mensajes enviados */}
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-gray-400" />
+                  <span className="text-xs text-gray-400">
+                    {messageDate} a las {messageTime}
+                  </span>
+                </div>
+                {/* Checkmarks para mensajes enviados (similar a WhatsApp) */}
+                {!isFromCustomer && (
+                  <div className="flex items-center gap-0.5">
+                    <svg className="h-3 w-3 text-blue-500" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7z"/>
+                    </svg>
+                    <svg className="h-3 w-3 text-blue-500 -ml-1.5" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7z"/>
+                    </svg>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

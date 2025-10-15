@@ -125,12 +125,17 @@ function ChatListItem({ chat, displayName, messageTime, selectedPhone, onChatSel
     indicatorStatus: packageIndicator?.status
   });
 
+  // Determinar si el último mensaje es del cliente (no respondido)
+  const isUnreplied = !chat.lastMessage.startsWith('Tú:');
+  
   return (
     <div
       onClick={() => onChatSelect(chat.phone)}
       className={`p-3 rounded-lg cursor-pointer transition-colors border ${
         selectedPhone === chat.phone
           ? 'bg-blue-50 border-blue-200'
+          : isUnreplied 
+          ? 'bg-green-50/50 hover:bg-green-50 border-green-100' 
           : 'hover:bg-gray-50 border-transparent'
       }`}
     >

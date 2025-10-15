@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,6 +11,9 @@ export default function MobileScannerView() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [scannedCount, setScannedCount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const lastScanTimeRef = useRef<number>(0);
+  const SCAN_COOLDOWN_MS = 800; // Cooldown entre escaneos
 
   useEffect(() => {
     const session = searchParams.get('session');
@@ -59,6 +62,20 @@ export default function MobileScannerView() {
       return;
     }
 
+    // Verificar cooldown para prevenir escaneos demasiado rápidos
+    const now = Date.now();
+    const timeSinceLastScan = now - lastScanTimeRef.current;
+    if (timeSinceLastScan < SCAN_COOLDOWN_MS) {
+      console.log('[MobileScanner] ⏳ Cooldown active, ignoring scan');
+      return;
+    }
+
+    // Prevenir procesamiento concurrente
+    if (isProcessing) {
+      console.log('[MobileScanner] ⏳ Already processing, ignoring scan');
+      return;
+    }
+
     console.log('[MobileScanner] 📦 Scanned barcode:', barcode);
     console.log('[MobileScanner] 📋 Session ID:', sessionId);
 
@@ -69,30 +86,68 @@ export default function MobileScannerView() {
       return;
     }
 
-    try {
-      console.log('[MobileScanner] 💾 Inserting scan into database...');
-      
-      const { data, error } = await supabase
-        .from('scan_sessions')
-        .insert({
-          session_id: sessionId,
-          barcode: barcode,
-          processed: false,
-          created_by: null // No user required
-        })
-        .select();
+    setIsProcessing(true);
+    lastScanTimeRef.current = now;
 
-      if (error) {
-        console.error('[MobileScanner] ❌ Insert error:', error);
-        throw error;
+    // Función para reintentar el guardado
+    const saveWithRetry = async (attempts = 3): Promise<boolean> => {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          console.log(`[MobileScanner] 💾 Attempt ${i + 1}/${attempts} - Inserting scan into database...`);
+          
+          const { data, error } = await supabase
+            .from('scan_sessions')
+            .insert({
+              session_id: sessionId,
+              barcode: barcode,
+              processed: false,
+              created_by: null
+            })
+            .select();
+
+          if (error) {
+            console.error(`[MobileScanner] ❌ Insert error (attempt ${i + 1}):`, error);
+            if (i < attempts - 1) {
+              // Esperar antes de reintentar (100ms * intento)
+              await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+              continue;
+            }
+            throw error;
+          }
+
+          console.log('[MobileScanner] ✅ Scan inserted successfully:', data);
+          return true;
+        } catch (error) {
+          if (i === attempts - 1) {
+            throw error;
+          }
+        }
       }
+      return false;
+    };
 
-      console.log('[MobileScanner] ✅ Scan inserted successfully:', data);
-      setScannedCount(prev => prev + 1);
-      toast.success(`✓ ${barcode}`);
-    } catch (error) {
-      console.error('[MobileScanner] ❌ Error saving scan:', error);
-      toast.error('Error al guardar escaneo');
+    try {
+      const success = await saveWithRetry();
+      if (success) {
+        setScannedCount(prev => prev + 1);
+        toast.success(`✓ ${barcode}`, { duration: 1500 });
+      }
+    } catch (error: any) {
+      console.error('[MobileScanner] ❌ Error saving scan after retries:', error);
+      
+      // Mensajes de error más específicos
+      let errorMessage = 'Error al guardar escaneo';
+      if (error?.message?.includes('JWT')) {
+        errorMessage = 'Sesión expirada. Escanea el QR nuevamente';
+      } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+        errorMessage = 'Error de conexión. Verifica tu red';
+      } else if (error?.code === 'PGRST116') {
+        errorMessage = 'Error de permisos. Contacta soporte';
+      }
+      
+      toast.error(errorMessage, { duration: 3000 });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -117,6 +172,16 @@ export default function MobileScannerView() {
           onScanSuccess={handleScanSuccess}
           mode="camera"
         />
+        
+        {isProcessing && (
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="p-3">
+              <p className="text-sm text-yellow-700 font-medium text-center">
+                ⏳ Guardando escaneo...
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

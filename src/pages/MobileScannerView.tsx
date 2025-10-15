@@ -62,8 +62,8 @@ export default function MobileScannerView() {
       return;
     }
 
-    // Limpiar el código escaneado de espacios y convertir a mayúsculas
-    const cleanBarcode = barcode.trim().toUpperCase();
+    // Limpiar el código escaneado de espacios solamente
+    const cleanBarcode = barcode.trim();
     
     // Verificar cooldown para prevenir escaneos demasiado rápidos
     const now = Date.now();
@@ -91,7 +91,7 @@ export default function MobileScannerView() {
     }
     
     // Filtrar URLs (QR codes)
-    if (cleanBarcode.startsWith('HTTP://') || cleanBarcode.startsWith('HTTPS://')) {
+    if (cleanBarcode.startsWith('http://') || cleanBarcode.startsWith('https://')) {
       console.log('[MobileScanner] ⚠️ Ignoring QR code URL');
       toast.info('QR detectado - continúa escaneando productos');
       return;

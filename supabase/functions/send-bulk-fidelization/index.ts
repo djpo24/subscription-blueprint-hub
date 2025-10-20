@@ -87,7 +87,7 @@ serve(async (req) => {
         let whatsappPayload;
 
         if (useTemplate && templateName) {
-          // Send using WhatsApp Business Template
+          // Send using WhatsApp Business Template - ESTRUCTURA IDÉNTICA A PROXIMOS_VIAJES
           console.log(`📋 Usando template: ${templateName} para ${message.customerName}`);
           
           // Preparar parámetros según el tipo de mensaje
@@ -95,7 +95,7 @@ serve(async (req) => {
           
           if (message.messageType === 'redeemable') {
             // Template "canjea" - para clientes con ≥1000 puntos
-            // Parámetros: nombre_cliente, puntos_disponibles, kilos_disponibles
+            // Parámetros: {{1}} nombre_cliente, {{2}} puntos_disponibles, {{3}} kilos_disponibles
             const kilos = Math.floor(message.pointsAvailable / 1000);
             templateParameters = [
               { type: 'text', text: message.customerName },
@@ -105,7 +105,7 @@ serve(async (req) => {
             console.log(`🎁 Parámetros canjeable: nombre="${message.customerName}", puntos=${message.pointsAvailable}, kilos=${kilos}`);
           } else {
             // Template "pendiente_canje" - para clientes con <1000 puntos
-            // Parámetros: nombre_cliente, puntos_disponibles, puntos_faltantes
+            // Parámetros: {{1}} nombre_cliente, {{2}} puntos_disponibles, {{3}} puntos_faltantes
             const puntosFaltantes = Math.max(0, 1000 - message.pointsAvailable);
             templateParameters = [
               { type: 'text', text: message.customerName },
@@ -115,6 +115,7 @@ serve(async (req) => {
             console.log(`📈 Parámetros motivacional: nombre="${message.customerName}", puntos=${message.pointsAvailable}, faltantes=${puntosFaltantes}`);
           }
           
+          // ESTRUCTURA IDÉNTICA A PROXIMOS_VIAJES
           whatsappPayload = {
             messaging_product: 'whatsapp',
             to: phone,
@@ -133,7 +134,7 @@ serve(async (req) => {
             }
           };
 
-          console.log(`✅ Template payload configurado:`);
+          console.log('✅ Template payload configurado:');
           console.log(JSON.stringify(whatsappPayload, null, 2));
         } else {
           // Send using plain text message (fallback)

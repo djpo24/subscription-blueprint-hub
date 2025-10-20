@@ -70,15 +70,17 @@ serve(async (req) => {
         let templateLanguage = 'es_CO';
 
         if (message.messageType === 'redeemable') {
-          useTemplate = settings.redeemable_use_template;
+          useTemplate = settings.redeemable_use_template && !!settings.redeemable_template_name;
           templateName = settings.redeemable_template_name || '';
           templateLanguage = settings.redeemable_template_language || 'es_CO';
           console.log(`🎁 Mensaje tipo: CANJEABLE (≥1000 puntos)`);
+          console.log(`📋 Usar template: ${useTemplate}, nombre: ${templateName}`);
         } else {
-          useTemplate = settings.motivational_use_template;
+          useTemplate = settings.motivational_use_template && !!settings.motivational_template_name;
           templateName = settings.motivational_template_name || '';
           templateLanguage = settings.motivational_template_language || 'es_CO';
           console.log(`📈 Mensaje tipo: MOTIVACIONAL (<1000 puntos)`);
+          console.log(`📋 Usar template: ${useTemplate}, nombre: ${templateName}`);
         }
 
         let whatsappResponse;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useFidelizationData } from '@/hooks/useFidelizationData';
@@ -6,7 +6,8 @@ import { useBulkFidelizationSettings } from '@/hooks/useBulkFidelizationSettings
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, Eye, RefreshCw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Send, Eye, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,6 +25,10 @@ export function BulkMessagePanel() {
   const { data: settings, isLoading: loadingSettings } = useBulkFidelizationSettings();
   const [isSending, setIsSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [sendingProgress, setSendingProgress] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  const [totalMessages, setTotalMessages] = useState(0);
 
   const handleRefreshCustomers = async () => {
     console.log('🔄 Recargando datos de fidelización...');
@@ -89,12 +94,54 @@ export function BulkMessagePanel() {
   const redeemableCount = messagePreviews.filter(m => m.messageType === 'redeemable').length;
   const motivationalCount = messagePreviews.filter(m => m.messageType === 'motivational').length;
 
+  // Monitorear progreso en tiempo real
+  useEffect(() => {
+    if (!isSending || totalMessages === 0) return;
+
+    const channel = supabase
+      .channel('bulk-fidelization-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bulk_fidelization_log',
+        },
+        (payload) => {
+          console.log('📨 Nuevo mensaje registrado:', payload);
+          if (payload.new.status === 'sent') {
+            setSentCount(prev => prev + 1);
+          } else if (payload.new.status === 'failed') {
+            setFailedCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isSending, totalMessages]);
+
+  // Actualizar progreso
+  useEffect(() => {
+    if (totalMessages > 0) {
+      const progress = ((sentCount + failedCount) / totalMessages) * 100;
+      setSendingProgress(progress);
+    }
+  }, [sentCount, failedCount, totalMessages]);
+
   const handleSendMessages = async () => {
     if (!messagePreviews.length) {
       toast.error('No hay mensajes para enviar');
       return;
     }
 
+    // Reset counters
+    setSentCount(0);
+    setFailedCount(0);
+    setTotalMessages(messagePreviews.length);
+    setSendingProgress(0);
     setIsSending(true);
 
     try {
@@ -104,12 +151,19 @@ export function BulkMessagePanel() {
 
       if (error) throw error;
 
-      toast.success(`Mensajes enviados: ${data.successCount} exitosos, ${data.failedCount} fallidos`);
-      setShowPreview(false);
+      toast.success(`✅ Envío completado: ${data.successCount} exitosos, ${data.failedCount} fallidos`);
+      
+      // Reset after a delay
+      setTimeout(() => {
+        setShowPreview(false);
+        setSendingProgress(0);
+        setSentCount(0);
+        setFailedCount(0);
+        setTotalMessages(0);
+      }, 3000);
     } catch (error) {
       console.error('Error sending bulk messages:', error);
       toast.error('Error al enviar los mensajes');
-    } finally {
       setIsSending(false);
     }
   };
@@ -176,11 +230,39 @@ export function BulkMessagePanel() {
             </div>
           </ScrollArea>
 
+          {isSending && (
+            <div className="space-y-3 p-4 bg-muted rounded-lg">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Progreso del envío</span>
+                <span>{Math.round(sendingProgress)}%</span>
+              </div>
+              <Progress value={sendingProgress} className="w-full" />
+              <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <Send className="h-3 w-3 text-blue-600" />
+                  <span className="font-semibold">{sentCount + failedCount}/{totalMessages}</span>
+                  <span className="text-muted-foreground">Procesados</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span className="font-semibold">{sentCount}</span>
+                  <span className="text-muted-foreground">Exitosos</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <XCircle className="h-3 w-3 text-red-600" />
+                  <span className="font-semibold">{failedCount}</span>
+                  <span className="text-muted-foreground">Fallidos</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               onClick={() => setShowPreview(false)}
               className="flex-1"
+              disabled={isSending}
             >
               Cancelar
             </Button>

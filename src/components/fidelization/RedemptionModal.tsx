@@ -62,15 +62,25 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
     try {
       const { data: packages, error } = await supabase
         .from('packages')
-        .select('id, tracking_number, description, status, amount_to_collect, currency, weight')
+        .select(`
+          id, 
+          tracking_number, 
+          description, 
+          status, 
+          amount_to_collect, 
+          currency, 
+          weight,
+          trips!inner(status)
+        `)
         .eq('customer_id', customer.id)
         .in('status', ['pending', 'recibido', 'procesado', 'en_destino'])
+        .eq('trips.status', 'scheduled')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      console.log('📦 Available packages for redemption:', packages);
+      console.log('📦 Available packages for redemption (scheduled trips only):', packages);
       setAvailablePackages(packages || []);
     } catch (error) {
       console.error('Error fetching packages:', error);
@@ -336,7 +346,7 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Solo se muestran paquetes antes de ser entregados (Pendiente, Recibido, Procesado, En Destino)
+                  Solo se muestran paquetes en viajes programados (Pendiente, Recibido, Procesado, En Destino)
                 </p>
               </div>
 

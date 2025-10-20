@@ -20,6 +20,42 @@ serve(async (req) => {
 
     console.log('📱 Sending redemption code to customer:', customerName);
 
+    // Check rate limiting: 10 minutes between requests
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const { data: recentCodes, error: recentError } = await supabase
+      .from('point_redemptions')
+      .select('created_at')
+      .eq('customer_id', customerId)
+      .gte('created_at', tenMinutesAgo.toISOString())
+      .limit(1);
+
+    if (recentError) {
+      console.error('❌ Error checking recent codes:', recentError);
+    }
+
+    if (recentCodes && recentCodes.length > 0) {
+      const waitMinutes = Math.ceil((new Date(recentCodes[0].created_at).getTime() + 10 * 60 * 1000 - Date.now()) / 60000);
+      throw new Error(`Debe esperar ${waitMinutes} minutos antes de solicitar otro código`);
+    }
+
+    // Check daily limit: maximum 3 codes per day
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const { data: todayCodes, error: dailyError } = await supabase
+      .from('point_redemptions')
+      .select('id')
+      .eq('customer_id', customerId)
+      .gte('created_at', todayStart.toISOString());
+
+    if (dailyError) {
+      console.error('❌ Error checking daily limit:', dailyError);
+    }
+
+    if (todayCodes && todayCodes.length >= 3) {
+      throw new Error('Has alcanzado el límite de 3 códigos por día. Intenta mañana.');
+    }
+
     // Get template settings from database
     const { data: settings, error: settingsError } = await supabase
       .from('redemption_message_settings')
@@ -80,9 +116,10 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
 
     // Prepare WhatsApp message payload
     let whatsappPayload;
+    let plainTextMessage: string | undefined;
 
     if (settings?.use_template && settings?.template_name) {
-      // Use WhatsApp Business Template with parameters
+      // Use WhatsApp Business Template with only verification code parameter
       console.log('📋 Using WhatsApp Business Template:', settings.template_name);
       
       whatsappPayload = {
@@ -98,9 +135,6 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: customerName },
-                { type: 'text', text: pointsToRedeem.toString() },
-                { type: 'text', text: kilosEarned.toString() },
                 { type: 'text', text: verificationCode }
               ]
             }
@@ -111,17 +145,14 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
       // Fallback to plain text message
       console.log('📝 Using plain text message (template not configured)');
       
-      const message = messageTemplate
-        .replace(/{{nombre_cliente}}/g, customerName)
-        .replace(/{{puntos}}/g, pointsToRedeem.toString())
-        .replace(/{{kilos}}/g, kilosEarned.toString())
+      plainTextMessage = messageTemplate
         .replace(/{{codigo}}/g, verificationCode);
 
       whatsappPayload = {
         messaging_product: 'whatsapp',
         to: customerPhone.replace(/^\+/, ''),
         type: 'text',
-        text: { body: message }
+        text: { body: plainTextMessage }
       };
     }
 
@@ -149,15 +180,17 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
     const whatsappData = await whatsappResponse.json();
     console.log('✅ WhatsApp message sent:', whatsappData);
 
-    // Log the notification
-    await supabase
-      .from('notification_log')
-      .insert({
-        customer_id: customerId,
-        message: message,
-        notification_type: 'redemption_code',
-        status: 'sent'
-      });
+    // Log the notification (only if plain text was used)
+    if (!settings?.use_template && plainTextMessage) {
+      await supabase
+        .from('notification_log')
+        .insert({
+          customer_id: customerId,
+          message: plainTextMessage,
+          notification_type: 'redemption_code',
+          status: 'sent'
+        });
+    }
 
     return new Response(
       JSON.stringify({ 

@@ -48,9 +48,6 @@ export function RedemptionMessageSettings() {
 
   const handleTestMessage = () => {
     const testMessage = messageTemplate
-      .replace(/{{nombre_cliente}}/g, 'María González')
-      .replace(/{{puntos}}/g, '2500')
-      .replace(/{{kilos}}/g, '2.5')
       .replace(/{{codigo}}/g, '1234');
     
     toast({
@@ -90,9 +87,6 @@ export function RedemptionMessageSettings() {
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-6">
             <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm text-sm whitespace-pre-wrap font-sans">
               {messageTemplate
-                .replace(/{{nombre_cliente}}/g, 'María González')
-                .replace(/{{puntos}}/g, '2500')
-                .replace(/{{kilos}}/g, '2.5')
                 .replace(/{{codigo}}/g, '1234')}
             </div>
           </div>
@@ -178,16 +172,16 @@ export function RedemptionMessageSettings() {
 
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-blue-300 dark:border-blue-700">
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                    📋 Orden de parámetros de la plantilla:
+                    📋 Parámetro de la plantilla aprobada:
                   </p>
-                  <ol className="text-sm space-y-1 list-decimal list-inside text-blue-800 dark:text-blue-200">
-                    <li>Nombre del cliente (nombre_cliente)</li>
-                    <li>Puntos canjeados (puntos)</li>
-                    <li>Kilos ganados (kilos)</li>
-                    <li>Código de verificación (codigo)</li>
-                  </ol>
+                  <ul className="text-sm space-y-1 text-blue-800 dark:text-blue-200">
+                    <li>1. Código de verificación - 4 dígitos</li>
+                  </ul>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Los parámetros se envían en este orden a WhatsApp Business API
+                    ⚠️ La plantilla aprobada solo debe tener un parámetro: el código
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ejemplo: "1234 es tu código de verificación."
                   </p>
                 </div>
               </div>
@@ -209,27 +203,9 @@ export function RedemptionMessageSettings() {
               
               <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                 <p className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
-                  📝 Variables disponibles:
+                  📝 Variables disponibles (mensaje de respaldo):
                 </p>
                 <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded text-blue-900 dark:text-blue-100 font-mono">
-                      {'{{nombre_cliente}}'}
-                    </code>
-                    <span className="text-gray-700 dark:text-gray-300">- Nombre completo del cliente</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded text-blue-900 dark:text-blue-100 font-mono">
-                      {'{{puntos}}'}
-                    </code>
-                    <span className="text-gray-700 dark:text-gray-300">- Cantidad de puntos canjeados</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded text-blue-900 dark:text-blue-100 font-mono">
-                      {'{{kilos}}'}
-                    </code>
-                    <span className="text-gray-700 dark:text-gray-300">- Kilos ganados en el canje</span>
-                  </li>
                   <li className="flex items-start gap-2">
                     <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded text-blue-900 dark:text-blue-100 font-mono">
                       {'{{codigo}}'}
@@ -237,6 +213,9 @@ export function RedemptionMessageSettings() {
                     <span className="text-gray-700 dark:text-gray-300">- Código de verificación de 4 dígitos</span>
                   </li>
                 </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ Solo la variable del código está disponible. El mensaje de respaldo se usa únicamente si la plantilla de WhatsApp Business no está configurada.
+                </p>
               </div>
             </div>
 

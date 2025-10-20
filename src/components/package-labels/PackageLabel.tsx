@@ -182,14 +182,15 @@ export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
         <img 
           src={labelData.barcodeDataUrl}
           alt="Barcode"
-          style={{ width: '70mm', height: '15mm', marginBottom: '2mm' }}
+          style={{ width: '80mm', height: '20mm', marginBottom: '2mm' }}
         />
         <div style={{ 
-          fontSize: '7px', 
+          fontSize: '9px', 
           color: '#666',
-          textAlign: 'center'
+          textAlign: 'center',
+          fontWeight: 'bold'
         }}>
-          {pkg.tracking_number}
+          {labelData.shortTrackingNumber}
         </div>
       </div>
     </div>

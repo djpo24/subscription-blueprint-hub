@@ -20,6 +20,21 @@ interface Package {
 export interface LabelData {
   qrCodeDataUrl: string;
   barcodeDataUrl: string;
+  shortTrackingNumber: string;
+}
+
+/**
+ * Formats tracking number for barcode by removing the year
+ * Example: EO-2025-8388 -> EO-8388
+ */
+function formatTrackingNumberForBarcode(trackingNumber: string): string {
+  // Match pattern like EO-YYYY-XXXX and extract EO-XXXX
+  const match = trackingNumber.match(/^([A-Z]+)-\d{4}-(\d+)$/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+  // If pattern doesn't match, return original
+  return trackingNumber;
 }
 
 export async function generateLabelData(pkg: Package): Promise<LabelData> {
@@ -42,21 +57,25 @@ export async function generateLabelData(pkg: Package): Promise<LabelData> {
     }
   });
 
-  // Generate Barcode
+  // Format tracking number for barcode (remove year)
+  const shortTrackingNumber = formatTrackingNumberForBarcode(pkg.tracking_number);
+  
+  // Generate Barcode with optimized settings for mobile scanning
   const canvas = document.createElement('canvas');
-  JsBarcode(canvas, pkg.tracking_number, {
+  JsBarcode(canvas, shortTrackingNumber, {
     format: "CODE128",
-    width: 2,
-    height: 60,
+    width: 3,           // Increased from 2 to 3 for thicker bars
+    height: 70,         // Increased from 60 to 70 for better scanning
     displayValue: true,
-    fontSize: 12,
-    margin: 0
+    fontSize: 14,       // Increased from 12 to 14 for better readability
+    margin: 10          // Increased from 0 to 10 for more spacing
   });
   const barcodeUrl = canvas.toDataURL();
 
   return {
     qrCodeDataUrl: qrCodeUrl,
-    barcodeDataUrl: barcodeUrl
+    barcodeDataUrl: barcodeUrl,
+    shortTrackingNumber: shortTrackingNumber
   };
 }
 

@@ -66,7 +66,8 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
         .filter(pkg => pkg.customer_payments && pkg.customer_payments.length > 0)
         .reduce((sum, pkg) => {
           const weight = pkg.weight || 0;
-          return sum + 60 + (weight * 10); // 60 base + 10 per kilo
+          const weightPoints = weight > 1 ? (weight - 1) * 10 : 0;
+          return sum + 50 + weightPoints; // 50 base + 10 per additional kilo
         }, 0);
 
       // Get redeemed points
@@ -96,17 +97,22 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
       return;
     }
 
-    if (points > availablePoints) {
-      toast.error(`El cliente solo tiene ${availablePoints} puntos disponibles`);
-      return;
-    }
-
     if (points < 1000) {
       toast.error('Mínimo 1,000 puntos para redimir (1 kilo)');
       return;
     }
 
-    const kilos = Math.floor(points / 1000);
+    if (points % 1000 !== 0) {
+      toast.error('Solo puedes redimir múltiplos de 1,000 puntos (1,000 / 2,000 / 3,000, etc.)');
+      return;
+    }
+
+    if (points > availablePoints) {
+      toast.error(`El cliente solo tiene ${availablePoints} puntos disponibles`);
+      return;
+    }
+
+    const kilos = points / 1000;
 
     setIsLoading(true);
     try {
@@ -229,8 +235,10 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
                 />
                 <p className="text-sm text-muted-foreground">
                   {pointsToRedeem && parseInt(pointsToRedeem) >= 1000
-                    ? `= ${Math.floor(parseInt(pointsToRedeem) / 1000)} kg`
-                    : 'Mínimo 1,000 puntos (1 kg)'}
+                    ? parseInt(pointsToRedeem) % 1000 === 0
+                      ? `= ${parseInt(pointsToRedeem) / 1000} kg`
+                      : '❌ Debe ser múltiplo de 1,000'
+                    : 'Solo múltiplos de 1,000 puntos (1,000 / 2,000 / 3,000, etc.)'}
                 </p>
               </div>
 

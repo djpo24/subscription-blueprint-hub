@@ -154,6 +154,10 @@ export default function LoyaltyInfo() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>Solo múltiplos de 1,000 puntos (1,000 / 2,000 / 3,000, etc.)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
                     <span>Mínimo 1,000 puntos para canjear (1 kilo)</span>
                   </div>
                   <div className="flex items-center gap-2">

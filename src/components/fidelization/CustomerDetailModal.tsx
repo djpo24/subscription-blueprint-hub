@@ -91,12 +91,12 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
              <Trophy className="h-4 w-4" />
              Sistema de Puntos
            </h3>
-           <div className="text-sm text-muted-foreground space-y-1">
-             <p>• <strong>50 puntos</strong> por cada envío realizado</p>
-             <p>• <strong>10 puntos adicionales</strong> por cada kilo enviado</p>
-             <p className="font-medium text-orange-600">⚠️ Solo se otorgan puntos cuando el envío está entregado Y pagado</p>
-             <p className="font-medium">Ejemplo: Un envío de 5kg entregado y pagado = 50 + (5 × 10) = 100 puntos</p>
-           </div>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>• <strong>50 puntos</strong> por cada envío realizado</p>
+              <p>• <strong>10 puntos adicionales</strong> por cada kilo enviado</p>
+              <p className="font-medium text-orange-600">⚠️ Solo se otorgan puntos cuando el envío está entregado, pagado Y forma parte de un viaje programado</p>
+              <p className="font-medium">Ejemplo: Un envío de 5kg entregado y pagado en un viaje = 50 + (5 × 10) = 100 puntos</p>
+            </div>
          </div>
 
         <Separator />
@@ -229,7 +229,7 @@ export function CustomerDetailModal({ customer, isOpen, onClose }: CustomerDetai
                                 0 pts
                               </div>
                               <div className="text-xs text-red-500">
-                                No entregado o sin pago
+                                No entregado, sin pago o sin viaje
                               </div>
                             </>
                           )}

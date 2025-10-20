@@ -92,6 +92,7 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
           weight,
           status,
           created_at,
+          trip_id,
           customer_payments (id, amount)
         `)
         .eq('customer_id', customer.id)
@@ -100,9 +101,9 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
 
       if (error) throw error;
 
-      // Calculate total points from last year
+      // Calculate total points from last year (only for packages in trips)
       const totalPoints = packages
-        .filter(pkg => pkg.customer_payments && pkg.customer_payments.length > 0)
+        .filter(pkg => pkg.customer_payments && pkg.customer_payments.length > 0 && pkg.trip_id !== null)
         .reduce((sum, pkg) => {
           const weight = pkg.weight || 0;
           const weightPoints = weight > 1 ? (weight - 1) * 10 : 0;

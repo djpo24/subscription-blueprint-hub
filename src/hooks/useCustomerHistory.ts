@@ -39,6 +39,7 @@ export function useCustomerHistory(customerId: string | null) {
           created_at,
           origin,
           destination,
+          trip_id,
           customer_payments (
             amount,
             currency,
@@ -55,12 +56,13 @@ export function useCustomerHistory(customerId: string | null) {
 
       if (!packages) return [];
 
-      // Calculate points for each shipment (only for delivered and paid packages)
+      // Calculate points for each shipment (only for delivered, paid packages, AND part of a trip)
       const shipmentsWithPoints: CustomerShipment[] = packages
         .filter(pkg => {
           const isDelivered = pkg.status === 'delivered';
           const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
-          return isDelivered && hasPay;
+          const hasTrip = pkg.trip_id !== null;
+          return isDelivered && hasPay && hasTrip;
         })
         .map(pkg => {
           const weight = pkg.weight || 0;
@@ -89,12 +91,13 @@ export function useCustomerHistory(customerId: string | null) {
           };
         });
 
-      // Add packages that don't contribute to points (not delivered or not paid) with 0 points
+      // Add packages that don't contribute to points (not delivered, not paid, or not in a trip) with 0 points
       const nonScoringShipments: CustomerShipment[] = packages
         .filter(pkg => {
           const isDelivered = pkg.status === 'delivered';
           const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
-          return !(isDelivered && hasPay);
+          const hasTrip = pkg.trip_id !== null;
+          return !(isDelivered && hasPay && hasTrip);
         })
         .map(pkg => {
           // Get payment information (first payment if multiple exist)

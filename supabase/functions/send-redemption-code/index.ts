@@ -16,44 +16,49 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { customerId, customerName, customerPhone, pointsToRedeem, kilosEarned } = await req.json();
+    const { customerId, customerName, customerPhone, pointsToRedeem, kilosEarned, isTest = false } = await req.json();
 
-    console.log('📱 Sending redemption code to customer:', customerName);
+    console.log('📱 Sending redemption code to customer:', customerName, isTest ? '(TEST MODE)' : '(PRODUCTION)');
 
-    // Check rate limiting: 10 minutes between requests
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const { data: recentCodes, error: recentError } = await supabase
-      .from('point_redemptions')
-      .select('created_at')
-      .eq('customer_id', customerId)
-      .gte('created_at', tenMinutesAgo.toISOString())
-      .limit(1);
+    // Skip rate limiting for test mode
+    if (!isTest) {
+      // Check rate limiting: 10 minutes between requests
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const { data: recentCodes, error: recentError } = await supabase
+        .from('point_redemptions')
+        .select('created_at')
+        .eq('customer_id', customerId)
+        .gte('created_at', tenMinutesAgo.toISOString())
+        .limit(1);
 
-    if (recentError) {
-      console.error('❌ Error checking recent codes:', recentError);
-    }
+      if (recentError) {
+        console.error('❌ Error checking recent codes:', recentError);
+      }
 
-    if (recentCodes && recentCodes.length > 0) {
-      const waitMinutes = Math.ceil((new Date(recentCodes[0].created_at).getTime() + 10 * 60 * 1000 - Date.now()) / 60000);
-      throw new Error(`Debe esperar ${waitMinutes} minutos antes de solicitar otro código`);
-    }
+      if (recentCodes && recentCodes.length > 0) {
+        const waitMinutes = Math.ceil((new Date(recentCodes[0].created_at).getTime() + 10 * 60 * 1000 - Date.now()) / 60000);
+        throw new Error(`Debe esperar ${waitMinutes} minutos antes de solicitar otro código`);
+      }
 
-    // Check daily limit: maximum 3 codes per day
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const { data: todayCodes, error: dailyError } = await supabase
-      .from('point_redemptions')
-      .select('id')
-      .eq('customer_id', customerId)
-      .gte('created_at', todayStart.toISOString());
+      // Check daily limit: maximum 3 codes per day
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const { data: todayCodes, error: dailyError } = await supabase
+        .from('point_redemptions')
+        .select('id')
+        .eq('customer_id', customerId)
+        .gte('created_at', todayStart.toISOString());
 
-    if (dailyError) {
-      console.error('❌ Error checking daily limit:', dailyError);
-    }
+      if (dailyError) {
+        console.error('❌ Error checking daily limit:', dailyError);
+      }
 
-    if (todayCodes && todayCodes.length >= 3) {
-      throw new Error('Has alcanzado el límite de 3 códigos por día. Intenta mañana.');
+      if (todayCodes && todayCodes.length >= 3) {
+        throw new Error('Has alcanzado el límite de 3 códigos por día. Intenta mañana.');
+      }
+    } else {
+      console.log('⚠️ Test mode: Skipping rate limiting checks');
     }
 
     // Get template settings from database

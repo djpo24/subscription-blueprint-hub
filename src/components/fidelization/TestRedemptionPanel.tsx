@@ -70,6 +70,7 @@ export function TestRedemptionPanel() {
           customerPhone: selectedCustomer.phone,
           pointsToRedeem: points,
           kilosEarned: kilos,
+          isTest: true, // Skip rate limiting for test mode
         },
       });
 

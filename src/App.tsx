@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Landing from "./pages/Landing";
+import LoyaltyInfo from "./pages/LoyaltyInfo";
 import NotFound from "./pages/NotFound";
 import MobileScannerView from "./pages/MobileScannerView";
 
@@ -53,6 +54,12 @@ function AppRoutes() {
       <Route 
         path="/auth" 
         element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
+      />
+      
+      {/* Página informativa de fidelización - accesible sin autenticación */}
+      <Route 
+        path="/loyalty-info" 
+        element={<LoyaltyInfo />} 
       />
       
       {/* Dashboard principal protegido con rutas anidadas */}

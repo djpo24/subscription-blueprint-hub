@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Truck, MapPin, Clock, Shield, Users } from 'lucide-react';
+import { Package, Truck, MapPin, Clock, Shield, Users, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GuestPackageTracking } from '@/components/GuestPackageTracking';
 import { WhatsAppChatButton } from '@/components/WhatsAppChatButton';
@@ -57,6 +57,50 @@ export default function Landing() {
           <div className="flex justify-center">
             <GuestPackageTracking />
           </div>
+        </div>
+      </section>
+
+      {/* Loyalty Program Section */}
+      <section className="py-10 md:py-16 px-4 bg-gradient-to-r from-yellow-50 to-amber-50">
+        <div className="container mx-auto">
+          <Card className="border-2 border-yellow-200 shadow-xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-yellow-100 to-amber-100 pb-8 md:pb-10">
+              <div className="flex flex-col items-center text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-yellow-400 mb-4">
+                  <Trophy className="h-8 w-8 md:h-10 md:w-10 text-yellow-900" />
+                </div>
+                <CardTitle className="text-2xl md:text-3xl mb-3 md:mb-4 text-gray-900">
+                  Programa de Fidelización
+                </CardTitle>
+                <CardDescription className="text-base md:text-lg max-w-2xl text-gray-700">
+                  ¡Gana puntos con cada envío y canjéalos por kilos gratis!
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 md:pt-8 pb-6 md:pb-8">
+              <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-bold text-yellow-600 mb-2">50</div>
+                  <p className="text-sm md:text-base text-gray-600">Puntos base por envío</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-bold text-yellow-600 mb-2">+10</div>
+                  <p className="text-sm md:text-base text-gray-600">Puntos por kilo adicional</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-bold text-yellow-600 mb-2">1,000</div>
+                  <p className="text-sm md:text-base text-gray-600">Puntos = 1 kilo gratis</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <Link to="/loyalty-info">
+                  <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-yellow-900 font-semibold">
+                    Ver Detalles del Programa
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

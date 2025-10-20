@@ -956,6 +956,27 @@ export type Database = {
           },
         ]
       }
+      redemption_message_settings: {
+        Row: {
+          created_at: string
+          id: string
+          message_template: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_template?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       route_freight_rates: {
         Row: {
           created_at: string

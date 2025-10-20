@@ -20,6 +20,31 @@ serve(async (req) => {
 
     console.log('📱 Sending redemption code to customer:', customerName);
 
+    // Get message template from settings
+    const { data: settings, error: settingsError } = await supabase
+      .from('redemption_message_settings')
+      .select('message_template')
+      .single();
+
+    if (settingsError) {
+      console.error('❌ Error fetching message settings:', settingsError);
+      // Use default template if settings not found
+    }
+
+    const messageTemplate = settings?.message_template || `🎉 *Redención de Puntos*
+
+Hola {{nombre_cliente}}! 👋
+
+Has solicitado redimir *{{puntos}} puntos* por *{{kilos}} kg*.
+
+Tu código de verificación es:
+
+*{{codigo}}*
+
+⏰ Este código expira en 10 minutos.
+
+Por favor, ingresa este código en el sistema para completar tu redención.`;
+
     // Generate 4-digit verification code
     const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -44,14 +69,14 @@ serve(async (req) => {
 
     console.log('✅ Redemption created:', redemption.id);
 
-    // Prepare WhatsApp message
-    const message = `🎉 *Redención de Puntos*\n\n` +
-      `Hola ${customerName}! 👋\n\n` +
-      `Has solicitado redimir *${pointsToRedeem} puntos* por *${kilosEarned} kg*.\n\n` +
-      `Tu código de verificación es:\n\n` +
-      `*${verificationCode}*\n\n` +
-      `⏰ Este código expira en 10 minutos.\n\n` +
-      `Por favor, ingresa este código en el sistema para completar tu redención.`;
+    // Prepare WhatsApp message using template
+    const message = messageTemplate
+      .replace(/{{nombre_cliente}}/g, customerName)
+      .replace(/{{puntos}}/g, pointsToRedeem.toString())
+      .replace(/{{kilos}}/g, kilosEarned.toString())
+      .replace(/{{codigo}}/g, verificationCode);
+
+    console.log('📝 Message prepared using template');
 
     // Send WhatsApp notification
     const metaToken = Deno.env.get('META_WHATSAPP_TOKEN');

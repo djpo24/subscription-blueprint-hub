@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
 import { CustomerDetailModal } from '@/components/fidelization/CustomerDetailModal';
 import { PointRedemptionPanel } from '@/components/fidelization/PointRedemptionPanel';
+import { RedemptionMessageSettings } from '@/components/fidelization/RedemptionMessageSettings';
 import { useFidelizationData, DateFilter, FidelizationCustomer } from '@/hooks/useFidelizationData';
-import { Trophy, Users, Star, Award } from 'lucide-react';
+import { Trophy, Users, Star, Award, Settings } from 'lucide-react';
 
 export function FidelizationTab() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -54,105 +56,124 @@ export function FidelizationTab() {
 
   return (
     <div className="space-y-4">
-      {/* Point Redemption Panel */}
-      <PointRedemptionPanel />
+      <Tabs defaultValue="fidelization" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="fidelization" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Fidelización
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Configuración
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Header with stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-            <p className="text-xs text-muted-foreground">
-              {getFilterLabel(dateFilter)}
-            </p>
-          </CardContent>
-        </Card>
+        <TabsContent value="fidelization" className="space-y-4 mt-4">
+          {/* Point Redemption Panel */}
+          <PointRedemptionPanel />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Puntos Totales</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Puntos acumulados
-            </p>
-          </CardContent>
-        </Card>
+          {/* Header with stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalCustomers}</div>
+                <p className="text-xs text-muted-foreground">
+                  {getFilterLabel(dateFilter)}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Envíos Totales</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalShipments}</div>
-            <p className="text-xs text-muted-foreground">
-              Envíos realizados
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Puntos Totales</CardTitle>
+                <Star className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Puntos acumulados
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Líder</CardTitle>
-            <Award className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold truncate">{topCustomer?.name || '-'}</div>
-            <p className="text-xs text-muted-foreground">
-              {topCustomer ? `${topCustomer.totalPoints} puntos` : 'Sin datos'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Envíos Totales</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalShipments}</div>
+                <p className="text-xs text-muted-foreground">
+                  Envíos realizados
+                </p>
+              </CardContent>
+            </Card>
 
-      {/* Main content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Ranking de Fidelización
-              </CardTitle>
-               <CardDescription>
-                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo adicional (después del primer kilo).
-                 <br />
-                 <strong>Solo se cuentan envíos entregados y pagados del último año.</strong>
-               </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                {getFilterLabel(dateFilter)}
-              </Badge>
-              <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">Esta semana</SelectItem>
-                  <SelectItem value="month">Este mes</SelectItem>
-                  <SelectItem value="all">Histórico total</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Líder</CardTitle>
+                <Award className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold truncate">{topCustomer?.name || '-'}</div>
+                <p className="text-xs text-muted-foreground">
+                  {topCustomer ? `${topCustomer.totalPoints} puntos` : 'Sin datos'}
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
-        <CardContent>
-          <FidelizationTable 
-            data={fidelizationData} 
-            isLoading={isLoading}
-            dateFilter={dateFilter}
-            onCustomerClick={handleCustomerClick}
-          />
-        </CardContent>
-      </Card>
+
+          {/* Main content */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    Ranking de Fidelización
+                  </CardTitle>
+                   <CardDescription>
+                     Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo adicional (después del primer kilo).
+                     <br />
+                     <strong>Solo se cuentan envíos entregados y pagados del último año.</strong>
+                   </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {getFilterLabel(dateFilter)}
+                  </Badge>
+                  <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="week">Esta semana</SelectItem>
+                      <SelectItem value="month">Este mes</SelectItem>
+                      <SelectItem value="all">Histórico total</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <FidelizationTable 
+                data={fidelizationData} 
+                isLoading={isLoading}
+                dateFilter={dateFilter}
+                onCustomerClick={handleCustomerClick}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-4">
+          <RedemptionMessageSettings />
+        </TabsContent>
+      </Tabs>
 
       {/* Customer Detail Modal */}
       <CustomerDetailModal

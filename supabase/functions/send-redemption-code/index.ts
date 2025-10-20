@@ -20,10 +20,10 @@ serve(async (req) => {
 
     console.log('📱 Sending redemption code to customer:', customerName);
 
-    // Get message template from settings
+    // Get template settings from database
     const { data: settings, error: settingsError } = await supabase
       .from('redemption_message_settings')
-      .select('message_template')
+      .select('message_template, use_template, template_name, template_language')
       .single();
 
     if (settingsError) {
@@ -69,16 +69,7 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
 
     console.log('✅ Redemption created:', redemption.id);
 
-    // Prepare WhatsApp message using template
-    const message = messageTemplate
-      .replace(/{{nombre_cliente}}/g, customerName)
-      .replace(/{{puntos}}/g, pointsToRedeem.toString())
-      .replace(/{{kilos}}/g, kilosEarned.toString())
-      .replace(/{{codigo}}/g, verificationCode);
-
-    console.log('📝 Message prepared using template');
-
-    // Send WhatsApp notification
+    // Get WhatsApp credentials
     const metaToken = Deno.env.get('META_WHATSAPP_TOKEN');
     const phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
 
@@ -87,20 +78,65 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
       throw new Error('WhatsApp configuration missing');
     }
 
+    // Prepare WhatsApp message payload
+    let whatsappPayload;
+
+    if (settings?.use_template && settings?.template_name) {
+      // Use WhatsApp Business Template with parameters
+      console.log('📋 Using WhatsApp Business Template:', settings.template_name);
+      
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: customerPhone.replace(/^\+/, ''), // Remove + for API
+        type: 'template',
+        template: {
+          name: settings.template_name,
+          language: {
+            code: settings.template_language || 'es_CO'
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: customerName },
+                { type: 'text', text: pointsToRedeem.toString() },
+                { type: 'text', text: kilosEarned.toString() },
+                { type: 'text', text: verificationCode }
+              ]
+            }
+          ]
+        }
+      };
+    } else {
+      // Fallback to plain text message
+      console.log('📝 Using plain text message (template not configured)');
+      
+      const message = messageTemplate
+        .replace(/{{nombre_cliente}}/g, customerName)
+        .replace(/{{puntos}}/g, pointsToRedeem.toString())
+        .replace(/{{kilos}}/g, kilosEarned.toString())
+        .replace(/{{codigo}}/g, verificationCode);
+
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: customerPhone.replace(/^\+/, ''),
+        type: 'text',
+        text: { body: message }
+      };
+    }
+
+    console.log('📤 WhatsApp payload:', JSON.stringify(whatsappPayload, null, 2));
+
+    // Send message via WhatsApp Business API
     const whatsappResponse = await fetch(
-      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${metaToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: customerPhone,
-          type: 'text',
-          text: { body: message }
-        }),
+        body: JSON.stringify(whatsappPayload)
       }
     );
 

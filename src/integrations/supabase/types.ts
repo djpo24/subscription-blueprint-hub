@@ -961,19 +961,28 @@ export type Database = {
           created_at: string
           id: string
           message_template: string
+          template_language: string | null
+          template_name: string | null
           updated_at: string
+          use_template: boolean | null
         }
         Insert: {
           created_at?: string
           id?: string
           message_template?: string
+          template_language?: string | null
+          template_name?: string | null
           updated_at?: string
+          use_template?: boolean | null
         }
         Update: {
           created_at?: string
           id?: string
           message_template?: string
+          template_language?: string | null
+          template_name?: string | null
           updated_at?: string
+          use_template?: boolean | null
         }
         Relationships: []
       }

@@ -3,10 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRedemptionMessageSettings } from '@/hooks/useRedemptionMessageSettings';
 import { useUpdateRedemptionMessageSettings } from '@/hooks/useUpdateRedemptionMessageSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Save, TestTube, MessageSquare } from 'lucide-react';
+import { Save, TestTube, MessageSquare, Settings } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function RedemptionMessageSettings() {
@@ -15,10 +18,16 @@ export function RedemptionMessageSettings() {
   const { toast } = useToast();
 
   const [messageTemplate, setMessageTemplate] = useState('');
+  const [useTemplate, setUseTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateLanguage, setTemplateLanguage] = useState('es_CO');
 
   useEffect(() => {
     if (settings) {
       setMessageTemplate(settings.message_template);
+      setUseTemplate(settings.use_template || false);
+      setTemplateName(settings.template_name || '');
+      setTemplateLanguage(settings.template_language || 'es_CO');
     }
   }, [settings]);
 
@@ -26,7 +35,12 @@ export function RedemptionMessageSettings() {
     e.preventDefault();
     
     try {
-      await updateSettings({ messageTemplate });
+      await updateSettings({ 
+        messageTemplate,
+        useTemplate,
+        templateName,
+        templateLanguage
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -98,18 +112,92 @@ export function RedemptionMessageSettings() {
         </CardContent>
       </Card>
 
-      {/* Configuración de Mensaje */}
+      {/* Configuración de Plantilla de WhatsApp */}
       <Card>
         <CardHeader>
-          <CardTitle>Editar Plantilla del Mensaje</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Configuración de Plantilla de WhatsApp Business
+          </CardTitle>
           <CardDescription>
-            Personaliza el mensaje que recibirán los clientes al canjear sus puntos
+            Configura los parámetros de la plantilla de WhatsApp Business API
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Usar Plantilla */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="use-template">Usar plantilla de WhatsApp Business</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enviar usando una plantilla aprobada en WhatsApp Business Manager
+                </p>
+              </div>
+              <Switch
+                id="use-template"
+                checked={useTemplate}
+                onCheckedChange={setUseTemplate}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Campos de Plantilla */}
+            {useTemplate && (
+              <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="space-y-2">
+                  <Label htmlFor="template-name">Nombre de la plantilla *</Label>
+                  <Input
+                    id="template-name"
+                    placeholder="ej: redemption_code"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    required={useTemplate}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Debe coincidir exactamente con el nombre en WhatsApp Business Manager
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="template-language">Idioma de la plantilla *</Label>
+                  <Select value={templateLanguage} onValueChange={setTemplateLanguage}>
+                    <SelectTrigger id="template-language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="es_CO">Español (Colombia)</SelectItem>
+                      <SelectItem value="es_MX">Español (México)</SelectItem>
+                      <SelectItem value="es_ES">Español (España)</SelectItem>
+                      <SelectItem value="es">Español (General)</SelectItem>
+                      <SelectItem value="en_US">English (US)</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-blue-300 dark:border-blue-700">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    📋 Orden de parámetros de la plantilla:
+                  </p>
+                  <ol className="text-sm space-y-1 list-decimal list-inside text-blue-800 dark:text-blue-200">
+                    <li>Nombre del cliente (nombre_cliente)</li>
+                    <li>Puntos canjeados (puntos)</li>
+                    <li>Kilos ganados (kilos)</li>
+                    <li>Código de verificación (codigo)</li>
+                  </ol>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Los parámetros se envían en este orden a WhatsApp Business API
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Plantilla de Mensaje (Fallback) */}
             <div className="space-y-2">
-              <Label htmlFor="template">Plantilla del mensaje</Label>
+              <Label htmlFor="template">
+                Plantilla del mensaje {useTemplate && '(fallback si la plantilla falla)'}
+              </Label>
               <Textarea
                 id="template"
                 placeholder="Escribe tu plantilla personalizada aquí..."
@@ -118,8 +206,6 @@ export function RedemptionMessageSettings() {
                 rows={12}
                 className="font-mono text-sm"
               />
-              
-              <Separator className="my-4" />
               
               <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                 <p className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
@@ -152,24 +238,11 @@ export function RedemptionMessageSettings() {
                   </li>
                 </ul>
               </div>
-
-              <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800 mt-4">
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
-                  ⚠️ Parámetros requeridos de WhatsApp Business
-                </p>
-                <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
-                  <li>• El mensaje se envía como tipo "text" (mensaje de texto simple)</li>
-                  <li>• Usa el token META_WHATSAPP_TOKEN configurado en los secretos</li>
-                  <li>• Usa el phone_number_id META_WHATSAPP_PHONE_NUMBER_ID</li>
-                  <li>• Formato: messaging_product: "whatsapp"</li>
-                  <li>• El número debe estar en formato internacional sin "+"</li>
-                </ul>
-              </div>
             </div>
 
             <Button 
               type="submit" 
-              disabled={isPending || !messageTemplate.trim()} 
+              disabled={isPending || !messageTemplate.trim() || (useTemplate && !templateName.trim())} 
               className="flex items-center gap-2"
             >
               <Save className="h-4 w-4" />

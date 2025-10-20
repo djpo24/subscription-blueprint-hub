@@ -4,6 +4,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface UpdateParams {
   messageTemplate: string;
+  useTemplate?: boolean;
+  templateName?: string;
+  templateLanguage?: string;
 }
 
 export function useUpdateRedemptionMessageSettings() {
@@ -24,6 +27,9 @@ export function useUpdateRedemptionMessageSettings() {
           .from('redemption_message_settings')
           .update({
             message_template: params.messageTemplate,
+            use_template: params.useTemplate,
+            template_name: params.templateName,
+            template_language: params.templateLanguage,
             updated_at: new Date().toISOString()
           })
           .eq('id', currentSettings.id)
@@ -37,7 +43,10 @@ export function useUpdateRedemptionMessageSettings() {
         const { data, error } = await supabase
           .from('redemption_message_settings')
           .insert({
-            message_template: params.messageTemplate
+            message_template: params.messageTemplate,
+            use_template: params.useTemplate,
+            template_name: params.templateName,
+            template_language: params.templateLanguage
           })
           .select()
           .single();

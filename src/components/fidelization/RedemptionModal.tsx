@@ -64,12 +64,13 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
         .from('packages')
         .select('id, tracking_number, description, status, amount_to_collect, currency, weight')
         .eq('customer_id', customer.id)
-        .in('status', ['received', 'processing'])
+        .in('status', ['pending', 'received', 'processing'])
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      console.log('📦 Available packages for redemption:', packages);
       setAvailablePackages(packages || []);
     } catch (error) {
       console.error('Error fetching packages:', error);
@@ -335,7 +336,7 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Solo se muestran paquetes en estado "Recibido" o "Procesado"
+                  Solo se muestran paquetes en estado "Pendiente", "Recibido" o "Procesado"
                 </p>
               </div>
 

@@ -106,9 +106,9 @@ serve(async (req) => {
         // Enviar usando el mismo endpoint que notificaciones de viajes
         console.log(`📞 Llamando a send-whatsapp-notification...`);
         
-        const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+        const whatsappResponse = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
-            notificationId: null, // No tenemos notificationId para mensajes masivos
+            notificationId: null,
             phone: message.customerPhone,
             message: message.messageContent,
             useTemplate: useTemplate,
@@ -119,14 +119,28 @@ serve(async (req) => {
           }
         });
 
-        console.log(`📱 Respuesta de send-whatsapp-notification:`, whatsappResult);
+        console.log(`📱 Respuesta completa:`, JSON.stringify(whatsappResponse, null, 2));
 
-        if (whatsappError || whatsappResult?.error) {
-          console.error(`❌ Error en respuesta:`, whatsappError || whatsappResult?.error);
-          throw new Error(whatsappResult?.error || whatsappError?.message || 'Failed to send WhatsApp message');
+        // Verificar si hubo error en la invocación
+        if (whatsappResponse.error) {
+          console.error(`❌ Error en invocación:`, whatsappResponse.error);
+          throw new Error(`Error al invocar función: ${whatsappResponse.error.message}`);
         }
 
-        if (whatsappResult?.success) {
+        // Verificar respuesta de la función
+        const whatsappResult = whatsappResponse.data;
+        
+        if (!whatsappResult) {
+          console.error(`❌ Sin datos en respuesta`);
+          throw new Error('No se recibieron datos de la función');
+        }
+
+        if (whatsappResult.error) {
+          console.error(`❌ Error en resultado:`, whatsappResult.error);
+          throw new Error(whatsappResult.error);
+        }
+
+        if (whatsappResult.success) {
           console.log(`✅ Mensaje enviado exitosamente a ${message.customerName}`);
           
           // Log successful message
@@ -144,12 +158,15 @@ serve(async (req) => {
 
           successCount++;
         } else {
-          throw new Error('Unexpected response from send-whatsapp-notification');
+          console.error(`❌ Respuesta inesperada:`, whatsappResult);
+          throw new Error('Respuesta inesperada de send-whatsapp-notification');
         }
       } catch (error) {
-        console.error(`❌ Error enviando a ${message.customerName}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Error enviando a ${message.customerName}:`, errorMessage);
+        console.error('Stack trace:', error);
         
-        // Log failed message
+        // Log failed message con el error detallado
         await supabase.from('bulk_fidelization_log').insert({
           customer_id: message.customerId,
           customer_name: message.customerName,
@@ -158,10 +175,15 @@ serve(async (req) => {
           message_content: message.messageContent,
           points_available: message.pointsAvailable,
           status: 'failed',
-          error_message: error instanceof Error ? error.message : 'Unknown error'
+          error_message: errorMessage
         });
 
         failedCount++;
+      }
+      
+      // Pequeña pausa entre mensajes para evitar rate limits
+      if (successCount + failedCount < messages.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 

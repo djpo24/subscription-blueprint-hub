@@ -145,16 +145,37 @@ export function BulkMessagePanel() {
     setIsSending(true);
 
     try {
+      console.log('🚀 Iniciando envío masivo desde frontend...');
+      
       const { data, error } = await supabase.functions.invoke('send-bulk-fidelization', {
         body: { messages: messagePreviews, settings }
       });
 
-      if (error) throw error;
+      console.log('📱 Respuesta de send-bulk-fidelization:', data, error);
 
-      toast.success(`✅ Envío completado: ${data.successCount} exitosos, ${data.failedCount} fallidos`);
+      if (error) {
+        console.error('❌ Error en invocación:', error);
+        throw error;
+      }
+
+      const result = data as { success: boolean; successCount: number; failedCount: number; totalMessages: number };
+
+      console.log('✅ Envío completado:', result);
+      
+      // Actualizar contadores finales
+      setSentCount(result.successCount);
+      setFailedCount(result.failedCount);
+      setSendingProgress(100);
+
+      if (result.failedCount > 0) {
+        toast.warning(`⚠️ Envío completado con fallas: ${result.successCount} exitosos, ${result.failedCount} fallidos`);
+      } else {
+        toast.success(`✅ Envío completado: ${result.successCount} mensajes enviados`);
+      }
       
       // Reset after a delay
       setTimeout(() => {
+        setIsSending(false);
         setShowPreview(false);
         setSendingProgress(0);
         setSentCount(0);
@@ -162,8 +183,8 @@ export function BulkMessagePanel() {
         setTotalMessages(0);
       }, 3000);
     } catch (error) {
-      console.error('Error sending bulk messages:', error);
-      toast.error('Error al enviar los mensajes');
+      console.error('❌ Error sending bulk messages:', error);
+      toast.error('Error al enviar los mensajes. Revisa los logs para más detalles.');
       setIsSending(false);
     }
   };

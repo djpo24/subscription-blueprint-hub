@@ -34,7 +34,7 @@ export function usePendingDelivery() {
               arrival_date
             )
           `)
-          .in('status', ['en_transito', 'en_destino', 'procesado'])
+          .in('status', ['en_transito', 'en_destino'])
           .order('created_at', { ascending: false })
           .limit(100);
 

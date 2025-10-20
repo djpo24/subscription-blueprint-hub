@@ -822,6 +822,7 @@ export type Database = {
           delivered_by: string | null
           description: string | null
           destination: string | null
+          discount_applied: number | null
           flight_number: string | null
           freight: number | null
           id: string
@@ -845,6 +846,7 @@ export type Database = {
           delivered_by?: string | null
           description?: string | null
           destination?: string | null
+          discount_applied?: number | null
           flight_number?: string | null
           freight?: number | null
           id?: string
@@ -868,6 +870,7 @@ export type Database = {
           delivered_by?: string | null
           description?: string | null
           destination?: string | null
+          discount_applied?: number | null
           flight_number?: string | null
           freight?: number | null
           id?: string
@@ -910,11 +913,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          discount_amount: number | null
           expires_at: string
           id: string
           kilos_earned: number
           notes: string | null
+          package_id: string | null
           points_redeemed: number
+          price_per_kilo: number | null
           status: string
           verification_code: string
         }
@@ -924,11 +930,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          discount_amount?: number | null
           expires_at?: string
           id?: string
           kilos_earned: number
           notes?: string | null
+          package_id?: string | null
           points_redeemed: number
+          price_per_kilo?: number | null
           status?: string
           verification_code: string
         }
@@ -938,11 +947,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          discount_amount?: number | null
           expires_at?: string
           id?: string
           kilos_earned?: number
           notes?: string | null
+          package_id?: string | null
           points_redeemed?: number
+          price_per_kilo?: number | null
           status?: string
           verification_code?: string
         }
@@ -952,6 +964,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_redemptions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
             referencedColumns: ["id"]
           },
         ]

@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { customerId, customerName, customerPhone, pointsToRedeem, kilosEarned, isTest = false } = await req.json();
+    const { customerId, customerName, customerPhone, pointsToRedeem, kilosEarned, packageId, pricePerKilo, discountAmount, isTest = false } = await req.json();
 
     console.log('📱 Sending redemption code to customer:', customerName, isTest ? '(TEST MODE)' : '(PRODUCTION)');
 
@@ -98,7 +98,10 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
         kilos_earned: kilosEarned,
         verification_code: verificationCode,
         status: 'pending',
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        package_id: packageId,
+        price_per_kilo: pricePerKilo,
+        discount_amount: discountAmount
       })
       .select()
       .single();

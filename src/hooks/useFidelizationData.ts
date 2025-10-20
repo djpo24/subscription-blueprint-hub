@@ -5,6 +5,7 @@ import { startOfWeek, startOfMonth, isAfter, parseISO, isSameDay, addDays } from
 export interface FidelizationCustomer {
   id: string;
   name: string;
+  phone: string | null;
   totalShipments: number;
   bestStreak: number;
   totalPoints: number;
@@ -23,6 +24,7 @@ interface Package {
   customers: {
     id: string;
     name: string;
+    phone: string | null;
   } | null;
   customer_payments: {
     id: string;
@@ -47,7 +49,8 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           created_at,
           customers (
             id,
-            name
+            name,
+            phone
           ),
           customer_payments (
             id,
@@ -88,6 +91,7 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
       const customerMap = new Map<string, {
         id: string;
         name: string;
+        phone: string | null;
         packages: Package[];
       }>();
 
@@ -104,6 +108,7 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           customerMap.set(pkg.customer_id, {
             id: pkg.customer_id,
             name: pkg.customers.name,
+            phone: pkg.customers.phone,
             packages: []
           });
         }
@@ -135,6 +140,7 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
         return {
           id: customer.id,
           name: customer.name,
+          phone: customer.phone,
           totalShipments,
           bestStreak,
           totalPoints: Math.round(totalPoints),

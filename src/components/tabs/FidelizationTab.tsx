@@ -7,6 +7,8 @@ import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
 import { CustomerDetailModal } from '@/components/fidelization/CustomerDetailModal';
 import { PointRedemptionPanel } from '@/components/fidelization/PointRedemptionPanel';
 import { RedemptionMessageSettings } from '@/components/fidelization/RedemptionMessageSettings';
+import { BulkTemplatesSettings } from '@/components/fidelization/BulkTemplatesSettings';
+import { BulkMessagePanel } from '@/components/fidelization/BulkMessagePanel';
 import { TestRedemptionPanel } from '@/components/fidelization/TestRedemptionPanel';
 import { useFidelizationData, DateFilter, FidelizationCustomer } from '@/hooks/useFidelizationData';
 import { Trophy, Users, Star, Award, Settings, TestTube } from 'lucide-react';
@@ -57,132 +59,146 @@ export function FidelizationTab() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="fidelization" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="fidelization" className="flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            Fidelización
-          </TabsTrigger>
-          <TabsTrigger value="test" className="flex items-center gap-2">
-            <TestTube className="h-4 w-4" />
-            Test
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Configuración
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="grid grid-cols-5 lg:w-[750px]">
+            <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="redemption">Canjear Puntos</TabsTrigger>
+            <TabsTrigger value="test">Probar</TabsTrigger>
+            <TabsTrigger value="settings">Configuración</TabsTrigger>
+            <TabsTrigger value="bulk">Envío Masivo</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="fidelization" className="space-y-4 mt-4">
-          {/* Point Redemption Panel */}
-          <PointRedemptionPanel />
+          <TabsContent value="overview" className="space-y-4">
+            {/* Point Redemption Panel */}
+            <PointRedemptionPanel />
 
-          {/* Header with stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalCustomers}</div>
-                <p className="text-xs text-muted-foreground">
-                  {getFilterLabel(dateFilter)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Puntos Totales</CardTitle>
-                <Star className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Puntos acumulados
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Envíos Totales</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalShipments}</div>
-                <p className="text-xs text-muted-foreground">
-                  Envíos realizados
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Líder</CardTitle>
-                <Award className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold truncate">{topCustomer?.name || '-'}</div>
-                <p className="text-xs text-muted-foreground">
-                  {topCustomer ? `${topCustomer.totalPoints} puntos` : 'Sin datos'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main content */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    Ranking de Fidelización
-                  </CardTitle>
-                   <CardDescription>
-                     Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo adicional (después del primer kilo).
-                     <br />
-                     <strong>Solo se cuentan envíos entregados y pagados del último año.</strong>
-                   </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
+            {/* Header with stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalCustomers}</div>
+                  <p className="text-xs text-muted-foreground">
                     {getFilterLabel(dateFilter)}
-                  </Badge>
-                  <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="week">Esta semana</SelectItem>
-                      <SelectItem value="month">Este mes</SelectItem>
-                      <SelectItem value="all">Histórico total</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Puntos Totales</CardTitle>
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Puntos acumulados
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Envíos Totales</CardTitle>
+                  <Trophy className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalShipments}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Envíos realizados
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Líder</CardTitle>
+                  <Award className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold truncate">{topCustomer?.name || '-'}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {topCustomer ? `${topCustomer.totalPoints} puntos` : 'Sin datos'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main content */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-yellow-500" />
+                      Ranking de Fidelización
+                    </CardTitle>
+                     <CardDescription>
+                       Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 50 puntos base + 10 puntos por kilo adicional (después del primer kilo).
+                       <br />
+                       <strong>Solo se cuentan envíos entregados y pagados del último año.</strong>
+                     </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {getFilterLabel(dateFilter)}
+                    </Badge>
+                    <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="week">Esta semana</SelectItem>
+                        <SelectItem value="month">Este mes</SelectItem>
+                        <SelectItem value="all">Histórico total</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <FidelizationTable 
-                data={fidelizationData} 
-                isLoading={isLoading}
-                dateFilter={dateFilter}
-                onCustomerClick={handleCustomerClick}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardHeader>
+              <CardContent>
+                <FidelizationTable 
+                  data={fidelizationData} 
+                  isLoading={isLoading}
+                  dateFilter={dateFilter}
+                  onCustomerClick={handleCustomerClick}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="test" className="mt-4">
-          <TestRedemptionPanel />
-        </TabsContent>
+          <TabsContent value="redemption" className="space-y-4">
+            <PointRedemptionPanel />
+          </TabsContent>
 
-        <TabsContent value="settings" className="mt-4">
-          <RedemptionMessageSettings />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="test" className="space-y-4">
+            <TestRedemptionPanel />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Tabs defaultValue="redemption" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="redemption">Plantilla Redención</TabsTrigger>
+                <TabsTrigger value="bulk">Plantillas Masivas</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="redemption">
+                <RedemptionMessageSettings />
+              </TabsContent>
+              
+              <TabsContent value="bulk">
+                <BulkTemplatesSettings />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="bulk" className="space-y-4">
+            <BulkMessagePanel />
+          </TabsContent>
+        </Tabs>
 
       {/* Customer Detail Modal */}
       <CustomerDetailModal

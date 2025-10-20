@@ -213,6 +213,101 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_fidelization_log: {
+        Row: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          error_message: string | null
+          id: string
+          message_content: string
+          message_type: string
+          points_available: number
+          sent_at: string | null
+          status: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          error_message?: string | null
+          id?: string
+          message_content: string
+          message_type: string
+          points_available: number
+          sent_at?: string | null
+          status?: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          message_type?: string
+          points_available?: number
+          sent_at?: string | null
+          status?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_fidelization_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_fidelization_settings: {
+        Row: {
+          created_at: string
+          id: string
+          motivational_template: string
+          motivational_template_language: string | null
+          motivational_template_name: string | null
+          motivational_use_template: boolean | null
+          redeemable_template: string
+          redeemable_template_language: string | null
+          redeemable_template_name: string | null
+          redeemable_use_template: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivational_template?: string
+          motivational_template_language?: string | null
+          motivational_template_name?: string | null
+          motivational_use_template?: boolean | null
+          redeemable_template?: string
+          redeemable_template_language?: string | null
+          redeemable_template_name?: string | null
+          redeemable_use_template?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivational_template?: string
+          motivational_template_language?: string | null
+          motivational_template_name?: string | null
+          motivational_use_template?: boolean | null
+          redeemable_template?: string
+          redeemable_template_language?: string | null
+          redeemable_template_name?: string | null
+          redeemable_use_template?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bultos: {
         Row: {
           bulto_number: number

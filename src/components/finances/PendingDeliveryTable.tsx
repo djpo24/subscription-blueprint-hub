@@ -100,7 +100,7 @@ export function PendingDeliveryTable() {
   };
 
   const canDeliverPackage = (status: string) => {
-    return status === 'en_destino' || status === 'en_transito';
+    return status === 'en_destino' || status === 'en_transito' || status === 'procesado';
   };
 
   if (isLoading) {

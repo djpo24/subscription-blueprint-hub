@@ -385,27 +385,16 @@ serve(async (req) => {
         
         const verificationCode = templateParameters.verificationCode || '0000';
         
-        // La plantilla "redimir" requiere dos componentes:
-        // 1. Body con el código de verificación
-        // 2. Button (URL dinámico) con el código como parámetro
         templatePayload.template.components = [
           {
             type: 'body',
             parameters: [
               { type: 'text', text: verificationCode }
             ]
-          },
-          {
-            type: 'button',
-            sub_type: 'url',
-            index: 0,
-            parameters: [
-              { type: 'text', text: verificationCode }
-            ]
           }
         ];
         
-        console.log('✅ Template REDIMIR configurado con código en body y button:', verificationCode);
+        console.log('✅ Template REDIMIR configurado con código:', verificationCode);
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

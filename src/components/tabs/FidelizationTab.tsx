@@ -7,8 +7,9 @@ import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
 import { CustomerDetailModal } from '@/components/fidelization/CustomerDetailModal';
 import { PointRedemptionPanel } from '@/components/fidelization/PointRedemptionPanel';
 import { RedemptionMessageSettings } from '@/components/fidelization/RedemptionMessageSettings';
+import { TestRedemptionPanel } from '@/components/fidelization/TestRedemptionPanel';
 import { useFidelizationData, DateFilter, FidelizationCustomer } from '@/hooks/useFidelizationData';
-import { Trophy, Users, Star, Award, Settings } from 'lucide-react';
+import { Trophy, Users, Star, Award, Settings, TestTube } from 'lucide-react';
 
 export function FidelizationTab() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -57,10 +58,14 @@ export function FidelizationTab() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="fidelization" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="fidelization" className="flex items-center gap-2">
             <Trophy className="h-4 w-4" />
             Fidelización
+          </TabsTrigger>
+          <TabsTrigger value="test" className="flex items-center gap-2">
+            <TestTube className="h-4 w-4" />
+            Test
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -168,6 +173,10 @@ export function FidelizationTab() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="test" className="mt-4">
+          <TestRedemptionPanel />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">

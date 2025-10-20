@@ -9,6 +9,7 @@ export interface FidelizationCustomer {
   bestStreak: number;
   totalPoints: number;
   position: number;
+  lastShipmentDate: string | null;
 }
 
 export type DateFilter = 'week' | 'month' | 'all';
@@ -126,13 +127,19 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
         // Calculate best streak
         const bestStreak = calculateBestStreak(packages);
 
+        // Get last shipment date
+        const lastShipmentDate = packages.length > 0 
+          ? packages[packages.length - 1].created_at 
+          : null;
+
         return {
           id: customer.id,
           name: customer.name,
           totalShipments,
           bestStreak,
           totalPoints: Math.round(totalPoints),
-          position: 0 // Will be set after sorting
+          position: 0, // Will be set after sorting
+          lastShipmentDate
         };
       });
 

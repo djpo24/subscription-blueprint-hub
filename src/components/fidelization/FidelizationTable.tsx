@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Crown, Trophy, Medal, Star } from 'lucide-react';
 import { FidelizationCustomer, DateFilter } from '@/hooks/useFidelizationData';
 import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface FidelizationTableProps {
   data: FidelizationCustomer[];
@@ -94,6 +96,7 @@ export function FidelizationTable({ data, isLoading, dateFilter, onCustomerClick
             <TableHead>Cliente</TableHead>
             <TableHead className="text-center">Envíos Totales</TableHead>
             <TableHead className="text-center">Mejor Racha</TableHead>
+            <TableHead className="text-center">Último Envío</TableHead>
             <TableHead className="text-right">Puntos Acumulados</TableHead>
           </TableRow>
         </TableHeader>
@@ -134,6 +137,15 @@ export function FidelizationTable({ data, isLoading, dateFilter, onCustomerClick
                     </span>
                   )}
                 </div>
+              </TableCell>
+              <TableCell className="text-center">
+                {customer.lastShipmentDate ? (
+                  <div className="text-sm">
+                    {format(parseISO(customer.lastShipmentDate), 'dd/MM/yyyy', { locale: es })}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
               </TableCell>
               <TableCell className="text-right">
                 <div className="font-bold text-lg">

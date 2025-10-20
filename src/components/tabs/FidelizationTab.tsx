@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { FidelizationTable } from '@/components/fidelization/FidelizationTable';
 import { CustomerDetailModal } from '@/components/fidelization/CustomerDetailModal';
+import { PointRedemptionPanel } from '@/components/fidelization/PointRedemptionPanel';
 import { useFidelizationData, DateFilter, FidelizationCustomer } from '@/hooks/useFidelizationData';
 import { Trophy, Users, Star, Award } from 'lucide-react';
 
@@ -53,6 +54,9 @@ export function FidelizationTab() {
 
   return (
     <div className="space-y-4">
+      {/* Point Redemption Panel */}
+      <PointRedemptionPanel />
+
       {/* Header with stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -118,9 +122,9 @@ export function FidelizationTab() {
                 Ranking de Fidelización
               </CardTitle>
                <CardDescription>
-                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 90 puntos base + 10 puntos por kilo.
+                 Ranking de clientes ordenado por puntos acumulados. Los puntos se calculan como 60 puntos base + 10 puntos por kilo.
                  <br />
-                 <strong>Solo se cuentan envíos entregados y pagados.</strong>
+                 <strong>Solo se cuentan envíos entregados y pagados del último año.</strong>
                </CardDescription>
             </div>
             <div className="flex items-center gap-2">

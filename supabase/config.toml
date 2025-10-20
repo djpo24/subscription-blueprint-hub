@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.retry-failed-messages]
 verify_jwt = true
 
+[functions.send-redemption-code]
+verify_jwt = true
+
 [realtime]
 enabled = true
 port = 54323

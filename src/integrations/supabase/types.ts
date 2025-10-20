@@ -903,6 +903,59 @@ export type Database = {
           },
         ]
       }
+      point_redemptions: {
+        Row: {
+          code_sent_at: string
+          code_verified_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          expires_at: string
+          id: string
+          kilos_earned: number
+          notes: string | null
+          points_redeemed: number
+          status: string
+          verification_code: string
+        }
+        Insert: {
+          code_sent_at?: string
+          code_verified_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          expires_at?: string
+          id?: string
+          kilos_earned: number
+          notes?: string | null
+          points_redeemed: number
+          status?: string
+          verification_code: string
+        }
+        Update: {
+          code_sent_at?: string
+          code_verified_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          kilos_earned?: number
+          notes?: string | null
+          points_redeemed?: number
+          status?: string
+          verification_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_freight_rates: {
         Row: {
           created_at: string
@@ -1413,6 +1466,10 @@ export type Database = {
           return_date: string
           template_param: string
         }
+        Returns: string
+      }
+      generate_verification_code: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_app_secret: {

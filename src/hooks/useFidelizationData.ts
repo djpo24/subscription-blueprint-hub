@@ -74,7 +74,9 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           filterDate = startOfMonth(now);
           break;
         default:
-          filterDate = new Date(0); // All time
+          // For 'all', only count packages from the last year
+          filterDate = new Date();
+          filterDate.setFullYear(filterDate.getFullYear() - 1);
       }
 
       const filteredPackages = packages.filter(pkg => 

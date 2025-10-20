@@ -87,8 +87,33 @@ serve(async (req) => {
         let whatsappPayload;
 
         if (useTemplate && templateName) {
-          // Send using WhatsApp Business Template (estructura igual a notificaciones de llegadas)
+          // Send using WhatsApp Business Template
           console.log(`📋 Usando template: ${templateName} para ${message.customerName}`);
+          
+          // Preparar parámetros según el tipo de mensaje
+          let templateParameters;
+          
+          if (message.messageType === 'redeemable') {
+            // Template "canjea" - para clientes con ≥1000 puntos
+            // Parámetros: nombre_cliente, puntos_disponibles, kilos_disponibles
+            const kilos = Math.floor(message.pointsAvailable / 1000);
+            templateParameters = [
+              { type: 'text', text: message.customerName },
+              { type: 'text', text: message.pointsAvailable.toString() },
+              { type: 'text', text: kilos.toString() }
+            ];
+            console.log(`🎁 Parámetros canjeable: nombre="${message.customerName}", puntos=${message.pointsAvailable}, kilos=${kilos}`);
+          } else {
+            // Template "pendiente_canje" - para clientes con <1000 puntos
+            // Parámetros: nombre_cliente, puntos_disponibles, puntos_faltantes
+            const puntosFaltantes = Math.max(0, 1000 - message.pointsAvailable);
+            templateParameters = [
+              { type: 'text', text: message.customerName },
+              { type: 'text', text: message.pointsAvailable.toString() },
+              { type: 'text', text: puntosFaltantes.toString() }
+            ];
+            console.log(`📈 Parámetros motivacional: nombre="${message.customerName}", puntos=${message.pointsAvailable}, faltantes=${puntosFaltantes}`);
+          }
           
           whatsappPayload = {
             messaging_product: 'whatsapp',
@@ -102,22 +127,13 @@ serve(async (req) => {
               components: [
                 {
                   type: 'body',
-                  parameters: [
-                    { type: 'text', text: message.customerName },
-                    { type: 'text', text: message.pointsAvailable.toString() },
-                    { 
-                      type: 'text', 
-                      text: message.messageType === 'redeemable' 
-                        ? Math.floor(message.pointsAvailable / 1000).toString()
-                        : Math.max(0, 1000 - message.pointsAvailable).toString()
-                    }
-                  ]
+                  parameters: templateParameters
                 }
               ]
             }
           };
 
-          console.log(`✅ Template payload configurado para ${message.customerName}`);
+          console.log(`✅ Template payload configurado:`, JSON.stringify(whatsappPayload, null, 2));
         } else {
           // Send using plain text message (fallback)
           console.log(`💬 Usando mensaje de texto para ${message.customerName}`);

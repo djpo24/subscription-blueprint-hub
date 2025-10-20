@@ -133,7 +133,8 @@ serve(async (req) => {
             }
           };
 
-          console.log(`✅ Template payload configurado:`, JSON.stringify(whatsappPayload, null, 2));
+          console.log(`✅ Template payload configurado:`);
+          console.log(JSON.stringify(whatsappPayload, null, 2));
         } else {
           // Send using plain text message (fallback)
           console.log(`💬 Usando mensaje de texto para ${message.customerName}`);

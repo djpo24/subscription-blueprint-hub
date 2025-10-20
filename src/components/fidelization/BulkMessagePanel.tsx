@@ -29,6 +29,12 @@ export function BulkMessagePanel() {
   const [sentCount, setSentCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
   const [totalMessages, setTotalMessages] = useState(0);
+  const [sendingStatus, setSendingStatus] = useState<Array<{
+    customerId: string;
+    customerName: string;
+    status: 'pending' | 'sending' | 'sent' | 'failed';
+    error?: string;
+  }>>([]);
 
   const handleRefreshCustomers = async () => {
     console.log('🔄 Recargando datos de fidelización...');
@@ -137,12 +143,17 @@ export function BulkMessagePanel() {
       return;
     }
 
-    // Reset counters
+    // Reset counters e inicializar estados
     setSentCount(0);
     setFailedCount(0);
     setTotalMessages(messagePreviews.length);
     setSendingProgress(0);
     setIsSending(true);
+    setSendingStatus(messagePreviews.map(m => ({
+      customerId: m.customerId,
+      customerName: m.customerName,
+      status: 'pending' as const,
+    })));
 
     try {
       console.log('🚀 Iniciando envío masivo (IGUAL QUE VIAJES)...');
@@ -155,6 +166,13 @@ export function BulkMessagePanel() {
         const message = messagePreviews[i];
         
         console.log(`📤 Procesando ${i + 1}/${messagePreviews.length}: ${message.customerName}`);
+        
+        // Actualizar UI: enviando
+        setSendingStatus(prev => prev.map(s => 
+          s.customerId === message.customerId 
+            ? { ...s, status: 'sending' as const }
+            : s
+        ));
         
         try {
           // 1. Crear registro en bulk_fidelization_log
@@ -174,6 +192,14 @@ export function BulkMessagePanel() {
 
           if (logError || !logData) {
             console.error(`❌ Error creando log para ${message.customerName}:`, logError);
+            const errorMsg = logError?.message || 'Error creando registro';
+            
+            setSendingStatus(prev => prev.map(s => 
+              s.customerId === message.customerId 
+                ? { ...s, status: 'failed' as const, error: errorMsg }
+                : s
+            ));
+            
             failedCount++;
             
             await supabase.from('bulk_fidelization_log').insert({
@@ -184,7 +210,7 @@ export function BulkMessagePanel() {
               message_content: message.messageContent,
               points_available: message.pointsAvailable,
               status: 'failed',
-              error_message: logError?.message || 'Error creando registro'
+              error_message: errorMsg
             });
             
             continue;
@@ -229,14 +255,25 @@ export function BulkMessagePanel() {
             }
           });
 
-          if (whatsappError || (whatsappResponse && whatsappResponse.error)) {
-            console.error(`❌ Error WhatsApp para ${message.customerName}:`, whatsappError || whatsappResponse.error);
+          if (whatsappError || (whatsappResponse && !whatsappResponse.success)) {
+            const errorDetail = whatsappResponse?.error || whatsappError?.message || 'Error desconocido';
+            const errorCode = whatsappResponse?.error_code || 'N/A';
+            const fullError = `[${errorCode}] ${errorDetail}`;
+            
+            console.error(`❌ Error WhatsApp para ${message.customerName}:`, fullError);
+            console.error('📋 Debug completo:', whatsappResponse);
+            
+            setSendingStatus(prev => prev.map(s => 
+              s.customerId === message.customerId 
+                ? { ...s, status: 'failed' as const, error: fullError }
+                : s
+            ));
             
             await supabase
               .from('bulk_fidelization_log')
               .update({ 
                 status: 'failed',
-                error_message: whatsappError?.message || whatsappResponse?.error || 'Error de WhatsApp'
+                error_message: fullError
               })
               .eq('id', logData.id);
             
@@ -254,11 +291,24 @@ export function BulkMessagePanel() {
             })
             .eq('id', logData.id);
 
+          setSendingStatus(prev => prev.map(s => 
+            s.customerId === message.customerId 
+              ? { ...s, status: 'sent' as const }
+              : s
+          ));
+
           successCount++;
           console.log(`✅ Enviado: ${message.customerName}`);
 
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
           console.error(`❌ Error procesando ${message.customerName}:`, error);
+          
+          setSendingStatus(prev => prev.map(s => 
+            s.customerId === message.customerId 
+              ? { ...s, status: 'failed' as const, error: errorMsg }
+              : s
+          ));
           
           await supabase.from('bulk_fidelization_log').insert({
             customer_id: message.customerId,
@@ -268,11 +318,15 @@ export function BulkMessagePanel() {
             message_content: message.messageContent,
             points_available: message.pointsAvailable,
             status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Error desconocido'
+            error_message: errorMsg
           });
           
           failedCount++;
         }
+
+        // Actualizar progreso
+        setSentCount(successCount);
+        setFailedCount(failedCount);
 
         // Pequeña pausa entre mensajes
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -294,6 +348,7 @@ export function BulkMessagePanel() {
         setSentCount(0);
         setFailedCount(0);
         setTotalMessages(0);
+        setSendingStatus([]);
       }, 3000);
 
     } catch (error) {
@@ -342,26 +397,51 @@ export function BulkMessagePanel() {
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4">
             <div className="space-y-4">
-              {messagePreviews.map((preview, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">{preview.customerName}</p>
-                      <p className="text-sm text-muted-foreground">{preview.customerPhone}</p>
+              {messagePreviews.map((preview, index) => {
+                const status = sendingStatus.find(s => s.customerId === preview.customerId);
+                return (
+                  <div key={index} className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold">{preview.customerName}</p>
+                        <p className="text-sm text-muted-foreground">{preview.customerPhone}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={preview.messageType === 'redeemable' ? 'default' : 'secondary'}
+                          className={preview.messageType === 'redeemable' ? 'bg-green-600' : 'bg-amber-600'}
+                        >
+                          {preview.messageType === 'redeemable' ? '🎁 Canjeable' : '📈 Motivacional'}
+                          <span className="ml-2">{preview.pointsAvailable} pts</span>
+                        </Badge>
+                        {status && (
+                          <Badge 
+                            variant={
+                              status.status === 'sent' ? 'default' : 
+                              status.status === 'failed' ? 'destructive' : 
+                              status.status === 'sending' ? 'secondary' : 
+                              'outline'
+                            }
+                          >
+                            {status.status === 'sent' && '✅ Enviado'}
+                            {status.status === 'failed' && '❌ Error'}
+                            {status.status === 'sending' && '⏳ Enviando...'}
+                            {status.status === 'pending' && '⏸️ Pendiente'}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Badge 
-                      variant={preview.messageType === 'redeemable' ? 'default' : 'secondary'}
-                      className={preview.messageType === 'redeemable' ? 'bg-green-600' : 'bg-amber-600'}
-                    >
-                      {preview.messageType === 'redeemable' ? '🎁 Canjeable' : '📈 Motivacional'}
-                      <span className="ml-2">{preview.pointsAvailable} pts</span>
-                    </Badge>
+                    {status?.error && (
+                      <div className="text-xs p-2 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded">
+                        <strong>Error:</strong> {status.error}
+                      </div>
+                    )}
+                    <div className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">
+                      {preview.messageContent}
+                    </div>
                   </div>
-                  <div className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">
-                    {preview.messageContent}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
 

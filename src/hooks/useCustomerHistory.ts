@@ -64,7 +64,7 @@ export function useCustomerHistory(customerId: string | null) {
         })
         .map(pkg => {
           const weight = pkg.weight || 0;
-          const basePoints = 90; // 90 points per shipment
+          const basePoints = 60; // 60 points per shipment
           const weightPoints = weight * 10; // 10 points per kilo
           const totalPoints = basePoints + weightPoints;
 

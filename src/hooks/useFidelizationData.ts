@@ -38,6 +38,19 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
     queryFn: async (): Promise<FidelizationCustomer[]> => {
       console.log('🏆 Fetching fidelization data...');
 
+      // Get ALL customers first
+      const { data: allCustomers, error: customersError } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .order('name', { ascending: true });
+
+      if (customersError) {
+        console.error('❌ Error fetching customers:', customersError);
+        throw customersError;
+      }
+
+      if (!allCustomers) return [];
+
       // Get all packages with customer data and payments
       const { data: packages, error } = await supabase
         .from('packages')
@@ -47,11 +60,6 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           weight,
           status,
           created_at,
-          customers (
-            id,
-            name,
-            phone
-          ),
           customer_payments (
             id,
             amount
@@ -63,8 +71,6 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
         console.error('❌ Error fetching packages for fidelization:', error);
         throw error;
       }
-
-      if (!packages) return [];
 
       // Filter packages by date
       const now = new Date();
@@ -83,20 +89,15 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           filterDate.setFullYear(filterDate.getFullYear() - 1);
       }
 
-      const filteredPackages = packages.filter(pkg => 
+      const filteredPackages = packages?.filter(pkg => 
         isAfter(parseISO(pkg.created_at), filterDate)
-      );
+      ) || [];
 
       // Group packages by customer
-      const customerMap = new Map<string, {
-        id: string;
-        name: string;
-        phone: string | null;
-        packages: Package[];
-      }>();
+      const packagesByCustomer = new Map<string, Package[]>();
 
       filteredPackages.forEach(pkg => {
-        if (!pkg.customers || !pkg.customer_id) return;
+        if (!pkg.customer_id) return;
         
         // Only count packages that are delivered AND have payments
         const isDelivered = pkg.status === 'delivered';
@@ -104,20 +105,15 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
         
         if (!isDelivered || !hasPay) return;
         
-        if (!customerMap.has(pkg.customer_id)) {
-          customerMap.set(pkg.customer_id, {
-            id: pkg.customer_id,
-            name: pkg.customers.name,
-            phone: pkg.customers.phone,
-            packages: []
-          });
+        if (!packagesByCustomer.has(pkg.customer_id)) {
+          packagesByCustomer.set(pkg.customer_id, []);
         }
-        customerMap.get(pkg.customer_id)!.packages.push(pkg as Package);
+        packagesByCustomer.get(pkg.customer_id)!.push(pkg as Package);
       });
 
-      // Calculate metrics for each customer
-      const fidelizationData: FidelizationCustomer[] = Array.from(customerMap.values()).map(customer => {
-        const packages = customer.packages;
+      // Calculate metrics for ALL customers
+      const fidelizationData: FidelizationCustomer[] = allCustomers.map(customer => {
+        const packages = packagesByCustomer.get(customer.id) || [];
         
         // Total shipments
         const totalShipments = packages.length;

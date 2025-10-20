@@ -32,7 +32,10 @@ export function BulkMessagePanel() {
       const result = await refetch();
       if (result.data) {
         setIsLoaded(true);
-        toast.success(`${result.data.length} clientes cargados exitosamente`);
+        const redeemable = result.data.filter(c => c.totalPoints >= 1000).length;
+        const motivational = result.data.filter(c => c.totalPoints < 1000).length;
+        toast.success(`${result.data.length} clientes cargados: ${redeemable} canjeables, ${motivational} motivacionales`);
+        console.log(`📊 Segmentación: ${redeemable} con ≥1000pts, ${motivational} con <1000pts`);
       }
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -41,34 +44,36 @@ export function BulkMessagePanel() {
   };
 
   const messagePreviews = useMemo<MessagePreview[]>(() => {
-    if (!fidelizationData || !settings) return [];
+    if (!fidelizationData || !settings || !isLoaded) return [];
 
-    return fidelizationData.map(customer => {
-      const totalPoints = customer.totalPoints;
-      const isRedeemable = totalPoints >= 1000;
-      const kilosAvailable = Math.floor(totalPoints / 1000);
-      const pointsMissing = Math.max(0, 1000 - totalPoints);
+    return fidelizationData
+      .filter(customer => customer.phone) // Solo clientes con teléfono
+      .map(customer => {
+        const totalPoints = customer.totalPoints;
+        const isRedeemable = totalPoints >= 1000;
+        const kilosAvailable = Math.floor(totalPoints / 1000);
+        const pointsMissing = Math.max(0, 1000 - totalPoints);
 
-      let messageContent = isRedeemable 
-        ? settings.redeemable_template 
-        : settings.motivational_template;
+        let messageContent = isRedeemable 
+          ? settings.redeemable_template 
+          : settings.motivational_template;
 
-      messageContent = messageContent
-        .replace(/\{\{nombre_cliente\}\}/g, customer.name)
-        .replace(/\{\{puntos_disponibles\}\}/g, totalPoints.toString())
-        .replace(/\{\{kilos_disponibles\}\}/g, kilosAvailable.toString())
-        .replace(/\{\{puntos_faltantes\}\}/g, pointsMissing.toString());
+        messageContent = messageContent
+          .replace(/\{\{nombre_cliente\}\}/g, customer.name)
+          .replace(/\{\{puntos_disponibles\}\}/g, totalPoints.toString())
+          .replace(/\{\{kilos_disponibles\}\}/g, kilosAvailable.toString())
+          .replace(/\{\{puntos_faltantes\}\}/g, pointsMissing.toString());
 
-      return {
-        customerId: customer.id,
-        customerName: customer.name,
-        customerPhone: customer.phone || '',
-        messageType: isRedeemable ? 'redeemable' : 'motivational',
-        messageContent,
-        pointsAvailable: totalPoints,
-      };
-    });
-  }, [fidelizationData, settings]);
+        return {
+          customerId: customer.id,
+          customerName: customer.name,
+          customerPhone: customer.phone || '',
+          messageType: isRedeemable ? 'redeemable' : 'motivational',
+          messageContent,
+          pointsAvailable: totalPoints,
+        };
+      });
+  }, [fidelizationData, settings, isLoaded]);
 
   const redeemableCount = messagePreviews.filter(m => m.messageType === 'redeemable').length;
   const motivationalCount = messagePreviews.filter(m => m.messageType === 'motivational').length;

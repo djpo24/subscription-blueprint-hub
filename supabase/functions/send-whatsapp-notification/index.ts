@@ -403,6 +403,62 @@ serve(async (req) => {
         ];
         
         console.log('✅ Template REDIMIR configurado con código en body y button:', verificationCode);
+      } else if (autoSelectedTemplate === 'canjea' && templateParameters) {
+        console.log('🎁 CONFIGURANDO PLANTILLA CANJEA (Fidelización - Canjeable)');
+        console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
+        
+        const customerName = templateParameters.customerName || 'Cliente';
+        const pointsAvailable = templateParameters.pointsAvailable || '0';
+        const kilosAvailable = templateParameters.kilosAvailable || '0';
+
+        console.log('📋 Parámetros formateados:', {
+          customerName,
+          pointsAvailable,
+          kilosAvailable
+        });
+
+        // CONFIGURACIÓN: Solo Body con 3 parámetros
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: customerName },      // {{1}} - nombre del cliente
+              { type: 'text', text: pointsAvailable },   // {{2}} - puntos disponibles
+              { type: 'text', text: kilosAvailable }     // {{3}} - kilos disponibles
+            ]
+          }
+        ];
+
+        console.log('✅ PLANTILLA CANJEA configurada - Body con 3 parámetros');
+        console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2));
+      } else if (autoSelectedTemplate === 'pendiente_canje' && templateParameters) {
+        console.log('📈 CONFIGURANDO PLANTILLA PENDIENTE_CANJE (Fidelización - Motivacional)');
+        console.log('📋 TemplateParameters recibidos:', JSON.stringify(templateParameters, null, 2));
+        
+        const customerName = templateParameters.customerName || 'Cliente';
+        const pointsAvailable = templateParameters.pointsAvailable || '0';
+        const pointsMissing = templateParameters.pointsMissing || '0';
+
+        console.log('📋 Parámetros formateados:', {
+          customerName,
+          pointsAvailable,
+          pointsMissing
+        });
+
+        // CONFIGURACIÓN: Solo Body con 3 parámetros
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: customerName },      // {{1}} - nombre del cliente
+              { type: 'text', text: pointsAvailable },   // {{2}} - puntos disponibles
+              { type: 'text', text: pointsMissing }      // {{3}} - puntos faltantes
+            ]
+          }
+        ];
+
+        console.log('✅ PLANTILLA PENDIENTE_CANJE configurada - Body con 3 parámetros');
+        console.log('🔍 Template components final:', JSON.stringify(templatePayload.template.components, null, 2));
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

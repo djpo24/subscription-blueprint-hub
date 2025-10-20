@@ -46,13 +46,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const whatsappToken = Deno.env.get('META_WHATSAPP_TOKEN');
-    const phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
-
-    if (!whatsappToken || !phoneNumberId) {
-      throw new Error('WhatsApp credentials not configured');
-    }
-
     let successCount = 0;
     let failedCount = 0;
 
@@ -83,89 +76,57 @@ serve(async (req) => {
           console.log(`📋 Usar template: ${useTemplate}, nombre: ${templateName}`);
         }
 
-        let whatsappResponse;
-        let whatsappPayload;
-
+        // Preparar parámetros del template (igual que en notificaciones de viajes)
+        let templateParameters = null;
+        
         if (useTemplate && templateName) {
-          // Send using WhatsApp Business Template - ESTRUCTURA IDÉNTICA A PROXIMOS_VIAJES
-          console.log(`📋 Usando template: ${templateName} para ${message.customerName}`);
-          
-          // Preparar parámetros según el tipo de mensaje
-          let templateParameters;
+          console.log(`📋 Preparando templateParameters para ${templateName}`);
           
           if (message.messageType === 'redeemable') {
             // Template "canjea" - para clientes con ≥1000 puntos
-            // Parámetros: {{1}} nombre_cliente, {{2}} puntos_disponibles, {{3}} kilos_disponibles
             const kilos = Math.floor(message.pointsAvailable / 1000);
-            templateParameters = [
-              { type: 'text', text: message.customerName },
-              { type: 'text', text: message.pointsAvailable.toString() },
-              { type: 'text', text: kilos.toString() }
-            ];
-            console.log(`🎁 Parámetros canjeable: nombre="${message.customerName}", puntos=${message.pointsAvailable}, kilos=${kilos}`);
+            templateParameters = {
+              customerName: message.customerName,
+              pointsAvailable: message.pointsAvailable.toString(),
+              kilosAvailable: kilos.toString()
+            };
+            console.log(`🎁 Parámetros: nombre="${message.customerName}", puntos=${message.pointsAvailable}, kilos=${kilos}`);
           } else {
             // Template "pendiente_canje" - para clientes con <1000 puntos
-            // Parámetros: {{1}} nombre_cliente, {{2}} puntos_disponibles, {{3}} puntos_faltantes
             const puntosFaltantes = Math.max(0, 1000 - message.pointsAvailable);
-            templateParameters = [
-              { type: 'text', text: message.customerName },
-              { type: 'text', text: message.pointsAvailable.toString() },
-              { type: 'text', text: puntosFaltantes.toString() }
-            ];
-            console.log(`📈 Parámetros motivacional: nombre="${message.customerName}", puntos=${message.pointsAvailable}, faltantes=${puntosFaltantes}`);
+            templateParameters = {
+              customerName: message.customerName,
+              pointsAvailable: message.pointsAvailable.toString(),
+              pointsMissing: puntosFaltantes.toString()
+            };
+            console.log(`📈 Parámetros: nombre="${message.customerName}", puntos=${message.pointsAvailable}, faltantes=${puntosFaltantes}`);
           }
-          
-          // ESTRUCTURA IDÉNTICA A PROXIMOS_VIAJES
-          whatsappPayload = {
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'template',
-            template: {
-              name: templateName,
-              language: {
-                code: templateLanguage
-              },
-              components: [
-                {
-                  type: 'body',
-                  parameters: templateParameters
-                }
-              ]
-            }
-          };
-
-          console.log('✅ Template payload configurado:');
-          console.log(JSON.stringify(whatsappPayload, null, 2));
-        } else {
-          // Send using plain text message (fallback)
-          console.log(`💬 Usando mensaje de texto para ${message.customerName}`);
-          
-          whatsappPayload = {
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'text',
-            text: { body: message.messageContent }
-          };
         }
 
-        // Enviar mensaje a WhatsApp
-        whatsappResponse = await fetch(
-          `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${whatsappToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(whatsappPayload),
-          }
-        );
-
-        const whatsappData = await whatsappResponse.json();
+        // Enviar usando el mismo endpoint que notificaciones de viajes
+        console.log(`📞 Llamando a send-whatsapp-notification...`);
         
-        console.log(`📱 Respuesta de WhatsApp:`, whatsappData);
+        const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+          body: {
+            notificationId: null, // No tenemos notificationId para mensajes masivos
+            phone: message.customerPhone,
+            message: message.messageContent,
+            useTemplate: useTemplate,
+            templateName: templateName,
+            templateLanguage: templateLanguage,
+            templateParameters: templateParameters,
+            customerId: message.customerId
+          }
+        });
 
-        if (whatsappResponse.ok) {
+        console.log(`📱 Respuesta de send-whatsapp-notification:`, whatsappResult);
+
+        if (whatsappError || whatsappResult?.error) {
+          console.error(`❌ Error en respuesta:`, whatsappError || whatsappResult?.error);
+          throw new Error(whatsappResult?.error || whatsappError?.message || 'Failed to send WhatsApp message');
+        }
+
+        if (whatsappResult?.success) {
           console.log(`✅ Mensaje enviado exitosamente a ${message.customerName}`);
           
           // Log successful message
@@ -177,14 +138,13 @@ serve(async (req) => {
             message_content: message.messageContent,
             points_available: message.pointsAvailable,
             status: 'sent',
-            whatsapp_message_id: whatsappData.messages?.[0]?.id,
+            whatsapp_message_id: whatsappResult.messageId,
             sent_at: new Date().toISOString()
           });
 
           successCount++;
         } else {
-          console.error(`❌ Error en respuesta de WhatsApp:`, whatsappData);
-          throw new Error(whatsappData.error?.message || 'Failed to send WhatsApp message');
+          throw new Error('Unexpected response from send-whatsapp-notification');
         }
       } catch (error) {
         console.error(`❌ Error enviando a ${message.customerName}:`, error);

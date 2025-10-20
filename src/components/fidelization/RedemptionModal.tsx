@@ -64,7 +64,7 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
         .from('packages')
         .select('id, tracking_number, description, status, amount_to_collect, currency, weight')
         .eq('customer_id', customer.id)
-        .in('status', ['pending', 'received', 'processing'])
+        .in('status', ['pending', 'recibido', 'procesado', 'en_destino'])
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
@@ -336,7 +336,7 @@ export function RedemptionModal({ customer, isOpen, onClose }: RedemptionModalPr
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Solo se muestran paquetes en estado "Pendiente", "Recibido" o "Procesado"
+                  Solo se muestran paquetes antes de ser entregados (Pendiente, Recibido, Procesado, En Destino)
                 </p>
               </div>
 

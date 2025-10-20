@@ -32,6 +32,16 @@ serve(async (req) => {
   try {
     const { messages, settings }: { messages: MessagePreview[], settings: Settings } = await req.json();
     
+    console.log('🚀 Iniciando envío masivo de fidelización');
+    console.log(`📊 Total de mensajes a enviar: ${messages.length}`);
+    
+    // Separar clientes por tipo de mensaje
+    const redeemableMessages = messages.filter(m => m.messageType === 'redeemable');
+    const motivationalMessages = messages.filter(m => m.messageType === 'motivational');
+    
+    console.log(`✅ Clientes con ≥1000 puntos (canjeables): ${redeemableMessages.length}`);
+    console.log(`📈 Clientes con <1000 puntos (motivacionales): ${motivationalMessages.length}`);
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -50,6 +60,11 @@ serve(async (req) => {
       try {
         const phone = message.customerPhone.replace(/\D/g, '');
         
+        console.log(`\n📤 Procesando mensaje ${successCount + failedCount + 1}/${messages.length}`);
+        console.log(`👤 Cliente: ${message.customerName} (${phone})`);
+        console.log(`🏆 Puntos: ${message.pointsAvailable}`);
+        console.log(`📋 Tipo: ${message.messageType}`);
+        
         let useTemplate = false;
         let templateName = '';
         let templateLanguage = 'es_CO';
@@ -58,75 +73,81 @@ serve(async (req) => {
           useTemplate = settings.redeemable_use_template;
           templateName = settings.redeemable_template_name || '';
           templateLanguage = settings.redeemable_template_language || 'es_CO';
+          console.log(`🎁 Mensaje tipo: CANJEABLE (≥1000 puntos)`);
         } else {
           useTemplate = settings.motivational_use_template;
           templateName = settings.motivational_template_name || '';
           templateLanguage = settings.motivational_template_language || 'es_CO';
+          console.log(`📈 Mensaje tipo: MOTIVACIONAL (<1000 puntos)`);
         }
 
         let whatsappResponse;
+        let whatsappPayload;
 
         if (useTemplate && templateName) {
-          // Send using WhatsApp Business Template
-          const templatePayload = {
+          // Send using WhatsApp Business Template (estructura igual a notificaciones de llegadas)
+          console.log(`📋 Usando template: ${templateName} para ${message.customerName}`);
+          
+          whatsappPayload = {
             messaging_product: 'whatsapp',
             to: phone,
             type: 'template',
             template: {
               name: templateName,
-              language: { code: templateLanguage },
-              components: [{
-                type: 'body',
-                parameters: [
-                  { type: 'text', text: message.customerName },
-                  { type: 'text', text: message.pointsAvailable.toString() },
-                  { 
-                    type: 'text', 
-                    text: message.messageType === 'redeemable' 
-                      ? Math.floor(message.pointsAvailable / 1000).toString()
-                      : Math.max(0, 1000 - message.pointsAvailable).toString()
-                  }
-                ]
-              }]
+              language: {
+                code: templateLanguage
+              },
+              components: [
+                {
+                  type: 'body',
+                  parameters: [
+                    { type: 'text', text: message.customerName },
+                    { type: 'text', text: message.pointsAvailable.toString() },
+                    { 
+                      type: 'text', 
+                      text: message.messageType === 'redeemable' 
+                        ? Math.floor(message.pointsAvailable / 1000).toString()
+                        : Math.max(0, 1000 - message.pointsAvailable).toString()
+                    }
+                  ]
+                }
+              ]
             }
           };
 
-          whatsappResponse = await fetch(
-            `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${whatsappToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(templatePayload),
-            }
-          );
+          console.log(`✅ Template payload configurado para ${message.customerName}`);
         } else {
-          // Send using plain text message
-          const textPayload = {
+          // Send using plain text message (fallback)
+          console.log(`💬 Usando mensaje de texto para ${message.customerName}`);
+          
+          whatsappPayload = {
             messaging_product: 'whatsapp',
             to: phone,
             type: 'text',
             text: { body: message.messageContent }
           };
-
-          whatsappResponse = await fetch(
-            `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${whatsappToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(textPayload),
-            }
-          );
         }
 
+        // Enviar mensaje a WhatsApp
+        whatsappResponse = await fetch(
+          `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${whatsappToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(whatsappPayload),
+          }
+        );
+
         const whatsappData = await whatsappResponse.json();
+        
+        console.log(`📱 Respuesta de WhatsApp:`, whatsappData);
 
         if (whatsappResponse.ok) {
+          console.log(`✅ Mensaje enviado exitosamente a ${message.customerName}`);
+          
           // Log successful message
           await supabase.from('bulk_fidelization_log').insert({
             customer_id: message.customerId,
@@ -142,10 +163,11 @@ serve(async (req) => {
 
           successCount++;
         } else {
+          console.error(`❌ Error en respuesta de WhatsApp:`, whatsappData);
           throw new Error(whatsappData.error?.message || 'Failed to send WhatsApp message');
         }
       } catch (error) {
-        console.error(`Error sending to ${message.customerName}:`, error);
+        console.error(`❌ Error enviando a ${message.customerName}:`, error);
         
         // Log failed message
         await supabase.from('bulk_fidelization_log').insert({
@@ -162,6 +184,11 @@ serve(async (req) => {
         failedCount++;
       }
     }
+
+    console.log('\n🎉 Envío masivo completado');
+    console.log(`✅ Exitosos: ${successCount}`);
+    console.log(`❌ Fallidos: ${failedCount}`);
+    console.log(`📊 Total: ${messages.length}`);
 
     return new Response(
       JSON.stringify({ 

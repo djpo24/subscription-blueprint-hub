@@ -97,43 +97,53 @@ export function BulkMessagePanel() {
   }
 
   if (!showPreview) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Envío Masivo de Mensajes de Fidelización</CardTitle>
-          <CardDescription>
-            Envía mensajes personalizados a todos los clientes según sus puntos acumulados
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-sm text-muted-foreground">Clientes con ≥1000 puntos</div>
-              <div className="text-2xl font-bold text-primary">{redeemableCount}</div>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Envío Masivo de Mensajes de Fidelización</CardTitle>
+        <CardDescription>
+          El sistema separa automáticamente los clientes según sus puntos acumulados
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg space-y-2">
+          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+            📊 Separación Automática de Clientes
+          </p>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="p-3 bg-green-100 dark:bg-green-900 rounded-md">
+              <div className="text-xs text-green-700 dark:text-green-300 font-medium">Clientes con ≥1,000 puntos</div>
+              <div className="text-xl font-bold text-green-900 dark:text-green-100">{redeemableCount}</div>
+              <div className="text-xs text-green-600 dark:text-green-400">🎁 Mensaje: Ya pueden canjear</div>
             </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-sm text-muted-foreground">Clientes con &lt;1000 puntos</div>
-              <div className="text-2xl font-bold text-secondary">{motivationalCount}</div>
+            <div className="p-3 bg-amber-100 dark:bg-amber-900 rounded-md">
+              <div className="text-xs text-amber-700 dark:text-amber-300 font-medium">Clientes con &lt;1,000 puntos</div>
+              <div className="text-xl font-bold text-amber-900 dark:text-amber-100">{motivationalCount}</div>
+              <div className="text-xs text-amber-600 dark:text-amber-400">📈 Mensaje: Motivacional</div>
             </div>
           </div>
+        </div>
 
-          <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              💡 <strong>Total de mensajes a enviar:</strong> {messagePreviews.length}
-            </p>
-          </div>
+        <div className="p-4 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            💡 <strong>Total de mensajes a enviar:</strong> {messagePreviews.length} clientes
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            El sistema seleccionará automáticamente la plantilla correcta para cada cliente
+          </p>
+        </div>
 
-          <Button 
-            onClick={() => setShowPreview(true)} 
-            className="w-full"
-            disabled={!messagePreviews.length}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Vista Previa de Mensajes
-          </Button>
-        </CardContent>
-      </Card>
-    );
+        <Button 
+          onClick={() => setShowPreview(true)} 
+          className="w-full"
+          disabled={!messagePreviews.length}
+        >
+          <Eye className="mr-2 h-4 w-4" />
+          Vista Previa de Mensajes
+        </Button>
+      </CardContent>
+    </Card>
+  );
   }
 
   return (
@@ -141,10 +151,21 @@ export function BulkMessagePanel() {
       <CardHeader>
         <CardTitle>Vista Previa de Mensajes</CardTitle>
         <CardDescription>
-          Revisa los mensajes antes de enviarlos
+          Revisa cómo cada cliente recibirá su mensaje según su puntaje
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Badge variant="default" className="bg-green-600">Canjeable</Badge>
+            <span className="text-muted-foreground">{redeemableCount} mensajes</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Badge variant="secondary" className="bg-amber-600">Motivacional</Badge>
+            <span className="text-muted-foreground">{motivationalCount} mensajes</span>
+          </div>
+        </div>
+
         <ScrollArea className="h-[400px] w-full rounded-md border p-4">
           <div className="space-y-4">
             {messagePreviews.map((preview, index) => (
@@ -154,8 +175,12 @@ export function BulkMessagePanel() {
                     <p className="font-semibold">{preview.customerName}</p>
                     <p className="text-sm text-muted-foreground">{preview.customerPhone}</p>
                   </div>
-                  <Badge variant={preview.messageType === 'redeemable' ? 'default' : 'secondary'}>
-                    {preview.pointsAvailable} puntos
+                  <Badge 
+                    variant={preview.messageType === 'redeemable' ? 'default' : 'secondary'}
+                    className={preview.messageType === 'redeemable' ? 'bg-green-600' : 'bg-amber-600'}
+                  >
+                    {preview.messageType === 'redeemable' ? '🎁 Canjeable' : '📈 Motivacional'}
+                    <span className="ml-2">{preview.pointsAvailable} pts</span>
                   </Badge>
                 </div>
                 <div className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">

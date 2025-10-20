@@ -6,80 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useRedemptionMessageSettings } from '@/hooks/useRedemptionMessageSettings';
 import { useUpdateRedemptionMessageSettings } from '@/hooks/useUpdateRedemptionMessageSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Save, TestTube, Copy, MessageSquare } from 'lucide-react';
+import { Save, TestTube, MessageSquare } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-
-const EXAMPLE_TEMPLATES = [
-  {
-    name: "Plantilla Formal",
-    template: `🎉 *Redención de Puntos*
-
-Estimado/a {{nombre_cliente}},
-
-Ha solicitado canjear *{{puntos}} puntos* por *{{kilos}} kg* de envío gratuito.
-
-Su código de verificación es:
-
-*{{codigo}}*
-
-⏰ Este código es válido por 10 minutos.
-
-Por favor, ingrese este código en el sistema para completar su redención.
-
-Gracias por su preferencia.`
-  },
-  {
-    name: "Plantilla Celebración",
-    template: `🎊 ¡FELICITACIONES {{nombre_cliente}}! 🎊
-
-🎁 Estás canjeando:
-• {{puntos}} puntos
-• Por {{kilos}} kg GRATIS
-
-🔐 Tu código secreto:
-*{{codigo}}*
-
-⏰ ¡Rápido! Expira en 10 minutos
-
-Ingresa el código ahora y disfruta tu beneficio! 🚀`
-  },
-  {
-    name: "Plantilla Simple",
-    template: `Hola {{nombre_cliente}}! 👋
-
-Redención: {{puntos}} pts → {{kilos}} kg
-
-Código: *{{codigo}}*
-
-Válido por 10 minutos ⏰`
-  },
-  {
-    name: "Plantilla Detallada",
-    template: `🎉 *REDENCIÓN DE PUNTOS DE FIDELIDAD*
-
-¡Hola {{nombre_cliente}}! 👋
-
-Has acumulado suficientes puntos y ahora los estás convirtiendo en beneficios reales:
-
-📊 *Detalles de tu redención:*
-• Puntos canjeados: *{{puntos}}*
-• Kilos ganados: *{{kilos}} kg*
-• Valor aproximado: Envíos gratis
-
-🔐 *Tu código de verificación único:*
-*{{codigo}}*
-
-⏰ *IMPORTANTE:* 
-Este código expira en exactamente 10 minutos desde el momento de su generación.
-
-📱 *Próximos pasos:*
-1. Copia este código
-2. Ingrésalo en el sistema
-3. ¡Disfruta tu envío gratis!
-
-Gracias por tu fidelidad. ¡Seguimos enviando confianza! 🚀`
-  }
-];
 
 export function RedemptionMessageSettings() {
   const { data: settings, isLoading } = useRedemptionMessageSettings();
@@ -118,14 +46,6 @@ export function RedemptionMessageSettings() {
     });
   };
 
-  const copyTemplate = (template: string) => {
-    setMessageTemplate(template);
-    toast({
-      title: "Plantilla copiada",
-      description: "La plantilla se ha copiado al editor",
-    });
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -141,49 +61,47 @@ export function RedemptionMessageSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Plantillas de Ejemplo */}
+      {/* Vista Previa de la Plantilla */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Plantillas de Ejemplo
+            Plantilla de Mensaje de Redención
           </CardTitle>
           <CardDescription>
-            Selecciona una plantilla predefinida o personaliza tu propio mensaje
+            Esta es la plantilla que se enviará a los clientes al canjear sus puntos
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {EXAMPLE_TEMPLATES.map((example, index) => (
-            <div key={index} className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">{example.name}</h4>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyTemplate(example.template)}
-                  className="flex items-center gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  Usar esta plantilla
-                </Button>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-sm whitespace-pre-wrap">
-                {example.template
-                  .replace(/{{nombre_cliente}}/g, 'María González')
-                  .replace(/{{puntos}}/g, '2500')
-                  .replace(/{{kilos}}/g, '2.5')
-                  .replace(/{{codigo}}/g, '1234')}
-              </div>
+        <CardContent>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm text-sm whitespace-pre-wrap font-sans">
+              {messageTemplate
+                .replace(/{{nombre_cliente}}/g, 'María González')
+                .replace(/{{puntos}}/g, '2500')
+                .replace(/{{kilos}}/g, '2.5')
+                .replace(/{{codigo}}/g, '1234')}
             </div>
-          ))}
+          </div>
+          
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleTestMessage}
+              className="flex items-center gap-2"
+            >
+              <TestTube className="h-4 w-4" />
+              Vista previa en toast
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Configuración de Mensaje */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuración del Mensaje de Redención</CardTitle>
+          <CardTitle>Editar Plantilla del Mensaje</CardTitle>
           <CardDescription>
             Personaliza el mensaje que recibirán los clientes al canjear sus puntos
           </CardDescription>
@@ -191,19 +109,7 @@ export function RedemptionMessageSettings() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="template">Plantilla del mensaje</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestMessage}
-                  className="flex items-center gap-2"
-                >
-                  <TestTube className="h-4 w-4" />
-                  Vista previa
-                </Button>
-              </div>
+              <Label htmlFor="template">Plantilla del mensaje</Label>
               <Textarea
                 id="template"
                 placeholder="Escribe tu plantilla personalizada aquí..."

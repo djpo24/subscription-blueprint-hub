@@ -103,12 +103,12 @@ export function BulkMessagePanel() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: 'UPDATE',
           schema: 'public',
           table: 'bulk_fidelization_log',
         },
         (payload) => {
-          console.log('📨 Nuevo mensaje registrado:', payload);
+          console.log('📨 Actualización de mensaje:', payload);
           if (payload.new.status === 'sent') {
             setSentCount(prev => prev + 1);
           } else if (payload.new.status === 'failed') {
@@ -145,35 +145,148 @@ export function BulkMessagePanel() {
     setIsSending(true);
 
     try {
-      console.log('🚀 Iniciando envío masivo desde frontend...');
+      console.log('🚀 Iniciando envío masivo (IGUAL QUE VIAJES)...');
       
-      const { data, error } = await supabase.functions.invoke('send-bulk-fidelization', {
-        body: { messages: messagePreviews, settings }
-      });
+      let successCount = 0;
+      let failedCount = 0;
 
-      console.log('📱 Respuesta de send-bulk-fidelization:', data, error);
+      // Procesar uno por uno, igual que CampaignNotificationsPanel
+      for (let i = 0; i < messagePreviews.length; i++) {
+        const message = messagePreviews[i];
+        
+        console.log(`📤 Procesando ${i + 1}/${messagePreviews.length}: ${message.customerName}`);
+        
+        try {
+          // 1. Crear registro en bulk_fidelization_log
+          const { data: logData, error: logError } = await supabase
+            .from('bulk_fidelization_log')
+            .insert({
+              customer_id: message.customerId,
+              customer_name: message.customerName,
+              customer_phone: message.customerPhone,
+              message_type: message.messageType,
+              message_content: message.messageContent,
+              points_available: message.pointsAvailable,
+              status: 'pending'
+            })
+            .select()
+            .single();
 
-      if (error) {
-        console.error('❌ Error en invocación:', error);
-        throw error;
+          if (logError || !logData) {
+            console.error(`❌ Error creando log para ${message.customerName}:`, logError);
+            failedCount++;
+            
+            await supabase.from('bulk_fidelization_log').insert({
+              customer_id: message.customerId,
+              customer_name: message.customerName,
+              customer_phone: message.customerPhone,
+              message_type: message.messageType,
+              message_content: message.messageContent,
+              points_available: message.pointsAvailable,
+              status: 'failed',
+              error_message: logError?.message || 'Error creando registro'
+            });
+            
+            continue;
+          }
+
+          // 2. Preparar templateParameters según tipo de mensaje
+          let templateName = '';
+          let templateLanguage = 'es_CO';
+          let templateParameters = {};
+
+          if (message.messageType === 'redeemable') {
+            templateName = settings?.redeemable_template_name || 'canjea';
+            templateLanguage = settings?.redeemable_template_language || 'es_CO';
+            const kilos = Math.floor(message.pointsAvailable / 1000);
+            templateParameters = {
+              customerName: message.customerName,
+              pointsAvailable: message.pointsAvailable.toString(),
+              kilosAvailable: kilos.toString()
+            };
+          } else {
+            templateName = settings?.motivational_template_name || 'pendiente_canje';
+            templateLanguage = settings?.motivational_template_language || 'es_CO';
+            const puntosFaltantes = Math.max(0, 1000 - message.pointsAvailable);
+            templateParameters = {
+              customerName: message.customerName,
+              pointsAvailable: message.pointsAvailable.toString(),
+              pointsMissing: puntosFaltantes.toString()
+            };
+          }
+
+          // 3. Enviar mensaje usando send-whatsapp-notification (IGUAL QUE VIAJES)
+          const { data: whatsappResponse, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+            body: {
+              notificationId: logData.id,
+              phone: message.customerPhone,
+              message: message.messageContent,
+              useTemplate: true,
+              templateName: templateName,
+              templateLanguage: templateLanguage,
+              templateParameters: templateParameters,
+              customerId: message.customerId
+            }
+          });
+
+          if (whatsappError || (whatsappResponse && whatsappResponse.error)) {
+            console.error(`❌ Error WhatsApp para ${message.customerName}:`, whatsappError || whatsappResponse.error);
+            
+            await supabase
+              .from('bulk_fidelization_log')
+              .update({ 
+                status: 'failed',
+                error_message: whatsappError?.message || whatsappResponse?.error || 'Error de WhatsApp'
+              })
+              .eq('id', logData.id);
+            
+            failedCount++;
+            continue;
+          }
+
+          // 4. Actualizar log como enviado exitosamente
+          await supabase
+            .from('bulk_fidelization_log')
+            .update({ 
+              status: 'sent',
+              whatsapp_message_id: whatsappResponse?.messageId,
+              sent_at: new Date().toISOString()
+            })
+            .eq('id', logData.id);
+
+          successCount++;
+          console.log(`✅ Enviado: ${message.customerName}`);
+
+        } catch (error) {
+          console.error(`❌ Error procesando ${message.customerName}:`, error);
+          
+          await supabase.from('bulk_fidelization_log').insert({
+            customer_id: message.customerId,
+            customer_name: message.customerName,
+            customer_phone: message.customerPhone,
+            message_type: message.messageType,
+            message_content: message.messageContent,
+            points_available: message.pointsAvailable,
+            status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Error desconocido'
+          });
+          
+          failedCount++;
+        }
+
+        // Pequeña pausa entre mensajes
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      const result = data as { success: boolean; successCount: number; failedCount: number; totalMessages: number };
+      console.log('✅ Envío completado:', { successCount, failedCount });
 
-      console.log('✅ Envío completado:', result);
-      
-      // Actualizar contadores finales
-      setSentCount(result.successCount);
-      setFailedCount(result.failedCount);
-      setSendingProgress(100);
-
-      if (result.failedCount > 0) {
-        toast.warning(`⚠️ Envío completado con fallas: ${result.successCount} exitosos, ${result.failedCount} fallidos`);
+      if (failedCount > 0) {
+        toast.warning(`⚠️ Envío completado: ${successCount} exitosos, ${failedCount} fallidos`);
       } else {
-        toast.success(`✅ Envío completado: ${result.successCount} mensajes enviados`);
+        toast.success(`✅ ${successCount} mensajes enviados exitosamente`);
       }
-      
-      // Reset after a delay
+
+      // Reset after delay
       setTimeout(() => {
         setIsSending(false);
         setShowPreview(false);
@@ -182,9 +295,10 @@ export function BulkMessagePanel() {
         setFailedCount(0);
         setTotalMessages(0);
       }, 3000);
+
     } catch (error) {
-      console.error('❌ Error sending bulk messages:', error);
-      toast.error('Error al enviar los mensajes. Revisa los logs para más detalles.');
+      console.error('❌ Error en envío masivo:', error);
+      toast.error('Error al enviar mensajes');
       setIsSending(false);
     }
   };

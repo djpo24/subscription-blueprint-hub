@@ -49,6 +49,8 @@ export function CustomersPendingTableRow({
 
   const daysSinceDelivery = getDaysSinceDelivery(customer.delivery_date);
 
+  console.log('🎯 [CustomersPendingTableRow] Renderizando fila con botones para:', customer.customer_name);
+
   return (
     <TableRow 
       key={`${customer.package_id}-${customer.customer_name}-${index}`}

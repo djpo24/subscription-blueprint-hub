@@ -391,10 +391,18 @@ serve(async (req) => {
             parameters: [
               { type: 'text', text: verificationCode }
             ]
+          },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: '0',
+            parameters: [
+              { type: 'text', text: verificationCode }
+            ]
           }
         ];
         
-        console.log('✅ Template REDIMIR configurado con código:', verificationCode);
+        console.log('✅ Template REDIMIR configurado con código en body y button:', verificationCode);
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

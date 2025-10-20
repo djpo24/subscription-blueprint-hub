@@ -30,12 +30,19 @@ export function BulkMessagePanel() {
     console.log('🔄 Cargando clientes para envío masivo...');
     try {
       const result = await refetch();
+      console.log('📦 Datos recibidos:', result.data);
+      
       if (result.data) {
+        const customersWithPhone = result.data.filter(c => c.phone && c.phone.trim().length > 0);
+        const redeemable = customersWithPhone.filter(c => c.totalPoints >= 1000).length;
+        const motivational = customersWithPhone.filter(c => c.totalPoints < 1000).length;
+        
         setIsLoaded(true);
-        const redeemable = result.data.filter(c => c.totalPoints >= 1000).length;
-        const motivational = result.data.filter(c => c.totalPoints < 1000).length;
+        
         toast.success(`${result.data.length} clientes cargados: ${redeemable} canjeables, ${motivational} motivacionales`);
-        console.log(`📊 Segmentación: ${redeemable} con ≥1000pts, ${motivational} con <1000pts`);
+        console.log(`📊 Clientes totales: ${result.data.length}`);
+        console.log(`📱 Con teléfono: ${customersWithPhone.length}`);
+        console.log(`✅ Segmentación: ${redeemable} con ≥1000pts, ${motivational} con <1000pts`);
       }
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -44,10 +51,23 @@ export function BulkMessagePanel() {
   };
 
   const messagePreviews = useMemo<MessagePreview[]>(() => {
-    if (!fidelizationData || !settings || !isLoaded) return [];
+    if (!fidelizationData || !settings) return [];
+    if (!isLoaded) return [];
 
-    return fidelizationData
-      .filter(customer => customer.phone) // Solo clientes con teléfono
+    console.log('📝 Generando previews de mensajes...', {
+      totalCustomers: fidelizationData.length,
+      hasSettings: !!settings,
+      isLoaded
+    });
+
+    const previews = fidelizationData
+      .filter(customer => {
+        const hasPhone = !!customer.phone && customer.phone.trim().length > 0;
+        if (!hasPhone) {
+          console.log(`⚠️ Cliente sin teléfono: ${customer.name}`);
+        }
+        return hasPhone;
+      })
       .map(customer => {
         const totalPoints = customer.totalPoints;
         const isRedeemable = totalPoints >= 1000;
@@ -67,12 +87,20 @@ export function BulkMessagePanel() {
         return {
           customerId: customer.id,
           customerName: customer.name,
-          customerPhone: customer.phone || '',
-          messageType: isRedeemable ? 'redeemable' : 'motivational',
+          customerPhone: customer.phone,
+          messageType: (isRedeemable ? 'redeemable' : 'motivational') as 'redeemable' | 'motivational',
           messageContent,
           pointsAvailable: totalPoints,
         };
       });
+
+    console.log('✅ Mensajes generados:', {
+      total: previews.length,
+      redeemable: previews.filter(p => p.messageType === 'redeemable').length,
+      motivational: previews.filter(p => p.messageType === 'motivational').length
+    });
+
+    return previews;
   }, [fidelizationData, settings, isLoaded]);
 
   const redeemableCount = messagePreviews.filter(m => m.messageType === 'redeemable').length;

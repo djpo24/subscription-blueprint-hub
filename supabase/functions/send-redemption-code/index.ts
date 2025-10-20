@@ -105,95 +105,42 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
 
     console.log('✅ Redemption created:', redemption.id);
 
-    // Get WhatsApp credentials
-    const metaToken = Deno.env.get('META_WHATSAPP_TOKEN');
-    const phoneNumberId = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID');
-
-    if (!metaToken || !phoneNumberId) {
-      console.error('❌ WhatsApp credentials not configured');
-      throw new Error('WhatsApp configuration missing');
-    }
-
-    // Prepare WhatsApp message payload
-    let whatsappPayload;
+    // Prepare message for logging (used only in fallback mode)
     let plainTextMessage: string | undefined;
-
-    if (settings?.use_template && settings?.template_name) {
-      // Use WhatsApp Business Template with verification code parameter
-      console.log('📋 Using WhatsApp Business Template:', settings.template_name);
-      
-      const templateComponents: any[] = [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: verificationCode }
-          ]
-        }
-      ];
-
-      // If template has button with dynamic URL, add button parameters
-      // This is needed for templates with URL buttons that require parameters
-      if (settings.template_name === 'redimir') {
-        templateComponents.push({
-          type: 'button',
-          sub_type: 'url',
-          index: 0,
-          parameters: [
-            { type: 'text', text: verificationCode }
-          ]
-        });
-      }
-      
-      whatsappPayload = {
-        messaging_product: 'whatsapp',
-        to: customerPhone.replace(/^\+/, ''), // Remove + for API
-        type: 'template',
-        template: {
-          name: settings.template_name,
-          language: {
-            code: settings.template_language || 'es_CO'
-          },
-          components: templateComponents
-        }
-      };
-    } else {
-      // Fallback to plain text message
-      console.log('📝 Using plain text message (template not configured)');
-      
-      plainTextMessage = messageTemplate
-        .replace(/{{codigo}}/g, verificationCode);
-
-      whatsappPayload = {
-        messaging_product: 'whatsapp',
-        to: customerPhone.replace(/^\+/, ''),
-        type: 'text',
-        text: { body: plainTextMessage }
-      };
+    
+    if (!settings?.use_template) {
+      plainTextMessage = messageTemplate.replace(/{{codigo}}/g, verificationCode);
     }
 
-    console.log('📤 WhatsApp payload:', JSON.stringify(whatsappPayload, null, 2));
-
-    // Send message via WhatsApp Business API
-    const whatsappResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${metaToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(whatsappPayload)
+    console.log('📤 Sending via send-whatsapp-notification function');
+    
+    // Send WhatsApp message using the send-whatsapp-notification function
+    const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
+      body: {
+        notificationId: redemption.id,
+        phone: customerPhone,
+        message: plainTextMessage || `Código de verificación: ${verificationCode}`,
+        customerId: customerId,
+        useTemplate: settings?.use_template || false,
+        templateName: settings?.template_name,
+        templateLanguage: settings?.template_language || 'es_CO',
+        templateParameters: {
+          verificationCode: verificationCode
+        }
       }
-    );
+    });
 
-    if (!whatsappResponse.ok) {
-      const errorText = await whatsappResponse.text();
-      console.error('❌ WhatsApp API error:', errorText);
-      throw new Error(`WhatsApp API error: ${errorText}`);
+    if (whatsappError) {
+      console.error('❌ WhatsApp function error:', whatsappError);
+      throw new Error(`WhatsApp error: ${whatsappError.message}`);
     }
 
-    const whatsappData = await whatsappResponse.json();
-    console.log('✅ WhatsApp message sent:', whatsappData);
+    if (whatsappResult?.error) {
+      console.error('❌ WhatsApp API error:', whatsappResult.error);
+      throw new Error(`WhatsApp API error: ${whatsappResult.error}`);
+    }
+
+    console.log('✅ WhatsApp message sent:', whatsappResult);
 
     // Log the notification (only if plain text was used)
     if (!settings?.use_template && plainTextMessage) {

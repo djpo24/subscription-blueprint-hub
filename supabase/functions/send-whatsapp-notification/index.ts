@@ -379,6 +379,22 @@ serve(async (req) => {
           console.error('❌ CRÍTICO: No se recibieron templateParameters para proximos_viajes');
           throw new Error('templateParameters requeridos para plantilla proximos_viajes');
         }
+      } else if (autoSelectedTemplate === 'redimir' && templateParameters) {
+        console.log('🎁 Configurando plantilla REDIMIR');
+        console.log('📋 Verification code:', templateParameters.verificationCode);
+        
+        const verificationCode = templateParameters.verificationCode || '0000';
+        
+        templatePayload.template.components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: verificationCode }  // Solo el código
+            ]
+          }
+        ];
+        
+        console.log('✅ Template REDIMIR configurado con código:', verificationCode);
       } else if (autoSelectedTemplate === 'customer_service_followup') {
         templatePayload.template.components = [
           {

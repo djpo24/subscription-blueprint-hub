@@ -20,11 +20,6 @@ interface Package {
   weight: number | null;
   status: string | null;
   created_at: string;
-  trip_id: string | null;
-  trips: {
-    id: string;
-    status: string;
-  } | null;
   customers: {
     id: string;
     name: string;
@@ -41,7 +36,7 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
     queryFn: async (): Promise<FidelizationCustomer[]> => {
       console.log('🏆 Fetching fidelization data...');
 
-      // Get all packages with customer data, payments, and trip info
+      // Get all packages with customer data and payments
       const { data: packages, error } = await supabase
         .from('packages')
         .select(`
@@ -50,11 +45,6 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
           weight,
           status,
           created_at,
-          trip_id,
-          trips (
-            id,
-            status
-          ),
           customers (
             id,
             name
@@ -104,15 +94,11 @@ export function useFidelizationData(dateFilter: DateFilter = 'all') {
       filteredPackages.forEach(pkg => {
         if (!pkg.customers || !pkg.customer_id) return;
         
-        // Only count packages that are:
-        // 1. Delivered
-        // 2. Have payments
-        // 3. Are part of a trip (have trip_id)
+        // Only count packages that are delivered AND have payments
         const isDelivered = pkg.status === 'delivered';
         const hasPay = pkg.customer_payments && pkg.customer_payments.length > 0;
-        const hasTrip = pkg.trip_id !== null;
         
-        if (!isDelivered || !hasPay || !hasTrip) return;
+        if (!isDelivered || !hasPay) return;
         
         if (!customerMap.has(pkg.customer_id)) {
           customerMap.set(pkg.customer_id, {

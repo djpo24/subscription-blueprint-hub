@@ -69,6 +69,10 @@ export function FinancesTab() {
       return isEligiblePackage ? sum + (p.amount || 0) : sum;
     }, 0);
 
+    const totalDiscounts = eligiblePackages.reduce((sum, p) => 
+      sum + (p.discount_applied || 0), 0
+    );
+
     const pendingCollections = Math.max(0, totalAmountToCollect - totalCollected);
 
     const totalPendingPackages = eligiblePackages.filter(p => {
@@ -86,7 +90,8 @@ export function FinancesTab() {
         totalFreight,
         pendingCollections,
         deliveredPackages,
-        totalPackages
+        totalPackages,
+        totalDiscounts
       },
       packages: filteredPackages,
       payments: filteredPayments
@@ -206,6 +211,11 @@ export function FinancesTab() {
               <div className="text-lg sm:text-2xl font-bold text-green-600 leading-tight">
                 {formatCurrency(summary?.totalCollected || 0)}
               </div>
+              {summary?.totalDiscounts && summary.totalDiscounts > 0 && (
+                <p className="text-xs text-purple-600 font-medium mt-1">
+                  Desc. puntos: {formatCurrency(summary.totalDiscounts)}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
                 Recaudado
               </p>

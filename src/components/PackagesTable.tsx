@@ -27,6 +27,7 @@ interface Package {
   freight: number | null;
   amount_to_collect: number | null;
   currency: Currency;
+  discount_applied?: number | null;
   customers?: {
     name: string;
     email: string;
@@ -141,6 +142,7 @@ export function PackagesTable({
                   currency={specificPackage.currency}
                   freight={specificPackage.freight}
                   weight={specificPackage.weight}
+                  discountApplied={specificPackage.discount_applied}
                 />
               </div>
             </div>
@@ -161,6 +163,7 @@ export function PackagesTable({
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>A Cobrar</TableHead>
+                  <TableHead>Desc. Puntos</TableHead>
                   <TableHead>Moneda</TableHead>
                   <TableHead>Chat</TableHead>
                   <TableHead>Acciones</TableHead>

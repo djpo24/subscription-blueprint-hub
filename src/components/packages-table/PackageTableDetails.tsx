@@ -10,6 +10,7 @@ interface PackageTableDetailsProps {
   currency: Currency;
   freight: number | null;
   weight: number | null;
+  discountApplied?: number | null;
 }
 
 export function PackageTableDetails({ 
@@ -17,7 +18,8 @@ export function PackageTableDetails({
   amountToCollect, 
   currency, 
   freight, 
-  weight 
+  weight,
+  discountApplied 
 }: PackageTableDetailsProps) {
   const getCurrencyLabel = (curr: Currency) => {
     const labels = {
@@ -48,6 +50,15 @@ export function PackageTableDetails({
               <span className="text-gray-600">Monto a cobrar:</span>
               <span className="font-bold text-green-600">
                 {formatCurrency(amountToCollect, currency)}
+              </span>
+            </div>
+          )}
+          
+          {discountApplied && discountApplied > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Descuento por puntos:</span>
+              <span className="font-bold text-purple-600">
+                -{formatCurrency(discountApplied, currency)}
               </span>
             </div>
           )}

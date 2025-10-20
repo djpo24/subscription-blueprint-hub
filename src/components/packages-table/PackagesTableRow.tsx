@@ -28,6 +28,7 @@ interface Package {
   freight: number | null;
   amount_to_collect: number | null;
   currency: Currency;
+  discount_applied?: number | null;
   customers?: {
     name: string;
     email: string;
@@ -97,6 +98,15 @@ export function PackagesTableRow({
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
       <TableCell>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</TableCell>
+      <TableCell>
+        {pkg.discount_applied && pkg.discount_applied > 0 ? (
+          <Badge variant="secondary" className="font-medium text-xs bg-purple-100 text-purple-700">
+            -{formatCurrency(pkg.discount_applied, pkg.currency)}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )}
+      </TableCell>
       <TableCell onClick={onActionsClick}>
         <Badge variant="outline" className="font-medium text-xs">
           {pkg.currency}

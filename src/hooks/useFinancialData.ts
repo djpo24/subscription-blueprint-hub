@@ -11,6 +11,7 @@ interface FinancialSummary {
   pendingCollections: number;
   deliveredPackages: number;
   totalPackages: number;
+  totalDiscounts?: number;
 }
 
 export function useFinancialData() {
@@ -131,6 +132,11 @@ export function useFinancialData() {
         return (p.amount_to_collect || 0) > totalPaidForPackage;
       }).length;
 
+      // Calculate total discounts from fidelity points
+      const totalDiscounts = eligiblePackages.reduce((sum, p) => 
+        sum + (p.discount_applied || 0), 0
+      );
+
       const summary: FinancialSummary = {
         totalCollected,
         totalPending: pendingCollections,
@@ -139,7 +145,8 @@ export function useFinancialData() {
         totalFreight,
         pendingCollections,
         deliveredPackages,
-        totalPackages
+        totalPackages,
+        totalDiscounts
       };
 
       console.log('📊 [useFinancialData] Summary calculated:', summary);

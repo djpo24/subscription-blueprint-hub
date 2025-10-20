@@ -119,8 +119,30 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
     let plainTextMessage: string | undefined;
 
     if (settings?.use_template && settings?.template_name) {
-      // Use WhatsApp Business Template with only verification code parameter
+      // Use WhatsApp Business Template with verification code parameter
       console.log('📋 Using WhatsApp Business Template:', settings.template_name);
+      
+      const templateComponents: any[] = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: verificationCode }
+          ]
+        }
+      ];
+
+      // If template has button with dynamic URL, add button parameters
+      // This is needed for templates with URL buttons that require parameters
+      if (settings.template_name === 'redimir') {
+        templateComponents.push({
+          type: 'button',
+          sub_type: 'url',
+          index: 0,
+          parameters: [
+            { type: 'text', text: verificationCode }
+          ]
+        });
+      }
       
       whatsappPayload = {
         messaging_product: 'whatsapp',
@@ -131,14 +153,7 @@ Por favor, ingresa este código en el sistema para completar tu redención.`;
           language: {
             code: settings.template_language || 'es_CO'
           },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                { type: 'text', text: verificationCode }
-              ]
-            }
-          ]
+          components: templateComponents
         }
       };
     } else {

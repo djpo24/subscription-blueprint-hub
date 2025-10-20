@@ -2,7 +2,7 @@
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Calendar, Package, MapPin, Truck } from 'lucide-react';
+import { Phone, Calendar, Package, MapPin, Truck, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -100,6 +100,14 @@ export function CustomersPendingTableRow({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => onRecordPayment(customer)}
+            className="flex items-center gap-1"
+          >
+            <DollarSign className="h-3 w-3" />
+            Registrar Pago
+          </Button>
           {onDeliver && (
             <Button
               size="sm"

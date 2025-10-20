@@ -9,12 +9,16 @@ import { useCustomersPendingCollection } from '@/hooks/useCustomersPendingCollec
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { CustomersPendingTableRow } from './CustomersPendingTableRow';
 import { DeliverPackageDialog } from '@/components/dispatch-details/DeliverPackageDialog';
+import { RecordPaymentDialog } from './RecordPaymentDialog';
 import type { PackageInDispatch } from '@/types/dispatch';
+import type { RecordPaymentCustomer } from '@/types/recordPayment';
 
 export function SimpleCustomersPendingTable() {
   const { data: customers, isLoading, error, refetch } = useCustomersPendingCollection();
   const [selectedPackage, setSelectedPackage] = useState<PackageInDispatch | null>(null);
   const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<RecordPaymentCustomer | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const handleRetry = () => {
     console.log('🔄 Reintentando cargar clientes con cobros pendientes...');
@@ -56,6 +60,29 @@ export function SimpleCustomersPendingTable() {
     setDeliveryDialogOpen(false);
     setSelectedPackage(null);
     // Refrescar la lista después de la entrega
+    refetch();
+  };
+
+  const handleRecordPayment = (customer: any) => {
+    console.log('💰 [SimpleCustomersPendingTable] Abriendo dialog de registro de pago para cliente:', customer);
+    
+    const recordPaymentCustomer: RecordPaymentCustomer = {
+      id: customer.package_id,
+      customer_name: customer.customer_name,
+      phone: customer.customer_phone,
+      total_pending_amount: customer.pending_amount,
+      package_numbers: customer.tracking_number
+    };
+    
+    setSelectedCustomer(recordPaymentCustomer);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handlePaymentRecorded = () => {
+    console.log('✅ [SimpleCustomersPendingTable] Pago registrado, cerrando dialog...');
+    setIsPaymentDialogOpen(false);
+    setSelectedCustomer(null);
+    // Refrescar la lista después del pago
     refetch();
   };
 
@@ -163,7 +190,7 @@ export function SimpleCustomersPendingTable() {
                       key={`${customer.package_id}-${customer.customer_name}-${index}`}
                       customer={customer}
                       index={index}
-                      onRecordPayment={() => {}} // Empty function since we're removing the button
+                      onRecordPayment={handleRecordPayment}
                       onDeliver={handleDeliverPackage}
                     />
                   ))}
@@ -179,6 +206,17 @@ export function SimpleCustomersPendingTable() {
         open={deliveryDialogOpen}
         onOpenChange={setDeliveryDialogOpen}
         package={selectedPackage}
+      />
+
+      {/* Dialog de registro de pago */}
+      <RecordPaymentDialog
+        isOpen={isPaymentDialogOpen}
+        onClose={() => {
+          setIsPaymentDialogOpen(false);
+          setSelectedCustomer(null);
+        }}
+        customer={selectedCustomer}
+        onPaymentRecorded={handlePaymentRecorded}
       />
     </>
   );

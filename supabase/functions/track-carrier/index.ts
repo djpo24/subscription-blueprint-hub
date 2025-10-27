@@ -229,8 +229,8 @@ async function trackServientrega(trackingNumber: string): Promise<TrackingRespon
   console.log('🔍 Tracking Servientrega:', trackingNumber);
   
   try {
-    // URL del portal de rastreo de Servientrega
-    const trackingUrl = `https://www.servientrega.com/wps/portal/rastreo-envio?guia=${trackingNumber}`;
+    // URL correcta del portal móvil de Servientrega
+    const trackingUrl = `https://mobile.servientrega.com/WebSitePortal/RastreoEnvioDetalle.html?Guia=${trackingNumber}`;
     console.log('📡 Servientrega URL:', trackingUrl);
     
     const controller = new AbortController();
@@ -243,6 +243,7 @@ async function trackServientrega(trackingNumber: string): Promise<TrackingRespon
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'es-CO,es;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
       }
     });
     
@@ -254,30 +255,67 @@ async function trackServientrega(trackingNumber: string): Promise<TrackingRespon
     }
     
     const html = await response.text();
-    console.log('📄 HTML length:', html.length);
+    console.log('📄 Servientrega HTML length:', html.length);
+    
+    // Mostrar extracto del HTML para debugging
+    const htmlPreview = html.substring(0, 2000);
+    console.log('📝 Servientrega HTML Preview (primeros 2000 chars):', htmlPreview);
+    
+    // Buscar palabras clave específicas de Servientrega
+    const keywords = [
+      'entregado', 'entrega', 'en ruta', 'en tránsito', 'en transito', 
+      'en bodega', 'recibido', 'despachado', 'estado', 'novedad',
+      'remitente', 'destinatario', 'fecha'
+    ];
+    
+    console.log('🔍 Buscando palabras clave en HTML de Servientrega...');
+    keywords.forEach(keyword => {
+      if (html.toLowerCase().includes(keyword)) {
+        console.log(`✓ Palabra encontrada: "${keyword}"`);
+        const index = html.toLowerCase().indexOf(keyword);
+        const context = html.substring(Math.max(0, index - 150), Math.min(html.length, index + 150));
+        console.log(`📍 Contexto: ${context.replace(/\s+/g, ' ')}`);
+      }
+    });
     
     // Buscar estados comunes de Servientrega
     let status = 'Información recibida';
     const events: TrackingEvent[] = [];
     
+    console.log('🔎 Analizando estado del envío...');
+    
     if (html.toLowerCase().includes('entregado')) {
       status = 'Entregado';
-      console.log('✅ Estado: Entregado');
-    } else if (html.toLowerCase().includes('en ruta') || html.toLowerCase().includes('en tránsito')) {
+      console.log('✅ Estado detectado: Entregado');
+    } else if (html.toLowerCase().includes('en ruta')) {
+      status = 'En ruta';
+      console.log('✅ Estado detectado: En ruta');
+    } else if (html.toLowerCase().includes('en tránsito') || html.toLowerCase().includes('en transito')) {
       status = 'En tránsito';
-      console.log('✅ Estado: En tránsito');
-    } else if (html.toLowerCase().includes('en bodega') || html.toLowerCase().includes('recibido')) {
+      console.log('✅ Estado detectado: En tránsito');
+    } else if (html.toLowerCase().includes('en bodega')) {
       status = 'En bodega';
-      console.log('✅ Estado: En bodega');
+      console.log('✅ Estado detectado: En bodega');
+    } else if (html.toLowerCase().includes('recibido')) {
+      status = 'Recibido';
+      console.log('✅ Estado detectado: Recibido');
     } else if (html.toLowerCase().includes('despachado')) {
       status = 'Despachado';
-      console.log('✅ Estado: Despachado');
+      console.log('✅ Estado detectado: Despachado');
+    } else {
+      console.log('⚠️ No se detectó un estado conocido');
     }
     
     events.push({
       date: new Date().toISOString(),
       description: status,
       location: 'Colombia'
+    });
+    
+    console.log('✅ Servientrega tracking completado:', { 
+      status, 
+      finalUrl: response.url,
+      eventsCount: events.length 
     });
     
     return {

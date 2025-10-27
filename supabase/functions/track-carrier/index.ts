@@ -117,16 +117,21 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
     const initialUrl = `https://www.interrapidisimo.com/sigue-tu-envio/?guia=${trackingNumber}`;
     console.log('📡 Initial URL:', initialUrl);
     
-    // Timeout más corto para evitar que la Edge Function se cuelgue
+    // Timeout de 15 segundos para dar tiempo al redirect y carga
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 segundos
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15 segundos
     
     const response = await fetch(initialUrl, {
       signal: controller.signal,
       redirect: 'follow',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'es-CO,es;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Cache-Control': 'max-age=0',
       }
     });
     
@@ -174,15 +179,18 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
   } catch (error) {
     console.error('⚠️ Scraping failed:', error.message);
     
-    // En lugar de retornar error, retornar estado "pendiente"
-    // Esto permite que la guía se guarde y se pueda reintentar después
+    // Si el error es por timeout, dar un mensaje más específico
+    const isTimeout = error.message.includes('aborted') || error.message.includes('timeout');
+    
     return {
       carrier: 'interrapidisimo',
       trackingNumber,
-      status: 'Pendiente de consulta',
+      status: isTimeout ? 'Consulta en proceso' : 'Error temporal',
       events: [{
         date: new Date().toISOString(),
-        description: 'La consulta automática está tardando. Se reintentará automáticamente cada 3 horas.',
+        description: isTimeout 
+          ? 'El sitio de Interrapidísimo está tardando. La consulta se reintentará automáticamente en las próximas 3 horas.'
+          : `Error temporal: ${error.message}. Se reintentará automáticamente.`,
         location: 'Sistema'
       }]
     };

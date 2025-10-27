@@ -6,6 +6,7 @@ import { CarrierTrackingListItem } from './CarrierTrackingListItem';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface TrackingGuide {
   id: string;
@@ -26,6 +27,7 @@ interface TrackingGuide {
 }
 
 export function CarrierTrackingList() {
+  const [isRefreshingAll, setIsRefreshingAll] = useState(false);
   const { data: pendingGuides = [], isLoading: loadingPending, refetch: refetchPending } = useQuery({
     queryKey: ['carrier-tracking-guides', 'pending'],
     queryFn: async (): Promise<TrackingGuide[]> => {
@@ -84,13 +86,57 @@ export function CarrierTrackingList() {
     }
   };
 
+  const handleRefreshAll = async () => {
+    if (pendingGuides.length === 0) {
+      toast.info('No hay guías pendientes para actualizar');
+      return;
+    }
+
+    setIsRefreshingAll(true);
+    const loadingToast = toast.loading(`Actualizando ${pendingGuides.length} guías...`);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('cron-carrier-tracking');
+
+      if (error) throw error;
+
+      toast.success(`Actualización completada: ${data.updated} guías actualizadas`, {
+        id: loadingToast,
+      });
+
+      refetchPending();
+      refetchDelivered();
+    } catch (error) {
+      console.error('Error refreshing all guides:', error);
+      toast.error('Error al actualizar las guías', {
+        id: loadingToast,
+      });
+    } finally {
+      setIsRefreshingAll(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Guías en Seguimiento</CardTitle>
-        <CardDescription>
-          Las guías se actualizan automáticamente cada 3 horas
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>Guías en Seguimiento</CardTitle>
+            <CardDescription>
+              Las guías se actualizan automáticamente cada 3 horas
+            </CardDescription>
+          </div>
+          <Button
+            onClick={handleRefreshAll}
+            disabled={isRefreshingAll || pendingGuides.length === 0}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshingAll ? 'animate-spin' : ''}`} />
+            {isRefreshingAll ? 'Actualizando...' : 'Actualizar Todas'}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="pending" className="w-full">

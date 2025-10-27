@@ -114,98 +114,56 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
   console.log('🔍 Tracking Interrapidisimo:', trackingNumber);
   
   try {
-    // Paso 1: Hacer la petición inicial que causará el redirect
     const initialUrl = `https://www.interrapidisimo.com/sigue-tu-envio/?guia=${trackingNumber}`;
     console.log('📡 Initial URL:', initialUrl);
     
+    // Timeout más corto para evitar que la Edge Function se cuelgue
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8 segundos
     
     const response = await fetch(initialUrl, {
       signal: controller.signal,
-      redirect: 'follow', // Seguir redirects automáticamente
+      redirect: 'follow',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'es-CO,es;q=0.9,en;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       }
     });
     
     clearTimeout(timeout);
     
-    console.log('✅ Final URL after redirect:', response.url);
-    console.log('✅ Response status:', response.status);
+    console.log('✅ Response received:', response.status, response.url);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP ${response.status}`);
     }
     
     const html = await response.text();
     console.log('📄 HTML length:', html.length);
     
-    // Buscar información en el HTML
+    // Búsqueda simple y rápida de estado
     let status = 'Consulta realizada';
     const events: TrackingEvent[] = [];
     
-    // Intentar extraer el estado principal
-    const statusMatches = [
-      html.match(/<div[^>]*class="[^"]*estado[^"]*"[^>]*>(.*?)<\/div>/i),
-      html.match(/<span[^>]*class="[^"]*status[^"]*"[^>]*>(.*?)<\/span>/i),
-      html.match(/<h2[^>]*>(.*?entregado.*?)<\/h2>/i),
-      html.match(/<p[^>]*class="[^"]*tracking-status[^"]*"[^>]*>(.*?)<\/p>/i)
-    ];
-    
-    for (const match of statusMatches) {
-      if (match && match[1]) {
-        status = match[1].trim().replace(/<[^>]+>/g, '');
-        if (status.length > 0) break;
-      }
+    // Buscar texto que indique estado de entrega
+    if (html.toLowerCase().includes('entregado')) {
+      status = 'Entregado';
+    } else if (html.toLowerCase().includes('en tránsito') || html.toLowerCase().includes('en transito')) {
+      status = 'En tránsito';
+    } else if (html.toLowerCase().includes('despachado')) {
+      status = 'Despachado';
+    } else if (html.toLowerCase().includes('recibido')) {
+      status = 'Recibido en bodega';
     }
     
-    // Extraer eventos de una tabla (formato común en sistemas de tracking)
-    const tableRegex = /<tr[^>]*>[\s\S]*?<td[^>]*>([\d\/\s:\-]+)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi;
-    let match;
-    
-    while ((match = tableRegex.exec(html)) !== null && events.length < 20) {
-      const dateStr = match[1].trim();
-      const description = match[2].trim().replace(/<[^>]+>/g, '').trim();
-      const location = match[3].trim().replace(/<[^>]+>/g, '').trim();
-      
-      if (dateStr && description && description.length > 3) {
-        try {
-          // Intentar parsear la fecha
-          let isoDate = new Date().toISOString();
-          if (dateStr.includes('/')) {
-            const [datePart, timePart] = dateStr.split(' ');
-            const [day, month, year] = datePart.split('/');
-            isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`;
-          }
-          
-          events.push({
-            date: isoDate,
-            description,
-            location: location || undefined
-          });
-        } catch (e) {
-          console.error('Error parsing date:', e);
-        }
-      }
-    }
-    
-    // Si no hay eventos, agregar uno básico
-    if (events.length === 0) {
-      events.push({
-        date: new Date().toISOString(),
-        description: status,
-        location: 'Colombia'
-      });
-    }
-    
-    console.log('✅ Interrapidisimo tracking successful:', { 
-      status, 
-      eventsCount: events.length,
-      finalUrl: response.url 
+    // Agregar evento básico
+    events.push({
+      date: new Date().toISOString(),
+      description: status,
+      location: 'Colombia'
     });
+    
+    console.log('✅ Tracking successful:', { status, url: response.url });
     
     return {
       carrier: 'interrapidisimo',
@@ -214,22 +172,19 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
       events
     };
   } catch (error) {
-    console.error('❌ Error tracking Interrapidisimo:', error);
+    console.error('⚠️ Scraping failed:', error.message);
     
-    const errorMessage = error.name === 'AbortError' 
-      ? 'Tiempo de espera agotado (20s)'
-      : `Error: ${error.message}`;
-    
+    // En lugar de retornar error, retornar estado "pendiente"
+    // Esto permite que la guía se guarde y se pueda reintentar después
     return {
       carrier: 'interrapidisimo',
       trackingNumber,
-      status: 'Error en consulta',
+      status: 'Pendiente de consulta',
       events: [{
         date: new Date().toISOString(),
-        description: errorMessage,
-        location: 'Colombia'
-      }],
-      error: errorMessage
+        description: 'La consulta automática está tardando. Se reintentará automáticamente cada 3 horas.',
+        location: 'Sistema'
+      }]
     };
   }
 }

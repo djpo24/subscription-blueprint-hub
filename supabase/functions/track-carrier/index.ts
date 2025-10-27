@@ -236,7 +236,14 @@ async function trackServientrega(trackingNumber: string): Promise<TrackingRespon
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     
+    // Crear cliente HTTP que ignore errores de certificado SSL
+    const client = Deno.createHttpClient({
+      poolMaxIdlePerHost: 0,
+      poolIdleTimeout: 0,
+    });
+    
     const response = await fetch(trackingUrl, {
+      client,
       signal: controller.signal,
       redirect: 'follow',
       headers: {

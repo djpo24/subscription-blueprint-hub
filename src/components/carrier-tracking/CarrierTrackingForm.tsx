@@ -48,7 +48,12 @@ export function CarrierTrackingForm({ onResult, isLoading, setIsLoading }: Carri
 
       if (error) {
         console.error('Error tracking carrier:', error);
-        toast.error('Error al consultar la transportadora');
+        const errorDetails = `
+❌ Error: ${error.message}
+📦 Guía: ${trackingNumber}
+🚚 Transportadora: ${carrier}
+        `.trim();
+        toast.error(errorDetails, { duration: 10000 });
         onResult({
           carrier,
           trackingNumber,
@@ -59,14 +64,43 @@ export function CarrierTrackingForm({ onResult, isLoading, setIsLoading }: Carri
         return;
       }
 
+      // Mostrar TODOS los datos del resultado en el toast
+      console.log('📋 Full tracking result:', JSON.stringify(data, null, 2));
+      
+      const eventsText = data.events?.map((event: any, index: number) => 
+        `${index + 1}. ${event.description}${event.location ? ` - ${event.location}` : ''}`
+      ).join('\n') || 'Sin eventos';
+
+      const resultDetails = `
+✅ Estado: ${data.status}
+📦 Guía: ${trackingNumber}
+🚚 Transportadora: ${carrier}
+
+📝 Eventos (${data.events?.length || 0}):
+${eventsText}
+
+${data.error ? `⚠️ Error: ${data.error}` : ''}
+      `.trim();
+
+      toast.success(resultDetails, { 
+        duration: 15000,
+        description: 'Guía agregada al seguimiento automático'
+      });
+      
       onResult(data);
-      toast.success('Guía agregada al seguimiento automático');
       
       // Reset form
       setTrackingNumber('');
     } catch (error: any) {
-      console.error('Error:', error);
-      toast.error('Error al realizar la consulta');
+      console.error('Error completo:', error);
+      const catchErrorDetails = `
+❌ Error inesperado: ${error.message}
+📦 Guía: ${trackingNumber}
+🚚 Transportadora: ${carrier}
+🔍 Revisa los logs para más detalles
+      `.trim();
+      
+      toast.error(catchErrorDetails, { duration: 10000 });
       onResult({
         carrier,
         trackingNumber,

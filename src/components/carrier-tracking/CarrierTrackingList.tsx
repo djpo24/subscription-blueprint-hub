@@ -71,18 +71,41 @@ export function CarrierTrackingList() {
 
   const handleManualRefresh = async (guideId: string) => {
     try {
-      const { error } = await supabase.functions.invoke('refresh-carrier-tracking', {
+      const { data, error } = await supabase.functions.invoke('refresh-carrier-tracking', {
         body: { guideId }
       });
 
       if (error) throw error;
 
-      toast.success('Guía actualizada exitosamente');
+      // Mostrar detalles completos del resultado
+      console.log('📋 Refresh result:', JSON.stringify(data, null, 2));
+      
+      if (data?.data) {
+        const trackingData = data.data;
+        const eventsText = trackingData.events?.map((event: any, index: number) => 
+          `${index + 1}. ${event.description}${event.location ? ` - ${event.location}` : ''}`
+        ).join('\n') || 'Sin eventos';
+
+        const resultDetails = `
+✅ Estado: ${trackingData.status}
+📦 Guía: ${trackingData.trackingNumber}
+
+📝 Eventos (${trackingData.events?.length || 0}):
+${eventsText}
+        `.trim();
+
+        toast.success(resultDetails, { duration: 10000 });
+      } else {
+        toast.success('Guía actualizada exitosamente');
+      }
+
       refetchPending();
       refetchDelivered();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing guide:', error);
-      toast.error('Error al actualizar la guía');
+      toast.error(`Error al actualizar: ${error.message || 'Error desconocido'}`, { 
+        duration: 8000 
+      });
     }
   };
 
@@ -100,16 +123,33 @@ export function CarrierTrackingList() {
 
       if (error) throw error;
 
-      toast.success(`Actualización completada: ${data.updated} guías actualizadas`, {
+      // Mostrar detalles completos del resultado
+      console.log('📋 Cron result:', JSON.stringify(data, null, 2));
+
+      const summaryDetails = `
+✅ Actualización completada
+
+📊 Resumen:
+• Total procesadas: ${data.total || 0}
+• Actualizadas: ${data.updated || 0}
+• Entregadas: ${data.delivered || 0}
+• Errores: ${data.errors || 0}
+
+🕐 ${new Date().toLocaleString('es-CO')}
+      `.trim();
+
+      toast.success(summaryDetails, {
         id: loadingToast,
+        duration: 12000
       });
 
       refetchPending();
       refetchDelivered();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing all guides:', error);
-      toast.error('Error al actualizar las guías', {
+      toast.error(`Error: ${error.message || 'Error al actualizar las guías'}`, {
         id: loadingToast,
+        duration: 8000
       });
     } finally {
       setIsRefreshingAll(false);

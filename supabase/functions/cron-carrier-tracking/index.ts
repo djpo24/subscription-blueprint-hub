@@ -23,11 +23,14 @@ serve(async (req) => {
     // Solo las que no se han chequeado en las últimas 3 horas o nunca
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
+    console.log('🔍 Looking for pending guides not checked since:', threeHoursAgo);
+
     const { data: guides, error: guidesError } = await supabaseClient
       .from('carrier_tracking_guides')
       .select('*')
-      .eq('status', 'pending')
-      .or(`last_check_at.is.null,last_check_at.lt.${threeHoursAgo}`);
+      .eq('status', 'pending');
+
+    console.log(`📋 Total pending guides found: ${guides?.length || 0}`);
 
     if (guidesError) {
       throw guidesError;

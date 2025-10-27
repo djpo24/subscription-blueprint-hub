@@ -113,25 +113,81 @@ serve(async (req) => {
 async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingResponse> {
   console.log('🔍 Tracking Interrapidisimo:', trackingNumber);
   
-  // TODO: Implementar integración real con Interrapidísimo
-  // Por ahora retornamos datos de ejemplo
-  return {
-    carrier: 'interrapidisimo',
-    trackingNumber,
-    status: 'En tránsito',
-    events: [
-      {
-        date: new Date().toISOString(),
-        description: 'Paquete en tránsito',
-        location: 'Bogotá'
-      },
-      {
-        date: new Date(Date.now() - 86400000).toISOString(),
-        description: 'Paquete recibido en centro de distribución',
-        location: 'Medellín'
+  try {
+    const url = `https://www.interrapidisimo.com/sigue-tu-envio/?guia=${trackingNumber}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    
+    // Extraer el estado principal
+    const statusMatch = html.match(/<div[^>]*class="[^"]*estado[^"]*"[^>]*>(.*?)<\/div>/i);
+    const status = statusMatch ? statusMatch[1].trim().replace(/<[^>]+>/g, '') : 'Consulta realizada';
+    
+    // Extraer eventos/novelas del tracking
+    const events: TrackingEvent[] = [];
+    const tableRegex = /<tr[^>]*>[\s\S]*?<td[^>]*>([\d\/\s:]+)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi;
+    let match;
+    
+    while ((match = tableRegex.exec(html)) !== null) {
+      const dateStr = match[1].trim();
+      const description = match[2].trim().replace(/<[^>]+>/g, '');
+      const location = match[3].trim().replace(/<[^>]+>/g, '');
+      
+      if (dateStr && description) {
+        // Convertir fecha de formato DD/MM/YYYY HH:MM:SS a ISO
+        const [datePart, timePart] = dateStr.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const isoDate = `${year}-${month}-${day}T${timePart || '00:00:00'}`;
+        
+        events.push({
+          date: isoDate,
+          description,
+          location: location || undefined
+        });
       }
-    ]
-  };
+    }
+    
+    // Si no hay eventos en tabla, buscar información alternativa
+    if (events.length === 0) {
+      const infoMatch = html.match(/<div[^>]*class="[^"]*info-guia[^"]*"[^>]*>(.*?)<\/div>/is);
+      if (infoMatch) {
+        events.push({
+          date: new Date().toISOString(),
+          description: status,
+          location: 'Colombia'
+        });
+      }
+    }
+    
+    console.log('✅ Interrapidisimo tracking successful:', { status, eventsCount: events.length });
+    
+    return {
+      carrier: 'interrapidisimo',
+      trackingNumber,
+      status,
+      events: events.length > 0 ? events : [{
+        date: new Date().toISOString(),
+        description: 'Información de seguimiento consultada',
+        location: 'Colombia'
+      }]
+    };
+  } catch (error) {
+    console.error('❌ Error tracking Interrapidisimo:', error);
+    return {
+      carrier: 'interrapidisimo',
+      trackingNumber,
+      status: 'Error en consulta',
+      events: [{
+        date: new Date().toISOString(),
+        description: `Error al consultar: ${error.message}`,
+        location: 'Colombia'
+      }]
+    };
+  }
 }
 
 async function trackServientrega(trackingNumber: string): Promise<TrackingResponse> {

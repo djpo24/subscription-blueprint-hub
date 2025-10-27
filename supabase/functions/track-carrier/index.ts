@@ -146,29 +146,57 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
     const html = await response.text();
     console.log('📄 HTML length:', html.length);
     
-    // Búsqueda simple y rápida de estado
-    let status = 'Consulta realizada';
+    // Mostrar extracto del HTML para debugging
+    const htmlPreview = html.substring(0, 1000);
+    console.log('📝 HTML Preview (primeros 1000 chars):', htmlPreview);
+    
+    // Buscar palabras clave específicas
+    const keywords = ['entregado', 'tránsito', 'transito', 'despachado', 'recibido', 'error', 'no encontrado'];
+    keywords.forEach(keyword => {
+      if (html.toLowerCase().includes(keyword)) {
+        console.log(`🔍 Palabra encontrada: "${keyword}"`);
+        // Mostrar contexto alrededor de la palabra
+        const index = html.toLowerCase().indexOf(keyword);
+        const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + 100));
+        console.log(`📍 Contexto: ${context}`);
+      }
+    });
+    
+    // Búsqueda de estado en el HTML
+    let status = 'Información recibida';
     const events: TrackingEvent[] = [];
+    
+    console.log('🔎 Analizando HTML para estado del envío...');
     
     // Buscar texto que indique estado de entrega
     if (html.toLowerCase().includes('entregado')) {
       status = 'Entregado';
+      console.log('✅ Estado detectado: Entregado');
     } else if (html.toLowerCase().includes('en tránsito') || html.toLowerCase().includes('en transito')) {
       status = 'En tránsito';
+      console.log('✅ Estado detectado: En tránsito');
     } else if (html.toLowerCase().includes('despachado')) {
       status = 'Despachado';
+      console.log('✅ Estado detectado: Despachado');
     } else if (html.toLowerCase().includes('recibido')) {
       status = 'Recibido en bodega';
+      console.log('✅ Estado detectado: Recibido en bodega');
+    } else {
+      console.log('⚠️ No se detectó un estado conocido');
     }
     
-    // Agregar evento básico
+    // Agregar evento con la información capturada
     events.push({
       date: new Date().toISOString(),
       description: status,
       location: 'Colombia'
     });
     
-    console.log('✅ Tracking successful:', { status, url: response.url });
+    console.log('✅ Tracking completado:', { 
+      status, 
+      finalUrl: response.url,
+      eventsCount: events.length 
+    });
     
     return {
       carrier: 'interrapidisimo',

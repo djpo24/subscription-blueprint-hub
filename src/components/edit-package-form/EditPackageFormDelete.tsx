@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react';
 
 interface Package {
@@ -20,6 +21,7 @@ export function EditPackageFormDelete({ package: pkg, onSuccess }: EditPackageFo
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -32,9 +34,19 @@ export function EditPackageFormDelete({ package: pkg, onSuccess }: EditPackageFo
 
       if (error) throw error;
 
+      // Invalidar todas las queries relevantes para actualizar la UI
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['packages'] }),
+        queryClient.invalidateQueries({ queryKey: ['packages-by-date'] }),
+        queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] }),
+        queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] }),
+        queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] }),
+        queryClient.invalidateQueries({ queryKey: ['deleted-packages'] })
+      ]);
+
       toast({
         title: "Encomienda eliminada",
-        description: "La encomienda ha sido marcada como eliminada y puede ser recuperada por un administrador"
+        description: "La encomienda ha sido movida a la papelera y puede ser recuperada desde 'Paquetes Eliminados'"
       });
 
       setShowDeleteDialog(false);

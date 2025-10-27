@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CarrierTrackingForm } from '@/components/carrier-tracking/CarrierTrackingForm';
 import { CarrierTrackingResults } from '@/components/carrier-tracking/CarrierTrackingResults';
+import { CarrierTrackingList } from '@/components/carrier-tracking/CarrierTrackingList';
 import { useState } from 'react';
 
 interface TrackingResult {
@@ -25,7 +26,7 @@ export function CarrierTrackingTab() {
         <CardHeader>
           <CardTitle>Rastreo de Transportadoras</CardTitle>
           <CardDescription>
-            Consulta el estado de guías enviadas por tus clientes a través de transportadoras colombianas
+            Agrega guías para seguimiento automático cada 3 horas
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -40,6 +41,8 @@ export function CarrierTrackingTab() {
       {trackingResult && (
         <CarrierTrackingResults result={trackingResult} />
       )}
+
+      <CarrierTrackingList />
     </div>
   );
 }

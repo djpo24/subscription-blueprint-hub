@@ -349,6 +349,91 @@ export type Database = {
           },
         ]
       }
+      carrier_tracking_guides: {
+        Row: {
+          carrier: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          delivered_at: string | null
+          id: string
+          last_check_at: string | null
+          last_status: string | null
+          last_tracking_data: Json | null
+          notes: string | null
+          status: string
+          tracking_number: string
+        }
+        Insert: {
+          carrier: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          delivered_at?: string | null
+          id?: string
+          last_check_at?: string | null
+          last_status?: string | null
+          last_tracking_data?: Json | null
+          notes?: string | null
+          status?: string
+          tracking_number: string
+        }
+        Update: {
+          carrier?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          delivered_at?: string | null
+          id?: string
+          last_check_at?: string | null
+          last_status?: string | null
+          last_tracking_data?: Json | null
+          notes?: string | null
+          status?: string
+          tracking_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_tracking_guides_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carrier_tracking_history: {
+        Row: {
+          checked_at: string
+          guide_id: string
+          id: string
+          status: string
+          tracking_data: Json
+        }
+        Insert: {
+          checked_at?: string
+          guide_id: string
+          id?: string
+          status: string
+          tracking_data: Json
+        }
+        Update: {
+          checked_at?: string
+          guide_id?: string
+          id?: string
+          status?: string
+          tracking_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_tracking_history_guide_id_fkey"
+            columns: ["guide_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_tracking_guides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_payments: {
         Row: {
           amount: number
@@ -1612,14 +1697,8 @@ export type Database = {
         }
         Returns: string
       }
-      generate_verification_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_app_secret: {
-        Args: { secret_name: string }
-        Returns: string
-      }
+      generate_verification_code: { Args: never; Returns: string }
+      get_app_secret: { Args: { secret_name: string }; Returns: string }
       get_current_freight_rate: {
         Args: {
           destination_param: string
@@ -1633,12 +1712,9 @@ export type Database = {
           rate_id: string
         }[]
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
       get_deleted_packages: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           amount_to_collect: number
           created_at: string
@@ -1670,18 +1746,12 @@ export type Database = {
           trip_id: string
         }[]
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
       restore_deleted_package: {
         Args: { package_id: string }
         Returns: boolean
       }
-      soft_delete_package: {
-        Args: { package_id: string }
-        Returns: boolean
-      }
+      soft_delete_package: { Args: { package_id: string }; Returns: boolean }
       update_app_secret: {
         Args: { secret_name: string; secret_value: string }
         Returns: boolean

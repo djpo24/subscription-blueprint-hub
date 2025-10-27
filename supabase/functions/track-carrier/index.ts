@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,9 +26,9 @@ serve(async (req) => {
   }
 
   try {
-    const { carrier, trackingNumber, customerId } = await req.json();
+    const { carrier, trackingNumber, customerId, saveToDatabase } = await req.json();
 
-    console.log('📦 Tracking request:', { carrier, trackingNumber, customerId });
+    console.log('📦 Tracking request:', { carrier, trackingNumber, customerId, saveToDatabase });
 
     if (!carrier || !trackingNumber) {
       throw new Error('Carrier and tracking number are required');
@@ -53,6 +54,39 @@ serve(async (req) => {
         break;
       default:
         throw new Error(`Unsupported carrier: ${carrier}`);
+    }
+
+    // Guardar en la base de datos si se solicita
+    if (saveToDatabase && customerId) {
+      const authHeader = req.headers.get('Authorization')!;
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const isDelivered = response.status?.toLowerCase().includes('entregado');
+      
+      const { error: dbError } = await supabaseClient
+        .from('carrier_tracking_guides')
+        .upsert({
+          customer_id: customerId,
+          carrier,
+          tracking_number: trackingNumber,
+          status: isDelivered ? 'delivered' : 'pending',
+          last_status: response.status,
+          last_check_at: new Date().toISOString(),
+          delivered_at: isDelivered ? new Date().toISOString() : null,
+          last_tracking_data: response,
+        }, {
+          onConflict: 'carrier,tracking_number'
+        });
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+      } else {
+        console.log('✅ Guide saved to database');
+      }
     }
 
     return new Response(JSON.stringify(response), {

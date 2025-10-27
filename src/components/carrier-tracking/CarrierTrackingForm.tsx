@@ -41,7 +41,8 @@ export function CarrierTrackingForm({ onResult, isLoading, setIsLoading }: Carri
         body: {
           carrier,
           trackingNumber,
-          customerId
+          customerId,
+          saveToDatabase: true
         }
       });
 
@@ -59,7 +60,10 @@ export function CarrierTrackingForm({ onResult, isLoading, setIsLoading }: Carri
       }
 
       onResult(data);
-      toast.success('Consulta realizada exitosamente');
+      toast.success('Guía agregada al seguimiento automático');
+      
+      // Reset form
+      setTrackingNumber('');
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Error al realizar la consulta');

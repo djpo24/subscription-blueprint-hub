@@ -39,6 +39,12 @@ verify_jwt = true
 [functions.track-carrier]
 verify_jwt = true
 
+[functions.refresh-carrier-tracking]
+verify_jwt = true
+
+[functions.cron-carrier-tracking]
+verify_jwt = false
+
 [realtime]
 enabled = true
 port = 54323

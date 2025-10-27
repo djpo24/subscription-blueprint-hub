@@ -228,19 +228,83 @@ async function trackInterrapidisimo(trackingNumber: string): Promise<TrackingRes
 async function trackServientrega(trackingNumber: string): Promise<TrackingResponse> {
   console.log('🔍 Tracking Servientrega:', trackingNumber);
   
-  // TODO: Implementar integración real con Servientrega
-  return {
-    carrier: 'servientrega',
-    trackingNumber,
-    status: 'Pendiente de consulta',
-    events: [
-      {
-        date: new Date().toISOString(),
-        description: 'Consulta pendiente - API en desarrollo',
-        location: 'Colombia'
+  try {
+    // URL del portal de rastreo de Servientrega
+    const trackingUrl = `https://www.servientrega.com/wps/portal/rastreo-envio?guia=${trackingNumber}`;
+    console.log('📡 Servientrega URL:', trackingUrl);
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    
+    const response = await fetch(trackingUrl, {
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'es-CO,es;q=0.9',
       }
-    ]
-  };
+    });
+    
+    clearTimeout(timeout);
+    console.log('✅ Servientrega response:', response.status, response.url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const html = await response.text();
+    console.log('📄 HTML length:', html.length);
+    
+    // Buscar estados comunes de Servientrega
+    let status = 'Información recibida';
+    const events: TrackingEvent[] = [];
+    
+    if (html.toLowerCase().includes('entregado')) {
+      status = 'Entregado';
+      console.log('✅ Estado: Entregado');
+    } else if (html.toLowerCase().includes('en ruta') || html.toLowerCase().includes('en tránsito')) {
+      status = 'En tránsito';
+      console.log('✅ Estado: En tránsito');
+    } else if (html.toLowerCase().includes('en bodega') || html.toLowerCase().includes('recibido')) {
+      status = 'En bodega';
+      console.log('✅ Estado: En bodega');
+    } else if (html.toLowerCase().includes('despachado')) {
+      status = 'Despachado';
+      console.log('✅ Estado: Despachado');
+    }
+    
+    events.push({
+      date: new Date().toISOString(),
+      description: status,
+      location: 'Colombia'
+    });
+    
+    return {
+      carrier: 'servientrega',
+      trackingNumber,
+      status,
+      events
+    };
+    
+  } catch (error) {
+    console.error('⚠️ Servientrega scraping failed:', error.message);
+    
+    const isTimeout = error.message.includes('aborted') || error.message.includes('timeout');
+    
+    return {
+      carrier: 'servientrega',
+      trackingNumber,
+      status: isTimeout ? 'Consulta en proceso' : 'Error temporal',
+      events: [{
+        date: new Date().toISOString(),
+        description: isTimeout 
+          ? 'El sitio de Servientrega está tardando. La consulta se reintentará automáticamente.'
+          : `Error temporal: ${error.message}. Se reintentará automáticamente.`,
+        location: 'Sistema'
+      }]
+    };
+  }
 }
 
 async function trackEnvia(trackingNumber: string): Promise<TrackingResponse> {

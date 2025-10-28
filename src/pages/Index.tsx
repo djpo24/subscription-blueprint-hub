@@ -17,7 +17,7 @@ import { MarketingTab } from '@/components/tabs/MarketingTab';
 import { AdminInvestigationTab } from '@/components/tabs/AdminInvestigationTab';
 import { FidelizationTab } from '@/components/tabs/FidelizationTab';
 import { DeletedPackagesTab } from '@/components/tabs/DeletedPackagesTab';
-import { CarrierTrackingTab } from '@/components/tabs/CarrierTrackingTab';
+
 import { Tabs } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -156,7 +156,6 @@ export default function Index() {
                 {activeTab === 'marketing' && 'Marketing'}
                 {activeTab === 'admin-investigation' && 'Investigación'}
                 {activeTab === 'deleted-packages' && 'Paquetes Eliminados'}
-                {activeTab === 'carrier-tracking' && 'Rastreo de Guías'}
               </h2>
             </div>
 
@@ -200,7 +199,6 @@ export default function Index() {
               <Route path="users" element={<UsersTab />} />
               <Route path="admin-investigation" element={<AdminInvestigationTab />} />
               <Route path="deleted-packages" element={<DeletedPackagesTab />} />
-              <Route path="carrier-tracking" element={<CarrierTrackingTab />} />
               <Route path="settings" element={<SettingsTab />} />
               <Route path="developer" element={<DeveloperTab />} />
               

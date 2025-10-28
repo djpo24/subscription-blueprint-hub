@@ -14,8 +14,7 @@ import {
   AlertTriangle,
   Search,
   Trophy,
-  Trash2,
-  MapPin
+  Trash2
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -49,9 +48,6 @@ export const createMenuItems = (
   
   // Fidelization tab visible for all users
   items.push({ value: 'fidelization', title: 'Fidelización', icon: Trophy });
-  
-  // Carrier tracking tab visible for all users
-  items.push({ value: 'carrier-tracking', title: 'Rastreo Guías', icon: MapPin });
 
   if (showChatTab) {
     items.push({ 

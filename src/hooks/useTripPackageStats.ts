@@ -18,6 +18,7 @@ export function useTripPackageStats() {
           .from('packages')
           .select('id, trip_id, weight, freight, amount_to_collect, currency')
           .not('trip_id', 'is', null)
+          .is('deleted_at', null)
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {

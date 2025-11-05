@@ -6,11 +6,12 @@ export function usePackagesByTrip(tripId: string) {
   return useQuery({
     queryKey: ['packages-by-trip', tripId],
     queryFn: async () => {
-      // First get packages for this trip
+      // First get packages for this trip (excluding deleted ones)
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select('*')
         .eq('trip_id', tripId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
       
       if (packagesError) throw packagesError;

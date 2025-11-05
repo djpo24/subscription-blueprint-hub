@@ -22,6 +22,7 @@ export function usePackages() {
               email
             )
           `)
+          .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         

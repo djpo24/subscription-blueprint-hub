@@ -42,7 +42,7 @@ export function usePackagesByDate(selectedDate: Date) {
       const tripIds = trips.map(trip => trip.id);
 
       // Obtener TODAS las encomiendas de estos viajes (sin filtrar por estado)
-      // La vista de viajes debe mostrar todas las encomiendas del viaje
+      // pero excluyendo las eliminadas (deleted_at IS NULL)
       const { data: packages, error: packagesError } = await supabase
         .from('packages')
         .select(`
@@ -62,6 +62,7 @@ export function usePackagesByDate(selectedDate: Date) {
           )
         `)
         .in('trip_id', tripIds)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (packagesError) {

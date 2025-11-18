@@ -11,6 +11,7 @@ import { formatPackageDescription } from '@/utils/descriptionFormatter';
 import { formatCurrency } from '@/utils/currencyFormatter';
 import { useCurrentUserRoleWithPreview } from '@/hooks/useCurrentUserRoleWithPreview';
 import { FirstPackageBadge } from '@/components/badges/FirstPackageBadge';
+import { DiscountAppliedBadge } from '@/components/badges/DiscountAppliedBadge';
 
 type Currency = 'COP' | 'AWG';
 
@@ -97,7 +98,14 @@ export function PackagesTableRow({
       </TableCell>
       <TableCell>{format(new Date(pkg.created_at), 'dd/MM/yyyy')}</TableCell>
       <TableCell className="max-w-xs truncate">{formatPackageDescription(pkg.description)}</TableCell>
-      <TableCell>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          {pkg.discount_applied && pkg.discount_applied > 0 && (
+            <DiscountAppliedBadge discountAmount={pkg.discount_applied} />
+          )}
+          <span>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</span>
+        </div>
+      </TableCell>
       <TableCell>
         {pkg.discount_applied && pkg.discount_applied > 0 ? (
           <Badge variant="secondary" className="font-medium text-xs bg-purple-100 text-purple-700">

@@ -56,6 +56,7 @@ export function usePackagesByDate(selectedDate: Date) {
           currency,
           status,
           trip_id,
+          discount_applied,
           customers (
             name,
             email

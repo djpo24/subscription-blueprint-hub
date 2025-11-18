@@ -101,7 +101,7 @@ export function PackagesTableRow({
       <TableCell>
         <div className="flex flex-col gap-1">
           {pkg.discount_applied && pkg.discount_applied > 0 && (
-            <DiscountAppliedBadge discountAmount={pkg.discount_applied} />
+            <DiscountAppliedBadge discountAmount={pkg.discount_applied} currency={pkg.currency} />
           )}
           <span>{formatCurrency(pkg.amount_to_collect, pkg.currency)}</span>
         </div>

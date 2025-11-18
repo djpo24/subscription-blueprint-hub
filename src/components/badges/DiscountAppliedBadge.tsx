@@ -1,13 +1,16 @@
 import { Badge } from '@/components/ui/badge';
 import { Percent } from 'lucide-react';
-import { formatDecimal } from '@/utils/formatters';
+import { formatAmountToCollect } from '@/utils/formatters';
+
+type Currency = 'COP' | 'AWG';
 
 interface DiscountAppliedBadgeProps {
   discountAmount: number;
+  currency: Currency;
   className?: string;
 }
 
-export function DiscountAppliedBadge({ discountAmount, className }: DiscountAppliedBadgeProps) {
+export function DiscountAppliedBadge({ discountAmount, currency, className }: DiscountAppliedBadgeProps) {
   return (
     <Badge 
       variant="outline" 
@@ -16,7 +19,7 @@ export function DiscountAppliedBadge({ discountAmount, className }: DiscountAppl
                  inline-flex items-center gap-0.5 ${className || ''}`}
     >
       <Percent className="h-2.5 w-2.5" />
-      <span>-{formatDecimal(discountAmount)} kg</span>
+      <span>-{formatAmountToCollect(discountAmount, currency)}</span>
     </Badge>
   );
 }

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PackageStatusBadge } from '@/components/packages-table/PackageStatusBadge';
 import { formatAmountToCollectWithCurrency } from '@/utils/currencyFormatter';
 import { FirstPackageBadge } from '@/components/badges/FirstPackageBadge';
+import { DiscountAppliedBadge } from '@/components/badges/DiscountAppliedBadge';
 
 type Currency = 'COP' | 'AWG';
 
@@ -15,9 +16,10 @@ interface Package {
   description: string;
   weight: string;
   freight: string;
-  amount_to_collect: number | null; // Cambio: mantener como número
+  amount_to_collect: number | null;
   currency: Currency;
   status: string;
+  discount_applied?: number | null;
   customers?: {
     name: string;
     email: string;
@@ -95,9 +97,14 @@ export function PackageItemDesktop({
       </div>
 
       <div className="col-span-1 text-center">
-        <div className="flex items-center justify-center gap-1">
-          <DollarSign className="h-3 w-3 text-green-600" />
-          <span className="text-sm">{formatAmountToCollectWithCurrency(pkg.amount_to_collect, pkg.currency)}</span>
+        <div className="flex flex-col items-center justify-center gap-1">
+          {pkg.discount_applied && pkg.discount_applied > 0 && (
+            <DiscountAppliedBadge discountAmount={pkg.discount_applied} currency={pkg.currency} />
+          )}
+          <div className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3 text-green-600" />
+            <span className="text-sm">{formatAmountToCollectWithCurrency(pkg.amount_to_collect, pkg.currency)}</span>
+          </div>
         </div>
       </div>
 

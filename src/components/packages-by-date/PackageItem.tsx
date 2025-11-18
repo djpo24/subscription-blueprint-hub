@@ -21,6 +21,7 @@ interface Package {
   amount_to_collect: number | null;
   currency: Currency;
   status: string;
+  discount_applied?: number | null;
   customers?: {
     name: string;
     email: string;

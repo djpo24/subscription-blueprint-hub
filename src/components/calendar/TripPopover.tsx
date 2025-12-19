@@ -31,6 +31,7 @@ interface TripPopoverProps {
   onOpenChange: (open: boolean) => void;
   onAddPackage: (tripId: string) => void;
   onViewPackagesByDate?: (date: Date) => void;
+  onCreateTrip?: (date: Date) => void;
   selectedDate: Date;
   previewRole?: 'admin' | 'employee' | 'traveler';
 }
@@ -43,6 +44,7 @@ export function TripPopover({
   onOpenChange,
   onAddPackage,
   onViewPackagesByDate,
+  onCreateTrip,
   selectedDate,
   previewRole
 }: TripPopoverProps) {
@@ -114,6 +116,13 @@ export function TripPopover({
     }
   };
 
+  const handleCreateNewTrip = () => {
+    if (onCreateTrip) {
+      onCreateTrip(selectedDate);
+      onOpenChange(false);
+    }
+  };
+
   const selectedTrip = trips.find(trip => trip.id === selectedTripId);
 
   return (
@@ -162,6 +171,17 @@ export function TripPopover({
           <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
             {viewMode === 'trips' && (
               <>
+                {/* Botón para crear nuevo viaje */}
+                {onCreateTrip && (
+                  <Button
+                    onClick={handleCreateNewTrip}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Crear Nuevo Viaje
+                  </Button>
+                )}
+
                 {/* Botón para ver todas las encomiendas del día */}
                 {onViewPackagesByDate && trips.length > 0 && (
                   <div className="border-b pb-3 mb-3">

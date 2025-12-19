@@ -17,15 +17,6 @@ interface TripIndicatorProps {
 }
 
 export function TripIndicator({ trips, onShowPopover }: TripIndicatorProps) {
-  console.log('TripIndicator rendering with trips:', trips);
-
-  // Agrupar viajes por estado para mostrar círculos de diferentes colores
-  const tripsByStatus = trips.reduce((acc, trip) => {
-    if (!acc[trip.status]) acc[trip.status] = [];
-    acc[trip.status].push(trip);
-    return acc;
-  }, {} as Record<string, Trip[]>);
-
   const getIndicatorColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -41,29 +32,53 @@ export function TripIndicator({ trips, onShowPopover }: TripIndicatorProps) {
     }
   };
 
+  // Para móvil, mostrar máximo 2 viajes con info de ruta
+  const visibleTrips = trips.slice(0, 2);
+  const remainingCount = trips.length - 2;
+
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap gap-1">
-        {Object.entries(tripsByStatus).map(([status, statusTrips]) => 
-          statusTrips.map((trip, index) => (
-            <button
-              key={`${status}-${trip.id}-${index}`}
-              onClick={onShowPopover}
-              className={`w-3 h-3 rounded-full ${getIndicatorColor(status)} hover:scale-110 transition-transform cursor-pointer`}
-              title={`${trip.flight_number || 'Sin vuelo'} - ${trip.origin} → ${trip.destination} (${status})`}
-            />
-          ))
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onShowPopover();
+      }}
+      className="w-full text-left"
+    >
+      {/* Vista móvil: rutas abreviadas verticales */}
+      <div className="flex flex-col gap-1 md:hidden">
+        {visibleTrips.map((trip) => (
+          <div
+            key={trip.id}
+            className="flex items-center gap-1 text-[9px] leading-tight"
+          >
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getIndicatorColor(trip.status)}`} />
+            <span className="truncate text-gray-700 font-medium">
+              {trip.origin.slice(0, 3).toUpperCase()}→{trip.destination.slice(0, 3).toUpperCase()}
+            </span>
+          </div>
+        ))}
+        {remainingCount > 0 && (
+          <span className="text-[9px] text-gray-500 font-medium">
+            +{remainingCount} más
+          </span>
         )}
       </div>
-      
-      {trips.length > 6 && (
-        <button
-          onClick={onShowPopover}
-          className="text-xs text-gray-600 hover:text-black transition-colors"
-        >
-          +{trips.length - 6} más
-        </button>
-      )}
-    </div>
+
+      {/* Vista desktop: círculos más grandes */}
+      <div className="hidden md:flex flex-wrap gap-1.5">
+        {trips.slice(0, 6).map((trip, index) => (
+          <span
+            key={`${trip.id}-${index}`}
+            className={`w-3.5 h-3.5 rounded-full ${getIndicatorColor(trip.status)} hover:scale-125 transition-transform`}
+            title={`${trip.flight_number || 'Sin vuelo'} - ${trip.origin} → ${trip.destination} (${trip.status})`}
+          />
+        ))}
+        {trips.length > 6 && (
+          <span className="text-xs text-gray-600 font-medium">
+            +{trips.length - 6}
+          </span>
+        )}
+      </div>
+    </button>
   );
 }

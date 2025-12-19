@@ -1,7 +1,5 @@
 
-import { isSameDay, isSameMonth, format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { isSameDay } from 'date-fns';
 import { CalendarDay } from './CalendarDay';
 import { TripPopover } from './TripPopover';
 import { TripDialog } from '@/components/TripDialog';
@@ -57,6 +55,12 @@ export function CalendarGrid({
     }
   };
 
+  const handleCreateTrip = (date: Date) => {
+    setSelectedDate(date);
+    setTripPopoverOpen(false);
+    setTripDialogOpen(true);
+  };
+
   const handleTripSuccess = () => {
     setTripDialogOpen(false);
     setSelectedDate(null);
@@ -92,7 +96,7 @@ export function CalendarGrid({
               currentDate={currentDate}
               trips={dayTrips}
               onAddPackage={onAddPackage}
-              onCreateTrip={onCreateTrip}
+              onCreateTrip={handleCreateTrip}
               onViewPackagesByDate={onViewPackagesByDate}
             />
           );
@@ -106,6 +110,7 @@ export function CalendarGrid({
           open={tripPopoverOpen}
           onOpenChange={handleTripPopoverClose}
           onAddPackage={onAddPackage}
+          onCreateTrip={handleCreateTrip}
           onViewPackagesByDate={onViewPackagesByDate}
           selectedDate={selectedDate}
           previewRole={previewRole}

@@ -1,5 +1,6 @@
 import { useDispatchPackages, useDispatchRelations } from '@/hooks/useDispatchRelations';
 import { useTripActions } from '@/hooks/useTripActions';
+import { useRevertDispatchStatus } from '@/hooks/useRevertDispatchStatus';
 import { useDispatchReport } from '@/hooks/useDispatchReport';
 import { useTrips } from '@/hooks/useTrips';
 import { DispatchDetailsHeader } from './DispatchDetailsHeader';
@@ -24,6 +25,7 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     markTripAsArrived,
     isMarkingAsArrived
   } = useTripActions();
+  const { revertDispatchStatus, isReverting } = useRevertDispatchStatus();
 
   if (!dispatchId) {
     return (
@@ -78,12 +80,17 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
   // Obtener información del despacho
   const currentDispatch = dispatches.find(dispatch => dispatch.id === dispatchId);
   
-  // Lógica simplificada para determinar cuándo se puede marcar en tránsito
+  // Lógica estricta: solo permitir transiciones válidas
+  const dispatchStatus = currentDispatch?.status || 'pending';
+  
   const canMarkAsInTransit = packages.some(pkg => 
     pkg.status === 'procesado' || pkg.status === 'despachado'
-  ) && currentDispatch?.status !== 'en_transito';
+  ) && (dispatchStatus === 'pending' || dispatchStatus === 'procesado');
   
-  const canMarkAsArrived = currentDispatch?.status === 'en_transito';
+  const canMarkAsArrived = dispatchStatus === 'en_transito';
+  
+  // Permitir revertir si el despacho está en estado "llegado" o "en_transito"
+  const canRevert = dispatchStatus === 'llegado' || dispatchStatus === 'en_transito';
 
   const handleMarkAsInTransit = () => {
     if (dispatchId) {
@@ -100,6 +107,13 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
       markTripAsArrived(dispatchId);
     } else {
       console.error('❌ No se puede marcar como llegado: falta dispatchId');
+    }
+  };
+
+  const handleRevert = () => {
+    if (dispatchId) {
+      const targetStatus = dispatchStatus === 'llegado' ? 'en_transito' as const : 'pending' as const;
+      revertDispatchStatus({ dispatchId, targetStatus });
     }
   };
 
@@ -133,10 +147,14 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
       <DispatchDetailsHeader
         canMarkAsInTransit={canMarkAsInTransit}
         canMarkAsArrived={canMarkAsArrived}
+        canRevert={canRevert}
+        dispatchStatus={dispatchStatus}
         onMarkAsInTransit={handleMarkAsInTransit}
         onMarkAsArrived={handleMarkAsArrived}
+        onRevert={handleRevert}
         isMarkingAsInTransit={isMarkingAsInTransit}
         isMarkingAsArrived={isMarkingAsArrived}
+        isReverting={isReverting}
         hasPackages={packages.length > 0}
         onGenerateReport={handleGenerateReport}
         isGeneratingReport={isGenerating}

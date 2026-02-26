@@ -1,15 +1,18 @@
-
 import { Button } from '@/components/ui/button';
-import { Truck, Plane, FileText, Loader2 } from 'lucide-react';
+import { Truck, Plane, FileText, Loader2, Undo2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsHeaderProps {
   canMarkAsInTransit: boolean;
   canMarkAsArrived: boolean;
+  canRevert: boolean;
+  dispatchStatus: string;
   onMarkAsInTransit: () => void;
   onMarkAsArrived: () => void;
+  onRevert: () => void;
   isMarkingAsInTransit: boolean;
   isMarkingAsArrived: boolean;
+  isReverting: boolean;
   hasPackages: boolean;
   onGenerateReport: () => void;
   isGeneratingReport: boolean;
@@ -18,15 +21,21 @@ interface DispatchDetailsHeaderProps {
 export function DispatchDetailsHeader({
   canMarkAsInTransit,
   canMarkAsArrived,
+  canRevert,
+  dispatchStatus,
   onMarkAsInTransit,
   onMarkAsArrived,
+  onRevert,
   isMarkingAsInTransit,
   isMarkingAsArrived,
+  isReverting,
   hasPackages,
   onGenerateReport,
   isGeneratingReport
 }: DispatchDetailsHeaderProps) {
   const isMobile = useIsMobile();
+
+  const revertLabel = dispatchStatus === 'llegado' ? 'Revertir a En Tránsito' : 'Revertir a Pendiente';
 
   return (
     <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'}`}>
@@ -35,6 +44,22 @@ export function DispatchDetailsHeader({
       </h2>
       
       <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+        {canRevert && (
+          <Button
+            onClick={onRevert}
+            disabled={isReverting}
+            variant="outline"
+            className={`${isMobile ? 'w-full text-xs' : ''} border-orange-500 text-orange-600 hover:bg-orange-50`}
+          >
+            {isReverting ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Undo2 className="h-4 w-4 mr-2" />
+            )}
+            {isReverting ? 'Revirtiendo...' : revertLabel}
+          </Button>
+        )}
+
         {canMarkAsInTransit && (
           <Button
             onClick={onMarkAsInTransit}

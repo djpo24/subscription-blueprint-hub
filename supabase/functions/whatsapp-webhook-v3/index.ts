@@ -1,810 +1,462 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// deno-lint-ignore-file no-explicit-any
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  downloadMetaMediaToStorage,
+  findCustomerMatch,
+  verifyMetaWebhookSignature,
+} from "../_shared/whatsapp-media.ts";
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// ═══════════════════════════════════════════════════════════════════════════════
+//  whatsapp-webhook-v3 (unified chat)
+//
+//  GET  → verifica el webhook (Meta hub.verify_token)
+//  POST → procesa eventos:
+//          · value.messages   → mensajes entrantes (inbound)
+//          · value.statuses   → status updates (sent/delivered/read/failed)
+//          · value.contacts   → metadata de contacto (foto de perfil)
+//
+//  Cambios vs v3 legacy:
+//    - Verifica HMAC X-Hub-Signature-256 si META_WHATSAPP_APP_SECRET está
+//      disponible (modo seguro por defecto).
+//    - Dedup por waba_message_id (no inserta dos veces el mismo mensaje).
+//    - Escribe en whatsapp_conversations + whatsapp_messages (esquema nuevo).
+//    - Descarga media a bucket whatsapp-media en folder = conversation_id.
+//    - Status updates actualizan whatsapp_messages (delivered_at/read_at/
+//      failed_at + error_code/title/message → trigger traduce a español).
+//    - Mantiene la lógica de fetch de foto de perfil de WhatsApp y la
+//      protección de "no crear clientes nuevos automáticamente".
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-hub-signature-256",
+};
+
+// ─── Secrets resolver (env primero, luego app_secrets RPC) ───────────────────
+
+async function getSecret(supabase: any, name: string, envFallback?: string): Promise<string> {
+  const fromEnv = envFallback ? Deno.env.get(envFallback) : "";
+  if (fromEnv) return fromEnv;
+  try {
+    const { data } = await supabase.rpc("get_app_secret", { secret_name: name });
+    return (data as string) ?? "";
+  } catch {
+    return "";
+  }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+// ─── Foto de perfil (preservado del v3 legacy) ───────────────────────────────
+
+async function getWhatsAppProfileImage(
+  waId: string,
+  phoneNumberId: string,
+  accessToken: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${encodeURIComponent(waId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.contacts?.[0]?.profile?.profile_picture_url ?? null;
+  } catch (err) {
+    console.error("[webhook] getWhatsAppProfileImage error:", err);
+    return null;
+  }
+}
+
+async function downloadProfileImageToBucket(
+  url: string,
+  waId: string,
+  supabase: any,
+): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "image/jpeg";
+    const ext = ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : ct.includes("gif") ? "gif" : "jpg";
+    const path = `profiles/profile_${waId}_${Date.now()}.${ext}`;
+    const buf = await res.arrayBuffer();
+    const { error } = await supabase.storage.from("whatsapp-media").upload(path, buf, {
+      contentType: ct,
+      upsert: false,
+    });
+    if (error) return null;
+    const { data: pub } = supabase.storage.from("whatsapp-media").getPublicUrl(path);
+    return pub?.publicUrl ?? null;
+  } catch (err) {
+    console.error("[webhook] downloadProfileImageToBucket error:", err);
+    return null;
+  }
+}
+
+async function refreshCustomerProfileImage(
+  customer: any,
+  waId: string,
+  supabase: any,
+  accessToken: string,
+  phoneNumberId: string,
+) {
+  if (!customer) return;
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  if (customer.profile_image_url && customer.updated_at) {
+    if (new Date(customer.updated_at).getTime() > thirtyDaysAgo) return;
+  }
+  const profileUrl = await getWhatsAppProfileImage(waId, phoneNumberId, accessToken);
+  if (!profileUrl) return;
+  const permanentUrl = await downloadProfileImageToBucket(profileUrl, waId, supabase);
+  if (permanentUrl && permanentUrl !== customer.profile_image_url) {
+    await supabase
+      .from("customers")
+      .update({ profile_image_url: permanentUrl, updated_at: new Date().toISOString() })
+      .eq("id", customer.id);
+  }
+}
+
+// ─── Resolver conversación (upsert) y customer match ─────────────────────────
+
+async function ensureConversation(
+  supabase: any,
+  fromPhone: string,
+): Promise<{ conversationId: string; customer: any | null }> {
+  // Buscar customer
+  const { data: candidates } = await supabase
+    .from("customers")
+    .select("id, name, phone, whatsapp_number, profile_image_url, updated_at")
+    .or(`phone.ilike.%${fromPhone}%,whatsapp_number.ilike.%${fromPhone}%`);
+
+  const customer = findCustomerMatch(candidates, fromPhone);
+
+  // Upsert conversación
+  const { data: conv } = await supabase
+    .from("whatsapp_conversations")
+    .upsert(
+      {
+        phone_number: fromPhone,
+        customer_id: customer?.id ?? null,
+        status: "open",
+        last_message_at: new Date().toISOString(),
+      },
+      { onConflict: "phone_number" },
+    )
+    .select("id, customer_id")
+    .single();
+
+  // Si el upsert no asignó customer_id pero tenemos uno, hacerlo ahora
+  if (conv && !conv.customer_id && customer?.id) {
+    await supabase
+      .from("whatsapp_conversations")
+      .update({ customer_id: customer.id })
+      .eq("id", conv.id);
   }
 
+  return { conversationId: conv?.id, customer };
+}
+
+// ─── Inbound message handling ────────────────────────────────────────────────
+
+async function handleIncomingMessage(
+  message: any,
+  supabase: any,
+  whatsappToken: string,
+  phoneNumberId: string,
+) {
+  const wabaId: string = message.id;
+  const fromPhone: string = message.from;
+  const tsSec: number = parseInt(message.timestamp, 10);
+  const sentAt = new Date(tsSec * 1000).toISOString();
+
+  // Dedup
+  const { data: existing } = await supabase
+    .from("whatsapp_messages")
+    .select("id")
+    .eq("waba_message_id", wabaId)
+    .maybeSingle();
+  if (existing) {
+    console.log(`[webhook] dedup: ${wabaId} already processed`);
+    return;
+  }
+
+  const { conversationId, customer } = await ensureConversation(supabase, fromPhone);
+
+  // Determinar tipo + contenido + media
+  let messageType = message.type as string;
+  let content = "";
+  let mediaPath: string | null = null;
+  let mediaMime: string | null = null;
+  let mediaSize: number | null = null;
+  let mediaCaption: string | null = null;
+
+  const tryDownload = async (mediaId: string, captionFallback: string) => {
+    try {
+      const r = await downloadMetaMediaToStorage(
+        supabase, whatsappToken, mediaId, conversationId, wabaId,
+      );
+      mediaPath = r.path;
+      mediaMime = r.mime_type;
+      mediaSize = r.size_bytes;
+    } catch (err) {
+      console.error(`[webhook] media download failed (${mediaId}):`, err);
+      content = captionFallback;
+    }
+  };
+
+  switch (messageType) {
+    case "text":
+      content = message.text?.body ?? "";
+      break;
+    case "image":
+      mediaCaption = message.image?.caption ?? null;
+      content = mediaCaption ?? "[Imagen]";
+      if (message.image?.id) await tryDownload(message.image.id, "[Imagen]");
+      break;
+    case "audio":
+      content = "[Audio]";
+      if (message.audio?.id) await tryDownload(message.audio.id, "[Audio]");
+      break;
+    case "video":
+      mediaCaption = message.video?.caption ?? null;
+      content = mediaCaption ?? "[Video]";
+      if (message.video?.id) await tryDownload(message.video.id, "[Video]");
+      break;
+    case "document":
+      mediaCaption = message.document?.caption ?? null;
+      content = mediaCaption ?? `[Documento: ${message.document?.filename ?? "archivo"}]`;
+      if (message.document?.id) await tryDownload(message.document.id, content);
+      break;
+    case "sticker":
+      messageType = "image";
+      content = "[Sticker]";
+      if (message.sticker?.id) await tryDownload(message.sticker.id, "[Sticker]");
+      break;
+    case "interactive":
+      content = message.interactive?.button_reply?.title
+             ?? message.interactive?.list_reply?.title
+             ?? "[Mensaje interactivo]";
+      break;
+    case "reaction":
+      content = `Reaccionó con ${message.reaction?.emoji ?? "👍"}`;
+      messageType = "text";
+      break;
+    case "location":
+      content = `📍 ${message.location?.latitude}, ${message.location?.longitude}`;
+      messageType = "text";
+      break;
+    default:
+      content = `Tipo no soportado: ${messageType}`;
+      messageType = "text";
+  }
+
+  // Tipo válido para CHECK del schema
+  if (!["text", "image", "audio", "video", "document", "interactive"].includes(messageType)) {
+    messageType = "text";
+  }
+
+  const { error: insertErr } = await supabase
+    .from("whatsapp_messages")
+    .insert({
+      conversation_id: conversationId,
+      customer_id: customer?.id ?? null,
+      direction: "inbound",
+      message_type: messageType,
+      content,
+      waba_message_id: wabaId,
+      status: "delivered",
+      sent_at: sentAt,
+      media_url: mediaPath,
+      media_mime_type: mediaMime,
+      media_size_bytes: mediaSize,
+      media_caption: mediaCaption,
+    });
+
+  if (insertErr) {
+    console.error("[webhook] insert whatsapp_messages error:", insertErr);
+  } else {
+    // Refrescar last_message_at
+    await supabase
+      .from("whatsapp_conversations")
+      .update({ last_message_at: sentAt })
+      .eq("id", conversationId);
+  }
+
+  // Foto de perfil (best-effort, no bloquea)
+  if (customer && whatsappToken && phoneNumberId) {
+    refreshCustomerProfileImage(customer, fromPhone, supabase, whatsappToken, phoneNumberId)
+      .catch(err => console.error("[webhook] profile refresh error:", err));
+  }
+}
+
+// ─── Status update handling (sent/delivered/read/failed) ─────────────────────
+
+async function handleMessageStatus(status: any, supabase: any) {
+  const wabaId: string | undefined = status.id;
+  const stateRaw: string = status.status;
+  const tsSec = parseInt(status.timestamp, 10);
+  const ts = isFinite(tsSec) ? new Date(tsSec * 1000).toISOString() : new Date().toISOString();
+
+  if (!wabaId || !stateRaw) return;
+
+  const updates: Record<string, any> = { status: stateRaw };
+  if (stateRaw === "delivered") updates.delivered_at = ts;
+  else if (stateRaw === "read") updates.read_at = ts;
+  else if (stateRaw === "failed") {
+    updates.failed_at = ts;
+    const err = status.errors?.[0];
+    if (err) {
+      updates.error_code    = typeof err.code === "number" ? err.code : null;
+      updates.error_title   = err.title ?? null;
+      updates.error_message = err.message ?? err.error_data?.details ?? null;
+      // error_message_es se llena solo gracias al trigger
+    }
+  }
+
+  const { error } = await supabase
+    .from("whatsapp_messages")
+    .update(updates)
+    .eq("waba_message_id", wabaId);
+
+  if (error) {
+    console.error("[webhook] status update error:", error);
+  }
+}
+
+// ─── Contact handling (perfil de WhatsApp) ───────────────────────────────────
+
+async function handleContact(contact: any, supabase: any, whatsappToken: string, phoneNumberId: string) {
+  const waId = contact.wa_id;
+  if (!waId) return;
+  const profileName = contact.profile?.name as string | undefined;
+
+  const { data: candidates } = await supabase
+    .from("customers")
+    .select("id, name, phone, whatsapp_number, profile_image_url, updated_at")
+    .or(`phone.ilike.%${waId}%,whatsapp_number.ilike.%${waId}%`);
+
+  const customer = findCustomerMatch(candidates, waId);
+  if (!customer) return; // política: no crear clientes nuevos automáticamente
+
+  const updates: Record<string, any> = {};
+  if (!customer.whatsapp_number && waId) updates.whatsapp_number = waId;
+  if (profileName && (!customer.name || customer.name === "Cliente" || customer.name === ".")) {
+    updates.name = profileName;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await supabase.from("customers").update(updates).eq("id", customer.id);
+  }
+
+  if (whatsappToken && phoneNumberId) {
+    await refreshCustomerProfileImage(customer, waId, supabase, whatsappToken, phoneNumberId);
+  }
+}
+
+// ─── Main handler ────────────────────────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+  const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
   try {
-    console.log('🔄 Webhook V3 request received:', {
-      method: req.method,
-      url: req.url,
-      headers: Object.fromEntries(req.headers.entries())
-    })
+    // ── GET: verification ──
+    if (req.method === "GET") {
+      const verifyToken = await getSecret(supabase, "META_WHATSAPP_VERIFY_TOKEN", "META_WHATSAPP_VERIFY_TOKEN")
+                       || "ojitos_webhook_verify";
+      const url = new URL(req.url);
+      const mode = url.searchParams.get("hub.mode");
+      const token = url.searchParams.get("hub.verify_token");
+      const challenge = url.searchParams.get("hub.challenge");
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Get verify token from app secrets
-    const { data: verifyTokenData } = await supabaseClient.rpc('get_app_secret', { 
-      secret_name: 'META_WHATSAPP_VERIFY_TOKEN' 
-    })
-    const verifyToken = verifyTokenData || 'ojitos_webhook_verify'
-
-    if (req.method === 'GET') {
-      // Webhook verification - Meta requires this
-      const url = new URL(req.url)
-      const mode = url.searchParams.get('hub.mode')
-      const token = url.searchParams.get('hub.verify_token')
-      const challenge = url.searchParams.get('hub.challenge')
-
-      console.log('🔍 Webhook V3 verification attempt:', { 
-        mode, 
-        token, 
-        challenge,
-        expectedToken: verifyToken,
-        tokenMatch: token === verifyToken
-      })
-
-      if (mode === 'subscribe' && token === verifyToken) {
-        console.log('✅ Webhook V3 verified successfully')
-        return new Response(challenge, { 
+      if (mode === "subscribe" && token === verifyToken) {
+        return new Response(challenge ?? "", {
           status: 200,
-          headers: { 
-            'Content-Type': 'text/plain',
-            ...corsHeaders
-          }
-        })
-      } else {
-        console.log('❌ Webhook V3 verification failed - token mismatch')
-        console.log(`Expected: ${verifyToken}, Received: ${token}`)
-        return new Response('Forbidden', { 
-          status: 403,
-          headers: corsHeaders
-        })
+          headers: { "Content-Type": "text/plain", ...corsHeaders },
+        });
       }
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
     }
 
-    if (req.method === 'POST') {
-      // Handle webhook events
-      const body = await req.json()
-      console.log('📨 Webhook V3 received POST:', JSON.stringify(body, null, 2))
+    if (req.method !== "POST") {
+      return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    }
 
-      // Process webhook entries
-      if (body.entry && Array.isArray(body.entry)) {
-        for (const entry of body.entry) {
-          if (entry.changes) {
-            for (const change of entry.changes) {
-              if (change.field === 'messages') {
-                await processMessagesChange(change.value, supabaseClient)
-              }
+    // ── POST: read raw body for HMAC verification ──
+    const rawBody = await req.text();
+
+    const appSecret = await getSecret(supabase, "META_WHATSAPP_APP_SECRET", "META_WHATSAPP_APP_SECRET");
+    const sigHeader = req.headers.get("x-hub-signature-256");
+
+    if (appSecret) {
+      const ok = await verifyMetaWebhookSignature(appSecret, rawBody, sigHeader);
+      if (!ok) {
+        console.warn("[webhook] HMAC verification failed");
+        return new Response("Invalid signature", { status: 401, headers: corsHeaders });
+      }
+    } else {
+      console.warn("[webhook] META_WHATSAPP_APP_SECRET not set — skipping HMAC verification");
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
+    }
+
+    if (!body?.entry || !Array.isArray(body.entry)) {
+      return new Response("OK", { status: 200, headers: corsHeaders });
+    }
+
+    // Resolver credenciales una sola vez
+    const whatsappToken = await getSecret(supabase, "META_WHATSAPP_TOKEN", "META_WHATSAPP_TOKEN");
+    const phoneNumberId = await getSecret(supabase, "META_WHATSAPP_PHONE_NUMBER_ID", "META_WHATSAPP_PHONE_NUMBER_ID");
+
+    for (const entry of body.entry) {
+      if (!entry.changes) continue;
+      for (const change of entry.changes) {
+        if (change.field !== "messages") continue;
+        const value = change.value ?? {};
+
+        if (Array.isArray(value.statuses)) {
+          for (const s of value.statuses) {
+            await handleMessageStatus(s, supabase);
+          }
+        }
+
+        if (Array.isArray(value.messages)) {
+          for (const m of value.messages) {
+            try {
+              await handleIncomingMessage(m, supabase, whatsappToken, phoneNumberId);
+            } catch (err) {
+              console.error("[webhook] handleIncomingMessage error:", err);
+            }
+          }
+        }
+
+        if (Array.isArray(value.contacts) && whatsappToken && phoneNumberId) {
+          for (const c of value.contacts) {
+            try {
+              await handleContact(c, supabase, whatsappToken, phoneNumberId);
+            } catch (err) {
+              console.error("[webhook] handleContact error:", err);
             }
           }
         }
       }
-
-      return new Response('OK', { 
-        status: 200,
-        headers: corsHeaders
-      })
     }
 
-    return new Response('Method not allowed', { 
-      status: 405,
-      headers: corsHeaders
-    })
-
+    return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (error) {
-    console.error('❌ Error in webhook V3:', error)
+    console.error("[webhook] fatal error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    )
+      JSON.stringify({ error: (error as Error).message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
+    );
   }
-})
-
-async function processMessagesChange(value: any, supabaseClient: any) {
-  console.log('Processing messages change V3:', JSON.stringify(value, null, 2))
-
-  // Handle message status updates
-  if (value.statuses && Array.isArray(value.statuses)) {
-    for (const status of value.statuses) {
-      await handleMessageStatus(status, supabaseClient)
-    }
-  }
-
-  // Handle incoming messages (replies from customers)
-  if (value.messages && Array.isArray(value.messages)) {
-    for (const message of value.messages) {
-      await handleIncomingMessage(message, supabaseClient)
-    }
-  }
-
-  // Handle contacts info - SOLO ACTUALIZAR CLIENTES EXISTENTES
-  if (value.contacts && Array.isArray(value.contacts)) {
-    for (const contact of value.contacts) {
-      await handleContactInfo(contact, supabaseClient)
-    }
-  }
-}
-
-async function downloadProfileImage(profileImageUrl: string, wa_id: string, supabaseClient: any): Promise<string | null> {
-  try {
-    console.log('🔄 Downloading and storing profile image V3:', profileImageUrl, 'for:', wa_id)
-    
-    // Download the profile image directly (WhatsApp profile URLs don't need auth token)
-    const imageResponse = await fetch(profileImageUrl)
-    
-    if (!imageResponse.ok) {
-      console.error('❌ Error downloading profile image V3:', await imageResponse.text())
-      return profileImageUrl // Return original URL as fallback
-    }
-    
-    // Get file extension based on content type
-    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    const fileExtension = contentType.includes('png') ? '.png' :
-                         contentType.includes('webp') ? '.webp' :
-                         contentType.includes('gif') ? '.gif' : '.jpg'
-    
-    // Create unique filename for profile image
-    const fileName = `profile_${wa_id}_${Date.now()}${fileExtension}`
-    const filePath = `whatsapp-media/profiles/${fileName}`
-    
-    // Convert response to ArrayBuffer
-    const imageBuffer = await imageResponse.arrayBuffer()
-    
-    console.log('💾 Storing profile image in Supabase Storage V3:', filePath, 'Size:', imageBuffer.byteLength, 'bytes')
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
-      .from('whatsapp-media')
-      .upload(filePath, imageBuffer, {
-        contentType: contentType,
-        upsert: false
-      })
-    
-    if (uploadError) {
-      console.error('❌ Error uploading profile image to Supabase Storage V3:', uploadError)
-      return profileImageUrl // Return original URL as fallback
-    }
-    
-    console.log('✅ Profile image uploaded successfully V3:', uploadData.path)
-    
-    // Get public URL for the stored file
-    const { data: publicUrlData } = supabaseClient.storage
-      .from('whatsapp-media')
-      .getPublicUrl(filePath)
-    
-    const permanentUrl = publicUrlData?.publicUrl
-    console.log('🔗 Permanent profile image URL created V3:', permanentUrl)
-    
-    return permanentUrl || profileImageUrl
-    
-  } catch (error) {
-    console.error('❌ Error downloading and storing profile image V3:', error)
-    return profileImageUrl // Return original URL as fallback
-  }
-}
-
-async function getWhatsAppProfileImage(wa_id: string, phoneNumberId: string, accessToken: string): Promise<string | null> {
-  try {
-    console.log('🔍 Getting WhatsApp profile for:', wa_id)
-    
-    // ENDPOINT CORRECTO: Usar contacts endpoint que es el único documentado
-    const contactResponse = await fetch(
-      `https://graph.facebook.com/v20.0/${phoneNumberId}/contacts?contacts=${encodeURIComponent(wa_id)}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-    
-    console.log('📊 Contact response status:', contactResponse.status)
-    
-    if (!contactResponse.ok) {
-      const errorText = await contactResponse.text()
-      console.log('❌ Profile request failed:', contactResponse.status, errorText)
-      return null
-    }
-    
-    const contactData = await contactResponse.json()
-    console.log('📱 Contact data response:', JSON.stringify(contactData, null, 2))
-    
-    if (contactData.contacts && contactData.contacts.length > 0) {
-      const contact = contactData.contacts[0]
-      // ✅ CAMPO CORRECTO: profile_picture_url
-      if (contact.profile && contact.profile.profile_picture_url) {
-        console.log('✅ Profile picture found!')
-        console.log('🖼️ Profile picture URL:', contact.profile.profile_picture_url)
-        return contact.profile.profile_picture_url
-      } else {
-        console.log('📭 Contact found but no profile picture available (privacy settings)')
-      }
-    } else {
-      console.log('📭 No contacts returned from API')
-    }
-    
-    return null
-    
-  } catch (error) {
-    console.error('❌ Error getting WhatsApp profile image:', error)
-    return null
-  }
-}
-
-async function updateCustomerProfileImage(wa_id: string, customer: any, accessToken: string, phoneNumberId: string, supabaseClient: any) {
-  try {
-    console.log('🖼️ Checking profile image for customer:', customer?.name || 'Unregistered', 'wa_id:', wa_id)
-    
-    // Skip if customer is not registered
-    if (!customer) {
-      console.log('⚠️ Customer not registered, skipping profile image update')
-      return
-    }
-    
-    // Check if customer already has a recent profile image (within last 30 days)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
-    if (customer.profile_image_url && customer.updated_at) {
-      const lastUpdate = new Date(customer.updated_at)
-      if (lastUpdate > thirtyDaysAgo) {
-        console.log('✅ Customer has recent profile image, skipping update')
-        return
-      }
-    }
-    
-    console.log('🔄 Attempting to fetch fresh profile image from WhatsApp API...')
-    
-    // Get profile image URL from WhatsApp
-    const profileImageUrl = await getWhatsAppProfileImage(wa_id, phoneNumberId, accessToken)
-    
-    if (profileImageUrl) {
-      console.log('🖼️ Profile image found, downloading and storing permanently...')
-      
-      // Download and store the image permanently
-      const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
-      
-      if (permanentImageUrl && permanentImageUrl !== customer.profile_image_url) {
-        // Update customer with new profile image
-        const { error: updateError } = await supabaseClient
-          .from('customers')
-          .update({ 
-            profile_image_url: permanentImageUrl,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', customer.id)
-        
-        if (updateError) {
-          console.error('❌ Error updating customer profile image:', updateError)
-        } else {
-          console.log('✅ Customer profile image updated successfully:', permanentImageUrl)
-        }
-      } else {
-        console.log('📷 Profile image unchanged or download failed')
-      }
-    } else {
-      console.log('📭 No public profile image available for this customer')
-    }
-    
-  } catch (error) {
-    console.error('❌ Error in profile image update process:', error)
-  }
-}
-
-async function handleContactInfo(contact: any, supabaseClient: any) {
-  const { wa_id, profile } = contact
-  
-  console.log('Processing contact info V3:', contact)
-
-  if (!wa_id) return
-
-  const contactName = profile?.name || null
-
-  console.log('Contact profile data V3:', {
-    wa_id,
-    contactName
-  })
-  
-  // Get WhatsApp access token and phone number ID from secrets
-  const { data: accessToken } = await supabaseClient.rpc('get_app_secret', { 
-    secret_name: 'META_WHATSAPP_TOKEN' 
-  })
-  const { data: phoneNumberId } = await supabaseClient.rpc('get_app_secret', { 
-    secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' 
-  })
-  
-  if (!accessToken || !phoneNumberId) {
-    console.error('❌ Missing WhatsApp credentials for profile image fetch')
-    return
-  }
-
-  // 🔒 BUSCAR SOLO CLIENTES EXISTENTES - NO CREAR NUEVOS
-  const { data: existingCustomers, error: findError } = await supabaseClient
-    .from('customers')
-    .select('*')
-    .or(`phone.ilike.%${wa_id}%,whatsapp_number.ilike.%${wa_id}%`)
-
-  if (findError) {
-    console.error('Error finding customer V3:', findError)
-    return
-  }
-
-  // Find the best match for the phone number
-  let bestMatch = null
-  if (existingCustomers && existingCustomers.length > 0) {
-    bestMatch = existingCustomers.find(customer => {
-      const customerPhone = (customer.whatsapp_number || customer.phone || '').replace(/[\s\-\(\)+]/g, '')
-      const waIdClean = wa_id.replace(/[\s\-\(\)+]/g, '')
-      return customerPhone === waIdClean || customerPhone.endsWith(waIdClean) || waIdClean.endsWith(customerPhone)
-    }) || existingCustomers[0]
-  }
-
-  // 🚫 SOLO ACTUALIZAR CLIENTES EXISTENTES - NUNCA CREAR NUEVOS
-  if (bestMatch) {
-    console.log('📋 Actualizando cliente existente V3:', bestMatch.name)
-    
-    // Update existing customer with profile image
-    const updateData: any = {}
-    
-    // Get profile image from WhatsApp API if customer doesn't have one or we want to update it
-    if (!bestMatch.profile_image_url) {
-      console.log('🔄 Customer has no profile image, attempting to fetch from WhatsApp...')
-      const profileImageUrl = await getWhatsAppProfileImage(wa_id, phoneNumberId, accessToken)
-      
-      if (profileImageUrl) {
-        console.log('🖼️ Profile image found, downloading and storing...')
-        const permanentImageUrl = await downloadProfileImage(profileImageUrl, wa_id, supabaseClient)
-        
-        if (permanentImageUrl) {
-          updateData.profile_image_url = permanentImageUrl
-          console.log('✅ Profile image downloaded and stored permanently V3:', permanentImageUrl)
-        }
-      }
-    }
-    
-    // Update WhatsApp number if not set
-    if (!bestMatch.whatsapp_number && wa_id) {
-      updateData.whatsapp_number = wa_id
-    }
-    
-    // Only update name if customer doesn't have one or WhatsApp provides a different one
-    if (contactName && (!bestMatch.name || bestMatch.name === 'Cliente' || bestMatch.name === '.')) {
-      updateData.name = contactName
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      const { error: updateError } = await supabaseClient
-        .from('customers')
-        .update(updateData)
-        .eq('id', bestMatch.id)
-
-      if (updateError) {
-        console.error('Error updating customer profile V3:', updateError)
-      } else {
-        console.log('Customer profile updated successfully V3:', updateData)
-      }
-    }
-  } else {
-    // 🚫 NUNCA CREAR NUEVOS CLIENTES AUTOMÁTICAMENTE
-    console.log('⚠️ Número no registrado en la plataforma V3:', wa_id)
-    console.log('🚫 No se creará cliente automáticamente - política de seguridad')
-  }
-}
-
-async function handleMessageStatus(status: any, supabaseClient: any) {
-  const { id, status: messageStatus, timestamp, recipient_id } = status
-  
-  console.log('Message status update V3:', {
-    id,
-    status: messageStatus,
-    timestamp,
-    recipient_id
-  })
-
-  // Try to find the notification log entry by checking recent notifications
-  // to the same phone number around the time this message was sent
-  const { data: notifications, error } = await supabaseClient
-    .from('notification_log')
-    .select(`
-      *,
-      customers (
-        phone,
-        whatsapp_number
-      )
-    `)
-    .eq('status', 'sent')
-    .order('sent_at', { ascending: false })
-    .limit(50)
-
-  if (error) {
-    console.error('Error fetching notifications V3:', error)
-    return
-  }
-
-  // Find matching notification by phone number
-  const matchingNotification = notifications?.find(notification => {
-    const phone = notification.customers?.whatsapp_number || notification.customers?.phone
-    if (!phone) return false
-    
-    const cleanPhone = phone.replace(/[\s\-\(\)+]/g, '')
-    const cleanRecipient = recipient_id.replace(/[\s\-\(\)+]/g, '')
-    
-    return cleanPhone.includes(cleanRecipient) || cleanRecipient.includes(cleanPhone)
-  })
-
-  if (matchingNotification) {
-    // Create a delivery status log
-    await supabaseClient
-      .from('message_delivery_status')
-      .insert({
-        notification_id: matchingNotification.id,
-        whatsapp_message_id: id,
-        status: messageStatus,
-        timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-        recipient_phone: recipient_id
-      })
-
-    console.log('Delivery status logged for notification V3:', matchingNotification.id)
-  } else {
-    console.log('No matching notification found for message status V3')
-  }
-}
-
-async function downloadWhatsAppMedia(mediaId: string, accessToken: string, supabaseClient: any, messageType: string): Promise<string | null> {
-  try {
-    console.log('🔄 Downloading and storing WhatsApp media V3:', mediaId, 'Type:', messageType)
-    
-    // First, get the media URL from WhatsApp
-    const mediaResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-    
-    if (!mediaResponse.ok) {
-      console.error('❌ Error getting media URL V3:', await mediaResponse.text())
-      return null
-    }
-    
-    const mediaData = await mediaResponse.json()
-    const temporaryUrl = mediaData.url
-    
-    console.log('📥 Temporary media URL obtained from WhatsApp V3:', temporaryUrl)
-    
-    // Download the actual media file
-    const fileResponse = await fetch(temporaryUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-    
-    if (!fileResponse.ok) {
-      console.error('❌ Error downloading media file V3:', await fileResponse.text())
-      return temporaryUrl // Fallback to temporary URL
-    }
-    
-    // Get file extension based on content type or message type
-    const contentType = fileResponse.headers.get('content-type') || ''
-    let fileExtension = ''
-    
-    if (messageType === 'audio') {
-      fileExtension = contentType.includes('ogg') ? '.ogg' : 
-                     contentType.includes('opus') ? '.opus' :
-                     contentType.includes('mp3') ? '.mp3' :
-                     contentType.includes('aac') ? '.aac' :
-                     contentType.includes('amr') ? '.amr' : '.ogg'
-    } else if (messageType === 'image') {
-      fileExtension = contentType.includes('jpeg') ? '.jpg' :
-                     contentType.includes('png') ? '.png' :
-                     contentType.includes('gif') ? '.gif' :
-                     contentType.includes('webp') ? '.webp' : '.jpg'
-    } else if (messageType === 'video') {
-      fileExtension = contentType.includes('mp4') ? '.mp4' :
-                     contentType.includes('webm') ? '.webm' :
-                     contentType.includes('quicktime') ? '.mov' : '.mp4'
-    } else if (messageType === 'document') {
-      fileExtension = contentType.includes('pdf') ? '.pdf' :
-                     contentType.includes('doc') ? '.doc' :
-                     contentType.includes('excel') ? '.xlsx' :
-                     contentType.includes('text') ? '.txt' : '.bin'
-    } else if (messageType === 'sticker') {
-      fileExtension = contentType.includes('webp') ? '.webp' :
-                     contentType.includes('png') ? '.png' :
-                     contentType.includes('gif') ? '.gif' : '.webp'
-    }
-    
-    // Create unique filename
-    const fileName = `${messageType}_${mediaId}_${Date.now()}${fileExtension}`
-    const filePath = `whatsapp-media/${fileName}`
-    
-    // Convert response to ArrayBuffer
-    const fileBuffer = await fileResponse.arrayBuffer()
-    
-    console.log('💾 Storing media file in Supabase Storage V3:', filePath, 'Size:', fileBuffer.byteLength, 'bytes')
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
-      .from('whatsapp-media')
-      .upload(filePath, fileBuffer, {
-        contentType: contentType,
-        upsert: false
-      })
-    
-    if (uploadError) {
-      console.error('❌ Error uploading media to Supabase Storage V3:', uploadError)
-      return temporaryUrl // Fallback to temporary URL
-    }
-    
-    console.log('✅ Media file uploaded successfully V3:', uploadData.path)
-    
-    // Get public URL for the stored file
-    const { data: publicUrlData } = supabaseClient.storage
-      .from('whatsapp-media')
-      .getPublicUrl(filePath)
-    
-    const permanentUrl = publicUrlData?.publicUrl
-    console.log('🔗 Permanent media URL created V3:', permanentUrl)
-    
-    return permanentUrl || temporaryUrl
-    
-  } catch (error) {
-    console.error('❌ Error downloading and storing WhatsApp media V3:', error)
-    return null
-  }
-}
-
-async function handleAdminResponse(message: any, supabaseClient: any): Promise<boolean> {
-  const { text, from } = message
-  
-  if (!text?.body) {
-    console.log('📋 Admin message without text content, skipping escalation processing')
-    return false
-  }
-  
-  console.log('🔧 Processing admin response:', text.body.substring(0, 100) + '...')
-  
-  // Buscar escalación pendiente más reciente
-  const { data: pendingEscalation, error: escalationError } = await supabaseClient
-    .from('admin_escalations')
-    .select('*')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-  
-  if (escalationError && escalationError.code !== 'PGRST116') {
-    console.error('❌ Error finding pending escalation:', escalationError)
-    return false
-  }
-  
-  if (!pendingEscalation) {
-    console.log('📋 No pending escalations found, treating as general admin message')
-    return false
-  }
-  
-  console.log('✅ Found pending escalation:', pendingEscalation.id)
-  
-  // Marcar escalación como respondida
-  const { error: updateError } = await supabaseClient
-    .from('admin_escalations')
-    .update({
-      admin_response: text.body,
-      status: 'answered',
-      answered_at: new Date().toISOString()
-    })
-    .eq('id', pendingEscalation.id)
-  
-  if (updateError) {
-    console.error('❌ Error updating escalation:', updateError)
-    return false
-  }
-  
-  console.log('✅ Escalation marked as answered')
-  
-  // Enviar respuesta del admin al cliente original
-  const { data: sendData, error: sendError } = await supabaseClient.functions.invoke('send-whatsapp-notification', {
-    body: {
-      phone: pendingEscalation.customer_phone,
-      message: text.body,
-      isAdminResponse: true
-    }
-  })
-  
-  if (sendError) {
-    console.error('❌ Error sending admin response to customer:', sendError)
-  } else {
-    console.log('✅ Admin response sent to customer successfully')
-    
-    // Almacenar la respuesta del admin en sent_messages para el historial
-    await supabaseClient
-      .from('sent_messages')
-      .insert({
-        customer_id: null,
-        phone: pendingEscalation.customer_phone,
-        message: text.body,
-        status: 'sent',
-        whatsapp_message_id: sendData?.whatsapp_message_id || null
-      })
-  }
-  
-  return true
-}
-
-async function checkAutoResponseSettings() {
-  // 🚫 AUTO-RESPUESTA COMPLETAMENTE DESACTIVADA
-  // Sistema configurado para NO generar respuestas automáticas
-  return {
-    isAutoResponseEnabled: false, // SIEMPRE FALSE - Sin auto-respuestas
-    isManualResponseEnabled: true
-  }
-}
-
-async function handleIncomingMessage(message: any, supabaseClient: any) {
-  const { id, from, timestamp, type, text, image, document, audio, video, sticker, reaction } = message
-  
-  console.log('Incoming message V3:', {
-    id,
-    from,
-    timestamp,
-    type,
-    text: text?.body,
-    image: image?.id,
-    document: document?.id,
-    audio: audio?.id,
-    video: video?.id,
-    sticker: sticker?.id,
-    reaction: reaction?.emoji
-  })
-
-  // Get access token from app secrets
-  const { data: accessTokenData } = await supabaseClient.rpc('get_app_secret', { 
-    secret_name: 'META_WHATSAPP_TOKEN' 
-  })
-
-  // 🔒 BUSCAR SOLO CLIENTES EXISTENTES - NO CREAR NUEVOS
-  const { data: existingCustomers, error: customerError } = await supabaseClient
-    .from('customers')
-    .select('*')
-    .or(`phone.ilike.%${from}%,whatsapp_number.ilike.%${from}%`)
-
-  if (customerError && customerError.code !== 'PGRST116') {
-    console.error('Error finding customer V3:', customerError)
-    return
-  }
-
-  // Find the best match for the phone number
-  let customer = null
-  if (existingCustomers && existingCustomers.length > 0) {
-    customer = existingCustomers.find(c => {
-      const customerPhone = (c.whatsapp_number || c.phone || '').replace(/[\s\-\(\)+]/g, '')
-      const fromClean = from.replace(/[\s\-\(\)+]/g, '')
-      return customerPhone === fromClean || customerPhone.endsWith(fromClean) || fromClean.endsWith(customerPhone)
-    }) || existingCustomers[0]
-  }
-
-  // Prepare message content and media URL
-  let messageContent = ''
-  let mediaUrl = null
-  let mediaType = type
-
-  // Handle different message types
-  switch (type) {
-    case 'text':
-      messageContent = text?.body || ''
-      break
-    
-    case 'image':
-      messageContent = image?.caption || ''
-      if (image?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(image.id, accessTokenData, supabaseClient, 'image')
-        console.log('🖼️ Image media URL processed V3:', mediaUrl)
-      } else {
-        console.error('❌ No access token found for image download V3')
-      }
-      break
-    
-    case 'document':
-      messageContent = document?.caption || `📄 Documento: ${document?.filename || 'archivo'}`
-      if (document?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(document.id, accessTokenData, supabaseClient, 'document')
-        console.log('📄 Document media URL processed V3:', mediaUrl)
-      }
-      break
-    
-    case 'audio':
-      messageContent = '🎵 Mensaje de voz'
-      if (audio?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(audio.id, accessTokenData, supabaseClient, 'audio')
-        console.log('🎵 Audio media URL processed V3:', mediaUrl)
-      }
-      break
-    
-    case 'video':
-      messageContent = video?.caption || '🎥 Video'
-      if (video?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(video.id, accessTokenData, supabaseClient, 'video')
-        console.log('🎥 Video media URL processed V3:', mediaUrl)
-      }
-      break
-    
-    case 'sticker':
-      messageContent = '🏷️ Sticker'
-      if (sticker?.id && accessTokenData) {
-        mediaUrl = await downloadWhatsAppMedia(sticker.id, accessTokenData, supabaseClient, 'sticker')
-        console.log('🏷️ Sticker media URL processed V3:', mediaUrl)
-      }
-      break
-    
-    case 'reaction':
-      const reactionEmoji = reaction?.emoji || '👍'
-      const reactionMessageId = reaction?.message_id || ''
-      messageContent = `Reaccionó con ${reactionEmoji}`
-      console.log('👍 Reaction processed V3 - Emoji:', reactionEmoji, 'Message ID:', reactionMessageId)
-      
-      // Store additional reaction data in raw_data for future reference
-      message.reaction_details = {
-        emoji: reactionEmoji,
-        message_id: reactionMessageId
-      }
-      break
-    
-    default:
-      messageContent = `Mensaje no soportado: ${type}`
-      console.log('Unsupported message type V3:', type, message)
-  }
-
-  // Store the incoming message with raw_data for debugging
-  const messageData = {
-    whatsapp_message_id: id,
-    from_phone: from,
-    customer_id: customer?.id || null,
-    message_type: mediaType,
-    message_content: messageContent,
-    media_url: mediaUrl,
-    timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
-    raw_data: message // Store complete webhook payload for debugging
-  }
-
-  console.log('Storing message with data V3:', messageData)
-
-  const { error: insertError } = await supabaseClient
-    .from('incoming_messages')
-    .insert(messageData)
-
-  if (insertError) {
-    console.error('Error storing incoming message V3:', insertError)
-    return
-  } else {
-    console.log('Incoming message stored successfully with media URL and raw data V3:', mediaUrl)
-  }
-
-  // 🖼️ OBTENER FOTO DE PERFIL AUTOMÁTICAMENTE PARA CADA MENSAJE
-  console.log('🔄 Attempting to get profile image for message from:', from)
-  
-  // Get WhatsApp credentials
-  const { data: phoneNumberId } = await supabaseClient.rpc('get_app_secret', { 
-    secret_name: 'META_WHATSAPP_PHONE_NUMBER_ID' 
-  })
-  
-  if (accessTokenData && phoneNumberId) {
-    // Try to get and update profile image for this contact
-    await updateCustomerProfileImage(from, customer, accessTokenData, phoneNumberId, supabaseClient)
-  } else {
-    console.log('⚠️ Missing WhatsApp credentials for profile image fetch')
-  }
-
-  // 🚫 AUTO-RESPUESTA COMPLETAMENTE DESACTIVADA
-  if (type === 'text' && text?.body) {
-    console.log('📱 Received text message V3:', text.body)
-    console.log('🚫 AUTO-RESPUESTA DESACTIVADA - Solo guardando mensaje sin responder automáticamente')
-    
-    // SOLO almacenar el mensaje - NO generar respuestas automáticas
-    // El sistema solo funcionará de manera manual desde la interfaz web
-  }
-}
+});

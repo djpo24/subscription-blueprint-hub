@@ -226,16 +226,17 @@ serve(async (req) => {
     let autoSelectedLanguage = templateLanguage || 'es_CO'
 
     if (!useTemplate && customerId) {
-      // Check when was the last interaction with this customer
+      // Check when was the last inbound message from this customer
       const { data: lastMessage, error: lastMessageError } = await supabaseClient
-        .from('incoming_messages')
-        .select('timestamp')
+        .from('whatsapp_messages')
+        .select('sent_at')
         .eq('customer_id', customerId)
-        .order('timestamp', { ascending: false })
+        .eq('direction', 'inbound')
+        .order('sent_at', { ascending: false })
         .limit(1)
 
       if (!lastMessageError && lastMessage && lastMessage.length > 0) {
-        const lastInteraction = new Date(lastMessage[0].timestamp)
+        const lastInteraction = new Date(lastMessage[0].sent_at)
         const now = new Date()
         const hoursSinceLastInteraction = (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60)
 
@@ -541,7 +542,7 @@ serve(async (req) => {
       // CAMBIO CRÍTICO: Solo usar notification_log (igual que llegadas)
       const { error: updateError } = await supabaseClient
         .from('notification_log')
-        .update({ 
+        .update({
           status: 'sent',
           sent_at: new Date().toISOString()
         })
@@ -549,6 +550,49 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('❌ Error updating notification status:', updateError);
+      }
+
+      // Persistir mensaje en el esquema unificado del chat
+      try {
+        const wabaId = whatsappResult.messages[0].id;
+        const { data: conv } = await supabaseClient
+          .from('whatsapp_conversations')
+          .upsert(
+            {
+              phone_number: apiPhone,
+              customer_id: customerId ?? null,
+              status: 'open',
+              last_message_at: new Date().toISOString(),
+            },
+            { onConflict: 'phone_number' },
+          )
+          .select('id')
+          .single();
+
+        const isImage = !shouldUseTemplate && !!imageUrl;
+        const msgType = shouldUseTemplate
+          ? 'text'  // las plantillas se renderizan como texto en el chat
+          : (isImage ? 'image' : 'text');
+
+        const baseContent = shouldUseTemplate
+          ? (templateParameters?.message ?? message ?? `[Plantilla: ${autoSelectedTemplate}]`)
+          : (message ?? '');
+
+        await supabaseClient.from('whatsapp_messages').insert({
+          conversation_id: conv?.id ?? null,
+          customer_id: customerId ?? null,
+          direction: 'outbound',
+          message_type: msgType,
+          content: baseContent || null,
+          waba_message_id: wabaId,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          media_url: isImage ? imageUrl : null,
+          media_mime_type: isImage ? 'image/jpeg' : null,
+          media_caption: isImage ? (message || null) : null,
+        });
+      } catch (persistErr) {
+        console.error('⚠ Failed to persist outbound to whatsapp_messages:', persistErr);
       }
 
       console.log('✅ WhatsApp message sent successfully to:', apiPhone)

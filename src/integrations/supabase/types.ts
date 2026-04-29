@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -11,6 +12,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -430,6 +456,48 @@ export type Database = {
             columns: ["guide_id"]
             isOneToOne: false
             referencedRelation: "carrier_tracking_guides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_notes: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversation_inbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -1646,9 +1714,178 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          last_message_at: string | null
+          last_read_at: string | null
+          last_read_by: string | null
+          phone_number: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_read_at?: string | null
+          last_read_by?: string | null
+          phone_number: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_read_at?: string | null
+          last_read_by?: string | null
+          phone_number?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          direction: string
+          error_code: number | null
+          error_message: string | null
+          error_message_es: string | null
+          error_title: string | null
+          failed_at: string | null
+          id: string
+          media_caption: string | null
+          media_duration_sec: number | null
+          media_mime_type: string | null
+          media_size_bytes: number | null
+          media_url: string | null
+          message_type: string
+          read_at: string | null
+          sent_at: string | null
+          status: string
+          waba_message_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          direction: string
+          error_code?: number | null
+          error_message?: string | null
+          error_message_es?: string | null
+          error_title?: string | null
+          failed_at?: string | null
+          id?: string
+          media_caption?: string | null
+          media_duration_sec?: number | null
+          media_mime_type?: string | null
+          media_size_bytes?: number | null
+          media_url?: string | null
+          message_type?: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string
+          waba_message_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          direction?: string
+          error_code?: number | null
+          error_message?: string | null
+          error_message_es?: string | null
+          error_title?: string | null
+          failed_at?: string | null
+          id?: string
+          media_caption?: string | null
+          media_duration_sec?: number | null
+          media_mime_type?: string | null
+          media_size_bytes?: number | null
+          media_url?: string | null
+          message_type?: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string
+          waba_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversation_inbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      whatsapp_conversation_inbox: {
+        Row: {
+          awaiting_reply: boolean | null
+          created_at: string | null
+          customer_id: string | null
+          customers: Json | null
+          id: string | null
+          last_inbound_at: string | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          last_outbound_at: string | null
+          last_read_at: string | null
+          last_read_by: string | null
+          minutes_since_last_inbound: number | null
+          phone_number: string | null
+          status: string | null
+          unread_count: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_first_admin_user: {
@@ -1747,11 +1984,23 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      mark_conversation_unread: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
       restore_deleted_package: {
         Args: { package_id: string }
         Returns: boolean
       }
       soft_delete_package: { Args: { package_id: string }; Returns: boolean }
+      translate_meta_error: {
+        Args: { p_code: number; p_raw_message: string; p_raw_title: string }
+        Returns: string
+      }
       update_app_secret: {
         Args: { secret_name: string; secret_value: string }
         Returns: boolean
@@ -1884,7 +2133,12 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.95.4 (currently installed v2.75.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

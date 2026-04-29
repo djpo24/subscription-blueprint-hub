@@ -8,13 +8,6 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 10000
 
-[graphql]
-enabled = true
-port = 54329
-
-[inbound_email]
-enabled = false
-
 [db]
 port = 54322
 
@@ -45,9 +38,17 @@ verify_jwt = true
 [functions.cron-carrier-tracking]
 verify_jwt = false
 
+[functions.send-whatsapp-message]
+verify_jwt = true
+
+[functions.whatsapp-upload-and-send-media]
+verify_jwt = true
+
+[functions.whatsapp-download-media]
+verify_jwt = true
+
 [realtime]
 enabled = true
-port = 54323
 
 [studio]
 enabled = true

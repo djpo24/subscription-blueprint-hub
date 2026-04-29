@@ -293,10 +293,16 @@ async function handleIncomingMessage(
 async function handleMessageStatus(status: any, supabase: any) {
   const wabaId: string | undefined = status.id;
   const stateRaw: string = status.status;
+  const recipientId: string | undefined = status.recipient_id;
   const tsSec = parseInt(status.timestamp, 10);
   const ts = isFinite(tsSec) ? new Date(tsSec * 1000).toISOString() : new Date().toISOString();
 
-  if (!wabaId || !stateRaw) return;
+  console.log(`[webhook] status update: id=${wabaId} state=${stateRaw} recipient=${recipientId}`);
+
+  if (!wabaId || !stateRaw) {
+    console.warn("[webhook] status missing id or state, skipping");
+    return;
+  }
 
   const updates: Record<string, any> = { status: stateRaw };
   if (stateRaw === "delivered") updates.delivered_at = ts;
@@ -308,17 +314,64 @@ async function handleMessageStatus(status: any, supabase: any) {
       updates.error_code    = typeof err.code === "number" ? err.code : null;
       updates.error_title   = err.title ?? null;
       updates.error_message = err.message ?? err.error_data?.details ?? null;
-      // error_message_es se llena solo gracias al trigger
     }
+    console.error(`[webhook] FAILED status: ${JSON.stringify(status.errors ?? {})}`);
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("whatsapp_messages")
     .update(updates)
-    .eq("waba_message_id", wabaId);
+    .eq("waba_message_id", wabaId)
+    .select("id");
 
   if (error) {
     console.error("[webhook] status update error:", error);
+    return;
+  }
+
+  if (!updated || updated.length === 0) {
+    // Mensaje no encontrado por wamid (probablemente outbound enviado por
+    // función que no persistió a whatsapp_messages). Hacemos un fallback:
+    // creamos una fila inferida usando recipient_id para que al menos quede
+    // registrado el envío con su estado.
+    console.warn(`[webhook] no whatsapp_messages row for wamid=${wabaId}; recipient=${recipientId} → inserting placeholder`);
+
+    if (recipientId) {
+      try {
+        const { data: conv } = await supabase
+          .from("whatsapp_conversations")
+          .upsert(
+            {
+              phone_number: recipientId,
+              status: "open",
+              last_message_at: ts,
+            },
+            { onConflict: "phone_number" },
+          )
+          .select("id")
+          .single();
+
+        await supabase.from("whatsapp_messages").insert({
+          conversation_id: conv?.id ?? null,
+          direction: "outbound",
+          message_type: "text",
+          content: "[Mensaje enviado por sistema]",
+          waba_message_id: wabaId,
+          status: stateRaw,
+          sent_at: ts,
+          delivered_at: stateRaw === "delivered" || stateRaw === "read" ? ts : null,
+          read_at: stateRaw === "read" ? ts : null,
+          failed_at: stateRaw === "failed" ? ts : null,
+          error_code: updates.error_code ?? null,
+          error_title: updates.error_title ?? null,
+          error_message: updates.error_message ?? null,
+        });
+      } catch (insErr) {
+        console.error("[webhook] placeholder insert error:", insErr);
+      }
+    }
+  } else {
+    console.log(`[webhook] updated ${updated.length} message(s) to status=${stateRaw}`);
   }
 }
 
@@ -410,8 +463,20 @@ serve(async (req) => {
     }
 
     if (!body?.entry || !Array.isArray(body.entry)) {
+      console.log("[webhook] body has no entry array; ignoring");
       return new Response("OK", { status: 200, headers: corsHeaders });
     }
+
+    // Resumen del payload para diagnóstico (sin contenido sensible)
+    const summary = body.entry.map((e: any) =>
+      (e.changes ?? []).map((c: any) => ({
+        field: c.field,
+        statuses: c.value?.statuses?.length ?? 0,
+        messages: c.value?.messages?.length ?? 0,
+        contacts: c.value?.contacts?.length ?? 0,
+      }))
+    );
+    console.log("[webhook] payload summary:", JSON.stringify(summary));
 
     // Resolver credenciales una sola vez
     const whatsappToken = await getSecret(supabase, "META_WHATSAPP_TOKEN", "META_WHATSAPP_TOKEN");

@@ -29,6 +29,13 @@ const corsHeaders = {
 
 const WA_API_BASE = "https://graph.facebook.com/v19.0";
 
+function normalizePhoneE164(input: string, countryCode?: string): string {
+  const digits = input.replace(/\D/g, "");
+  if (digits.length >= 11) return digits;
+  const cc = (countryCode ?? "57").replace(/\D/g, "");
+  return cc + digits;
+}
+
 async function authorize(
   req: Request,
   serviceRoleKey: string,
@@ -165,10 +172,8 @@ serve(async (req) => {
       );
     }
 
-    const cc = (country_code ?? "57").replace(/\D/g, "");
-    let phone = String(phone_number).replace(/\D/g, "");
-    if (phone.startsWith(cc) && phone.length > 10) phone = phone.slice(cc.length);
-    const fullPhone = cc + phone;
+    const fullPhone = normalizePhoneE164(String(phone_number), country_code);
+    console.log(`[upload-and-send-media] resolved phone: input=${phone_number} fullPhone=${fullPhone}`);
 
     // 1. Bajar archivo de Storage
     const { data: fileBlob, error: dlErr } = await supabase.storage

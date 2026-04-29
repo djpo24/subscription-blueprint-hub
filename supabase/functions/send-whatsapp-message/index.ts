@@ -29,6 +29,23 @@ const corsHeaders = {
 
 const WA_API_BASE = "https://graph.facebook.com/v19.0";
 
+/**
+ * Normaliza a formato Meta (E.164 sin "+", solo dígitos).
+ * Reglas:
+ *   - Si el número ya tiene 11+ dígitos, asumimos que viene con prefijo
+ *     internacional → usar tal cual (Colombia=12, Curaçao=11, EEUU=11, etc).
+ *   - Si tiene 10 dígitos, asumimos número local colombiano → prepend "57".
+ *   - Si se proveyó country_code explícito y el número tiene 7-10 dígitos,
+ *     prepend el country_code dado.
+ */
+function normalizePhoneE164(input: string, countryCode?: string): string {
+  const digits = input.replace(/\D/g, "");
+  if (digits.length >= 11) return digits;
+  const cc = (countryCode ?? "57").replace(/\D/g, "");
+  if (digits.length === 10) return cc + digits;
+  return cc + digits;
+}
+
 async function sendFreeText(
   pid: string,
   token: string,
@@ -134,10 +151,8 @@ serve(async (req) => {
       );
     }
 
-    const cc = (country_code ?? "57").replace(/\D/g, "");
-    let phone = String(phone_number).replace(/\D/g, "");
-    if (phone.startsWith(cc) && phone.length > 10) phone = phone.slice(cc.length);
-    const fullPhone = cc + phone;
+    const fullPhone = normalizePhoneE164(String(phone_number), country_code);
+    console.log(`[send-whatsapp-message] resolved phone: input=${phone_number} cc=${country_code ?? "auto"} fullPhone=${fullPhone}`);
 
     const result = await sendFreeText(phoneNumberId, token, fullPhone, text.trim());
 

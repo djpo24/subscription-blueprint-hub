@@ -195,9 +195,9 @@ export function ConversationsPage() {
     if (!selectedConv || !replyText.trim() || sending) return;
     setSending(true);
 
-    const cc = "57";
-    let phoneRaw = selectedConv.phone_number.replace(/\D/g, "");
-    if (phoneRaw.startsWith(cc) && phoneRaw.length > 10) phoneRaw = phoneRaw.slice(cc.length);
+    // El phone_number en whatsapp_conversations ya está en E.164 sin "+".
+    // Lo enviamos íntegro al edge function, que decide cómo formatearlo.
+    const phoneRaw = selectedConv.phone_number.replace(/\D/g, "");
 
     const tempId = `temp-${Date.now()}`;
     const optimistic: Message = {
@@ -231,7 +231,9 @@ export function ConversationsPage() {
         body: {
           customer_id: selectedConv.customer_id,
           phone_number: phoneRaw,
-          country_code: cc,
+          // No mandamos country_code: el edge function detecta si el número ya
+          // viene con prefijo internacional (>10 dígitos) y solo agrega +57 si
+          // es un número local de 10 dígitos.
           text,
           conversation_id: selectedConv.id,
         },

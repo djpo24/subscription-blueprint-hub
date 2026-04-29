@@ -122,7 +122,10 @@ export function ChatWindow({
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card shrink-0">
+      <div
+        className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-border bg-card shrink-0"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBack}
@@ -299,7 +302,10 @@ export function ChatWindow({
       </div>
 
       {/* Reply zone */}
-      <div className="border-t border-border bg-card px-4 py-3 space-y-2 shrink-0">
+      <div
+        className="border-t border-border bg-card px-4 py-3 space-y-2 shrink-0"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
         {!sessionActive && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />

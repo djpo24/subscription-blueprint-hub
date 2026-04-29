@@ -7,6 +7,11 @@ interface PackagesPanelProps {
   customer: ConversationCustomer | null;
   phoneNumber: string;
   onClose?: () => void;
+  /**
+   * "side"  → renderiza como columna lateral fija (desktop)
+   * "sheet" → renderiza como contenido de Sheet (mobile/tablet)
+   */
+  variant?: "side" | "sheet";
 }
 
 interface CustomerPackage {
@@ -45,7 +50,7 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function PackagesPanel({ customer, phoneNumber, onClose }: PackagesPanelProps) {
+export function PackagesPanel({ customer, phoneNumber, onClose, variant = "side" }: PackagesPanelProps) {
   const customerId = customer?.id ?? null;
 
   const { data: packages = [], isLoading } = useQuery({
@@ -77,8 +82,12 @@ export function PackagesPanel({ customer, phoneNumber, onClose }: PackagesPanelP
     { count: 0, delivered: 0, toCollect: {} as Record<string, number> },
   );
 
+  const containerCls = variant === "side"
+    ? "hidden lg:flex flex-col w-80 shrink-0 border-l border-border bg-card overflow-y-auto"
+    : "flex flex-col h-full bg-card overflow-y-auto";
+
   return (
-    <div className="hidden lg:flex flex-col w-80 shrink-0 border-l border-border bg-card overflow-y-auto">
+    <div className={containerCls}>
       <div className="px-4 py-3 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
         <h3 className="text-sm font-semibold text-foreground">Información del cliente</h3>
         {onClose && (

@@ -208,15 +208,15 @@ export function ChatDialog({ open, onOpenChange, customerId, customerName, phone
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 pb-2 border-b">
+      <DialogContent className="max-w-4xl p-0 flex flex-col gap-0 w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:w-auto sm:h-auto sm:max-h-[85vh] sm:rounded-lg">
+        <DialogHeader className="p-4 pb-2 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
             Chat con {displayName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-[500px] flex">
+        <div className="flex-1 min-h-0 sm:min-h-[500px] flex overflow-hidden">
           {loading || !conversation ? (
             <div className="flex justify-center items-center w-full py-12 text-muted-foreground text-sm">
               {loading ? 'Cargando...' : 'No se pudo cargar la conversación'}

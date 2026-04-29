@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ConversationList } from "./ConversationList";
 import { ChatWindow } from "./ChatWindow";
 import { PackagesPanel } from "./PackagesPanel";
@@ -10,7 +12,24 @@ import type { Conversation, Message, StatusFilter, ConversationCustomer } from "
 const PAGE_SIZE_MESSAGES = 150;
 const PAGE_SIZE_CONVS    = 200;
 
+function useIsBelowLg() {
+  const [below, setBelow] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => setBelow(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return below;
+}
+
 export function ConversationsPage() {
+  const isMobile = useIsMobile();
+  const isBelowLg = useIsBelowLg();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [convsLoading, setConvsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -20,7 +39,7 @@ export function ConversationsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
-  const [showInfoPanel, setShowInfoPanel] = useState(true);
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState<Array<{ id: string; content: string; author_name: string | null; created_at: string }>>([]);
   const [newNote, setNewNote] = useState("");
@@ -28,7 +47,6 @@ export function ConversationsPage() {
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selectedId;
 
-  // ── Cargar conversaciones desde la VIEW ────────────────────────────────────
   const fetchConversations = useCallback(async () => {
     const { data, error } = await supabase
       .from("whatsapp_conversation_inbox" as any)
@@ -47,7 +65,6 @@ export function ConversationsPage() {
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
-  // ── Cargar mensajes de la conversación seleccionada ────────────────────────
   const fetchMessages = useCallback(async (convId: string) => {
     setMessagesLoading(true);
     const { data, error } = await supabase
@@ -79,7 +96,6 @@ export function ConversationsPage() {
     setNotes((data ?? []) as any);
   }, []);
 
-  // ── Marcar como leída cuando se selecciona ────────────────────────────────
   useEffect(() => {
     if (!selectedId) {
       setMessages([]);
@@ -93,7 +109,6 @@ export function ConversationsPage() {
         if (error) {
           console.warn("[chat] mark_conversation_read failed:", error.message);
         } else {
-          // Actualizar localmente para feedback inmediato
           setConversations(prev =>
             prev.map(c => c.id === selectedId ? { ...c, last_read_at: new Date().toISOString(), unread_count: 0 } : c)
           );
@@ -101,7 +116,15 @@ export function ConversationsPage() {
       });
   }, [selectedId, fetchMessages, fetchNotes]);
 
-  // ── Realtime: nuevos mensajes y status updates ─────────────────────────────
+  // Bloquear scroll del body cuando se abre el chat full-screen en mobile
+  useEffect(() => {
+    if (isMobile && selectedId) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isMobile, selectedId]);
+
   useEffect(() => {
     const channel = supabase
       .channel("whatsapp-realtime")
@@ -113,7 +136,6 @@ export function ConversationsPage() {
           if (m.conversation_id === selectedRef.current) {
             setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
           }
-          // Refrescar lista (unread, preview, last_message_at)
           fetchConversations();
         },
       )
@@ -137,10 +159,8 @@ export function ConversationsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchConversations]);
 
-  // ── Filtrado client-side ───────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = conversations;
-
     if (statusFilter === "unread")        list = list.filter(c => (c.unread_count ?? 0) > 0);
     else if (statusFilter === "awaiting") list = list.filter(c => c.awaiting_reply);
     else if (statusFilter === "open")     list = list.filter(c => c.status === "open");
@@ -154,7 +174,6 @@ export function ConversationsPage() {
         return name.includes(q) || phone.includes(q);
       });
     }
-
     return list;
   }, [conversations, searchQuery, statusFilter]);
 
@@ -172,7 +191,6 @@ export function ConversationsPage() {
     [conversations, selectedId],
   );
 
-  // ── Acciones ───────────────────────────────────────────────────────────────
   const handleSendReply = useCallback(async () => {
     if (!selectedConv || !replyText.trim() || sending) return;
     setSending(true);
@@ -181,7 +199,6 @@ export function ConversationsPage() {
     let phoneRaw = selectedConv.phone_number.replace(/\D/g, "");
     if (phoneRaw.startsWith(cc) && phoneRaw.length > 10) phoneRaw = phoneRaw.slice(cc.length);
 
-    // Optimistic insert
     const tempId = `temp-${Date.now()}`;
     const optimistic: Message = {
       id: tempId,
@@ -221,7 +238,6 @@ export function ConversationsPage() {
       });
       if (error) throw new Error(error.message);
       if (!data?.success) throw new Error(data?.error ?? "Envío falló");
-      // Quitar optimistic — el real va a llegar por Realtime
       setMessages(prev => prev.filter(m => m.id !== tempId));
     } catch (err) {
       const msg = (err as Error).message;
@@ -274,59 +290,99 @@ export function ConversationsPage() {
 
   const customerForPanel: ConversationCustomer | null = selectedConv?.customers ?? null;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  return (
-    <div className="flex h-[calc(100vh-180px)] min-h-[500px] border border-border rounded-lg overflow-hidden bg-background">
-      <ConversationList
-        conversations={filtered}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        loading={convsLoading}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        totalUnread={totalUnread}
-        awaitingCount={awaitingCount}
-      />
+  // ─── Layout ──────────────────────────────────────────────────────────────
+  // Mobile  (<md): full-screen overlay cuando hay conversación seleccionada;
+  //               lista full-screen cuando no.
+  // Tablet  (md):  split 2-col (lista 320px + chat). Panel de paquetes en Sheet.
+  // Desktop (lg+): split 3-col (lista + chat + panel de paquetes lateral).
 
-      {selectedConv ? (
-        <>
-          <ChatWindow
-            conversation={selectedConv}
-            messages={messages}
-            messagesLoading={messagesLoading}
-            sending={sending}
-            replyText={replyText}
-            onReplyTextChange={setReplyText}
-            onSendReply={handleSendReply}
-            onBack={() => setSelectedId(null)}
-            showInfoPanel={showInfoPanel}
-            onToggleInfoPanel={() => setShowInfoPanel(s => !s)}
-            showNotes={showNotes}
-            onToggleNotes={() => setShowNotes(s => !s)}
-            notes={notes}
-            newNote={newNote}
-            onNewNoteChange={setNewNote}
-            onAddNote={handleAddNote}
-            savingNote={savingNote}
-            onMarkUnread={handleMarkUnread}
-            onMediaSent={() => selectedConv && fetchMessages(selectedConv.id)}
+  const isChatOpen = !!selectedConv;
+  const mobileOverlay = isMobile && isChatOpen;
+
+  const containerCls = mobileOverlay
+    ? "fixed inset-x-0 top-0 z-50 bg-background flex flex-col h-[100dvh]"
+    : isMobile
+      ? "flex flex-col bg-background h-[calc(100dvh-130px)] min-h-[400px] overflow-hidden"
+      : "flex flex-row bg-background h-[calc(100dvh-180px)] min-h-[500px] md:border md:border-border md:rounded-lg overflow-hidden";
+
+  return (
+    <>
+      <div className={containerCls}>
+        {/* Lista — siempre visible en md+; en mobile solo cuando NO hay chat abierto */}
+        {(!mobileOverlay) && (
+          <ConversationList
+            conversations={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            loading={convsLoading}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            totalUnread={totalUnread}
+            awaitingCount={awaitingCount}
           />
-          {showInfoPanel && (
+        )}
+
+        {selectedConv ? (
+          <>
+            <ChatWindow
+              conversation={selectedConv}
+              messages={messages}
+              messagesLoading={messagesLoading}
+              sending={sending}
+              replyText={replyText}
+              onReplyTextChange={setReplyText}
+              onSendReply={handleSendReply}
+              onBack={() => setSelectedId(null)}
+              showInfoPanel={showInfoPanel}
+              onToggleInfoPanel={() => setShowInfoPanel(s => !s)}
+              showNotes={showNotes}
+              onToggleNotes={() => setShowNotes(s => !s)}
+              notes={notes}
+              newNote={newNote}
+              onNewNoteChange={setNewNote}
+              onAddNote={handleAddNote}
+              savingNote={savingNote}
+              onMarkUnread={handleMarkUnread}
+              onMediaSent={() => selectedConv && fetchMessages(selectedConv.id)}
+            />
+            {/* Desktop: panel lateral */}
+            {showInfoPanel && (
+              <PackagesPanel
+                customer={customerForPanel}
+                phoneNumber={selectedConv.phone_number}
+                onClose={() => setShowInfoPanel(false)}
+                variant="side"
+              />
+            )}
+          </>
+        ) : (
+          // Solo en md+ cuando no hay chat seleccionado mostramos el placeholder
+          !isMobile && (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <MessageCircle className="h-12 w-12 opacity-20" />
+              <p className="text-sm">Selecciona una conversación</p>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Mobile/Tablet: panel de paquetes como Sheet (slide-in derecha) */}
+      <Sheet
+        open={showInfoPanel && isChatOpen && isBelowLg}
+        onOpenChange={(open) => setShowInfoPanel(open)}
+      >
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
+          {selectedConv && (
             <PackagesPanel
               customer={customerForPanel}
               phoneNumber={selectedConv.phone_number}
-              onClose={() => setShowInfoPanel(false)}
+              variant="sheet"
             />
           )}
-        </>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 hidden md:flex">
-          <MessageCircle className="h-12 w-12 opacity-20" />
-          <p className="text-sm">Selecciona una conversación</p>
-        </div>
-      )}
-    </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

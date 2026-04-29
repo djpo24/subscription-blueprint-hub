@@ -59,12 +59,14 @@ async function sendFreeText(
     text: { body: text, preview_url: false },
   };
 
+  console.log(`[send-whatsapp-message] POST to Meta: pid=${pid} fullPhone=${fullPhone} text="${text.slice(0, 30)}"`);
   const res = await fetch(`${WA_API_BASE}/${pid}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const data = await res.json();
+  console.log(`[send-whatsapp-message] Meta response: status=${res.status} body=${JSON.stringify(data)}`);
   if (!res.ok) {
     const metaError = data?.error ?? {};
     return {

@@ -231,16 +231,27 @@ export function ConversationsPage() {
         body: {
           customer_id: selectedConv.customer_id,
           phone_number: phoneRaw,
-          // No mandamos country_code: el edge function detecta si el número ya
-          // viene con prefijo internacional (>10 dígitos) y solo agrega +57 si
-          // es un número local de 10 dígitos.
           text,
           conversation_id: selectedConv.id,
         },
       });
       if (error) throw new Error(error.message);
       if (!data?.success) throw new Error(data?.error ?? "Envío falló");
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+
+      // En vez de borrar el optimista (que crea un parpadeo si Realtime tarda),
+      // lo transformamos en el mensaje real adoptando su id + waba_message_id.
+      // Cuando llegue el evento de Realtime con el mismo id, el dedup natural
+      // (some(x => x.id === m.id)) lo descartará.
+      const realId = data.message_row_id as string | undefined;
+      setMessages(prev => prev.map(m => m.id === tempId
+        ? {
+            ...m,
+            id: realId ?? m.id,
+            status: "sent",
+            waba_message_id: data.message_id ?? null,
+          }
+        : m,
+      ));
     } catch (err) {
       const msg = (err as Error).message;
       toast.error(`Error: ${msg}`);

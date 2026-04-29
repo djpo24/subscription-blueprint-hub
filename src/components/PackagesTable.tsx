@@ -9,7 +9,8 @@ import { PackagesTableRow } from './packages-table/PackagesTableRow';
 import { PackageTableDetails } from './packages-table/PackageTableDetails';
 import { ChatDialog } from './chat/ChatDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type Currency = 'COP' | 'AWG';
 
@@ -41,15 +42,23 @@ interface PackagesTableProps {
   onUpdate?: (id: string, updates: any) => void;
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export function PackagesTable({ 
-  packages, 
-  filteredPackages, 
-  isLoading, 
+export function PackagesTable({
+  packages,
+  filteredPackages,
+  isLoading,
   onUpdate,
   disableChat = false,
-  previewRole
+  previewRole,
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
 }: PackagesTableProps) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -185,6 +194,39 @@ export function PackagesTable({
                 ))}
               </TableBody>
             </Table>
+          )}
+
+          {onPageChange && pageSize && typeof page === 'number' && typeof totalCount === 'number' && !searchQuery && (
+            <div className="flex items-center justify-between gap-3 mt-4 flex-wrap">
+              <div className="text-sm text-gray-600">
+                Mostrando {totalCount === 0 ? 0 : page * pageSize + 1}
+                {' - '}
+                {Math.min((page + 1) * pageSize, totalCount)} de {totalCount}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(Math.max(0, page - 1))}
+                  disabled={page === 0 || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-gray-700">
+                  Página {page + 1} de {Math.max(1, Math.ceil(totalCount / pageSize))}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(page + 1)}
+                  disabled={(page + 1) * pageSize >= totalCount || isLoading}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

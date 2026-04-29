@@ -28,6 +28,10 @@ interface DashboardTabProps {
   disableChat?: boolean;
   previewRole?: 'admin' | 'employee' | 'traveler';
   onTabChange: (tab: string) => void;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function DashboardTab({
@@ -43,7 +47,11 @@ export function DashboardTab({
   onUpdate,
   disableChat = false,
   previewRole,
-  onTabChange
+  onTabChange,
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
 }: DashboardTabProps) {
   const handleStatClick = (statType: string) => {
     switch (statType) {
@@ -87,6 +95,10 @@ export function DashboardTab({
           onUpdate={onUpdate}
           disableChat={false}
           previewRole={previewRole}
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
         />
       </div>
     </div>

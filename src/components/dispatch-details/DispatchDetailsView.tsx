@@ -3,6 +3,7 @@ import { useTripActions } from '@/hooks/useTripActions';
 import { useRevertDispatchStatus } from '@/hooks/useRevertDispatchStatus';
 import { useDispatchReport } from '@/hooks/useDispatchReport';
 import { useTrips } from '@/hooks/useTrips';
+import { useReloadArrivalNotifications } from '@/hooks/useReloadArrivalNotifications';
 import { DispatchDetailsHeader } from './DispatchDetailsHeader';
 import { DispatchSummaryCards } from './DispatchSummaryCards';
 import { DispatchPackagesTable } from './DispatchPackagesTable';
@@ -26,6 +27,7 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     isMarkingAsArrived
   } = useTripActions();
   const { revertDispatchStatus, isReverting } = useRevertDispatchStatus();
+  const { reloadArrivalNotifications, isReloadingNotifications } = useReloadArrivalNotifications();
 
   if (!dispatchId) {
     return (
@@ -117,6 +119,12 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
     }
   };
 
+  const handleReloadPackages = () => {
+    if (dispatchId) {
+      reloadArrivalNotifications(dispatchId);
+    }
+  };
+
   const handleGenerateReport = () => {
     // Obtener el nombre del viajero desde el primer paquete que tenga trip_id
     let travelerName: string | undefined;
@@ -158,6 +166,8 @@ export function DispatchDetailsView({ dispatchId }: DispatchDetailsViewProps) {
         hasPackages={packages.length > 0}
         onGenerateReport={handleGenerateReport}
         isGeneratingReport={isGenerating}
+        onReloadPackages={handleReloadPackages}
+        isReloadingPackages={isReloadingNotifications}
       />
 
       <DispatchSummaryCards

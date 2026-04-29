@@ -202,6 +202,8 @@ export function useMarkTripAsArrived() {
       queryClient.invalidateQueries({ queryKey: ['dispatch-relations'] });
       queryClient.invalidateQueries({ queryKey: ['dispatch-packages'] });
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['package-stats'] });
       queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
       queryClient.invalidateQueries({ queryKey: ['trips-with-flights'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

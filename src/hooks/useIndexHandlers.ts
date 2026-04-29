@@ -87,6 +87,8 @@ export function useIndexHandlers({
   const handlePackagesUpdate = () => {
     // Invalidar todas las consultas relacionadas con paquetes
     queryClient.invalidateQueries({ queryKey: ['packages'] });
+    queryClient.invalidateQueries({ queryKey: ['packages-paginated'] });
+    queryClient.invalidateQueries({ queryKey: ['package-stats'] });
     queryClient.invalidateQueries({ queryKey: ['packages-by-date'] });
     queryClient.invalidateQueries({ queryKey: ['packages-by-trip'] });
     queryClient.invalidateQueries({ queryKey: ['trips'] });

@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Truck, Plane, FileText, Loader2, Undo2 } from 'lucide-react';
+import { Truck, Plane, FileText, Loader2, Undo2, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DispatchDetailsHeaderProps {
@@ -16,6 +16,8 @@ interface DispatchDetailsHeaderProps {
   hasPackages: boolean;
   onGenerateReport: () => void;
   isGeneratingReport: boolean;
+  onReloadPackages?: () => void;
+  isReloadingPackages?: boolean;
 }
 
 export function DispatchDetailsHeader({
@@ -31,7 +33,9 @@ export function DispatchDetailsHeader({
   isReverting,
   hasPackages,
   onGenerateReport,
-  isGeneratingReport
+  isGeneratingReport,
+  onReloadPackages,
+  isReloadingPackages = false,
 }: DispatchDetailsHeaderProps) {
   const isMobile = useIsMobile();
 
@@ -87,6 +91,22 @@ export function DispatchDetailsHeader({
               <Plane className="h-4 w-4 mr-2" />
             )}
             {isMarkingAsArrived ? 'Marcando...' : 'Marcar como Llegado'}
+          </Button>
+        )}
+
+        {dispatchStatus === 'llegado' && onReloadPackages && (
+          <Button
+            onClick={onReloadPackages}
+            disabled={isReloadingPackages || !hasPackages}
+            variant="outline"
+            className={`${isMobile ? 'w-full text-xs' : ''} border-green-600 text-green-700 hover:bg-green-50`}
+          >
+            {isReloadingPackages ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {isReloadingPackages ? 'Cargando...' : 'Cargar paquetes'}
           </Button>
         )}
         

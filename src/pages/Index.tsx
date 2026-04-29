@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
+import { usePaginatedPackages } from '@/hooks/usePaginatedPackages';
 import { Header } from '@/components/Header';
 import { DashboardTab } from '@/components/tabs/DashboardTab';
 import { TripsTab } from '@/components/tabs/TripsTab';
@@ -120,6 +121,23 @@ export default function Index() {
     );
   });
 
+  const [dashboardPage, setDashboardPage] = useState(0);
+  const dashboardPageSize = 50;
+
+  useEffect(() => {
+    setDashboardPage(0);
+  }, [searchTerm]);
+
+  const paginatedPackages = usePaginatedPackages({
+    page: dashboardPage,
+    pageSize: dashboardPageSize,
+    search: searchTerm,
+  });
+
+  const dashboardPackages = paginatedPackages.data?.data || [];
+  const dashboardTotal = paginatedPackages.data?.total || 0;
+  const dashboardLoading = paginatedPackages.isLoading;
+
   if (showMobileDelivery) {
     return <MobileDeliveryView onClose={() => setShowMobileDelivery(false)} />;
   }
@@ -168,11 +186,15 @@ export default function Index() {
                   onNewTrip={() => handleCreateTripFromCalendar(new Date())}
                   onViewNotifications={handleViewNotifications}
                   onMobileDelivery={handleMobileDelivery}
-                  packages={packages}
-                  filteredPackages={filteredPackages}
-                  isLoading={isLoading}
+                  packages={dashboardPackages}
+                  filteredPackages={dashboardPackages}
+                  isLoading={dashboardLoading}
                   onUpdate={handlePackagesUpdate}
                   onTabChange={setActiveTab}
+                  page={dashboardPage}
+                  pageSize={dashboardPageSize}
+                  totalCount={dashboardTotal}
+                  onPageChange={setDashboardPage}
                 />
               } />
               

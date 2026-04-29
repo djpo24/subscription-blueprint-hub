@@ -120,7 +120,7 @@ export function ChatWindow({
   const sessionActive = lastInbound > 0 && Date.now() - lastInbound < 24 * 60 * 60 * 1000;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0">
       {/* Header */}
       <div
         className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-border bg-card shrink-0"
@@ -223,7 +223,7 @@ export function ChatWindow({
       <div
         ref={messagesContainerRef}
         onScroll={onMessagesScroll}
-        className="flex-1 overflow-y-auto px-5 py-4 space-y-1"
+        className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-5 py-4 space-y-1"
         style={{ background: "hsl(var(--muted) / 0.3)" }}
       >
         {messagesLoading ? (

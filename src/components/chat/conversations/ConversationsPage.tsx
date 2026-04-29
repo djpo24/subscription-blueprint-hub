@@ -302,10 +302,10 @@ export function ConversationsPage() {
   const mobileOverlay = isMobile && isChatOpen;
 
   const containerCls = mobileOverlay
-    ? "fixed inset-x-0 top-0 z-50 bg-background flex flex-col h-[100dvh]"
+    ? "fixed inset-0 z-50 bg-background flex flex-col"
     : isMobile
-      ? "flex flex-col bg-background h-[calc(100dvh-130px)] min-h-[400px] overflow-hidden"
-      : "flex flex-row bg-background h-[calc(100dvh-180px)] min-h-[500px] md:border md:border-border md:rounded-lg overflow-hidden";
+      ? "flex flex-col bg-background h-[calc(100vh-130px)] min-h-[400px] overflow-hidden"
+      : "flex flex-row bg-background h-[calc(100vh-180px)] min-h-[500px] md:border md:border-border md:rounded-lg overflow-hidden";
 
   return (
     <>

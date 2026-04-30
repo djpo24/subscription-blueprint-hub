@@ -147,6 +147,7 @@ export function ConversationsPage() {
           if (m.conversation_id === selectedRef.current) {
             setMessages(prev => prev.map(x => x.id === m.id ? m : x));
           }
+          fetchConversations();
         },
       )
       .on(
@@ -156,8 +157,34 @@ export function ConversationsPage() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchConversations]);
+    // Mobile (iOS Safari) pausa WebSockets cuando el tab pasa a background.
+    // Al volver al tab refrescamos manualmente y reconectamos el canal.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        fetchConversations();
+        if (selectedRef.current) fetchMessages(selectedRef.current);
+        // Reconectar el canal si Supabase lo cerró por inactividad
+        try { channel.subscribe(); } catch { /* noop */ }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+
+    // Polling de respaldo cada 20s como red de seguridad por si Realtime se
+    // pierde en background (no es ruidoso porque solo hace 1 query a la VIEW).
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchConversations();
+      }
+    }, 20000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.clearInterval(pollId);
+    };
+  }, [fetchConversations, fetchMessages]);
 
   const filtered = useMemo(() => {
     let list = conversations;

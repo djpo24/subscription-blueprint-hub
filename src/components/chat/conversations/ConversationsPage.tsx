@@ -126,62 +126,96 @@ export function ConversationsPage() {
   }, [isMobile, selectedId]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("whatsapp-realtime")
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "whatsapp_messages" },
-        (payload: any) => {
-          const m = payload.new as Message;
-          if (m.conversation_id === selectedRef.current) {
-            setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
-          }
-          fetchConversations();
-        },
-      )
-      .on(
-        "postgres_changes" as any,
-        { event: "UPDATE", schema: "public", table: "whatsapp_messages" },
-        (payload: any) => {
-          const m = payload.new as Message;
-          if (m.conversation_id === selectedRef.current) {
-            setMessages(prev => prev.map(x => x.id === m.id ? m : x));
-          }
-          fetchConversations();
-        },
-      )
-      .on(
-        "postgres_changes" as any,
-        { event: "*", schema: "public", table: "whatsapp_conversations" },
-        () => fetchConversations(),
-      )
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let lastEventAt = Date.now();
 
-    // Mobile (iOS Safari) pausa WebSockets cuando el tab pasa a background.
-    // Al volver al tab refrescamos manualmente y reconectamos el canal.
+    const setupChannel = () => {
+      // Canal único por instancia para evitar conflictos entre tabs
+      const channelName = `whatsapp-realtime-${Math.random().toString(36).slice(2)}`;
+      const ch = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes" as any,
+          { event: "INSERT", schema: "public", table: "whatsapp_messages" },
+          (payload: any) => {
+            lastEventAt = Date.now();
+            const m = payload.new as Message;
+            if (m.conversation_id === selectedRef.current) {
+              setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
+            }
+            fetchConversations();
+          },
+        )
+        .on(
+          "postgres_changes" as any,
+          { event: "UPDATE", schema: "public", table: "whatsapp_messages" },
+          (payload: any) => {
+            lastEventAt = Date.now();
+            const m = payload.new as Message;
+            if (m.conversation_id === selectedRef.current) {
+              setMessages(prev => prev.map(x => x.id === m.id ? m : x));
+            }
+            fetchConversations();
+          },
+        )
+        .on(
+          "postgres_changes" as any,
+          { event: "*", schema: "public", table: "whatsapp_conversations" },
+          () => {
+            lastEventAt = Date.now();
+            fetchConversations();
+          },
+        )
+        .subscribe((status) => {
+          console.log(`[realtime] channel ${channelName} status:`, status);
+          // Si la suscripción falla o se cierra, intentamos reconectar
+          if (!cancelled && (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED")) {
+            setTimeout(() => {
+              if (cancelled) return;
+              console.log("[realtime] reconnecting…");
+              if (channel) supabase.removeChannel(channel);
+              channel = setupChannel();
+              fetchConversations();
+            }, 1500);
+          }
+        });
+      return ch;
+    };
+
+    channel = setupChannel();
+
+    // Cuando vuelve la visibilidad o el foco (móvil cambiando de app),
+    // refrescamos inmediatamente y forzamos reconexión si han pasado >10s.
     const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        fetchConversations();
-        if (selectedRef.current) fetchMessages(selectedRef.current);
-        // Reconectar el canal si Supabase lo cerró por inactividad
-        try { channel.subscribe(); } catch { /* noop */ }
+      if (document.visibilityState !== "visible") return;
+      fetchConversations();
+      if (selectedRef.current) fetchMessages(selectedRef.current);
+      if (Date.now() - lastEventAt > 10000) {
+        if (channel) supabase.removeChannel(channel);
+        channel = setupChannel();
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
+    window.addEventListener("online", onVisible);
 
-    // Polling de respaldo cada 20s como red de seguridad por si Realtime se
-    // pierde en background (no es ruidoso porque solo hace 1 query a la VIEW).
+    // Tick agresivo cada 5s: solo refresca si Realtime ha estado callado >10s
+    // (debería ser invisible para el usuario porque normalmente Realtime
+    // entrega los eventos en <1s).
     const pollId = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastEventAt > 10000) {
         fetchConversations();
       }
-    }, 20000);
+    }, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
+      window.removeEventListener("online", onVisible);
       window.clearInterval(pollId);
     };
   }, [fetchConversations, fetchMessages]);

@@ -1,5 +1,6 @@
 
 import jsPDF from 'jspdf';
+import { PDFPrintService } from './PDFPrintService';
 import type { PackageInDispatch } from '@/types/dispatch';
 
 export class DispatchReportPDFService {
@@ -186,22 +187,7 @@ export class DispatchReportPDFService {
       
       const pdf = this.generateDispatchReport(packages, travelerName);
       
-      // Abrir el PDF en una nueva ventana para imprimir
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      
-      const printWindow = window.open(pdfUrl, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-            // Limpiar la URL después de un tiempo
-            setTimeout(() => {
-              URL.revokeObjectURL(pdfUrl);
-            }, 1000);
-          }, 500);
-        };
-      }
+      await PDFPrintService.printPDF(pdf);
       
       console.log('✅ Reporte de despacho generado y abierto para impresión');
     } catch (error) {

@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { PDFPrintService } from './pdf/PDFPrintService';
 import { LABEL_DIMENSIONS } from '@/utils/labelDimensions';
 
 interface Bulto {
@@ -36,22 +37,7 @@ export class PDFBultoLabelService {
     
     const pdf = await this.generatePDF(bulto);
     
-    // Open PDF in new window for printing
-    const pdfBlob = pdf.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    const printWindow = window.open(pdfUrl, '_blank');
-    if (printWindow) {
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-          // Clean up URL after a delay
-          setTimeout(() => {
-            URL.revokeObjectURL(pdfUrl);
-          }, 1000);
-        }, 500);
-      };
-    }
+    await PDFPrintService.printPDF(pdf);
     
     console.log('✅ [PDFBultoLabelService] Etiqueta de bulto abierta para impresión');
   }

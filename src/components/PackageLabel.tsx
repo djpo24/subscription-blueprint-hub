@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { PackageLabelPreview } from './package-labels/PackageLabelPreview';
 import { generateLabelData, LabelData } from './package-labels/PackageLabelGenerator';
 import { useMultipleLabelsPDF } from '@/hooks/useMultipleLabelsPDF';
@@ -64,6 +65,7 @@ export function PackageLabel({ package: pkg }: PackageLabelProps) {
       await printMultipleLabelsAsPDF([pkg], labelsData, isReprint);
     } catch (error) {
       console.error('Error printing label:', error);
+      toast.error(error instanceof Error ? error.message : 'No se pudo imprimir la etiqueta');
     } finally {
       setIsPrinting(false);
     }

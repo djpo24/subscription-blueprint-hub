@@ -1,5 +1,15 @@
 
+import type { CSSProperties, ReactNode } from 'react';
 import { LabelData } from './PackageLabelGenerator';
+import { formatAmount, formatDate, getCurrencySymbol } from '@/utils/labelFormatters';
+import {
+  LABEL_BRAND,
+  LABEL_OFFICES,
+  LABEL_TERMS,
+  getCityCode,
+  getCityName,
+  getCurrencyName,
+} from '@/utils/labelContent';
 
 interface Package {
   id: string;
@@ -23,27 +33,35 @@ interface PackageLabelProps {
   labelData?: LabelData;
 }
 
+const LINE = '0.4mm solid #000';
+
+const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+
+function ZoneTag({ letter, label, inverted = false }: { letter: string; label: string; inverted?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1.2mm', fontSize: '5.5pt', fontWeight: 'bold', marginBottom: '1mm' }}>
+      <span style={{
+        width: '3.2mm',
+        height: '3.2mm',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: inverted ? '#fff' : '#000',
+        color: inverted ? '#000' : '#fff',
+      }}>
+        {letter}
+      </span>
+      {label}
+    </div>
+  );
+}
+
+function Cell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return <div style={{ padding: '1.6mm 2.5mm', minWidth: 0, ...style }}>{children}</div>;
+}
+
+// Vista previa de la etiqueta "Rejilla logística"; replica el PDF de LabelContentRenderer
 export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
-  const formatAmount = (amount: number, currency?: string) => {
-    return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const getCurrencySymbol = (currency?: string) => {
-    return currency === 'AWG' ? 'ƒ' : '$';
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    const month = months[date.getMonth()];
-    const day = date.getDate();
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month} ${day}/${year}`;
-  };
-
   if (!labelData) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -55,142 +73,111 @@ export function PackageLabel({ package: pkg, labelData }: PackageLabelProps) {
     );
   }
 
+  const match = pkg.tracking_number.match(/^[A-Z]+-\d{4}-(\d+)$/);
+  const guide = match ? match[1] : pkg.tracking_number;
+  const weight = pkg.weight ? `${pkg.weight}kg` : '3kg';
+  const amount = pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.354.435';
+
   return (
     <div style={{
       width: '102mm',
       height: '152mm',
+      padding: '3mm',
+      margin: '20px auto',
       backgroundColor: 'white',
       color: 'black',
-      fontSize: '12px',
-      fontFamily: 'Arial, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-      border: '1px solid #000',
-      margin: '20px auto',
-      padding: '3mm'
+      fontFamily: 'Helvetica, Arial, sans-serif',
+      lineHeight: 1.15,
+      boxSizing: 'border-box',
     }}>
-      {/* Header - ENVIOS OJITO y tracking number */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-start',
-        marginBottom: '5mm',
-        paddingBottom: '3mm',
-        borderBottom: '1px solid #ddd'
-      }}>
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 'bold' }}>ENVIOS OJITO</div>
+      <div style={{ height: '100%', border: '0.6mm solid #000', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+        {/* Marca y guía completa */}
+        <div style={{ height: '10mm', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2.5mm', borderBottom: LINE }}>
+          <div style={{ fontSize: '15pt', fontWeight: 'bold' }}>{LABEL_BRAND}</div>
+          <div style={{ textAlign: 'right', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '6pt' }}>ENCOMIENDA</div>
+            <div style={{ fontSize: '10pt' }}>{pkg.tracking_number}</div>
+          </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{pkg.tracking_number}</div>
+
+        {/* A · Destino y origen */}
+        <div style={{ height: '27mm', flex: 'none', backgroundColor: '#000', color: '#fff', display: 'flex', justifyContent: 'space-between', padding: '2.5mm 3mm 2mm', boxSizing: 'border-box' }}>
+          <div style={{ minWidth: 0 }}>
+            <ZoneTag letter="A" label="DESTINO" inverted />
+            <div style={{ fontSize: '56pt', fontWeight: 'bold', lineHeight: 0.8 }}>{getCityCode(pkg.destination)}</div>
+            <div style={{ fontSize: '9pt', fontWeight: 'bold', marginTop: '1.2mm', ...ellipsis }}>{getCityName(pkg.destination)}</div>
+          </div>
+          <div style={{ textAlign: 'right', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '5.5pt' }}>ORIGEN</div>
+            <div style={{ fontSize: '20pt', lineHeight: 1 }}>{getCityCode(pkg.origin)}</div>
+            <div style={{ fontSize: '7pt', fontWeight: 'normal' }}>{getCityName(pkg.origin)}</div>
+          </div>
         </div>
-      </div>
 
-      {/* Segunda línea - Cliente y fecha con tamaño aumentado y sin línea negra */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '8mm',
-        fontSize: '10px', // Aumentado de 8px a 10px (+2pt)
-        color: '#000',
-        fontWeight: 'bold'
-        // Eliminada la línea negra: borderBottom: '3px solid #000',
-      }}>
-        <div>{pkg.customers?.name || 'Cliente'}</div>
-        <div>{formatDate(pkg.created_at)}</div>
-      </div>
+        {/* B · Destinatario */}
+        <Cell style={{ height: '11mm', flex: 'none', borderBottom: LINE, boxSizing: 'border-box' }}>
+          <ZoneTag letter="B" label="DESTINATARIO" />
+          <div style={{ fontSize: '14pt', fontWeight: 'bold', ...ellipsis }}>{pkg.customers?.name || 'Cliente'}</div>
+        </Cell>
 
-      {/* QR Code centrado con marco */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        marginBottom: '8mm'
-      }}>
-        <div style={{
-          backgroundColor: '#f9f9f9',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          padding: '3mm',
-          display: 'inline-block'
-        }}>
-          <img 
-            src={labelData.qrCodeDataUrl} 
-            alt="QR Code" 
-            style={{ width: '45mm', height: '45mm', display: 'block' }}
-          />
+        {/* C · D · E */}
+        <div style={{ height: '12mm', flex: 'none', display: 'grid', gridTemplateColumns: '40mm 28mm 1fr', borderBottom: LINE }}>
+          {([
+            ['C', 'FECHA', formatDate(pkg.created_at)],
+            ['D', 'PESO', weight],
+            ['E', 'GUÍA', guide],
+          ] as const).map(([letter, label, value], i) => (
+            <Cell key={letter} style={i > 0 ? { borderLeft: LINE } : undefined}>
+              <ZoneTag letter={letter} label={label} />
+              <div style={{ fontSize: '12pt', fontWeight: 'bold', ...ellipsis }}>{value}</div>
+            </Cell>
+          ))}
         </div>
-      </div>
 
-      {/* Peso y Total en la misma línea */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '8mm',
-        fontSize: '10px',
-        fontWeight: 'bold'
-      }}>
-        <div>Peso: {pkg.weight ? `${pkg.weight}kg` : '3kg'}</div>
-        <div>
-          Total: {getCurrencySymbol(pkg.currency)}{pkg.amount_to_collect ? formatAmount(pkg.amount_to_collect, pkg.currency) : '34.354.435'}
+        {/* QR + F · Total a cobrar */}
+        <div style={{ height: '42mm', flex: 'none', display: 'flex', borderBottom: LINE }}>
+          <div style={{ padding: '2mm', borderRight: LINE }}>
+            <img src={labelData.qrCodeDataUrl} alt="QR Code" style={{ width: '38mm', height: '38mm', display: 'block' }} />
+          </div>
+          <Cell style={{ flex: 1, padding: '2.5mm', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <ZoneTag letter="F" label="TOTAL A COBRAR" />
+              <div style={{ fontSize: '26pt', fontWeight: 'bold', lineHeight: 1, ...ellipsis }}>
+                {getCurrencySymbol(pkg.currency)}{amount}
+              </div>
+              <div style={{ fontSize: '6pt', fontWeight: 'bold', marginTop: '1mm' }}>{getCurrencyName(pkg.currency)}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '4mm', fontSize: '6pt', fontWeight: 'bold' }}>
+              {['PAGADO', 'VERIFICADO'].map(label => (
+                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '1.2mm' }}>
+                  <span style={{ width: '3.2mm', height: '3.2mm', border: '0.35mm solid #000', boxSizing: 'border-box' }} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </Cell>
         </div>
-      </div>
 
-      {/* Texto informativo centrado */}
-      <div style={{ 
-        textAlign: 'center', 
-        fontSize: '9px', 
-        fontWeight: 'bold',
-        marginBottom: '8mm',
-        lineHeight: '1.2'
-      }}>
-        <div>Toda encomienda debe ser verificada en el local al</div>
-        <div>momento de la entrega. Una vez entregada, no se</div>
-        <div>aceptan reclamos.</div>
-      </div>
+        {/* Código de barras */}
+        <div style={{ height: '23mm', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderBottom: LINE }}>
+          <img src={labelData.barcodeDataUrl} alt="Barcode" style={{ width: '70mm', height: '15mm', display: 'block' }} />
+          <div style={{ fontSize: '7pt', fontWeight: 'bold', marginTop: '1mm' }}>{pkg.tracking_number}</div>
+        </div>
 
-      {/* Direcciones centradas */}
-      <div style={{ 
-        textAlign: 'center', 
-        fontSize: '8px',
-        marginBottom: '8mm',
-        lineHeight: '1.3'
-      }}>
-        <div style={{ fontWeight: 'bold' }}>Dirección en B/QUILLA: Calle 45B # 22 - 124</div>
-        <div style={{ marginBottom: '5mm' }}>Tel: +5731272717446</div>
-        
-        <div style={{ fontWeight: 'bold' }}>Dirección Curacao: Jo corsenstraat 48 brievengat</div>
-        <div>Tel: +599 9 6964306</div>
-      </div>
-
-      {/* Línea separadora */}
-      <div style={{ 
-        borderTop: '1px solid #ccc', 
-        margin: '5mm 10mm',
-        marginBottom: '5mm'
-      }}></div>
-
-      {/* Código de barras centrado */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        alignItems: 'center',
-        flex: 1,
-        justifyContent: 'flex-end'
-      }}>
-        <img 
-          src={labelData.barcodeDataUrl}
-          alt="Barcode"
-          style={{ width: '80mm', height: '20mm', marginBottom: '2mm' }}
-        />
-        <div style={{ 
-          fontSize: '9px', 
-          color: '#666',
-          textAlign: 'center',
-          fontWeight: 'bold'
-        }}>
-          {labelData.shortTrackingNumber}
+        {/* Aviso de reclamos + sedes */}
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '46mm 1fr', minHeight: 0 }}>
+          <Cell style={{ display: 'flex', alignItems: 'center', fontSize: '6.6pt', fontWeight: 'bold', borderRight: LINE }}>
+            {LABEL_TERMS}
+          </Cell>
+          <Cell style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', fontSize: '5.8pt' }}>
+            {LABEL_OFFICES.map(office => (
+              <div key={office.city}>
+                <div style={{ fontWeight: 'bold' }}>Dirección {office.city}:</div>
+                <div>{office.address}</div>
+                <div>Tel: {office.phone}</div>
+              </div>
+            ))}
+          </Cell>
         </div>
       </div>
     </div>
